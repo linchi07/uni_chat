@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="An uiltimate Ai Executing System">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="chat_engine">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>chat_engine</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+  //gemini叫我加上这些，然后，手势检测之类的全都好了！
+  //好吧，没有，我以为好了，然后发现居然还变流畅了，一看，结果是我把我的macOS版本当成chrome了·····
+  <script>
+    // 阻止默认的右键菜单
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+  </script>
+
+  <script>
+    // 阻止浏览器的双指缩放手势
+    document.addEventListener('gesturestart', function(e) {
+        e.preventDefault();
+    });
+
+    // 阻止一些特定的浏览器行为
+    document.addEventListener('wheel', function(e) {
+        // 这会阻止默认的滚动行为
+        if (e.ctrlKey) {
+            // 如果按下了 Ctrl 键，可能是为了进行缩放，也可以阻止
+            e.preventDefault();
+        }
+    }, { passive: false });
+    
+    document.addEventListener('touchstart', function(e) {
+        if (e.touches.length > 1) {
+            // 阻止双指手势，例如双指缩放
+            e.preventDefault();
+        }
+    }, { passive: false });
+  </script>
+</body>
+</html>
