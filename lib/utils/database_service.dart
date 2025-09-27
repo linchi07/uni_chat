@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../Chat/chat_models.dart';
+import '../Persona/persona_provider.dart';
 
 class AgentData {
   final String id;
@@ -70,6 +71,7 @@ class AgentData {
           parameters['model_provider_configure_id'] as String,
       modelSpecifics: ModelSpecifics.fromJson(parameters['model_specifics']),
       description: map['description'] as String?,
+      systemPrompt: parameters['system_prompt'] as String?,
       createdAt: DateTime.parse(map['created_at']),
     );
   }
@@ -178,6 +180,24 @@ class DatabaseService {
       )
     ''');
 
+    await db.execute('''
+        CREATE TABLE personas (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        content TEXT NOT NULL,
+        data TEXT,                  
+        is_default INTEGER NOT NULL DEFAULT 0 
+      )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX idx_personas_is_default ON personas (is_default)
+      WHERE is_default = 1
+    ''');
+    await db.execute('''
+      CREATE INDEX idx_personas_name ON personas (name)
+    ''');
+
     // 为外键创建索引以提高查询性能
     await db.execute(
       'CREATE INDEX idx_sessions_agent_id ON sessions (agent_id)',
@@ -204,12 +224,7 @@ class DatabaseService {
     if (agentExists != null) {
       var d = agent.toDatabaseStorage();
       d.remove('id');
-      await db.update(
-        'agents',
-        d,
-        where: 'id = ?',
-        whereArgs: [agent.id],
-      );
+      await db.update('agents', d, where: 'id = ?', whereArgs: [agent.id]);
       return;
     }
     await db.insert('agents', agent.toDatabaseStorage());
@@ -534,5 +549,140 @@ class DatabaseService {
     } else {
       return null;
     }
+  }
+
+  // --- 1. Create (创建) ---
+  Future<void> createOrUpdatePersona(Persona persona) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final List<Map<String, dynamic>> maps = await txn.query(
+        "personas",
+        where: 'id = ?',
+        whereArgs: [persona.id],
+        limit: 1,
+      );
+
+      // 如果要创建默认的，则先将所有默认的设为非默认
+      if (persona.isDefault) {
+        final List<Map<String, dynamic>> defaultMaps = await txn.query(
+          "personas",
+          where: 'is_default = ?',
+          whereArgs: [1],
+          limit: 1,
+        );
+        if (defaultMaps.isNotEmpty) {
+          await txn.update(
+            "personas",
+            {'is_default': 0},
+            where: 'id = ?',
+            whereArgs: [defaultMaps.first['id']],
+          );
+        }
+      }
+
+      if (maps.isNotEmpty) {
+        // 如果已存在，则更新
+        await txn.update(
+          "personas",
+          persona.toMap(),
+          where: 'id = ?',
+          whereArgs: [persona.id],
+        );
+      } else {
+        await txn.insert(
+          "personas",
+          persona.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  // --- 2. Read (读取所有) ---
+  Future<List<Persona>> getAllPersonas() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query("personas");
+
+    return List.generate(maps.length, (i) {
+      return Persona.fromMap(maps[i]);
+    });
+  }
+
+  Future<Persona?> getPersonaById(String id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      "personas",
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (maps.isNotEmpty) {
+      return Persona.fromMap(maps.first);
+    } else {
+      return null;
+    }
+  }
+
+  // --- 4. Delete (删除) ---
+  Future<void> deletePersona(String id) async {
+    final db = await database;
+    await db.delete("personas", where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ------------------------------------
+  // --- 5. Load Default (加载默认项) ---
+  // ------------------------------------
+  Future<Persona?> getDefaultPersona() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      "personas",
+      where: 'is_default = ?',
+      whereArgs: [1], // 查找 is_default 为 1 的记录
+      limit: 1, // 理论上只应该有一条
+    );
+
+    if (maps.isNotEmpty) {
+      return Persona.fromMap(maps.first);
+    } else {
+      //当默认没有时，同时如果存在项的时候返回第一个作为默认
+      final List<Map<String, dynamic>> maps = await db.query("personas");
+      if (maps.isNotEmpty) {
+        //将其设置为默认
+        await setPersonaAsDefault(maps.first['id']);
+        return Persona.fromMap(maps.first);
+      }
+    }
+    return null;
+  }
+
+  // ------------------------------------
+  // --- 6. Set Default (设置默认项) ---
+  // ------------------------------------
+  Future<void> setPersonaAsDefault(String personaId) async {
+    // 确保整个操作是原子的（要么都成功，要么都失败），防止出现多个默认项
+    final db = await database;
+    await db.transaction((txn) async {
+      // 步骤 1: 将所有现有的默认项设置为非默认 (0)
+      await txn.update(
+        "personas",
+        {'is_default': 0},
+        where: 'is_default = ?',
+        whereArgs: [1],
+      );
+
+      // 步骤 2: 将指定的 Persona 设置为默认 (1)
+      final rowsAffected = await txn.update(
+        "personas",
+        {'is_default': 1},
+        where: 'id = ?',
+        whereArgs: [personaId],
+      );
+
+      if (rowsAffected == 0) {
+        // 可以在这里处理一个错误，比如要设置的 ID 不存在
+        throw Exception("Persona with ID $personaId not found.");
+      }
+    });
   }
 }

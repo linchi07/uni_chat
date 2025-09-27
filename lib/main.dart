@@ -1,6 +1,7 @@
 import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Chat/session_selector.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
+import 'package:uni_chat/Persona/persona_switcher.dart';
 import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/dialog.dart';
@@ -141,6 +142,7 @@ class _MainContState extends ConsumerState<MainCont> {
                         icon: Icon(Icons.mode_edit_outline_outlined),
                       ),
                       Expanded(child: SizedBox()),
+                      PersonaIndicator(),
                       SettingsMenuButton(),
                     ],
                   ),
