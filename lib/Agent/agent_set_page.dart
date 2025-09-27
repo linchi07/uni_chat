@@ -1,11 +1,11 @@
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
 
 import '../utils/dialog.dart';
@@ -87,7 +87,7 @@ class AgentEditState {
     this.knowledgeBases,
     DateTime? createdAt,
   }) {
-    this.id = id??Uuid().v4();
+    this.id = id ?? Uuid().v4();
     this.createdAt = createdAt ?? DateTime.now();
     this.modelSettings = modelSettings ?? ModelSpecifics();
   }
@@ -127,15 +127,12 @@ class AgentEditState {
   }
 
   bool valid() {
-    return name != null &&
-        isTokenEnough &&
-        provider != null &&
-        model != null;
+    return name != null && isTokenEnough && provider != null && model != null;
   }
-  
 
-  Future<AgentData> toAgentData() async{
-    var modelConfig = await ApiDatabaseService.instance.getProviderModelConfigsForModelWithProvider(model!.id, provider!.id);
+  Future<AgentData> toAgentData() async {
+    var modelConfig = await ApiDatabaseService.instance
+        .getProviderModelConfigsForModelWithProvider(model!.id, provider!.id);
     if (modelConfig.firstOrNull == null) {
       //TODO: handle this
       throw Exception("模型配置不存在");
@@ -152,11 +149,15 @@ class AgentEditState {
     );
   }
 
-  factory AgentEditState.fromAgentData(AgentData agentData,ApiProvider  provider,Model model) {
+  factory AgentEditState.fromAgentData(
+    AgentData agentData,
+    ApiProvider provider,
+    Model model,
+  ) {
     return AgentEditState(
       id: agentData.id,
       name: agentData.name,
-      provider:  provider,
+      provider: provider,
       model: model,
       description: agentData.description,
       systemPrompt: agentData.systemPrompt,
@@ -322,7 +323,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                       (agentState.systemPrompt != null &&
                           agentState.systemPrompt!.isNotEmpty)
                       ? (Text(
-                          "${agentState.systemPrompt!.length}tokens",
+                          "${LLMTokenEstimator.estimateTokens(agentState.systemPrompt!)}tokens",
                           style: TextStyle(
                             fontSize: 12,
                             color:
@@ -513,17 +514,17 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
     var total = state.modelSettings.maxContextTokens;
     var interSysPrompt = 0;
     interSysPrompt = (state.modelSettings.enableUsrSystemInformation)
-        ? interSysPrompt + 20
+        ? interSysPrompt + 15
         : interSysPrompt;
     interSysPrompt = (state.modelSettings.enableUsrLanguage)
-        ? interSysPrompt + 20
+        ? interSysPrompt + 6
         : interSysPrompt;
     interSysPrompt = (state.modelSettings.enableTimeTelling)
-        ? interSysPrompt + 20
+        ? interSysPrompt + 10
         : interSysPrompt;
     var sysPrompt = (state.systemPrompt == null
         ? 0
-        : state.systemPrompt!.length);
+        : LLMTokenEstimator.estimateTokens(state.systemPrompt!));
     var uIQL = (state.enableUIQL ? 1000 : 0);
     var knowledgeBase = 1000;
     var opening = 1000;
@@ -1364,7 +1365,7 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
             // 监听文本变化更新计数
             onChanged: (value) {
               setState(() {
-                charCount = value.length;
+                charCount = LLMTokenEstimator.estimateTokens(value);
               });
               onSubmit(s);
             },
@@ -1398,7 +1399,7 @@ class _OpeningState extends ConsumerState<Opening> {
     final currentState = ref.read(agentEditState);
     if (currentState.systemPrompt != null) {
       controller.text = currentState.systemPrompt!;
-      charCount = currentState.systemPrompt!.length;
+      charCount = LLMTokenEstimator.estimateTokens(currentState.systemPrompt!);
     }
   }
 
@@ -1479,7 +1480,7 @@ class _OpeningState extends ConsumerState<Opening> {
             // 监听文本变化更新计数
             onChanged: (value) {
               setState(() {
-                charCount = value.length;
+                charCount = LLMTokenEstimator.estimateTokens(controller.text);
               });
               onSubmit(s);
             },
