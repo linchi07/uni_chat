@@ -35,7 +35,6 @@ class ChatPanel extends ConsumerWidget {
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final message = messages[messages.length - 1 - index];
-                      print((index == messages.length - 1));
                       return ChatMessageBubble(message: message,enableAnimation: (index == messages.length - 1 && chatState.isLoading),);
                     },
                   ),
@@ -437,7 +436,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
-                color: isSendButtonDisabled ? Colors.grey : theme.primaryColor,
+                color: isSendButtonDisabled ? Colors.grey[600] : theme.primaryColor,
                 child: InkWell(
                   splashColor: Colors.grey,
                   onTap: isSendButtonDisabled ? null : _sendMessage,
@@ -445,9 +444,12 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+                          child: Padding(
+                            padding: EdgeInsets.all(7.0),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            ),
                           ),
                         )
                       : const Icon(

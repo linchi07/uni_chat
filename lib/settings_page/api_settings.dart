@@ -1,12 +1,11 @@
-import 'package:uni_chat/Chat/chat_state.dart' hide ApiProvider;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/llm_provider/pre_build_providers.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/dialog.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:overlay_dialog/overlay_dialog.dart';
 import 'package:uuid/uuid.dart';
+
 import '../llm_provider/api_service.dart';
 import '../utils/api_database_service.dart';
 
@@ -1415,6 +1414,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
           Form(
             key: _formKey,
             child: StdTextFormField(
+              showClearButton: true,
               controller: _callNameController,
               hintText: '请输入模型调用名',
               validateFailureText: '请输入模型调用名',

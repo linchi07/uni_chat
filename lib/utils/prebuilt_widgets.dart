@@ -1,9 +1,7 @@
-import 'dart:async';
-
-import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
-import 'package:uni_chat/utils/dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
+import 'package:uni_chat/utils/dialog.dart';
 
 import '../theme_manager.dart';
 
@@ -144,18 +142,22 @@ class StdTextFormField extends ConsumerWidget {
     this.maxLines,
     this.minLines,
     this.validateFailureText,
+    this.showClearButton = false,
     this.onChanged,
     this.onSubmitted,
+    this.isExpanded,
   }) {
     this.controller = controller ?? TextEditingController();
   }
   late final TextEditingController controller;
+  final bool showClearButton;
   final String? validateFailureText;
   final String? hintText;
   final int? maxLines;
   final int? minLines;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
+  final bool? isExpanded;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     var theme = ref.watch(themeProvider);
@@ -172,13 +174,15 @@ class StdTextFormField extends ConsumerWidget {
         decoration: InputDecoration(
           hintText: hintText,
           border: InputBorder.none,
-          suffixIcon: IconButton(
-            iconSize: 18,
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              controller.clear();
-            },
-          ),
+          suffixIcon: (showClearButton)
+              ? IconButton(
+                  iconSize: 18,
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    controller.clear();
+                  },
+                )
+              : null,
         ),
         validator: (value) {
           if (value == null || value.isEmpty) {
@@ -187,6 +191,7 @@ class StdTextFormField extends ConsumerWidget {
           return null;
         },
         onChanged: onChanged,
+        expands: isExpanded ?? false,
         onEditingComplete: () {
           //用on Submitted 一直出bug,只能这样的了
           onSubmitted?.call(controller.text);
