@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
+import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
@@ -67,14 +68,12 @@ class ModelSpecifics {
 
 class Agent {
   Agent({
-    this.ref,
     required this.id,
     required this.name,
     required this.model,
     this.systemPrompt,
     required this.modelSpecifics,
   });
-  late final Ref? ref;
   final String id;
   final String name;
   final bool enableUIQL = false;
@@ -102,7 +101,6 @@ class Agent {
     String? systemPrompt,
   }) {
     return Agent(
-      ref: ref ?? this.ref,
       id: id ?? this.id,
       name: name ?? this.name,
       model: model ?? this.model,
@@ -110,19 +108,95 @@ class Agent {
       systemPrompt: systemPrompt ?? this.systemPrompt,
     );
   }
+}
 
-  Future<String?> uploadFile(File file, String mimeType) async {
-    if (model.abilities.contains(ApiAbility.supportFilesApi)) {
-      var r = await model.fileUpload(
-        file, // 使用拷贝后的文件
-        mimeType,
+class AgentProvider extends StateNotifier<Agent?> {
+  AgentProvider(this.ref) : super(null) {
+    loadDefaultAgent();
+  }
+
+  void loadDefaultAgent() async {
+    var agentData = await DatabaseService.instance.loadDefaultAgent();
+    if (agentData != null) {
+      // 4. Create the API service
+      final modelService = await ApiServiceProvider.instance.createApiService(
+        agentData.modelProviderConfigureId,
       );
-      if (r == null) {
-        return null;
+      if (modelService == null) {
+        //TODO: implement better error handling
+        throw Exception('Failed to create API service for the agent.');
       }
-      return id;
+      state = Agent.fromAgentData(agentData, modelService);
     }
-    return null;
+  }
+
+  Future<void> loadAgentById(String id) async {
+    if (state != null && state!.id == id) {
+      return;
+    }
+    var agentData = await DatabaseService.instance.getAgent(id);
+    if (agentData != null) {
+      // 4. Create the API service
+      final modelService = await ApiServiceProvider.instance.createApiService(
+        agentData.modelProviderConfigureId,
+      );
+      if (modelService == null) {
+        //TODO: implement better error handling
+        throw Exception('Failed to create API service for the agent.');
+      }
+      state = Agent.fromAgentData(agentData, modelService);
+    }
+  }
+
+  void setAgent(Agent agent) {
+    agent = agent.copyWith(ref: ref);
+    state = agent;
+  }
+
+  ///以下是聊天时的功能实现
+
+  final Ref ref;
+  Future<String?> fileUpload(File file, String mime) async {
+    if (state != null) {
+      if (state!.model.abilities.contains(ApiAbility.supportFilesApi)) {
+        var r = await state!.model.fileUpload(
+          file, // 使用拷贝后的文件
+          mime,
+        );
+        if (r == null) {
+          return null;
+        }
+        return r;
+      }
+      return null;
+    }
+    // 处理未初始化的情况
+    throw Exception("Agent not initialized");
+  }
+
+  Stream<ChatResponse> getStreamingResponse(
+    List<ChatMessage> history,
+    ChatMessage usrMessage,
+    Map<String, ChatFile> uploadedFiles,
+  ) async* {
+    if (state != null) {
+      var fm = await formatMessage(history, usrMessage, uploadedFiles);
+      yield* state!.model.getStreamingResponse(fm);
+    } else {
+      throw Exception("Agent not initialized");
+    }
+  }
+
+  int stripTokens(
+    List<FormattedChatMessage> messages,
+    int target,
+    int present,
+  ) {
+    while (present > target && messages.isNotEmpty) {
+      var toStrip = messages.removeLast();
+      present -= toStrip.tokens;
+    }
+    return present;
   }
 
   Future<ModelRequestContent> formatMessage(
@@ -130,33 +204,37 @@ class Agent {
     ChatMessage usrMessage,
     Map<String, ChatFile> uploadedFiles,
   ) async {
+    if (state == null) {
+      throw Exception("Agent not initialized");
+    }
     ModelRequestContent rc = ModelRequestContent(
       staticSystemMessages: [],
       dynamicSystemMessages: [],
       uiMessages: [],
       chatHistory: [],
       usrMessage: [],
-      modelSpecifics: modelSpecifics,
+      modelSpecifics: state!.modelSpecifics,
     );
     rc.staticSystemMessages.add(
       FormattedChatMessage(
         type: ChatMessageType.text,
         id: "systemPre",
         sender: MessageSender.system,
-        content: "你的名字是$name",
+        content: "你的名字是${state!.name}",
       ),
     );
-    if (systemPrompt != null) {
+    if (state!.systemPrompt != null) {
       rc.staticSystemMessages.add(
         FormattedChatMessage(
           type: ChatMessageType.text,
           id: "system",
           sender: MessageSender.system,
-          content: systemPrompt!,
+          content: state!.systemPrompt!,
         ),
       );
     }
-    if (modelSpecifics.enableUsrLanguage) {
+    rc.staticSystemMessages.add(ref.read(personaProvider).getPersonaMessage());
+    if (state!.modelSpecifics.enableUsrLanguage) {
       //TODO: 获取用户语言
       rc.staticSystemMessages.add(
         FormattedChatMessage(
@@ -167,7 +245,7 @@ class Agent {
         ),
       );
     }
-    if (modelSpecifics.enableUsrSystemInformation) {
+    if (state!.modelSpecifics.enableUsrSystemInformation) {
       rc.staticSystemMessages.add(
         FormattedChatMessage(
           type: ChatMessageType.text,
@@ -177,7 +255,7 @@ class Agent {
         ),
       );
     }
-    if (modelSpecifics.enableTimeTelling) {
+    if (state!.modelSpecifics.enableTimeTelling) {
       rc.dynamicSystemMessages.add(
         FormattedChatMessage(
           type: ChatMessageType.text,
@@ -187,8 +265,8 @@ class Agent {
         ),
       );
     }
-    if (enableUIQL) {
-      var ps = ref!.read(panelManager).triggerPanelSummary();
+    if (state!.enableUIQL) {
+      var ps = ref.read(panelManager).triggerPanelSummary();
       rc.staticSystemMessages.add(
         FormattedChatMessage(
           type: ChatMessageType.text,
@@ -207,7 +285,7 @@ class Agent {
       rc.usrMessage,
       uploadedFiles,
     );
-    rc.modelSpecifics = modelSpecifics;
+    rc.modelSpecifics = state!.modelSpecifics;
     var t3 = 0;
     for (var i in rc.uiMessages) {
       t3 += i.tokens;
@@ -220,24 +298,13 @@ class Agent {
     for (var i in rc.dynamicSystemMessages) {
       t5 += i.tokens;
     }
-    if (t1 + t2 + t3 + t4 + t5 > modelSpecifics.maxGenerationTokens) {
+    if (t1 + t2 + t3 + t4 + t5 > state!.modelSpecifics.maxGenerationTokens) {
       //TODO:implement better logic
-      var delta = t1 + t2 + t3 + t4 + t5 - modelSpecifics.maxGenerationTokens;
+      var delta =
+          t1 + t2 + t3 + t4 + t5 - state!.modelSpecifics.maxGenerationTokens;
       stripTokens(rc.chatHistory, delta, t1);
     }
     return rc;
-  }
-
-  int stripTokens(
-    List<FormattedChatMessage> messages,
-    int target,
-    int present,
-  ) {
-    while (present > target && messages.isNotEmpty) {
-      var toStrip = messages.removeLast();
-      present -= toStrip.tokens;
-    }
-    return present;
   }
 
   Future<int> processChatMessage(
@@ -245,6 +312,10 @@ class Agent {
     List<FormattedChatMessage> output,
     Map<String, ChatFile> uploadedFiles,
   ) async {
+    if (state == null) {
+      //TODO: 添加错误处理
+      throw Exception("Agent not initialized");
+    }
     int totalTokens = 0;
     for (var i in message) {
       switch (i.sender) {
@@ -271,12 +342,14 @@ class Agent {
                   break;
                 case FileTypeDefine.image:
                   //当模型不支持图片识别的时候直接忽略图片
-                  if (!model.abilities.contains(
+                  if (!state!.model.abilities.contains(
                     ApiAbility.visualUnderStanding,
                   )) {
                     continue;
                   }
-                  if (!model.abilities.contains(ApiAbility.supportFilesApi)) {
+                  if (!state!.model.abilities.contains(
+                    ApiAbility.supportFilesApi,
+                  )) {
                     //当不支持文件API的时候我们必须一个个上传
                     if (await (await attachedFile.getFile()).exists()) {
                       var base64 = base64Encode(
@@ -294,7 +367,7 @@ class Agent {
                     }
                     break;
                   }
-                  var f = attachedFile.providerInfo[model.providerName];
+                  var f = attachedFile.providerInfo[state!.model.providerName];
                   if (f == null ||
                       !await (await attachedFile.getFile()).exists()) {
                     break;
@@ -302,9 +375,9 @@ class Agent {
                   late String fid;
                   if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
                       !attachedFile.providerInfo.containsKey(
-                        model.providerName,
+                        state!.model.providerName,
                       )) {
-                    var id = await uploadFile(
+                    var id = await fileUpload(
                       await attachedFile.getFile(),
                       attachedFile.mimeType,
                     );
@@ -327,7 +400,9 @@ class Agent {
                   );
                   break;
                 case FileTypeDefine.pdf:
-                  if (!model.abilities.contains(ApiAbility.supportFilesApi)) {
+                  if (!state!.model.abilities.contains(
+                    ApiAbility.supportFilesApi,
+                  )) {
                     //当不支持文件API的时候我们必须一个个上传
                     if (await (await attachedFile.getFile()).exists()) {
                       var base64 = base64Encode(
@@ -345,7 +420,7 @@ class Agent {
                     }
                     break;
                   }
-                  var f = attachedFile.providerInfo[model.providerName];
+                  var f = attachedFile.providerInfo[state!.model.providerName];
                   if (f == null ||
                       !await (await attachedFile.getFile()).exists()) {
                     break;
@@ -353,13 +428,13 @@ class Agent {
                   late String fid;
                   if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
                       !attachedFile.providerInfo.containsKey(
-                        model.providerName,
+                        state!.model.providerName,
                       )) {
                     if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
                         !attachedFile.providerInfo.containsKey(
-                          model.providerName,
+                          state!.model.providerName,
                         )) {
-                      var id = await uploadFile(
+                      var id = await fileUpload(
                         await attachedFile.getFile(),
                         attachedFile.mimeType,
                       );
@@ -430,79 +505,6 @@ class Agent {
       }
     }
     return totalTokens;
-  }
-}
-
-class AgentProvider extends StateNotifier<Agent?> {
-  AgentProvider(this.ref) : super(null) {
-    loadDefaultAgent();
-  }
-
-  void loadDefaultAgent() async {
-    var agentData = await DatabaseService.instance.loadDefaultAgent();
-    if (agentData != null) {
-      // 4. Create the API service
-      final modelService = await ApiServiceProvider.instance.createApiService(
-        agentData.modelProviderConfigureId,
-      );
-      if (modelService == null) {
-        //TODO: implement better error handling
-        throw Exception('Failed to create API service for the agent.');
-      }
-      state = Agent.fromAgentData(agentData, modelService);
-    }
-  }
-
-  Future<void> loadAgentById(String id) async {
-    if (state != null && state!.id == id) {
-      return;
-    }
-    var agentData = await DatabaseService.instance.getAgent(id);
-    if (agentData != null) {
-      // 4. Create the API service
-      final modelService = await ApiServiceProvider.instance.createApiService(
-        agentData.modelProviderConfigureId,
-      );
-      if (modelService == null) {
-        //TODO: implement better error handling
-        throw Exception('Failed to create API service for the agent.');
-      }
-      state = Agent.fromAgentData(agentData, modelService);
-    }
-  }
-
-  final Ref ref;
-  Future<String?> fileUpload(File file, String mime) {
-    if (state != null) {
-      return state!.uploadFile(file, mime);
-    }
-    // 处理未初始化的情况
-    throw Exception("Agent not initialized");
-  }
-
-  Stream<ChatResponse> getStreamingResponse(ModelRequestContent fm) {
-    if (state != null) {
-      return state!.model.getStreamingResponse(fm);
-    }
-    // 返回空流或抛出异常
-    throw Exception("Agent not initialized");
-  }
-
-  Future<ModelRequestContent> formatMessages(
-    List<ChatMessage> history,
-    ChatMessage usrMessage,
-    Map<String, ChatFile> attachedFiles,
-  ) async {
-    if (state != null) {
-      return await state!.formatMessage(history, usrMessage, attachedFiles);
-    }
-    // 处理未初始化情况的逻辑
-    throw Exception("Agent not initialized");
-  }
-
-  void setAgent(Agent agent) {
-    agent = agent.copyWith(ref: ref);
-    state = agent;
   }
 }
 

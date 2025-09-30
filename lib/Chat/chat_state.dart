@@ -278,12 +278,11 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         clear: pm.clear,
         select: pm.select,
       );
-      var fm = await agentNotifier.formatMessages(
+      final stream = agentNotifier.getStreamingResponse(
         history,
         userMessage,
         state.uploadedFiles,
       );
-      final stream = agentNotifier.getStreamingResponse(fm);
       String fullResponse = '';
       ChatMessage? finalAiMessage;
       await for (final chunk in stream) {

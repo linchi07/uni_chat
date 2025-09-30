@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/utils/database_service.dart';
 
 enum PersonaEntryMode { alwaysInsert, whenEnoughContext, whenHitKeyWords }
@@ -40,6 +41,20 @@ class Persona {
     required this.data,
     this.isDefault = false,
   });
+
+  FormattedChatMessage getPersonaMessage() {
+    String dataToString = "关于$name的一些数据：\n";
+    for (var entry in data.values) {
+      dataToString = '$dataToString${entry.name}:${entry.content}.\n';
+    }
+    var msgContent = "用户的名字是$name，$content,$dataToString";
+    return FormattedChatMessage(
+      type: ChatMessageType.text,
+      id: "persona",
+      sender: MessageSender.system,
+      content: msgContent,
+    );
+  }
 
   // 转换为数据库可接受的 Map
   Map<String, dynamic> toMap() {
