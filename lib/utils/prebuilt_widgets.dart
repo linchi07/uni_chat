@@ -451,17 +451,23 @@ class StdSlider extends ConsumerWidget {
 class StdDropDown extends ConsumerStatefulWidget {
   const StdDropDown({
     super.key,
-    required this.targetOverlayScope,
+    this.initialIndex,
+    this.initialWidget,
     required this.itemBuilder,
-    required this.width,
+    this.width = 350,
     this.height = 30,
+    this.asyncWrapper,
+    this.nullHint,
     required this.itemCount,
     this.onChanged,
   });
+  final int? initialIndex;
+  final Widget? initialWidget;
   final double height;
-  final String targetOverlayScope;
   final double width;
+  final Widget Function(Widget child)? asyncWrapper;
   final int itemCount;
+  final Widget? nullHint;
   final Widget Function(
     BuildContext context,
     int index,
@@ -485,43 +491,32 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
   }
 
   late AnimationController _controller;
-  // 分别为淡入和缩放创建动画变量
-  late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
 
-    // 使用CurvedAnimation来创建非线性的动画效果
-    final curvedAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(0.0, 0.7, curve: Curves.easeInOut), // 前半段时间执行
+      ),
     );
-
-    // 淡入动画：从 0.0 到 1.0
-    _fadeAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(curvedAnimation);
-    // 缩放动画：从 0.2 到 1.0
-    _scaleAnimation = Tween<double>(
-      begin: 0.2,
-      end: 1.0,
-    ).animate(curvedAnimation);
+    selectedIndex = widget.initialIndex;
   }
 
   void onTap(int index) {
     setState(() {
       selectedIndex = index;
     });
+    widget.onChanged?.call(index);
     // 注意：这里的key应该与show时使用的key一致
     OverlayPortalService.hide(context);
-    widget.onChanged?.call(index);
   }
 
   @override
@@ -532,14 +527,37 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
 
   @override
   Widget build(BuildContext context) {
+    Widget child = Column(
+      children: [
+        // 这个三元运算符可以简化
+        if (selectedIndex != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: widget.itemBuilder(context, selectedIndex!, onTap),
+          ),
+        const Divider(),
+        Expanded(
+          child: (_scaleAnimation.isCompleted)
+              ? SizedBox()
+              : ListView.builder(
+                  itemCount: widget.itemCount,
+                  itemBuilder: (context, index) {
+                    return widget.itemBuilder(context, index, onTap);
+                  },
+                ),
+        ),
+      ],
+    );
+    if (widget.asyncWrapper != null) {
+      child = widget.asyncWrapper!(child);
+    }
     var theme = ref.watch(themeProvider);
-    var widgets = buildItems(context);
     return SizedBox(
       height: widget.height,
       width: widget.width,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.boxColor,
+        color: theme.surfaceColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
@@ -552,22 +570,15 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
               child: SizeTransition(
                 sizeFactor: _scaleAnimation,
                 child: SizedBox(
-                  width: rb.size.width,
-                  height: rb.size.height * 5,
+                  width: rb.size.width + 4,
+                  height: rb.size.height * 5 + 3,
                   child: Material(
-                    color: theme.boxColor,
+                    elevation: 4,
+                    color: theme.surfaceColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Column(
-                      children: [
-                        // 这个三元运算符可以简化
-                        if (selectedIndex != null)
-                          widget.itemBuilder(context, selectedIndex!, onTap),
-                        const Divider(),
-                        Expanded(child: ListView(children: widgets)),
-                      ],
-                    ),
+                    child: child,
                   ),
                 ),
               ),
@@ -576,7 +587,19 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
             _controller.forward(from: 0.0);
           },
           child: (selectedIndex == null)
-              ? null
+              ? widget.initialWidget ??
+                    Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          widget.nullHint ?? SizedBox(),
+                          Icon(
+                            Icons.keyboard_arrow_down,
+                            color: theme.textColor,
+                          ),
+                        ],
+                      ),
+                    )
               : widget.itemBuilder(context, selectedIndex!, onTap),
         ),
       ),

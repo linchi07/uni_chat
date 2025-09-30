@@ -1,15 +1,14 @@
-import 'dart:convert';
 import 'dart:io';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/inline_dynamic_fc_parser.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
-import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/database_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
-import '../llm_provider/api_service_provider.dart';
+
 import 'chat_models.dart';
 
 const _uuid = Uuid();
@@ -52,6 +51,16 @@ class ChatState {
       error: error ?? this.error,
     );
   }
+
+  ChatState clearSessionCopy() {
+    return ChatState(
+      session: null,
+      messages: [],
+      uploadedFiles: {},
+      isLoading: false,
+      error: null,
+    );
+  }
 }
 
 // --- State Notifier ---
@@ -69,6 +78,22 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     agentNotifier = _ref.read(agentProvider.notifier);
   }
 
+  void stateCopyWith({
+    ChatSession? session,
+    List<ChatMessage>? messages,
+    Map<String, ChatFile>? uploadedFiles,
+    bool? isLoading,
+    String? error,
+  }) {
+    state = ChatState(
+      session: session ?? state.session,
+      messages: messages ?? state.messages,
+      uploadedFiles: uploadedFiles ?? state.uploadedFiles,
+      isLoading: isLoading ?? state.isLoading,
+      error: error ?? state.error,
+    );
+  }
+
   // --- Database Integration ---
   Future<void> init() async {
     /*
@@ -81,6 +106,10 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   // --- End Database Integration ---
 
   // --- Public Session Management API ---
+
+  void clearSession() {
+    state = state.clearSessionCopy();
+  }
 
   Future<void> createNewSession({String? agentId, String? title}) async {
     state = state.copyWith(isLoading: true);
@@ -102,24 +131,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         throw Exception('Session not found');
       }
 
-      // 2. Get Agent Data from DB
-      //TODO: 获取agent数据
-      final agentData = await _dbService.getAgent(session.agentId);
-      if (agentData == null) {
-        throw Exception('Agent configuration not found for this session.');
-      };
-
-      // 4. Create the API service
-      final modelService = await ApiServiceProvider.instance.createApiService(
-        agentData.modelProviderConfigureId,
-      );
-      if (modelService == null) {
-        throw Exception('Failed to create API service for the agent.');
-      }
-
-      // 5. Create and set the runtime Agent
-      final runtimeAgent = Agent.fromAgentData(agentData, modelService);
-      _ref.read(agentProvider.notifier).setAgent(runtimeAgent);
+      await _ref.read(agentProvider.notifier).loadAgentById(session.agentId);
 
       // 6. Load messages and layout (existing logic)
       final (messages, files) = await _dbService.getMessagesForSession(
@@ -170,11 +182,11 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       return id;
     }
     String? r;
-    if(agentNotifier.state!.abilities.contains(ApiAbility.supportFilesApi)) {
+    if (agentNotifier.state!.abilities.contains(ApiAbility.supportFilesApi)) {
       r = await agentNotifier.fileUpload(
-      file, // 使用拷贝后的文件
-      ChatFile.getMimeType(p.extension(file.path)),
-    );
+        file, // 使用拷贝后的文件
+        ChatFile.getMimeType(p.extension(file.path)),
+      );
     }
     if (r == null) {
       return null;
@@ -199,6 +211,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   }
 
   Future<void> sendMessage(String text, {List<String>? attachedFiles}) async {
+    if (state.session == null) {
+      await createNewSession();
+    }
     if (text.isEmpty && (attachedFiles == null || attachedFiles.isEmpty)) {
       return;
     }
@@ -263,7 +278,11 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         clear: pm.clear,
         select: pm.select,
       );
-      var fm = await agentNotifier.formatMessages(history, userMessage, state.uploadedFiles);
+      var fm = await agentNotifier.formatMessages(
+        history,
+        userMessage,
+        state.uploadedFiles,
+      );
       final stream = agentNotifier.getStreamingResponse(fm);
       String fullResponse = '';
       ChatMessage? finalAiMessage;
@@ -322,7 +341,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       state = state.copyWith(isLoading: false);
     }
   }
-  
 }
 
 // The main StateNotifier provider

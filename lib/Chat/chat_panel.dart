@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:uni_chat/main.dart';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,11 +7,419 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
+import 'package:uni_chat/Agent/agentProvider.dart';
+import 'package:uni_chat/Persona/persona_provider.dart';
+import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
+
 import '../theme_manager.dart';
+import '../utils/dialog.dart';
 import 'chat_message_bubble.dart';
-import 'chat_state.dart';
 import 'chat_models.dart';
+import 'chat_state.dart';
+
+class _AgentDropDown extends ConsumerStatefulWidget {
+  const _AgentDropDown({super.key});
+  @override
+  ConsumerState<_AgentDropDown> createState() => _AgentDropDownState();
+}
+
+class _AgentDropDownState extends ConsumerState<_AgentDropDown>
+    with SingleTickerProviderStateMixin {
+  (String, String)? selectedIndex;
+
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(0.0, 0.7, curve: Curves.easeInOut), // 前半段时间执行
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var theme = ref.watch(themeProvider);
+    var agent = ref.watch(agentProvider);
+    if (agent != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          selectedIndex = (agent.id, agent.name);
+        });
+      });
+    }
+    return SizedBox(
+      height: 40,
+      width: 180,
+      child: Material(
+        clipBehavior: Clip.hardEdge,
+        color: theme.surfaceColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: InkWell(
+          onTap: () {
+            var rb = context.findRenderObject() as RenderBox;
+            OverlayPortalService.show(
+              context,
+              barrierVisible: false,
+              offset: rb.localToGlobal(Offset.zero),
+              // 这是你要求修改的部分
+              child: SizeTransition(
+                sizeFactor: _scaleAnimation,
+                child: SizedBox(
+                  width: rb.size.width + 4,
+                  height: rb.size.height * 5 + 3,
+                  child: Material(
+                    elevation: 4,
+                    color: theme.surfaceColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: FutureBuilder(
+                      future: DatabaseService.instance.getAllAgents(),
+                      builder: (context, asyncSnapshot) {
+                        if (asyncSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        if (asyncSnapshot.data == null) {
+                          return const Center(child: Text("发生错误"));
+                        }
+                        return Column(
+                          children: [
+                            // 这个三元运算符可以简化
+                            if (selectedIndex != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(width: 16.0),
+                                    const FlutterLogo(size: 25),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        selectedIndex!.$2,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: theme.textColor,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const Divider(),
+                            if (asyncSnapshot.data!.isEmpty)
+                              const Center(child: Text('没有agent')),
+                            Expanded(
+                              child: (_scaleAnimation.isCompleted)
+                                  ? SizedBox()
+                                  : ListView.builder(
+                                      itemCount: asyncSnapshot.data!.length,
+                                      itemBuilder: (context, index) {
+                                        return StdListTile(
+                                          onTap: () async {
+                                            OverlayPortalService.hide(context);
+                                            await ref
+                                                .read(agentProvider.notifier)
+                                                .loadAgentById(
+                                                  asyncSnapshot.data![index].id,
+                                                );
+                                          },
+                                          title: Text(
+                                            asyncSnapshot.data![index].name,
+                                          ),
+                                          leading: const FlutterLogo(),
+                                        );
+                                      },
+                                    ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            );
+            // 启动动画 (这个是必须的)
+            _controller.forward(from: 0.0);
+          },
+          child: (selectedIndex == null)
+              ? Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "请选择Agent",
+                        style: TextStyle(fontSize: 16, color: theme.textColor),
+                      ),
+                      Icon(Icons.keyboard_arrow_down, color: theme.textColor),
+                    ],
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(width: 16),
+                    const FlutterLogo(size: 25),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        selectedIndex!.$2,
+                        style: TextStyle(fontSize: 16, color: theme.textColor),
+                      ),
+                    ),
+                    Icon(Icons.keyboard_arrow_down, color: theme.textColor),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PersonaDropDown extends ConsumerStatefulWidget {
+  const _PersonaDropDown({super.key});
+  @override
+  ConsumerState<_PersonaDropDown> createState() => _PersonaDropDownState();
+}
+
+class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
+    with SingleTickerProviderStateMixin {
+  (String, String)? selectedIndex;
+
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(0.0, 0.7, curve: Curves.easeInOut), // 前半段时间执行
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var theme = ref.watch(themeProvider);
+    var persona = ref.watch(personaProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        selectedIndex = (persona.id, persona.name);
+      });
+    });
+    return SizedBox(
+      height: 40,
+      width: 180,
+      child: Material(
+        clipBehavior: Clip.hardEdge,
+        color: theme.surfaceColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: InkWell(
+          onTap: () {
+            var rb = context.findRenderObject() as RenderBox;
+            OverlayPortalService.show(
+              context,
+              barrierVisible: false,
+              offset: rb.localToGlobal(Offset.zero),
+              // 这是你要求修改的部分
+              child: SizeTransition(
+                sizeFactor: _scaleAnimation,
+                child: SizedBox(
+                  width: rb.size.width + 4,
+                  height: rb.size.height * 5 + 3,
+                  child: Material(
+                    elevation: 4,
+                    color: theme.surfaceColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: FutureBuilder(
+                      future: DatabaseService.instance.getAllPersonas(),
+                      builder: (context, asyncSnapshot) {
+                        if (asyncSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        if (asyncSnapshot.data == null) {
+                          return const Center(child: Text("发生错误"));
+                        }
+                        return Column(
+                          children: [
+                            // 这个三元运算符可以简化
+                            if (selectedIndex != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(width: 16.0),
+                                    const FlutterLogo(size: 25),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        selectedIndex!.$2,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: theme.textColor,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const Divider(),
+                            if (asyncSnapshot.data!.isEmpty)
+                              const Center(child: Text('没有人格')),
+                            Expanded(
+                              child: (_scaleAnimation.isCompleted)
+                                  ? SizedBox()
+                                  : ListView.builder(
+                                      itemCount: asyncSnapshot.data!.length,
+                                      itemBuilder: (context, index) {
+                                        return StdListTile(
+                                          onTap: () async {
+                                            OverlayPortalService.hide(context);
+                                            await ref
+                                                .read(personaProvider.notifier)
+                                                .loadPersonaById(
+                                                  asyncSnapshot.data![index].id,
+                                                );
+                                          },
+                                          title: Text(
+                                            asyncSnapshot.data![index].name,
+                                          ),
+                                          leading: const FlutterLogo(),
+                                        );
+                                      },
+                                    ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            );
+            // 启动动画 (这个是必须的)
+            _controller.forward(from: 0.0);
+          },
+          child: (selectedIndex == null)
+              ? Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "请选择人格",
+                        style: TextStyle(fontSize: 16, color: theme.textColor),
+                      ),
+                      Icon(Icons.keyboard_arrow_down, color: theme.textColor),
+                    ],
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(width: 16),
+                    const FlutterLogo(size: 25),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        selectedIndex!.$2,
+                        style: TextStyle(fontSize: 16, color: theme.textColor),
+                      ),
+                    ),
+                    Icon(Icons.keyboard_arrow_down, color: theme.textColor),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class ChatPanelWhenNoSession extends ConsumerWidget {
+  const ChatPanelWhenNoSession({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var theme = ref.watch(themeProvider);
+    return Scaffold(
+      backgroundColor: theme.backgroundColor,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "一起集思广益！",
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "选择一个Agent并开始聊天吧！",
+              style: TextStyle(fontSize: 16, color: theme.boxColor),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text("以  ", style: TextStyle(fontSize: 18)),
+                _PersonaDropDown(),
+                Text("  和  ", style: TextStyle(fontSize: 18)),
+                _AgentDropDown(),
+                Text("  开始聊天", style: TextStyle(fontSize: 18)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: MediaQuery.of(context).size.width.clamp(0, 800),
+              child: ChatPanelInputBox(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class ChatPanel extends ConsumerWidget {
   const ChatPanel({super.key});
@@ -35,7 +443,12 @@ class ChatPanel extends ConsumerWidget {
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final message = messages[messages.length - 1 - index];
-                      return ChatMessageBubble(message: message,enableAnimation: (index == messages.length - 1 && chatState.isLoading),);
+                      return ChatMessageBubble(
+                        message: message,
+                        enableAnimation:
+                            (index == messages.length - 1 &&
+                            chatState.isLoading),
+                      );
                     },
                   ),
                 ),
@@ -66,7 +479,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   initState() {
     super.initState();
   }
-  
 
   // Use a list to support multiple attachments in the future
   final List<(String, UploadStatus)> _attachments = []; // 改为存储文件ID
@@ -223,7 +635,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
         color: Colors.white.withAlpha(180),
         child: Stack(
-          alignment: Alignment.center,  
+          alignment: Alignment.center,
           children: [
             AbsorbPointer(child: _buildChatPanel(isSendButtonDisabled)),
             Text(
@@ -409,16 +821,16 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         if (_attachments.isNotEmpty) _buildAttachmentPreview(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2),
-              child: TextField(
-                focusNode: _focusNode,
-                maxLines: 7,
-                minLines: 2,
-                controller: _textController,
-                decoration: const InputDecoration.collapsed(
-                  hintText: 'Send a message...',
-                ),
-                textCapitalization: TextCapitalization.sentences,
-              ),
+          child: TextField(
+            focusNode: _focusNode,
+            maxLines: 7,
+            minLines: 2,
+            controller: _textController,
+            decoration: const InputDecoration.collapsed(
+              hintText: 'Send a message...',
+            ),
+            textCapitalization: TextCapitalization.sentences,
+          ),
         ),
         Row(
           children: [
@@ -436,7 +848,9 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
-                color: isSendButtonDisabled ? Colors.grey[600] : theme.primaryColor,
+                color: isSendButtonDisabled
+                    ? Colors.grey[600]
+                    : theme.primaryColor,
                 child: InkWell(
                   splashColor: Colors.grey,
                   onTap: isSendButtonDisabled ? null : _sendMessage,

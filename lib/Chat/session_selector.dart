@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:local_hero/local_hero.dart';
 
 import '../Agent/agentProvider.dart';
 import '../theme_manager.dart';
@@ -120,7 +119,7 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
                       flex: 3,
                       child: Text(
                         overflow: TextOverflow.ellipsis,
-                        state.session?.name ?? "ChatExpress",
+                        state.session?.name ?? "UNIChat",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -137,7 +136,7 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
         const SizedBox(width: 8),
         StdButton(
           onPressed: () {
-            ref.read(chatStateProvider.notifier).createNewSession();
+            ref.read(chatStateProvider.notifier).clearSession();
           },
           padding: const EdgeInsets.all(6),
           color: theme.backgroundColor,
@@ -378,11 +377,12 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
         if (selectedAgentId != null)
           StdButton(
             text: '以所选的Agent开始新对话',
-            onPressed: () {
-              ref
-                  .read(chatStateProvider.notifier)
-                  .createNewSession(agentId: selectedAgentId!);
+            onPressed: () async {
+              ref.read(chatStateProvider.notifier).clearSession();
               widget.onClose();
+              await ref
+                  .read(agentProvider.notifier)
+                  .loadAgentById(selectedAgentId!);
             },
           ),
         IconButton(
@@ -563,7 +563,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                               1 -
                                               index];
                                       return ChatMessageBubble(
-                                        enableAnimation:  false,
+                                        enableAnimation: false,
                                         message: message,
                                       );
                                     },

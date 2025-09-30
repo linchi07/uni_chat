@@ -19,6 +19,7 @@ class AgentData {
   final String? knowledgeBases;
   final ModelSpecifics modelSpecifics;
   final DateTime createdAt;
+  final bool isDefault;
 
   AgentData({
     required this.id,
@@ -29,6 +30,7 @@ class AgentData {
     this.systemPrompt,
     this.knowledgeBases,
     required this.createdAt,
+    this.isDefault = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -39,6 +41,7 @@ class AgentData {
       'system_prompt': systemPrompt,
       'knowledge_bases': knowledgeBases,
       'created_at': createdAt.toIso8601String(),
+      'is_default': isDefault ? 1 : 0,
     };
   }
 
@@ -59,6 +62,7 @@ class AgentData {
       'description': description,
       'configure': _parameterToJson(),
       'created_at': createdAt.toIso8601String(),
+      'is_default': isDefault ? 1 : 0,
     };
   }
 
@@ -73,6 +77,7 @@ class AgentData {
       description: map['description'] as String?,
       systemPrompt: parameters['system_prompt'] as String?,
       createdAt: DateTime.parse(map['created_at']),
+      isDefault: map['is_default'] == 1,
     );
   }
 
@@ -86,6 +91,7 @@ class AgentData {
       systemPrompt: map['system_prompt'],
       knowledgeBases: map['knowledge_bases'],
       createdAt: DateTime.parse(map['created_at']),
+      isDefault: map['is_default'] == 1,
     );
   }
 }
@@ -133,6 +139,7 @@ class DatabaseService {
         description TEXT,
         configure TEXT,
         created_at TEXT NOT NULL
+        is_default INTEGER NOT NULL DEFAULT 0
       )
     ''');
     await db.execute('CREATE INDEX idx_agent_name ON agents (name)');
@@ -259,6 +266,60 @@ class DatabaseService {
   Future<void> deleteAgent(String agentId) async {
     final db = await database;
     await db.delete('agents', where: 'id = ?', whereArgs: [agentId]);
+  }
+
+  Future<AgentData?> loadDefaultAgent() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'agents',
+      where: 'is_default = ?',
+      whereArgs: [1],
+      limit: 1,
+    );
+
+    if (maps.isNotEmpty) {
+      return AgentData.fromDatabaseStorage(maps.first);
+    }
+
+    // 如果没有默认agent，返回第一个agent作为默认
+    final List<Map<String, dynamic>> allAgents = await db.query(
+      'agents',
+      limit: 1,
+    );
+
+    if (allAgents.isNotEmpty) {
+      // 将第一个agent设为默认
+      await setDefaultAgent(allAgents.first['id'] as String);
+      return AgentData.fromDatabaseStorage(allAgents.first);
+    }
+
+    return null;
+  }
+
+  // 设置默认agent，使用事务保证原子性
+  Future<void> setDefaultAgent(String agentId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      // 步骤1: 将当前所有默认agent设为非默认
+      await txn.update(
+        'agents',
+        {'is_default': 0},
+        where: 'is_default = ?',
+        whereArgs: [1],
+      );
+
+      // 步骤2: 将指定agent设为默认
+      final rowsAffected = await txn.update(
+        'agents',
+        {'is_default': 1},
+        where: 'id = ?',
+        whereArgs: [agentId],
+      );
+
+      if (rowsAffected == 0) {
+        throw Exception("Agent with ID $agentId not found.");
+      }
+    });
   }
 
   // --- Session CRUD Methods ---

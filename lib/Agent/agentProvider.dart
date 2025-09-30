@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:uni_chat/Agent/agent_set_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../Chat/chat_models.dart';
+import '../llm_provider/api_service_provider.dart';
 
 class ModelSpecifics {
   String? modelName;
@@ -434,7 +434,43 @@ class Agent {
 }
 
 class AgentProvider extends StateNotifier<Agent?> {
-  AgentProvider(this.ref) : super(null);
+  AgentProvider(this.ref) : super(null) {
+    loadDefaultAgent();
+  }
+
+  void loadDefaultAgent() async {
+    var agentData = await DatabaseService.instance.loadDefaultAgent();
+    if (agentData != null) {
+      // 4. Create the API service
+      final modelService = await ApiServiceProvider.instance.createApiService(
+        agentData.modelProviderConfigureId,
+      );
+      if (modelService == null) {
+        //TODO: implement better error handling
+        throw Exception('Failed to create API service for the agent.');
+      }
+      state = Agent.fromAgentData(agentData, modelService);
+    }
+  }
+
+  Future<void> loadAgentById(String id) async {
+    if (state != null && state!.id == id) {
+      return;
+    }
+    var agentData = await DatabaseService.instance.getAgent(id);
+    if (agentData != null) {
+      // 4. Create the API service
+      final modelService = await ApiServiceProvider.instance.createApiService(
+        agentData.modelProviderConfigureId,
+      );
+      if (modelService == null) {
+        //TODO: implement better error handling
+        throw Exception('Failed to create API service for the agent.');
+      }
+      state = Agent.fromAgentData(agentData, modelService);
+    }
+  }
+
   final Ref ref;
   Future<String?> fileUpload(File file, String mime) {
     if (state != null) {

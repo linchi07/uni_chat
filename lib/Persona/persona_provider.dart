@@ -113,6 +113,14 @@ class PersonaProvider extends StateNotifier<Persona> {
     });
   }
 
+  Future<void> loadPersonaById(String id) async {
+    var p = await DatabaseService.instance.getPersonaById(id);
+    if (p == null) {
+      return;
+    }
+    state = p;
+  }
+
   void setPersona(Persona persona) {
     state = persona;
   }

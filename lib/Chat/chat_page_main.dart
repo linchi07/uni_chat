@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_panel.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Chat/panels/panel_data.dart';
@@ -8,8 +10,6 @@ import 'package:uni_chat/Chat/panels/panel_layout_engine.dart';
 import 'package:uni_chat/uiql_preview/uiql_previewer.dart';
 import 'package:uni_chat/utils/base64_image.dart';
 import 'package:uni_chat/utils/database_service.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'chat_models.dart';
@@ -47,7 +47,7 @@ class _ChatPageMainState extends ConsumerState<ChatPageMain> {
   Widget build(BuildContext context) {
     var currentSession = ref.watch(chatStateProvider.select((s) => s.session));
     if (currentSession == null) {
-      return Center(child: Text("No session selected"));
+      return ChatPanelWhenNoSession();
     }
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints c) {
@@ -85,9 +85,7 @@ class _ChatPageMainState extends ConsumerState<ChatPageMain> {
               child: Row(
                 children: [
                   Expanded(
-                    child: _isDebugging
-                        ? const UIQLPreviewer()
-                        : ChatPanel(),
+                    child: _isDebugging ? const UIQLPreviewer() : ChatPanel(),
                   ),
                   const PanelLayout(),
                 ],
