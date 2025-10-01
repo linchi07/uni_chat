@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:convert';
 import 'dart:typed_data';
-import 'package:dio/dio.dart' as d;
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
@@ -367,7 +366,7 @@ class GeminiApiService implements LLMApiService {
 
   String get _uploadEndpoint {
     //但愿谷歌不会再整出个v2出来，就属它家的api变得最多
-    return endPoint.replaceFirst("/v1beta", "/upload/v1beta/files");
+    return '$endPoint/upload/v1beta/files';
   }
 
   @override
@@ -383,7 +382,7 @@ class GeminiApiService implements LLMApiService {
         'X-Goog-Upload-Protocol': 'resumable',
         'X-Goog-Upload-Command': 'start',
         'X-Goog-Upload-Header-Content-Length': (await file.length()).toString(),
-        'X-Goog-Upload-Header-Content-Type': '$mime',
+        'X-Goog-Upload-Header-Content-Type': mime,
         'Content-Type': 'application/json',
       });
       startRequest.body = jsonEncode({
@@ -394,7 +393,7 @@ class GeminiApiService implements LLMApiService {
       final uploadUrl = startResponse.headers['x-goog-upload-url'];
 
       if (uploadUrl == null) {
-        return null; // 上传URL获取失败，返回null
+        throw Exception(startResponse.toString()); // 上传URL获取失败，返回null
       }
 
       // 2. Upload the file bytes
@@ -517,25 +516,27 @@ class GeminiApiService implements LLMApiService {
       ...modelRequestContent.staticSystemMessages,
       ...modelRequestContent.dynamicSystemMessages,
     ];
-    
-    for(final message in formattedSysMsg){
-      sysMsg.add({
-        'text': message.content,
-      });
+
+    for (final message in formattedSysMsg) {
+      sysMsg.add({'text': message.content});
     }
 
     request.body = jsonEncode({
       'contents': contents,
+      //Gemini的系统指令是独立的，而且必须在开头，可恶的谷歌这样做就是不让我命中cache是吧。
       "systemInstruction": {
-          'role': "咕噜咕噜",
-          'parts': sysMsg,
-      },
+        'role': "咕噜咕噜",
+        'parts': sysMsg,
+      }, //根据api文档，role这里填什么都行
       "generationConfig": {
         "temperature": modelRequestContent.modelSpecifics.temperature,
         "topP": modelRequestContent.modelSpecifics.topP,
         "maxOutputTokens":
             modelRequestContent.modelSpecifics.maxGenerationTokens,
-        "frequencyPenalty": modelRequestContent.modelSpecifics.frequencyPenalty,
+        //"frequencyPenalty": modelRequestContent.modelSpecifics.frequencyPenalty,
+        //google的逆天操作，2.5系列是不支持的，但是tm的Api文档上是有这个设置选择的，劳资难道给你正则匹配到2.5就禁用吗？
+        //它家的api一团糟，还有各种不支持，这下知道openai 的好了。
+        //所以这里直接一刀切，google的模型全部忽略这个选择（当然现在应该大家用的都是2.5，所以基本上没啥大影响（本来就禁用））
       },
     });
 

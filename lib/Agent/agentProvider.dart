@@ -336,7 +336,7 @@ class AgentProvider extends StateNotifier<Agent?> {
                       id: i.id,
                       sender: MessageSender.user,
                       content:
-                          "Uploaded File： Name：${attachedFile.original_name}，fileContent：$fileContent",
+                          "Uploaded File： Name：${attachedFile.original_name}，fileContent：${await fileContent.readAsBytes()}",
                     ),
                   );
                   break;

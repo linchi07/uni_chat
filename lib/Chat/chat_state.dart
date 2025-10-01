@@ -119,10 +119,13 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       title: title,
     );
     // After creating, switch to it to activate the agent and load everything
-    await switchSession(session.id);
+    await switchSession(session.id, fromNewSession: true);
   }
 
-  Future<void> switchSession(String sessionId) async {
+  Future<void> switchSession(
+    String sessionId, {
+    bool fromNewSession = false,
+  }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       // 1. Get Session
@@ -137,13 +140,18 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       final (messages, files) = await _dbService.getMessagesForSession(
         sessionId,
       );
-
-      state = state.copyWith(
-        session: session,
-        messages: messages,
-        uploadedFiles: files,
-        isLoading: false,
-      );
+      if (fromNewSession) {
+        //解释一下，由于我们现在的懒加载机制，在创建new session的时候此时state里面的数据不能清空并重加载，
+        // 因为比如用户可能上传了一个文件（被保存在session中，此时清空session的话就导致文件没了）
+        state = state.copyWith(session: session, isLoading: false);
+      } else {
+        state = state.copyWith(
+          session: session,
+          messages: messages,
+          uploadedFiles: files,
+          isLoading: false,
+        );
+      }
       var layout = await _dbService.readLayout(sessionId);
       if (layout != null) {
         _ref.read(panelManager).relayoutFromJson(layout);
@@ -182,31 +190,47 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       return id;
     }
     String? r;
-    if (agentNotifier.state!.abilities.contains(ApiAbility.supportFilesApi)) {
-      r = await agentNotifier.fileUpload(
-        file, // 使用拷贝后的文件
-        ChatFile.getMimeType(p.extension(file.path)),
-      );
-    }
-    if (r == null) {
-      return null;
-    }
-    state = state.copyWith(
-      uploadedFiles: {
-        ...state.uploadedFiles,
-        id: ChatFile(
-          name: id,
-          providerInfo: {
-            agentNotifier.state!.model.providerName: (
-              r,
-              DateTime.now().add(const Duration(hours: 47, minutes: 58)),
+    if (ChatFile.imageExtensions.contains(p.extension(file.path)) &&
+        agentNotifier.state!.abilities.contains(
+          ApiAbility.visualUnderStanding,
+        )) {
+      if (agentNotifier.state!.abilities.contains(ApiAbility.supportFilesApi)) {
+        r = await agentNotifier.fileUpload(
+          file, // 使用拷贝后的文件
+          ChatFile.getMimeType(p.extension(file.path)),
+        );
+        if (r == null) {
+          return null;
+        }
+        state = state.copyWith(
+          uploadedFiles: {
+            ...state.uploadedFiles,
+            id: ChatFile(
+              name: id,
+              providerInfo: {
+                agentNotifier.state!.model.providerName: (
+                  r,
+                  DateTime.now().add(const Duration(hours: 47, minutes: 58)),
+                ),
+              },
+              original_name: name,
+              uploadTime: DateTime.now(), //其实是两天，但是我怕文件上传有延迟，所以缩短一点
             ),
           },
-          original_name: name,
-          uploadTime: DateTime.now(), //其实是两天，但是我怕文件上传有延迟，所以缩短一点
-        ),
-      },
-    );
+        );
+      } else {
+        state = state.copyWith(
+          uploadedFiles: {
+            ...state.uploadedFiles,
+            id: ChatFile(
+              name: id,
+              original_name: name,
+              uploadTime: DateTime.now(),
+            ),
+          },
+        );
+      }
+    }
     return id;
   }
 
