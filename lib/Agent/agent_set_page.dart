@@ -300,115 +300,138 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
             ),
           ),
           Expanded(
-            child: ListView(
-              children: [
-                StdListTile(
-                  title: Text(
-                    "模型设置",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  trailing: _buildModelSelectIndicator(),
-                  isSelected: agentState.editing == PropertyEditing.model,
-                  onTap: () {
-                    _onPropertySelect(PropertyEditing.model);
-                  },
-                ),
-                const Divider(),
-                StdListTile(
-                  title: Text(
-                    "系统提示词",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  trailing:
-                      (agentState.systemPrompt != null &&
-                          agentState.systemPrompt!.isNotEmpty)
-                      ? (Text(
-                          "${LLMTokenEstimator.estimateTokens(agentState.systemPrompt!)}tokens",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                (agentState.editing ==
-                                    PropertyEditing.sysPrompt)
-                                ? theme.surfaceColor
-                                : theme.primaryColor,
-                          ),
-                        ))
-                      : null,
-                  isSelected: agentState.editing == PropertyEditing.sysPrompt,
-                  onTap: () {
-                    _onPropertySelect(PropertyEditing.sysPrompt);
-                  },
-                ),
-                const Divider(),
-                StdListTile(
-                  title: Text(
-                    "知识库&上下文检索",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  isSelected:
-                      agentState.editing == PropertyEditing.knowledgeBase,
-                  onTap: () {
-                    _onPropertySelect(PropertyEditing.knowledgeBase);
-                  },
-                ),
-                const Divider(),
-                StdListTile(
-                  title: Text(
-                    "UI交互设置 (BETA)",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  trailing: (Text(
-                    (agentState.enableUIQL) ? "启用" : "禁用",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: (agentState.editing == PropertyEditing.UIQL)
-                          ? theme.surfaceColor
-                          : theme.primaryColor,
+            child: Material(
+              color: Colors.transparent,
+              clipBehavior: Clip.hardEdge,
+              child: ListView(
+                children: [
+                  StdListTile(
+                    title: Text(
+                      "模型设置",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
-                  )),
-                  isSelected: agentState.editing == PropertyEditing.UIQL,
-                  onTap: () {
-                    _onPropertySelect(PropertyEditing.UIQL);
-                  },
-                ),
-                const Divider(),
-                StdListTile(
-                  title: Text(
-                    "用户身份设置",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    trailing: _buildModelSelectIndicator(),
+                    isSelected: agentState.editing == PropertyEditing.model,
+                    onTap: () {
+                      _onPropertySelect(PropertyEditing.model);
+                    },
                   ),
-                  isSelected: agentState.editing == PropertyEditing.USRIdentity,
-                  onTap: () {
-                    _onPropertySelect(PropertyEditing.USRIdentity);
-                  },
-                ),
-                const Divider(),
-                StdListTile(
-                  title: Text(
-                    "开场白设置",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  const Divider(),
+                  StdListTile(
+                    title: Text(
+                      "系统提示词",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    trailing:
+                        (agentState.systemPrompt != null &&
+                            agentState.systemPrompt!.isNotEmpty)
+                        ? (Text(
+                            "${LLMTokenEstimator.estimateTokens(agentState.systemPrompt!)}tokens",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  (agentState.editing ==
+                                      PropertyEditing.sysPrompt)
+                                  ? theme.surfaceColor
+                                  : theme.primaryColor,
+                            ),
+                          ))
+                        : null,
+                    isSelected: agentState.editing == PropertyEditing.sysPrompt,
+                    onTap: () {
+                      _onPropertySelect(PropertyEditing.sysPrompt);
+                    },
                   ),
-                  trailing:
-                      (agentState.systemPrompt != null &&
-                          agentState.systemPrompt!.isNotEmpty)
-                      ? (Text(
-                          "${agentState.systemPrompt!.length}tokens",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                (agentState.editing ==
-                                    PropertyEditing.sysPrompt)
-                                ? theme.surfaceColor
-                                : theme.primaryColor,
-                          ),
-                        ))
-                      : null,
-                  isSelected: agentState.editing == PropertyEditing.opening,
-                  onTap: () {
-                    _onPropertySelect(PropertyEditing.opening);
-                  },
-                ),
-              ],
+                  const Divider(),
+                  StdListTile(
+                    title: Text(
+                      "知识库&上下文检索",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    isSelected:
+                        agentState.editing == PropertyEditing.knowledgeBase,
+                    onTap: () {
+                      _onPropertySelect(PropertyEditing.knowledgeBase);
+                    },
+                  ),
+                  const Divider(),
+                  StdListTile(
+                    title: Text(
+                      "UI交互设置 (BETA)",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    trailing: (Text(
+                      (agentState.enableUIQL) ? "启用" : "禁用",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: (agentState.editing == PropertyEditing.UIQL)
+                            ? theme.surfaceColor
+                            : theme.primaryColor,
+                      ),
+                    )),
+                    isSelected: agentState.editing == PropertyEditing.UIQL,
+                    onTap: () {
+                      _onPropertySelect(PropertyEditing.UIQL);
+                    },
+                  ),
+                  const Divider(),
+                  StdListTile(
+                    title: Text(
+                      "用户身份设置",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    isSelected:
+                        agentState.editing == PropertyEditing.USRIdentity,
+                    onTap: () {
+                      _onPropertySelect(PropertyEditing.USRIdentity);
+                    },
+                  ),
+                  const Divider(),
+                  StdListTile(
+                    title: Text(
+                      "开场白设置",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    trailing:
+                        (agentState.systemPrompt != null &&
+                            agentState.systemPrompt!.isNotEmpty)
+                        ? (Text(
+                            "${agentState.systemPrompt!.length}tokens",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  (agentState.editing ==
+                                      PropertyEditing.sysPrompt)
+                                  ? theme.surfaceColor
+                                  : theme.primaryColor,
+                            ),
+                          ))
+                        : null,
+                    isSelected: agentState.editing == PropertyEditing.opening,
+                    onTap: () {
+                      _onPropertySelect(PropertyEditing.opening);
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 20),

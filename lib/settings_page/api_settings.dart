@@ -78,9 +78,27 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
     await ApiDatabaseService.instance.updateProvider(
       p.copyWith(name: as.name, apiEndpoint: as.endPoint),
     );
+    var oldKeys = await ApiDatabaseService.instance.getApiKeysByProvider(p.id);
+    // 创建新密钥ID集合
+    Set<String> newKeyIds = as.keys.map((k) => k.id).toSet();
+    for (var oldKey in oldKeys) {
+      if (!newKeyIds.contains(oldKey.id)) {
+        await ApiDatabaseService.instance.deleteApiKey(oldKey.id);
+      }
+    }
     for (var k in as.keys) {
       k = k.copyWith(providerId: p.id);
       await ApiDatabaseService.instance.createOrUpdateApiKey(apiKey: k);
+    }
+    var oldModels = await ApiDatabaseService.instance
+        .getProviderModelConfigsForProvider(p.id);
+    Set<String> newModelIds = as.models.map((m) => m.id).toSet();
+    for (var oldModel in oldModels) {
+      if (!newModelIds.contains(oldModel.id)) {
+        await ApiDatabaseService.instance.deleteProviderModelConfig(
+          oldModel.id,
+        );
+      }
     }
     for (var m in as.models) {
       var model = await ApiDatabaseService.instance.findOrCreateModel(
@@ -1465,7 +1483,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
                   if (_formKey.currentState!.validate()) {
                     _addNewModel(
                       _selectedModel!.friendlyName,
-                      _callNameController.text,
+                      _callNameController.text.trim(),
                       selectedAbilities,
                     );
                     OverlayPortalService.hide(context);
@@ -1480,7 +1498,6 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
   }
 
   Set<ApiAbility> selectedAbilities = {ApiAbility.textGenerate};
-
   @override
   Widget build(BuildContext context) {
     theme = ref.watch(themeProvider);
@@ -1508,8 +1525,16 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 List<String> modelName = [];
+                var currentModel = ref
+                    .read(addApiState)
+                    .models
+                    .map((model) => model.friendlyName)
+                    .toSet();
                 for (var item in asyncSnapshot.data!) {
-                  modelName.add(item.friendlyName);
+                  //防止重复添加模型
+                  if (!currentModel.contains(item.friendlyName)) {
+                    modelName.add(item.friendlyName);
+                  }
                 }
                 return StdSearch(
                   searchItems: modelName,
@@ -1587,8 +1612,8 @@ class _AddModelDialogState extends ConsumerState<AddModelDialog> {
       final newModels = List<ModelsConfigData>.from(as.models)
         ..add(
           ModelsConfigData(
-            callName: modelNameController.text,
-            friendlyName: modelFriendlyNameController.text,
+            callName: modelNameController.text.trim(),
+            friendlyName: modelFriendlyNameController.text.trim(),
             abilities: selectedAbilities,
           ),
         );
