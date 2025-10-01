@@ -166,7 +166,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   Future<void> deleteSession(String sessionId) async {
     await _dbService.deleteSession(sessionId);
     if (currentSessionId == sessionId) {
-      await createNewSession();
+      clearSession();
+    } else {
+      state = state.copyWith();
     }
   }
   // --- End Public Session Management API ---

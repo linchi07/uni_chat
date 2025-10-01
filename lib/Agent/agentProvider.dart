@@ -123,15 +123,15 @@ class AgentProvider extends StateNotifier<Agent?> {
         agentData.modelProviderConfigureId,
       );
       if (modelService == null) {
-        //TODO: implement better error handling
+        //TODO: 这里也需要更好的错误处理，在模型api管理删除模型提供者时，会触发这里
         throw Exception('Failed to create API service for the agent.');
       }
       state = Agent.fromAgentData(agentData, modelService);
     }
   }
 
-  Future<void> loadAgentById(String id) async {
-    if (state != null && state!.id == id) {
+  Future<void> loadAgentById(String id, {bool forceReload = false}) async {
+    if (state != null && state!.id == id && !forceReload) {
       return;
     }
     var agentData = await DatabaseService.instance.getAgent(id);
@@ -336,7 +336,7 @@ class AgentProvider extends StateNotifier<Agent?> {
                       id: i.id,
                       sender: MessageSender.user,
                       content:
-                          "Uploaded File： Name：${attachedFile.original_name}，fileContent：${await fileContent.readAsBytes()}",
+                          "Uploaded File： Name：${attachedFile.original_name}，fileContent：${await fileContent.readAsString(encoding: utf8)}",
                     ),
                   );
                   break;

@@ -131,7 +131,7 @@ class OpenAiApiService implements LLMApiService {
     ModelRequestContent modelRequestContent,
   ) async* {
     final client = http.Client();
-    final request = http.Request('POST', Uri.parse('$endPoint/responses'));
+    final request = http.Request('POST', Uri.parse('$endPoint/v1/responses'));
 
     request.headers.addAll({
       'Content-Type': 'application/json',

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
+import 'package:uni_chat/utils/dialog.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
 import '../Agent/agentProvider.dart';
@@ -267,7 +268,9 @@ class _SessionSelectorOverlayState
           opacity: _opacityAnimation,
           child: Padding(
             padding: const EdgeInsets.all(4.0),
-            child: SessionSelector(onClose: widget.onClose),
+            child: OverlayPortalScope(
+              child: SessionSelector(onClose: widget.onClose),
+            ),
           ),
         ),
       ),
@@ -698,7 +701,7 @@ class _SessionTileState extends State<_SessionTile> {
                                       ancestor: overlay,
                                     )
                                     .dx,
-                            child: _buildPopupMenu(),
+                            child: _buildPopupMenu(widget.session.id),
                           ),
                         ],
                       );
@@ -727,7 +730,7 @@ class _SessionTileState extends State<_SessionTile> {
   }
 
   // 5. A helper method to build the content of our custom menu.
-  Widget _buildPopupMenu() {
+  Widget _buildPopupMenu(String sessionId) {
     displayOverlay = true;
     return Material(
       elevation: 4.0,
@@ -745,8 +748,10 @@ class _SessionTileState extends State<_SessionTile> {
               title: Text('重命名'),
               onTap: () {
                 _hideOverlay();
-                // Add your rename logic here
-                print("Renaming session: ${widget.session.id}");
+                OverlayPortalService.show(
+                  context,
+                  child: _renameDialog(context, sessionId),
+                );
               },
             ),
             ListTile(
@@ -757,12 +762,152 @@ class _SessionTileState extends State<_SessionTile> {
               title: Text('删除'),
               onTap: () {
                 _hideOverlay();
-                // Add your delete logic here
-                print("Deleting session: ${widget.session.id}");
+                OverlayPortalService.show(
+                  context,
+                  child: _confirmDeleteDialog(context, sessionId),
+                );
               },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  late ThemeConfig theme;
+
+  Widget _confirmDeleteDialog(BuildContext context, String sessionId) {
+    return SizedBox(
+      width: 300,
+      height: 200,
+      child: Consumer(
+        builder: (context, ref, child) {
+          theme = ref.watch(themeProvider);
+          return Material(
+            color: theme.surfaceColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        "确定要删除此对话记录吗？",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      StdButton(
+                        color: theme.boxColor,
+                        onPressed: () {
+                          OverlayPortalService.hide(context);
+                        },
+                        text: "取消",
+                      ),
+                      const SizedBox(width: 16),
+                      StdButton(
+                        color: Colors.red,
+                        onLongPress: () {
+                          ref
+                              .read(chatStateProvider.notifier)
+                              .deleteSession(sessionId);
+                          OverlayPortalService.hide(context);
+                          setState(() {});
+                        },
+                        text: "确定(长按)",
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _renameDialog(BuildContext context, String sessionId) {
+    var controller = TextEditingController();
+    return SizedBox(
+      width: 300,
+      height: 200,
+      child: Consumer(
+        builder: (context, ref, child) {
+          theme = ref.watch(themeProvider);
+          return Material(
+            color: theme.surfaceColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    "更改对话记录名称",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  StdTextField(controller: controller, hintText: "请输入对话记录名称"),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      StdButton(
+                        color: theme.boxColor,
+                        onPressed: () {
+                          OverlayPortalService.hide(context);
+                        },
+                        text: "取消",
+                      ),
+                      const SizedBox(width: 16),
+                      StdButton(
+                        onPressed: () async {
+                          if (controller.text.isNotEmpty) {
+                            await DatabaseService.instance.updateSessionTitle(
+                              sessionId,
+                              controller.text,
+                            );
+                            if (ref.read(chatStateProvider).session?.id ==
+                                sessionId) {
+                              ref
+                                  .read(chatStateProvider.notifier)
+                                  .switchSession(sessionId);
+                            } else {
+                              ref
+                                  .read(chatStateProvider.notifier)
+                                  .stateCopyWith();
+                            }
+                          }
+                          if (context.mounted) {
+                            OverlayPortalService.hide(context);
+                          }
+                          setState(() {});
+                        },
+                        text: "确定",
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

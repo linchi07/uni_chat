@@ -63,7 +63,7 @@ class AgentEditState {
   final PropertyEditing editing;
   final String? name;
   final String? description;
-  final ApiProvider? provider;
+  ApiProvider? provider;
   final Model? model;
   late final ModelSpecifics modelSettings;
   final String? systemPrompt;
@@ -518,6 +518,11 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
             await DatabaseService.instance.createOrUpdateAgent(
               await agentState.toAgentData(),
             );
+            ref.read(agentEditState.notifier).state = AgentEditState();
+            //此处强制刷新
+            await ref
+                .read(agentProvider.notifier)
+                .loadAgentById(agentState.id, forceReload: true);
             widget.onBack();
           } else {
             _controller.forward(from: 0);
@@ -958,12 +963,16 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
   }
 
   void onTap(Model model) {
+    if (model == selectedIndex) return;
     setState(() {
       selectedIndex = model;
     });
     var n = ref.read(agentEditState.notifier);
     n.state.modelSettings.modelName = model.friendlyName;
-    n.state = n.state.copyWith(model: model);
+    var n2 = n.state.copyWith(model: model);
+    //此处在模型更改的时候需清除提供商
+    n2.provider = null;
+    n.state = n2;
     // 注意：这里的key应该与show时使用的key一致
     OverlayPortalService.hide(context);
   }
