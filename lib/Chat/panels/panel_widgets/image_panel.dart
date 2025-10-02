@@ -1,17 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:uni_chat/Chat/panels/basic_pannel.dart';
-import 'package:uni_chat/Chat/panels/panel_data.dart';
-import 'package:uni_chat/llm_provider/api_service.dart';
-import 'package:uni_chat/llm_provider/image_gen.dart';
-import 'package:uni_chat/utils/file_utils.dart';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/src/consumer.dart';
 import 'package:http/http.dart' as http;
+import 'package:uni_chat/Chat/panels/basic_pannel.dart';
+import 'package:uni_chat/Chat/panels/panel_data.dart';
+import 'package:uni_chat/llm_provider/image_gen.dart';
+import 'package:uni_chat/utils/file_utils.dart';
 
-import '../../../utils/base64_image.dart';
+import '../../../utils/images.dart';
 
 class ImagePanel extends BasicPanel {
   ImagePanel({super.key, required super.name});
@@ -53,16 +53,16 @@ class _ImagePanelContent extends ConsumerStatefulWidget {
 }
 
 class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
-  void generateImage(Map<String,String>  params) async {
+  void generateImage(Map<String, String> params) async {
     if (params['prompt'] == null) {
       return;
     }
-    if(_loading){
+    if (_loading) {
       return;
     }
-    try{
+    try {
       var sd = ref.read(imageGenProvider);
-      if(sd ==  null){
+      if (sd == null) {
         setState(() {
           _loading = false;
           _errorMessage = "请先设置图片生成模型";
@@ -71,7 +71,7 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
       setState(() {
         _loading = true;
       });
-      var image = await sd!.imageCreation(params['prompt']!,null);
+      var image = await sd!.imageCreation(params['prompt']!, null);
       widget.data.props['imageBase64'] = image;
       setState(() {
         _loading = false;
@@ -79,7 +79,7 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
         _errorMessage = null;
       });
       widget.data.props['mimeType'] = _detectImageType(_imageBytes!);
-    }catch(e){
+    } catch (e) {
       setState(() {
         _loading = false;
         _errorMessage = e.toString();
@@ -87,15 +87,17 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
       print(e);
     }
   }
-  
-  void editImage(Map<String,String>params) async { 
+
+  void editImage(Map<String, String> params) async {
     print(widget.data.props['imageBase64']);
-    if (params['prompt'] == null||widget.data.props['imageBase64'] ==  null||_loading) {
+    if (params['prompt'] == null ||
+        widget.data.props['imageBase64'] == null ||
+        _loading) {
       return;
     }
-    try{
+    try {
       var sd = ref.read(imageGenProvider);
-      if(sd ==  null){
+      if (sd == null) {
         setState(() {
           _loading = false;
           _errorMessage = "请先设置图片生成模型";
@@ -104,7 +106,10 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
       setState(() {
         _loading = true;
       });
-      var image = await sd!.image2imageGeneration(params['prompt']!,widget.data.props['imageBase64']!);
+      var image = await sd!.image2imageGeneration(
+        params['prompt']!,
+        widget.data.props['imageBase64']!,
+      );
       setState(() {
         _loading = false;
         _imageBytes = base64Decode(image);
@@ -112,7 +117,7 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
         widget.data.props['mimeType'] = _detectImageType(_imageBytes!);
         _errorMessage = null;
       });
-    }catch(e){
+    } catch (e) {
       setState(() {
         _loading = false;
         _errorMessage = e.toString();
@@ -120,8 +125,7 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
       print(e);
     }
   }
-  
-  
+
   String _detectImageType(Uint8List bytes) {
     if (bytes.length < 4) return 'image/png';
 
@@ -315,7 +319,7 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
                               ),
                               IconButton(
                                 icon: Icon(Icons.close),
-                                onPressed: (){
+                                onPressed: () {
                                   widget.data.props.remove("imageBase64");
                                   setState(() {
                                     _imageBytes = null;
@@ -352,7 +356,10 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
                           onPressed: () {
                             _pickAndUploadImage();
                           },
-                          child: Text('点击上传图片',style: TextStyle(color: Colors.white),),
+                          child: Text(
+                            '点击上传图片',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
                       ],
                     ),

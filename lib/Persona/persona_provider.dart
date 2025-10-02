@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/utils/database_service.dart';
+
+import '../utils/file_utils.dart';
 
 enum PersonaEntryMode { alwaysInsert, whenEnoughContext, whenHitKeyWords }
 
@@ -41,6 +44,24 @@ class Persona {
     required this.data,
     this.isDefault = false,
   });
+
+  Future<File?> getAvatar() async {
+    var f = await PathProvider.getPath("chat/avatars/$id");
+    var f1 = File("$f.png");
+    if (await f1.exists()) {
+      return f1;
+    } else {
+      var f2 = File("$f.jpg");
+      if (await f2.exists()) {
+        return f2;
+      }
+      var f3 = File("$f.jpeg");
+      if (await f3.exists()) {
+        return f3;
+      }
+    }
+    return null;
+  }
 
   FormattedChatMessage getPersonaMessage() {
     String dataToString = "关于$name的一些数据：\n";

@@ -9,8 +9,8 @@ import 'package:uni_chat/Chat/panels/panel_data.dart';
 import 'package:uni_chat/Chat/panels/panel_layout_engine.dart';
 import 'package:uni_chat/developer_tools/message_bubble_previewer.dart';
 import 'package:uni_chat/developer_tools/uiql_previewer.dart';
-import 'package:uni_chat/utils/base64_image.dart';
 import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/utils/images.dart';
 import 'package:uuid/uuid.dart';
 
 import 'chat_models.dart';

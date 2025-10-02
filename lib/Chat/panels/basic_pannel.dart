@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/panels/panel_data.dart';
 import 'package:uni_chat/Chat/panels/panel_layout_engine.dart';
-import 'package:uni_chat/utils/base64_image.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/utils/images.dart';
 
 class BasicPanel extends ConsumerStatefulWidget {
   final String name;

@@ -50,13 +50,11 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
                               ),
                               onTap: () {},
                               tileColor: theme.surfaceColor,
-                              leading: CircleAvatar(
-                                radius: 25,
-                                foregroundImage: AssetImage(
+                              leading: StdAvatar(
+                                length: 50,
+                                assetImage: AssetImage(
                                   LLMImageIndexer.getImagePath(model.family),
                                 ),
-                                foregroundColor: Colors.transparent,
-                                backgroundColor: Colors.transparent,
                               ),
                               title: Text(model.friendlyName),
                               subtitle: Text(model.family),

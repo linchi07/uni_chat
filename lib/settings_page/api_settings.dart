@@ -257,10 +257,9 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                             ),
                             onTap: () {},
                             tileColor: theme.surfaceColor,
-                            leading: CircleAvatar(
-                              radius: 25,
-                              backgroundColor: Colors.transparent,
-                              foregroundImage: AssetImage(
+                            leading: StdAvatar(
+                              length: 50,
+                              assetImage: AssetImage(
                                 LLMImageIndexer.getImagePath(provider.name),
                               ),
                             ),
@@ -538,13 +537,9 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
             endPoint: provider.endPoint,
           );
         },
-        leading: CircleAvatar(
-          radius: 17,
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.transparent,
-          foregroundImage: AssetImage(
-            LLMImageIndexer.getImagePath(provider.id),
-          ),
+        leading: StdAvatar(
+          length: 34,
+          assetImage: AssetImage(LLMImageIndexer.getImagePath(provider.id)),
         ),
         title: Text(provider.name),
       ),

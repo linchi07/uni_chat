@@ -1,5 +1,12 @@
+import 'dart:io';
+import 'dart:math';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
 import 'package:uni_chat/utils/dialog.dart';
 
@@ -730,6 +737,195 @@ class _StdSearchState extends State<StdSearch> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class StdAvatarPicker extends StatefulWidget {
+  const StdAvatarPicker({
+    super.key,
+    this.initialWidget,
+    this.initialAssetImagePath,
+    required this.onImageChanged,
+    this.initialImageFile,
+  });
+  final Widget? initialWidget;
+  final String? initialAssetImagePath;
+  final File? initialImageFile;
+  final void Function(
+    Stream<Uint8List>,
+    String extension,
+    void Function(String),
+  )
+  onImageChanged;
+
+  @override
+  State<StdAvatarPicker> createState() => _StdAvatarPickerState();
+}
+
+class _StdAvatarPickerState extends State<StdAvatarPicker> {
+  File? _imageFile;
+  bool isDroppingFiles = false;
+
+  void setImage(String path) {
+    setState(() {
+      _imageFile = File(path);
+    });
+  }
+
+  Stream<Uint8List> readFileAsStream(File file) async* {
+    try {
+      // 使用 openRead() 方法创建一个 Stream<List<int>>
+      await for (final chunk in file.openRead()) {
+        // 将每个数据块转换为 Uint8List 并 yield
+        yield Uint8List.fromList(chunk);
+      }
+    } catch (e) {
+      // 错误处理可以在监听时通过 onError 回调处理
+      throw Exception('读取文件时发生错误: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DropRegion(
+      formats: [Formats.jpeg, Formats.png],
+      onDropLeave: (e) {
+        setState(() {
+          isDroppingFiles = false;
+        });
+      },
+      onDropOver: (event) {
+        if (event.session.allowedOperations.contains(DropOperation.copy)) {
+          setState(() {
+            isDroppingFiles = true;
+          });
+          return DropOperation.copy;
+        }
+        return DropOperation.none;
+      },
+      onPerformDrop: (e) async {
+        var item = e.session.items.first;
+        if (item.dataReader == null) {
+          return;
+        }
+        if (item.canProvide(Formats.jpeg)) {
+          item.dataReader?.getFile(
+            Formats.jpeg,
+            (f) async {
+              widget.onImageChanged(f.getStream(), 'jpeg', setImage);
+            },
+            onError: (error) {
+              return;
+            },
+          );
+        } else if (item.canProvide(Formats.png)) {
+          item.dataReader?.getFile(
+            Formats.png,
+            (f) async {
+              widget.onImageChanged(f.getStream(), 'png', setImage);
+            },
+            onError: (error) {
+              return;
+            },
+          );
+        }
+      },
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          (_imageFile != null)
+              ? Image.file(_imageFile!)
+              : (widget.initialWidget != null)
+              ? widget.initialWidget!
+              : (widget.initialImageFile != null)
+              ? Image.file(widget.initialImageFile!)
+              : (widget.initialAssetImagePath != null)
+              ? Image.asset(widget.initialAssetImagePath!)
+              : Container(color: Colors.grey),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () async {
+                final result = await FilePicker.platform.pickFiles(
+                  type: FileType.image,
+                  allowMultiple: false, // 允许选择多个文件
+                  withData: true,
+                );
+                if (result != null) {
+                  final file = result.files.single;
+                  if (file.path == null) {
+                    return;
+                  }
+                  widget.onImageChanged(
+                    readFileAsStream(File(file.path!)),
+                    p.extension(file.path!),
+                    setImage,
+                  );
+                }
+              },
+            ),
+          ),
+          if (isDroppingFiles)
+            Container(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
+              color: Colors.white.withAlpha(180),
+              child: Center(
+                child: Text(
+                  '拖拽图片到此处',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class StdAvatar extends StatelessWidget {
+  const StdAvatar({
+    super.key,
+    this.assetImage,
+    this.file,
+    this.length = 25,
+    this.showBorder = false,
+    this.backgroundColor,
+    this.whenNull,
+  });
+  final AssetImage? assetImage;
+  final Color? backgroundColor;
+  final File? file;
+  final Widget? whenNull;
+  final double length;
+  final bool showBorder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: length,
+      width: length,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        shape: BoxShape.circle,
+        border: showBorder
+            ? Border.all(
+                color: Colors.black,
+                width: 2,
+                strokeAlign: BorderSide.strokeAlignOutside,
+              )
+            : null,
+      ),
+      child: (file != null)
+          ? Center(child: Image.file(file!))
+          : (assetImage != null)
+          ? Center(child: Image(image: assetImage!))
+          : whenNull ?? Icon(Icons.person, size: min(length, 30)),
     );
   }
 }

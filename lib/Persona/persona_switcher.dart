@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/utils/file_utils.dart';
+import 'package:uni_chat/utils/llm_image_indexer.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
@@ -57,23 +61,39 @@ class _PersonaIndicatorState extends State<PersonaIndicator> {
   Widget build(BuildContext context) {
     return (_overlayEntry != null)
         ? SizedBox.shrink()
-        : Material(
-            clipBehavior: Clip.antiAlias,
-            color: Colors.transparent,
-            shape: CircleBorder(
-              side: BorderSide(color: Colors.black, width: 1.5),
-            ),
-            child: InkWell(
-              onHover: (value) {},
-              onTap: () {
-                showPersonaSwitcher();
-                setState(() {});
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Icon(Icons.person),
-              ),
-            ),
+        : Consumer(
+            builder: (context, ref, child) {
+              var persona = ref.watch(personaProvider);
+              return FutureBuilder(
+                future: persona.getAvatar(),
+                builder: (context, asyncSnapshot) {
+                  return Material(
+                    clipBehavior: Clip.antiAlias,
+                    color: Colors.transparent,
+                    shape: CircleBorder(
+                      side: BorderSide(color: Colors.black, width: 1.5),
+                    ),
+                    child: InkWell(
+                      onHover: (value) {},
+                      onTap: () {
+                        showPersonaSwitcher();
+                        setState(() {});
+                      },
+                      child: (asyncSnapshot.data == null)
+                          ? Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Icon(Icons.person),
+                            )
+                          : SizedBox(
+                              width: 38,
+                              height: 38,
+                              child: Image.file(asyncSnapshot.data!),
+                            ),
+                    ),
+                  );
+                },
+              );
+            },
           );
   }
 }
@@ -329,9 +349,9 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
     );
   }
 
-  Widget buildPersonaListTile(Persona persona) {
+  Widget buildPersonaListTile(Persona persona, File? avatar) {
     return ListTile(
-      leading: FlutterLogo(),
+      leading: StdAvatar(length: 40, file: avatar),
       title: (persona.isDefault)
           ? Row(
               children: [
@@ -381,24 +401,41 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
   List<Widget> _buildPersonaListItems(
     BuildContext context,
     List<Persona> personas,
+    List<File?> avatars,
     Persona selectedPersona,
   ) {
     List<Widget> items = [];
-    for (var persona in personas) {
-      if (persona.id != selectedPersona.id) {
-        items.add(buildPersonaListTile(persona));
+    for (int i = 0; i < personas.length; i++) {
+      if (personas[i].id != selectedPersona.id) {
+        items.add(buildPersonaListTile(personas[i], avatars[i]));
       }
     }
     return items;
   }
 
+  Future<(List<Persona>, List<File?>, File?)> _getPersonasAndAvatars(
+    String selectedPersonaId,
+  ) async {
+    var personas = await DatabaseService.instance.getAllPersonas();
+    List<File?> avatars = [];
+    File? selectedPersonaFile;
+    for (var persona in personas) {
+      var avatar = await persona.getAvatar();
+      if (persona.id == selectedPersonaId) {
+        selectedPersonaFile = avatar;
+      }
+      avatars.add(avatar);
+    }
+    return (personas, avatars, selectedPersonaFile);
+  }
+
   @override
   Widget build(BuildContext context) {
     theme = ref.watch(themeProvider);
+    var persona = ref.watch(personaProvider);
     return FutureBuilder(
-      future: DatabaseService.instance.getAllPersonas(),
+      future: _getPersonasAndAvatars(persona.id),
       builder: (context, asyncSnapshot) {
-        var persona = ref.watch(personaProvider);
         if (!asyncSnapshot.hasData || asyncSnapshot.data == null) {
           return const CircularProgressIndicator();
         }
@@ -407,7 +444,11 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
           child: Column(
             children: [
               StdListTile(
-                leading: SizedBox(height: 40, width: 40, child: FlutterLogo()),
+                leading: SizedBox(
+                  height: 40,
+                  width: 40,
+                  child: StdAvatar(length: 40, file: asyncSnapshot.data!.$3),
+                ),
                 title: (persona.isDefault)
                     ? Row(
                         children: [
@@ -465,7 +506,8 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
                 child: ListView(
                   children: _buildPersonaListItems(
                     context,
-                    asyncSnapshot.data!,
+                    asyncSnapshot.data!.$1,
+                    asyncSnapshot.data!.$2,
                     persona,
                   ),
                 ),
@@ -537,7 +579,20 @@ class _PersonaEditorState extends State<PersonaEditor>
 
     // 启动进入动画
     _animationController.forward();
+    if (widget.persona != null) {
+      persona = widget.persona!;
+    } else {
+      persona = Persona(
+        id: Uuid().v4(),
+        name: "",
+        content: "",
+        isDefault: false,
+        data: {},
+      );
+    }
   }
+
+  late Persona persona;
 
   @override
   void dispose() {
@@ -624,12 +679,7 @@ class _PersonaEditorState extends State<PersonaEditor>
                 theme = ref.watch(themeProvider);
                 return child!;
               },
-              child: PersonaEditorContent(
-                onClose: close,
-                persona:
-                    widget.persona ??
-                    Persona(id: Uuid().v4(), name: "", content: "", data: {}),
-              ),
+              child: PersonaEditorContent(onClose: close, persona: persona),
             ),
           ),
         ),
@@ -850,8 +900,76 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          SizedBox(height: 200, child: FlutterLogo(size: 100)),
-                          const SizedBox(height: 16),
+                          Container(
+                            clipBehavior: Clip.hardEdge,
+                            margin: const EdgeInsets.fromLTRB(30, 30, 30, 5),
+                            decoration: BoxDecoration(
+                              color: theme.surfaceColor,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(60),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            height: 200,
+                            width: 200,
+                            child: AspectRatio(
+                              aspectRatio: 1,
+                              child: FutureBuilder(
+                                future: widget.persona.getAvatar(),
+                                builder: (context, asyncSnapshot) {
+                                  if (asyncSnapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
+                                  return StdAvatarPicker(
+                                    initialImageFile: asyncSnapshot.data,
+                                    initialAssetImagePath:
+                                        (asyncSnapshot.data == null)
+                                        ? LLMImageIndexer.getImagePath(
+                                            'unknown.png',
+                                          )
+                                        : null,
+                                    onImageChanged: (s, e, setImage) async {
+                                      final sessionFilesDir = Directory(
+                                        await PathProvider.getPath(
+                                          "chat/avatars",
+                                        ),
+                                      );
+                                      if (!await sessionFilesDir.exists()) {
+                                        await sessionFilesDir.create(
+                                          recursive: true,
+                                        );
+                                      }
+                                      final file = File(
+                                        await PathProvider.getPath(
+                                          "chat/avatars/${widget.persona.id}.$e",
+                                        ),
+                                      );
+                                      final sink = file.openWrite();
+                                      await s.forEach(sink.add);
+                                      await sink.close();
+                                      setImage(file.path);
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          Text(
+                            "点击或拖拽新图片来更改头像",
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: theme.boxColor,
+                            ),
+                          ),
+                          const SizedBox(height: 15),
                           StdTextFormField(
                             hintText: "请输入名称",
                             controller: _nameController,

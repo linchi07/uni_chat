@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
@@ -80,16 +82,26 @@ class _AgentPageState extends State<AgentPage> {
 class AgentSelector extends ConsumerWidget {
   const AgentSelector({super.key, required this.onEdit});
   final dynamic onEdit;
+
+  Future<(List<AgentData>, List<File?>)> getAgentAndAvatars() async {
+    var agents = await DatabaseService.instance.getAllAgents();
+    var avatars = <File?>[];
+    for (var agent in agents) {
+      avatars.add(await agent.getAvatar());
+    }
+    return (agents, avatars);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     var theme = ref.watch(themeProvider);
     return FutureBuilder(
-      future: DatabaseService.instance.getAllAgents(),
+      future: getAgentAndAvatars(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (snapshot.data!.isEmpty) {
+        if (snapshot.data!.$1.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -100,11 +112,15 @@ class AgentSelector extends ConsumerWidget {
           );
         }
         return ListView.builder(
-          itemCount: snapshot.data!.length,
+          itemCount: snapshot.data!.$1.length,
           itemBuilder: (context, index) {
-            final agent = snapshot.data![index];
+            final agent = snapshot.data!.$1[index];
             return StdListTile(
-              leading: FlutterLogo(size: 50),
+              leading: StdAvatar(
+                file: snapshot.data!.$2[index],
+                length: 50,
+                showBorder: true,
+              ),
               title: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

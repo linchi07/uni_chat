@@ -11,6 +11,7 @@ import 'package:uni_chat/utils/database_service.dart';
 import '../Chat/chat_models.dart';
 import '../llm_provider/api_service_provider.dart';
 import '../llm_provider/pre_built_models.dart';
+import '../utils/file_utils.dart';
 
 class ModelSpecifics {
   String? modelName;
@@ -108,6 +109,24 @@ class Agent {
       modelSpecifics: modelSpecifics ?? this.modelSpecifics,
       systemPrompt: systemPrompt ?? this.systemPrompt,
     );
+  }
+
+  Future<File?> getAvatar() async {
+    var f = await PathProvider.getPath("chat/avatars/$id");
+    var f1 = File("$f.png");
+    if (await f1.exists()) {
+      return f1;
+    } else {
+      var f2 = File("$f.jpg");
+      if (await f2.exists()) {
+        return f2;
+      }
+      var f3 = File("$f.jpeg");
+      if (await f3.exists()) {
+        return f3;
+      }
+    }
+    return null;
   }
 }
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,7 @@ import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
 
 import '../utils/dialog.dart';
+import '../utils/file_utils.dart';
 import 'agentProvider.dart';
 
 class AgentSetPage extends StatelessWidget {
@@ -238,7 +241,44 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
               height: 80,
               child: Row(
                 children: [
-                  FlutterLogo(size: 80),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: theme.surfaceColor,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(60),
+                          offset: Offset(0, 1),
+                          blurRadius: 3,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: StdAvatarPicker(
+                      initialWidget: Center(
+                        child: Text("拖拽或单击选择图片", textAlign: TextAlign.center),
+                      ),
+                      onImageChanged: (s, e, setImage) async {
+                        final sessionFilesDir = Directory(
+                          await PathProvider.getPath("chat/avatars"),
+                        );
+                        if (!await sessionFilesDir.exists()) {
+                          await sessionFilesDir.create(recursive: true);
+                        }
+                        final file = File(
+                          await PathProvider.getPath(
+                            "chat/avatars/${agentState.id}.$e",
+                          ),
+                        );
+                        final sink = file.openWrite();
+                        await s.forEach(sink.add);
+                        await sink.close();
+                        setImage(file.path);
+                      },
+                    ),
+                  ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -1035,10 +1075,8 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     const SizedBox(width: 16.0),
-                                    CircleAvatar(
-                                      backgroundColor: Colors.transparent,
-                                      foregroundColor: Colors.transparent,
-                                      foregroundImage: AssetImage(
+                                    StdAvatar(
+                                      assetImage: AssetImage(
                                         LLMImageIndexer.getImagePath(
                                           selectedIndex!.family,
                                         ),
@@ -1081,12 +1119,8 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                                             subtitle: Text(
                                               asyncSnapshot.data![index].family,
                                             ),
-                                            leading: CircleAvatar(
-                                              backgroundColor:
-                                                  Colors.transparent,
-                                              foregroundColor:
-                                                  Colors.transparent,
-                                              foregroundImage: AssetImage(
+                                            leading: StdAvatar(
+                                              assetImage: AssetImage(
                                                 LLMImageIndexer.getImagePath(
                                                   asyncSnapshot
                                                       .data![index]
@@ -1127,11 +1161,9 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(width: 16),
-                    CircleAvatar(
-                      radius: 13,
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.transparent,
-                      foregroundImage: AssetImage(
+                    StdAvatar(
+                      length: 26,
+                      assetImage: AssetImage(
                         LLMImageIndexer.getImagePath(selectedIndex!.family),
                       ),
                     ),
@@ -1260,10 +1292,8 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     const SizedBox(width: 16.0),
-                                    CircleAvatar(
-                                      backgroundColor: Colors.transparent,
-                                      foregroundColor: Colors.transparent,
-                                      foregroundImage: AssetImage(
+                                    StdAvatar(
+                                      assetImage: AssetImage(
                                         LLMImageIndexer.getImagePath(
                                           selectedIndex!.name,
                                         ),
@@ -1300,12 +1330,8 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                                             title: Text(
                                               asyncSnapshot.data![index].name,
                                             ),
-                                            leading: CircleAvatar(
-                                              backgroundColor:
-                                                  Colors.transparent,
-                                              foregroundColor:
-                                                  Colors.transparent,
-                                              foregroundImage: AssetImage(
+                                            leading: StdAvatar(
+                                              assetImage: AssetImage(
                                                 LLMImageIndexer.getImagePath(
                                                   asyncSnapshot
                                                       .data![index]
@@ -1346,11 +1372,9 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(width: 16),
-                    CircleAvatar(
-                      radius: 13,
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.transparent,
-                      foregroundImage: AssetImage(
+                    StdAvatar(
+                      length: 26,
+                      assetImage: AssetImage(
                         LLMImageIndexer.getImagePath(selectedIndex!.name),
                       ),
                     ),
