@@ -1,14 +1,18 @@
+import 'dart:io';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/utils/llm_image_indexer.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
 
 import '../utils/dialog.dart';
+import '../utils/file_utils.dart';
 import 'agentProvider.dart';
 
 class AgentSetPage extends StatelessWidget {
@@ -151,8 +155,8 @@ class AgentEditState {
 
   factory AgentEditState.fromAgentData(
     AgentData agentData,
-    ApiProvider provider,
-    Model model,
+    ApiProvider? provider,
+    Model? model,
   ) {
     return AgentEditState(
       id: agentData.id,
@@ -237,7 +241,44 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
               height: 80,
               child: Row(
                 children: [
-                  FlutterLogo(size: 80),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: theme.surfaceColor,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(60),
+                          offset: Offset(0, 1),
+                          blurRadius: 3,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: StdAvatarPicker(
+                      initialWidget: Center(
+                        child: Text("拖拽或单击选择图片", textAlign: TextAlign.center),
+                      ),
+                      onImageChanged: (s, e, setImage) async {
+                        final sessionFilesDir = Directory(
+                          await PathProvider.getPath("chat/avatars"),
+                        );
+                        if (!await sessionFilesDir.exists()) {
+                          await sessionFilesDir.create(recursive: true);
+                        }
+                        final file = File(
+                          await PathProvider.getPath(
+                            "chat/avatars/${agentState.id}.$e",
+                          ),
+                        );
+                        final sink = file.openWrite();
+                        await s.forEach(sink.add);
+                        await sink.close();
+                        setImage(file.path);
+                      },
+                    ),
+                  ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -1005,7 +1046,7 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                 sizeFactor: _scaleAnimation,
                 child: SizedBox(
                   width: rb.size.width + 4,
-                  height: rb.size.height * 5 + 3,
+                  height: rb.size.height * 7 + 3,
                   child: Material(
                     elevation: 4,
                     color: theme.surfaceColor,
@@ -1034,7 +1075,13 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     const SizedBox(width: 16.0),
-                                    const FlutterLogo(size: 25),
+                                    StdAvatar(
+                                      assetImage: AssetImage(
+                                        LLMImageIndexer.getImagePath(
+                                          selectedIndex!.family,
+                                        ),
+                                      ),
+                                    ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
@@ -1051,28 +1098,40 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                             const Divider(),
                             if (asyncSnapshot.data!.isEmpty)
                               const Center(child: Text('没有模型')),
+                            //只是用来绘制inkwell
                             Expanded(
-                              child: (_scaleAnimation.isCompleted)
-                                  ? SizedBox()
-                                  : ListView.builder(
-                                      itemCount: asyncSnapshot.data!.length,
-                                      itemBuilder: (context, index) {
-                                        return StdListTile(
-                                          onTap: () {
-                                            onTap(asyncSnapshot.data![index]);
-                                          },
-                                          title: Text(
-                                            asyncSnapshot
-                                                .data![index]
-                                                .friendlyName,
-                                          ),
-                                          subtitle: Text(
-                                            asyncSnapshot.data![index].family,
-                                          ),
-                                          leading: const FlutterLogo(),
-                                        );
-                                      },
-                                    ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: (_scaleAnimation.isCompleted)
+                                    ? SizedBox()
+                                    : ListView.builder(
+                                        itemCount: asyncSnapshot.data!.length,
+                                        itemBuilder: (context, index) {
+                                          return StdListTile(
+                                            onTap: () {
+                                              onTap(asyncSnapshot.data![index]);
+                                            },
+                                            title: Text(
+                                              asyncSnapshot
+                                                  .data![index]
+                                                  .friendlyName,
+                                            ),
+                                            subtitle: Text(
+                                              asyncSnapshot.data![index].family,
+                                            ),
+                                            leading: StdAvatar(
+                                              assetImage: AssetImage(
+                                                LLMImageIndexer.getImagePath(
+                                                  asyncSnapshot
+                                                      .data![index]
+                                                      .family,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                              ),
                             ),
                           ],
                         );
@@ -1102,7 +1161,12 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(width: 16),
-                    const FlutterLogo(size: 25),
+                    StdAvatar(
+                      length: 26,
+                      assetImage: AssetImage(
+                        LLMImageIndexer.getImagePath(selectedIndex!.family),
+                      ),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -1171,6 +1235,13 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
     if (as.model == null) {
       return SizedBox();
     }
+    ref.listen(agentEditState, (previous, next) {
+      if (previous != null &&
+          previous.provider != null &&
+          previous.model != next.model) {
+        selectedIndex = null;
+      }
+    });
     return SizedBox(
       height: 40,
       width: 350,
@@ -1190,7 +1261,7 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                 sizeFactor: _scaleAnimation,
                 child: SizedBox(
                   width: rb.size.width + 4,
-                  height: rb.size.height * 5 + 3,
+                  height: rb.size.height * 7 + 3,
                   child: Material(
                     elevation: 4,
                     color: theme.surfaceColor,
@@ -1221,7 +1292,13 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     const SizedBox(width: 16.0),
-                                    const FlutterLogo(size: 25),
+                                    StdAvatar(
+                                      assetImage: AssetImage(
+                                        LLMImageIndexer.getImagePath(
+                                          selectedIndex!.name,
+                                        ),
+                                      ),
+                                    ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
@@ -1239,22 +1316,33 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                             if (asyncSnapshot.data!.isEmpty)
                               const Center(child: Text('没有供应商')),
                             Expanded(
-                              child: (_scaleAnimation.isCompleted)
-                                  ? SizedBox()
-                                  : ListView.builder(
-                                      itemCount: asyncSnapshot.data!.length,
-                                      itemBuilder: (context, index) {
-                                        return StdListTile(
-                                          onTap: () {
-                                            onTap(asyncSnapshot.data![index]);
-                                          },
-                                          title: Text(
-                                            asyncSnapshot.data![index].name,
-                                          ),
-                                          leading: const FlutterLogo(),
-                                        );
-                                      },
-                                    ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: (_scaleAnimation.isCompleted)
+                                    ? SizedBox()
+                                    : ListView.builder(
+                                        itemCount: asyncSnapshot.data!.length,
+                                        itemBuilder: (context, index) {
+                                          return StdListTile(
+                                            onTap: () {
+                                              onTap(asyncSnapshot.data![index]);
+                                            },
+                                            title: Text(
+                                              asyncSnapshot.data![index].name,
+                                            ),
+                                            leading: StdAvatar(
+                                              assetImage: AssetImage(
+                                                LLMImageIndexer.getImagePath(
+                                                  asyncSnapshot
+                                                      .data![index]
+                                                      .name,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                              ),
                             ),
                           ],
                         );
@@ -1284,7 +1372,12 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(width: 16),
-                    const FlutterLogo(size: 25),
+                    StdAvatar(
+                      length: 26,
+                      assetImage: AssetImage(
+                        LLMImageIndexer.getImagePath(selectedIndex!.name),
+                      ),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(

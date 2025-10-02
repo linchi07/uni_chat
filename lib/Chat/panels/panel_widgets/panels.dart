@@ -1,23 +1,21 @@
+import 'package:clipboard/clipboard.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/src/consumer.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/panels/basic_pannel.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
 import 'package:uni_chat/Chat/panels/panel_data.dart';
-import 'package:uni_chat/utils/code/src/code_field/text_selection.dart';
-import 'package:uni_chat/utils/file_utils.dart';
-import 'package:clipboard/clipboard.dart';
-import 'package:flutter/material.dart';
 //注意！这里我们直接从github上把这个包源码扒拉下来改了一下
 //因为这个包的某些原因不能输入中文。。。。 github issue上有人提的
 //好在这个作者很友好的使用了相对路径命名
 //所以不用全局替换依赖了
 //所以我究竟是要吐槽这个作者不修bug还是夸他相对路径命名让我很好魔改呢？
 import 'package:uni_chat/utils/code/flutter_code_editor.dart' as ce;
-import 'package:flutter_riverpod/src/consumer.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
-import 'package:highlight/highlight.dart';
-import 'package:highlight/languages/dart.dart';
+import 'package:uni_chat/utils/code/src/code_field/text_selection.dart';
+import 'package:uni_chat/utils/file_utils.dart';
 
-import '../../../utils/base64_image.dart';
+import '../../../utils/images.dart';
 
 class TextPanel extends BasicPanel {
   TextPanel({super.key, required super.name});
@@ -108,7 +106,7 @@ class MarkDownPanel extends BasicPanel {
 
 class TextFieldPanel extends BasicPanel {
   TextFieldPanel({super.key, required super.name});
-  
+
   @override
   (String, List<Base64Image>?) panelSummary(PanelData data) {
     var i = data.props['inputValueName'];
@@ -121,8 +119,6 @@ class TextFieldPanel extends BasicPanel {
         : "s\n该面板现在没有输入任何内容";
     return (s, null);
   }
-  
-  
 
   @override
   Widget buildInternal(BuildContext context, WidgetRef ref, PanelData data) {
@@ -132,21 +128,19 @@ class TextFieldPanel extends BasicPanel {
     }
     return Padding(
       padding: const EdgeInsets.all(12.0),
-      child: TextFieldMainContent(data: data,),
+      child: TextFieldMainContent(data: data),
     );
   }
 }
 
 class TextFieldMainContent extends ConsumerStatefulWidget {
-  const TextFieldMainContent({
-    super.key,
-    required this.data,
-  });
+  const TextFieldMainContent({super.key, required this.data});
 
   final PanelData data;
 
   @override
-  ConsumerState<TextFieldMainContent> createState() => _TextFieldMainContentState();
+  ConsumerState<TextFieldMainContent> createState() =>
+      _TextFieldMainContentState();
 }
 
 class _TextFieldMainContentState extends ConsumerState<TextFieldMainContent> {
@@ -157,16 +151,18 @@ class _TextFieldMainContentState extends ConsumerState<TextFieldMainContent> {
     textController = TextEditingController();
     textController.addListener(onTextChanged);
   }
-  
+
   void onTextChanged() {
     var text = textController.text;
     var textVarName = widget.data.props['inputValueName'];
-    if (text.isNotEmpty && textVarName != null&&widget.data.props['input'] != text) {
+    if (text.isNotEmpty &&
+        textVarName != null &&
+        widget.data.props['input'] != text) {
       widget.data.props['input'] = text;
       PanelManager.onVariableUpdate(widget.data.name, textVarName, ref, text);
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     var hText = widget.data.props['hintText'] ?? '';
@@ -177,7 +173,12 @@ class _TextFieldMainContentState extends ConsumerState<TextFieldMainContent> {
       onSubmitted: (value) {
         if (value.isNotEmpty && textVarName != null) {
           widget.data.props['input'] = value;
-          PanelManager.onVariableUpdate(widget.data.name, textVarName, ref, value);
+          PanelManager.onVariableUpdate(
+            widget.data.name,
+            textVarName,
+            ref,
+            value,
+          );
         }
       },
     );
@@ -193,7 +194,9 @@ class CodePanel extends BasicPanel {
     var selection = data.props['selection'];
     var language = data.props['language'];
     String s = name == null ? "该面板现在没有项目名" : "该面板现在的项目名是：\n$name";
-    s = language == null ? "$s 该面板现在没有指定编程语言，如果你能推断出编程语言，请填写。" : "$s 该面板现在使用的语言是：\n$language";
+    s = language == null
+        ? "$s 该面板现在没有指定编程语言，如果你能推断出编程语言，请填写。"
+        : "$s 该面板现在使用的语言是：\n$language";
     s = code == null ? "$s 该面板现在没有任何代码" : "$s 该面板上的代码是：\n$code";
     s = selection == null ? s : "$s\n当前用户光标选中的代码片段是：\n$selection";
     return (s, null);
@@ -213,7 +216,8 @@ class CodePanelMainContent extends ConsumerStatefulWidget {
     : super(key: key);
   final PanelData parentData;
   @override
-  ConsumerState<CodePanelMainContent> createState() => _CodePanelMainContentState();
+  ConsumerState<CodePanelMainContent> createState() =>
+      _CodePanelMainContentState();
 }
 
 class _CodePanelMainContentState extends ConsumerState<CodePanelMainContent> {
@@ -236,7 +240,7 @@ class _CodePanelMainContentState extends ConsumerState<CodePanelMainContent> {
   void codeChanged() {
     if (!disableSave && controller.fullText != data.props['code']) {
       data.props['code'] = controller.fullText;
-    }else{
+    } else {
       disableSave = false;
     }
 
@@ -252,29 +256,25 @@ class _CodePanelMainContentState extends ConsumerState<CodePanelMainContent> {
     }
     showSelectionState.value = (isSelected) ? selection : null;
   }
-  
-  void replaceCode(Map<String,String> param) {
+
+  void replaceCode(Map<String, String> param) {
     var oldString = param['oldString'];
     var newString = param['newString'];
     if (oldString != null && newString != null) {
       disableSave = true;
       data.props['code'] ??= '';
       data.props['code'] = data.props['code']!.replaceAll(oldString, newString);
-      setState(() {
-
-      });
+      setState(() {});
     }
   }
-  
-  void appendCode(Map<String,String> param){
+
+  void appendCode(Map<String, String> param) {
     var appendString = param['appendString'];
     if (appendString != null) {
       disableSave = true;
       data.props['code'] ??= '';
       data.props['code'] = data.props['code']! + appendString;
-      setState(() {
-        
-      });
+      setState(() {});
     }
   }
 
@@ -307,10 +307,8 @@ class _CodePanelMainContentState extends ConsumerState<CodePanelMainContent> {
           child: Row(
             children: [
               Container(
-                constraints: const BoxConstraints(
-                  maxWidth: 70,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal:  8,vertical: 2),
+                constraints: const BoxConstraints(maxWidth: 70),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 margin: const EdgeInsets.only(right: 8),
                 decoration: BoxDecoration(
                   color: Colors.grey[400],
@@ -318,7 +316,9 @@ class _CodePanelMainContentState extends ConsumerState<CodePanelMainContent> {
                 ),
                 child: TextField(
                   textAlign: TextAlign.center,
-                  controller: TextEditingController(text: language?.toUpperCase()),
+                  controller: TextEditingController(
+                    text: language?.toUpperCase(),
+                  ),
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,

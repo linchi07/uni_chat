@@ -1,8 +1,10 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:uni_chat/main.dart';
 
 /// 文件工具类，提供保存文本和图片的方法
 class FileUtils {
@@ -25,7 +27,7 @@ class FileUtils {
         await file.writeAsString(text);
         return outputPath;
       }
-      
+
       return null;
     } catch (e) {
       // 发生异常时返回null
@@ -39,7 +41,10 @@ class FileUtils {
   /// [fileName] 文件名（包含扩展名）
   /// 返回保存的文件路径，如果保存失败则返回null
   static Future<String?> saveBase64ImageToFile(
-      String base64String, String mimeType, String fileName) async {
+    String base64String,
+    String mimeType,
+    String fileName,
+  ) async {
     try {
       // 打开系统保存对话框
       String? outputPath = await FilePicker.platform.saveFile(
@@ -54,19 +59,30 @@ class FileUtils {
         if (base64String.startsWith('data:')) {
           base64String = base64String.split(',').last;
         }
-        
+
         Uint8List imageBytes = base64Decode(base64String);
-        
+
         // 创建文件并写入图片数据
         File file = File(outputPath);
         await file.writeAsBytes(imageBytes);
         return outputPath;
       }
-      
+
       return null;
     } catch (e) {
       // 发生异常时返回null
       return null;
     }
+  }
+}
+
+class PathProvider {
+  static Future<String> getPath(String relativePath) async {
+    relativePath = "/$relativePath";
+    if (PlatForm().platform == Platform.windows) {
+      // windows真的烦，还得给他擦屁股
+      relativePath = relativePath.replaceAll(RegExp(r'/'), r'\');
+    }
+    return "${(await getApplicationDocumentsDirectory()).path}$relativePath";
   }
 }

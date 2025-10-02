@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 
 import '../Chat/chat_models.dart';
 import '../Persona/persona_provider.dart';
+import 'file_utils.dart';
 
 class AgentData {
   final String id;
@@ -43,6 +44,24 @@ class AgentData {
       'created_at': createdAt.toIso8601String(),
       'is_default': isDefault ? 1 : 0,
     };
+  }
+
+  Future<File?> getAvatar() async {
+    var f = await PathProvider.getPath("chat/avatars/$id");
+    var f1 = File("$f.png");
+    if (await f1.exists()) {
+      return f1;
+    } else {
+      var f2 = File("$f.jpg");
+      if (await f2.exists()) {
+        return f2;
+      }
+      var f3 = File("$f.jpeg");
+      if (await f3.exists()) {
+        return f3;
+      }
+    }
+    return null;
   }
 
   String _parameterToJson() {

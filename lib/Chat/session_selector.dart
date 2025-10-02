@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -64,6 +65,7 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     var state = ref.watch(chatStateProvider);
+    var agent = ref.watch(agentProvider);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -100,14 +102,18 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Row(
                   children: [
-                    FlutterLogo(),
+                    FutureBuilder(
+                      future: agent?.getAvatar(),
+                      builder: (context, snapshot) {
+                        return StdAvatar(file: snapshot.data, length: 23);
+                      },
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       flex: 1,
                       child: Text(
                         overflow: TextOverflow.ellipsis,
-                        ref.read(chatStateProvider.notifier).agent?.name ??
-                            "Agent",
+                        agent?.name ?? "Agent",
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -291,7 +297,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   final ScrollController _agentScrollController = ScrollController();
   Timer? _hoverTimer;
   (List<ChatMessage>, Map<String, ChatFile>)? _previewedSession;
-  bool isScrolled = false;
+  bool isSessionScrolled = false;
   late ThemeConfig theme;
   void startHoverTimer(String sid) {
     _hoverTimer = Timer(Duration(milliseconds: 250), () {
@@ -317,27 +323,29 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   }
 
   void scrollToSelectedSession(int index) {
-    if (!isScrolled) {
+    if (!isSessionScrolled) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_sessionScrollController.hasClients) {
           return;
         }
         _sessionScrollController.jumpTo(64 * index.toDouble() - 128.0);
         //让选中的不在最上面
-        isScrolled = true;
+        isSessionScrolled = true;
       });
     }
   }
 
+  bool isAgentScrolled = false;
+
   void scrollToSelectedAgent(int index) {
-    if (!isScrolled) {
+    if (!isSessionScrolled) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_agentScrollController.hasClients) {
           return;
         }
-        _agentScrollController.jumpTo(64 * index.toDouble() - 128.0);
+        _agentScrollController.jumpTo(48 * index.toDouble() - 96.0);
         //让选中的不在最上面
-        isScrolled = true;
+        isAgentScrolled = true;
       });
     }
   }
@@ -406,10 +414,24 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
 
   String? selectedAgentId;
 
+  Future<(List<AgentData>, List<File?>)> getAgentAndAvatars() async {
+    var agents = await DatabaseService.instance.getAllAgents();
+    var avatars = <File?>[];
+    for (int i = 0; i < agents.length; i++) {
+      var agent = agents[i];
+      var avatar = await agent.getAvatar();
+      if (agent.id == selectedAgentId) {
+        scrollToSelectedAgent(i);
+      }
+      avatars.add(avatar);
+    }
+    return (agents, avatars);
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(chatStateProvider).session;
-
+    final agent = ref.watch(agentProvider);
     theme = ref.watch(themeProvider);
     return Column(
       children: [
@@ -430,12 +452,12 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: FutureBuilder(
-                      future: DatabaseService.instance.getAllAgents(),
+                      future: getAgentAndAvatars(),
                       builder: (context, asyncSnapshot) {
                         if (asyncSnapshot.data == null) {
                           return CircularProgressIndicator();
                         }
-                        if (asyncSnapshot.data!.isEmpty) {
+                        if (asyncSnapshot.data!.$1.isEmpty) {
                           return Center(
                             child: Text(
                               "暂无Agent,请添加一个",
@@ -443,26 +465,29 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                             ),
                           );
                         }
-                        for (int i = 0; i < asyncSnapshot.data!.length; i++) {
-                          //这里必须手动循环，因为listview有懒加载机制
-                          if (asyncSnapshot.data![i].id == session?.id) {}
-                        }
                         return ListView.builder(
                           controller: _agentScrollController,
-                          itemCount: asyncSnapshot.data!.length,
+                          itemCount: asyncSnapshot.data!.$1.length,
                           itemBuilder: (context, index) {
+                            var isSelected =
+                                asyncSnapshot.data!.$1[index].id ==
+                                selectedAgentId;
                             return StdListTile(
-                              title: Text(asyncSnapshot.data![index].name),
-                              leading: FlutterLogo(),
-                              isSelected:
-                                  asyncSnapshot.data![index].id ==
-                                  selectedAgentId,
+                              title: Text(asyncSnapshot.data!.$1[index].name),
+                              leading: StdAvatar(
+                                file: asyncSnapshot.data!.$2[index],
+                                length: 30,
+                                backgroundColor: isSelected
+                                    ? theme.surfaceColor
+                                    : null,
+                              ),
+                              isSelected: isSelected,
                               onTap: () {
-                                if (asyncSnapshot.data![index].id !=
+                                if (asyncSnapshot.data!.$1[index].id !=
                                     selectedAgentId) {
                                   setState(() {
                                     selectedAgentId =
-                                        asyncSnapshot.data![index].id;
+                                        asyncSnapshot.data!.$1[index].id;
                                   });
                                 }
                               },
@@ -565,8 +590,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                               .$1[_previewedSession!.$1.length -
                                               1 -
                                               index];
-                                      return ChatMessageBubble(
-                                        enableAnimation: false,
+                                      return PersistChatMessage(
                                         message: message,
                                       );
                                     },

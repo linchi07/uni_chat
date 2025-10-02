@@ -46,6 +46,14 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
         curve: Interval(0.0, 0.7, curve: Curves.easeInOut), // 前半段时间执行
       ),
     );
+    var agent = ref.read(agentProvider);
+    if (agent != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          selectedIndex = (agent.id, agent.name);
+        });
+      });
+    }
   }
 
   @override
@@ -54,17 +62,24 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
     super.dispose();
   }
 
+  Future<(List<AgentData>, List<File?>, File?)> getAgentAndAvatars() async {
+    var agents = await DatabaseService.instance.getAllAgents();
+    var avatars = <File?>[];
+    File? selectedAvatar;
+    for (var agent in agents) {
+      var avatar = await agent.getAvatar();
+      if (agent.id == selectedIndex?.$1) {
+        selectedAvatar = avatar;
+      }
+      avatars.add(avatar);
+    }
+    return (agents, avatars, selectedAvatar);
+  }
+
   @override
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     var agent = ref.watch(agentProvider);
-    if (agent != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          selectedIndex = (agent.id, agent.name);
-        });
-      });
-    }
     return SizedBox(
       height: 40,
       width: 180,
@@ -92,7 +107,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: FutureBuilder(
-                      future: DatabaseService.instance.getAllAgents(),
+                      future: getAgentAndAvatars(),
                       builder: (context, asyncSnapshot) {
                         if (asyncSnapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -113,7 +128,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     const SizedBox(width: 16.0),
-                                    const FlutterLogo(size: 25),
+                                    StdAvatar(file: asyncSnapshot.data!.$3),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
@@ -128,13 +143,13 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                                 ),
                               ),
                             const Divider(),
-                            if (asyncSnapshot.data!.isEmpty)
+                            if (asyncSnapshot.data!.$1.isEmpty)
                               const Center(child: Text('没有agent')),
                             Expanded(
                               child: (_scaleAnimation.isCompleted)
                                   ? SizedBox()
                                   : ListView.builder(
-                                      itemCount: asyncSnapshot.data!.length,
+                                      itemCount: asyncSnapshot.data!.$1.length,
                                       itemBuilder: (context, index) {
                                         return StdListTile(
                                           onTap: () async {
@@ -142,13 +157,19 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                                             await ref
                                                 .read(agentProvider.notifier)
                                                 .loadAgentById(
-                                                  asyncSnapshot.data![index].id,
+                                                  asyncSnapshot
+                                                      .data!
+                                                      .$1[index]
+                                                      .id,
                                                 );
                                           },
                                           title: Text(
-                                            asyncSnapshot.data![index].name,
+                                            asyncSnapshot.data!.$1[index].name,
                                           ),
-                                          leading: const FlutterLogo(),
+                                          leading: StdAvatar(
+                                            file: asyncSnapshot.data!.$2[index],
+                                            length: 25,
+                                          ),
                                         );
                                       },
                                     ),
@@ -181,7 +202,12 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(width: 16),
-                    const FlutterLogo(size: 25),
+                    FutureBuilder(
+                      future: agent?.getAvatar(),
+                      builder: (context, asyncSnapshot) {
+                        return StdAvatar(file: asyncSnapshot.data, length: 28);
+                      },
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -226,6 +252,12 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
         curve: Interval(0.0, 0.7, curve: Curves.easeInOut), // 前半段时间执行
       ),
     );
+    var persona = ref.read(personaProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        selectedIndex = (persona.id, persona.name);
+      });
+    });
   }
 
   @override
@@ -234,15 +266,24 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
     super.dispose();
   }
 
+  Future<(List<Persona>, List<File?>, File?)> getPersonaAndAvatar() async {
+    var ps = await DatabaseService.instance.getAllPersonas();
+    File? selectedAvatar;
+    List<File?> avatars = [];
+    for (var p in ps) {
+      var avatar = await p.getAvatar();
+      avatars.add(avatar);
+      if (p.id == selectedIndex?.$1) {
+        selectedAvatar = avatar;
+      }
+    }
+    return (ps, avatars, selectedAvatar);
+  }
+
   @override
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     var persona = ref.watch(personaProvider);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        selectedIndex = (persona.id, persona.name);
-      });
-    });
     return SizedBox(
       height: 40,
       width: 180,
@@ -270,7 +311,7 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: FutureBuilder(
-                      future: DatabaseService.instance.getAllPersonas(),
+                      future: getPersonaAndAvatar(),
                       builder: (context, asyncSnapshot) {
                         if (asyncSnapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -291,7 +332,13 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     const SizedBox(width: 16.0),
-                                    const FlutterLogo(size: 25),
+                                    SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: StdAvatar(
+                                        file: asyncSnapshot.data!.$3,
+                                      ),
+                                    ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
@@ -306,13 +353,13 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                                 ),
                               ),
                             const Divider(),
-                            if (asyncSnapshot.data!.isEmpty)
+                            if (asyncSnapshot.data!.$1.isEmpty)
                               const Center(child: Text('没有人格')),
                             Expanded(
                               child: (_scaleAnimation.isCompleted)
                                   ? SizedBox()
                                   : ListView.builder(
-                                      itemCount: asyncSnapshot.data!.length,
+                                      itemCount: asyncSnapshot.data!.$1.length,
                                       itemBuilder: (context, index) {
                                         return StdListTile(
                                           onTap: () async {
@@ -320,13 +367,19 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                                             await ref
                                                 .read(personaProvider.notifier)
                                                 .loadPersonaById(
-                                                  asyncSnapshot.data![index].id,
+                                                  asyncSnapshot
+                                                      .data!
+                                                      .$1[index]
+                                                      .id,
                                                 );
                                           },
                                           title: Text(
-                                            asyncSnapshot.data![index].name,
+                                            asyncSnapshot.data!.$1[index].name,
                                           ),
-                                          leading: const FlutterLogo(),
+                                          leading: StdAvatar(
+                                            length: 20,
+                                            file: asyncSnapshot.data!.$2[index],
+                                          ),
                                         );
                                       },
                                     ),
@@ -359,7 +412,12 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(width: 16),
-                    const FlutterLogo(size: 25),
+                    FutureBuilder(
+                      future: persona.getAvatar(),
+                      builder: (context, asyncSnapshot) {
+                        return StdAvatar(length: 24, file: asyncSnapshot.data);
+                      },
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -421,12 +479,31 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
   }
 }
 
-class ChatPanel extends ConsumerWidget {
+class ChatPanel extends ConsumerStatefulWidget {
   const ChatPanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final chatState = ref.watch(chatStateProvider);
+  ConsumerState<ChatPanel> createState() => _ChatPanelState();
+}
+
+class _ChatPanelState extends ConsumerState<ChatPanel> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var chatState = ref.watch(chatStateProvider);
     final messages = chatState.messages;
     return Scaffold(
       backgroundColor: ref.watch(themeProvider).backgroundColor,
@@ -439,16 +516,40 @@ class ChatPanel extends ConsumerWidget {
                 child: SelectionArea(
                   selectionControls: MaterialTextSelectionControls(),
                   child: ListView.builder(
-                    reverse: true,
-                    itemCount: messages.length,
+                    controller: _scrollController,
+                    reverse: true, // 最新消息在底部
+                    itemCount: chatState.isResponding
+                        ? chatState.messages.length + 1
+                        : chatState.messages.length,
                     itemBuilder: (context, index) {
-                      final message = messages[messages.length - 1 - index];
-                      return ChatMessageBubble(
-                        message: message,
-                        enableAnimation:
-                            (index == messages.length - 1 &&
-                            chatState.isLoading),
-                      );
+                      // 1. **最新消息的位置 (index == 0) 用于显示流式组件**
+                      if (chatState.isResponding && index == 0) {
+                        return ChatMessageDynamicStream(
+                          contentBuffer: chatState.newContentBuffer,
+                          refreshFlag: chatState.refreshFlag,
+                        );
+                      }
+
+                      // 2. **历史消息的索引计算更直观**
+                      // 历史消息的索引从 0 (最新) 变为 N-1 (最旧)
+                      // 由于流式组件占用了 index=0 的位置，历史消息的索引需要 +1
+                      final messageIndex = chatState.isResponding
+                          ? index - 1
+                          : index;
+
+                      // 确保索引在有效范围内 (只处理历史消息)
+                      if (messageIndex >= 0 &&
+                          messageIndex < chatState.messages.length) {
+                        // messages[N - 1 - messageIndex] 仍然是正确的反转索引
+                        final message =
+                            messages[chatState.messages.length -
+                                1 -
+                                messageIndex];
+                        return PersistChatMessage(message: message);
+                      }
+
+                      // 理论上不会执行到这里，但为了安全可以返回一个空的 Widget
+                      return const SizedBox.shrink();
                     },
                   ),
                 ),

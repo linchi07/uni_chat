@@ -1,8 +1,9 @@
-import 'package:uni_chat/utils/api_database_service.dart';
-import 'package:uni_chat/utils/dialog.dart';
-import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/utils/api_database_service.dart';
+import 'package:uni_chat/utils/dialog.dart';
+import 'package:uni_chat/utils/llm_image_indexer.dart';
+import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
 import '../theme_manager.dart';
 
@@ -49,7 +50,12 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
                               ),
                               onTap: () {},
                               tileColor: theme.surfaceColor,
-                              leading: FlutterLogo(size: 50),
+                              leading: StdAvatar(
+                                length: 50,
+                                assetImage: AssetImage(
+                                  LLMImageIndexer.getImagePath(model.family),
+                                ),
+                              ),
                               title: Text(model.friendlyName),
                               subtitle: Text(model.family),
                               trailing: IconButton(
@@ -163,9 +169,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
                 "该模型的所有提供商",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(
-                height: 12,
-              ),
+              const SizedBox(height: 12),
               Expanded(
                 child: FutureBuilder(
                   future: ApiDatabaseService.instance.getProvidersByModel(

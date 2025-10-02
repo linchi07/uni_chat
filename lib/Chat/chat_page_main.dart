@@ -7,9 +7,10 @@ import 'package:uni_chat/Chat/chat_panel.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Chat/panels/panel_data.dart';
 import 'package:uni_chat/Chat/panels/panel_layout_engine.dart';
-import 'package:uni_chat/uiql_preview/uiql_previewer.dart';
-import 'package:uni_chat/utils/base64_image.dart';
+import 'package:uni_chat/developer_tools/message_bubble_previewer.dart';
+import 'package:uni_chat/developer_tools/uiql_previewer.dart';
 import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/utils/images.dart';
 import 'package:uuid/uuid.dart';
 
 import 'chat_models.dart';
@@ -22,7 +23,7 @@ class ChatPageMain extends ConsumerStatefulWidget {
 }
 
 class _ChatPageMainState extends ConsumerState<ChatPageMain> {
-  bool _isDebugging = false;
+  bool _isDebugUiql = false;
 
   void updateLayout(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -43,6 +44,7 @@ class _ChatPageMainState extends ConsumerState<ChatPageMain> {
     });
   }
 
+  bool bubbleDebug = false;
   @override
   Widget build(BuildContext context) {
     var currentSession = ref.watch(chatStateProvider.select((s) => s.session));
@@ -63,18 +65,34 @@ class _ChatPageMainState extends ConsumerState<ChatPageMain> {
                 children: [
                   Expanded(child: SizedBox()),
                   Text(
-                    _isDebugging ? "UIQL Preview Mode" : "Chat Mode",
+                    bubbleDebug ? "ChatBubble Preview Mode" : "Chat Mode",
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
                   const SizedBox(width: 8),
                   Switch(
-                    value: _isDebugging,
+                    value: bubbleDebug,
                     onChanged: (value) {
                       if (!value) {
                         ref.read(panelManager).clear();
                       }
                       setState(() {
-                        _isDebugging = value;
+                        bubbleDebug = value;
+                      });
+                    },
+                  ),
+                  Text(
+                    _isDebugUiql ? "UIQL Preview Mode" : "Chat Mode",
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                  const SizedBox(width: 8),
+                  Switch(
+                    value: _isDebugUiql,
+                    onChanged: (value) {
+                      if (!value) {
+                        ref.read(panelManager).clear();
+                      }
+                      setState(() {
+                        _isDebugUiql = value;
                       });
                     },
                   ),
@@ -85,7 +103,11 @@ class _ChatPageMainState extends ConsumerState<ChatPageMain> {
               child: Row(
                 children: [
                   Expanded(
-                    child: _isDebugging ? const UIQLPreviewer() : ChatPanel(),
+                    child: (bubbleDebug)
+                        ? MessageBubblePreviewer()
+                        : _isDebugUiql
+                        ? const UIQLPreviewer()
+                        : ChatPanel(),
                   ),
                   const PanelLayout(),
                 ],

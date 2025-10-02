@@ -1,7 +1,9 @@
-import 'package:uni_chat/utils/api_database_service.dart';
-import 'package:uni_chat/utils/dialog.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/utils/api_database_service.dart';
+import 'package:uni_chat/utils/dialog.dart';
 
 import '../theme_manager.dart';
 import '../utils/database_service.dart';
@@ -53,7 +55,8 @@ class _AgentPageState extends State<AgentPage> {
                   return StdButton(
                     text: "创建一个新的Agent",
                     onPressed: () {
-                      ref.read(agentEditState.notifier).state = AgentEditState();
+                      ref.read(agentEditState.notifier).state =
+                          AgentEditState();
                       setState(() {
                         _isEditing = true;
                       });
@@ -79,16 +82,26 @@ class _AgentPageState extends State<AgentPage> {
 class AgentSelector extends ConsumerWidget {
   const AgentSelector({super.key, required this.onEdit});
   final dynamic onEdit;
+
+  Future<(List<AgentData>, List<File?>)> getAgentAndAvatars() async {
+    var agents = await DatabaseService.instance.getAllAgents();
+    var avatars = <File?>[];
+    for (var agent in agents) {
+      avatars.add(await agent.getAvatar());
+    }
+    return (agents, avatars);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     var theme = ref.watch(themeProvider);
     return FutureBuilder(
-      future: DatabaseService.instance.getAllAgents(),
+      future: getAgentAndAvatars(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (snapshot.data!.isEmpty) {
+        if (snapshot.data!.$1.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -99,11 +112,15 @@ class AgentSelector extends ConsumerWidget {
           );
         }
         return ListView.builder(
-          itemCount: snapshot.data!.length,
+          itemCount: snapshot.data!.$1.length,
           itemBuilder: (context, index) {
-            final agent = snapshot.data![index];
+            final agent = snapshot.data!.$1[index];
             return StdListTile(
-              leading: FlutterLogo(size: 50),
+              leading: StdAvatar(
+                file: snapshot.data!.$2[index],
+                length: 50,
+                showBorder: true,
+              ),
               title: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -120,7 +137,7 @@ class AgentSelector extends ConsumerWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.black, fontSize: 12),
                     ),
-                  )
+                  ),
                 ],
               ),
               subtitle: Text(agent.description ?? ""),
@@ -129,20 +146,28 @@ class AgentSelector extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    onPressed: () async{
-                      var result = await ApiDatabaseService.instance.getProviderAndModelByModelConfig(agent.modelProviderConfigureId);
-                      if(result.$1 == null || result.$2 == null){
-                        return;
-                      }
-                      ref.read(agentEditState.notifier).state =
-                          AgentEditState.fromAgentData(agent,result.$1!,result.$2!);
+                    onPressed: () async {
+                      var result = await ApiDatabaseService.instance
+                          .getProviderAndModelByModelConfig(
+                            agent.modelProviderConfigureId,
+                          );
+                      ref
+                          .read(agentEditState.notifier)
+                          .state = AgentEditState.fromAgentData(
+                        agent,
+                        result.$1,
+                        result.$2,
+                      );
                       onEdit();
                     },
                     icon: Icon(Icons.edit),
                   ),
                   IconButton(
                     onPressed: () {
-                      OverlayPortalService.show(context, child: _confirmDeleteDialog(theme,context, agent.id));
+                      OverlayPortalService.show(
+                        context,
+                        child: _confirmDeleteDialog(theme, context, agent.id),
+                      );
                     },
                     icon: Icon(Icons.delete),
                   ),
@@ -154,7 +179,12 @@ class AgentSelector extends ConsumerWidget {
       },
     );
   }
-  Widget _confirmDeleteDialog(ThemeConfig  theme,BuildContext context, String agentId) {
+
+  Widget _confirmDeleteDialog(
+    ThemeConfig theme,
+    BuildContext context,
+    String agentId,
+  ) {
     return SizedBox(
       width: 300,
       height: 200,
