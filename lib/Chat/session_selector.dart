@@ -431,7 +431,6 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(chatStateProvider).session;
-    final agent = ref.watch(agentProvider);
     theme = ref.watch(themeProvider);
     return Column(
       children: [

@@ -1,20 +1,19 @@
-import 'package:uni_chat/Agent/agent_set_page.dart';
-import 'package:uni_chat/Chat/session_selector.dart';
+import 'dart:io' as io show Platform;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:macos_window_utils/macos_window_utils.dart';
+import 'package:macos_window_utils/toolbars/toolbars.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
+import 'package:uni_chat/Chat/session_selector.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
 import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/dialog.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:macos_window_utils/macos_window_utils.dart';
-import 'package:macos_window_utils/toolbars/toolbars.dart';
-import 'dart:io' as io show Platform;
-
-import 'package:macos_window_utils/window_manipulator.dart';
 
 import 'Agent/agent_page.dart';
+import 'generated/l10n.dart';
 
 Future<void> main() async {
   if (io.Platform.isAndroid) {
@@ -65,6 +64,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ProviderScope(
       child: MaterialApp(
+        localizationsDelegates: [
+          S.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         navigatorKey: navigatorKey,
         title: '',
         theme: ThemeData(

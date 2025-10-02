@@ -12,6 +12,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.6.1
   http: ^1.5.0
@@ -60,4 +63,5 @@ flutter:
   assets:
     - resources/
     - resources/provider_model_icons/
-
+flutter_intl:
+  enabled: true
