@@ -491,7 +491,7 @@ class GeminiApiService implements LLMApiService {
     ModelRequestContent modelRequestContent,
   ) async* {
     final client = http.Client();
-    final uri = Uri.parse('$_generateEndpoint:generateContent?alt=sse');
+    final uri = Uri.parse('$_generateEndpoint:streamGenerateContent?alt=sse');
     final request = http.Request('POST', uri);
 
     request.headers.addAll({
@@ -560,6 +560,7 @@ class GeminiApiService implements LLMApiService {
                     json['candidates'][0]['content']['parts'][0]['text']
                         as String?;
                 if (text != null) {
+                  print(json.toString());
                   return [ChatResponse(type: ResponseType.text, content: text)];
                 }
               } catch (e) {

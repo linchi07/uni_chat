@@ -565,8 +565,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                               .$1[_previewedSession!.$1.length -
                                               1 -
                                               index];
-                                      return ChatMessageBubble(
-                                        enableAnimation: false,
+                                      return PersistChatMessage(
                                         message: message,
                                       );
                                     },

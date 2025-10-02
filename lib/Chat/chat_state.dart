@@ -1,11 +1,13 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/inline_dynamic_fc_parser.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
+import 'package:uni_chat/utils/chunked_string_buffer.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -21,16 +23,24 @@ class ChatState {
   ChatSession? session;
   final List<ChatMessage> messages;
   final Map<String, ChatFile> uploadedFiles;
+  late final ChunkedStringBuffer newContentBuffer;
+  late final ValueNotifier<bool> refreshFlag;
   final bool isLoading;
+  final bool isResponding;
   final String? error;
 
   ChatState({
     ChatSession? session,
     this.uploadedFiles = const {},
     this.messages = const [],
+    ChunkedStringBuffer? newContentBuffer,
+    ValueNotifier<bool>? refreshFlag,
     this.isLoading = false,
+    this.isResponding = false,
     this.error,
   }) {
+    this.newContentBuffer = newContentBuffer ?? ChunkedStringBuffer();
+    this.refreshFlag = refreshFlag ?? ValueNotifier(false);
     if (session != null) {
       this.session = session;
     }
@@ -40,14 +50,20 @@ class ChatState {
     ChatSession? session,
     List<ChatMessage>? messages,
     Map<String, ChatFile>? uploadedFiles,
+    ChunkedStringBuffer? newContentBuffer,
+    ValueNotifier<bool>? refreshFlag,
     bool? isLoading,
+    bool? isResponding,
     String? error,
   }) {
     return ChatState(
       session: session ?? this.session,
       messages: messages ?? this.messages,
+      newContentBuffer: newContentBuffer ?? this.newContentBuffer,
+      refreshFlag: refreshFlag ?? this.refreshFlag,
       uploadedFiles: uploadedFiles ?? this.uploadedFiles,
       isLoading: isLoading ?? this.isLoading,
+      isResponding: isResponding ?? this.isResponding,
       error: error ?? this.error,
     );
   }
@@ -253,17 +269,10 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       timestamp: DateTime.now(),
     );
     // 3. Add placeholder for AI response
-    final aiResponseId = _uuid.v4();
-    final aiMessage = ChatMessage(
-      id: aiResponseId,
-      sender: MessageSender.ai,
-      content: '▍',
-      timestamp: DateTime.now(),
-    );
     state = state.copyWith(
       isLoading: true,
       error: null,
-      messages: [...state.messages, userMessage, aiMessage],
+      messages: [...state.messages, userMessage],
     );
     //接下来构造发送的后端消息
     // --- Database Integration ---
@@ -285,14 +294,10 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       // Decide if we want to stop or continue if DB save fails. For now, continue.
     }
     // --- End Database Integration ---
-    sendRequest(aiResponseId, history, userMessage);
+    sendRequest(history, userMessage);
   }
 
-  void sendRequest(
-    String aiResponseId,
-    List<ChatMessage> history,
-    ChatMessage userMessage,
-  ) async {
+  void sendRequest(List<ChatMessage> history, ChatMessage userMessage) async {
     // 4. Call the API and handle the stream
     try {
       var pm = _ref.read(panelManager);
@@ -309,61 +314,48 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         userMessage,
         state.uploadedFiles,
       );
-      String fullResponse = '';
       ChatMessage? finalAiMessage;
+      state = state.copyWith(isResponding: true);
       await for (final chunk in stream) {
-        fullResponse += chunk.content;
         try {
           dynamicUIQLParser.parse(chunk.content);
         } catch (e) {
           dynamicUIQLParser.clear();
           print("p $e");
         }
-        final updatedMessage = ChatMessage(
-          id: aiResponseId,
-          sender: MessageSender.ai,
-          content: fullResponse,
-          timestamp: DateTime.now(),
-        );
-        finalAiMessage = updatedMessage;
-        final updatedMessages = state.messages
-            .map((msg) => msg.id == aiResponseId ? updatedMessage : msg)
-            .toList();
-        state = state.copyWith(messages: updatedMessages);
+        state.newContentBuffer.write(chunk.content);
+        state.refreshFlag.value = !state.refreshFlag.value;
       }
+      finalAiMessage = ChatMessage(
+        id: Uuid().v4(),
+        sender: MessageSender.ai,
+        content: state.newContentBuffer.toString(),
+        timestamp: DateTime.now(),
+      );
+      state = state.copyWith(
+        isResponding: false,
+        messages: [...state.messages, finalAiMessage],
+      );
+      state.newContentBuffer.clear();
       // --- Database Integration ---
-      if (finalAiMessage != null) {
-        try {
-          if (currentSessionId == null) {
-            throw Exception('No session selected');
-          }
-          await _dbService.addMessage(
-            currentSessionId!,
-            finalAiMessage,
-            state.uploadedFiles,
-          );
-          var l = _ref.read(panelManager).saveToJson();
-          if (l != null) {
-            await _dbService.writeLayout(state.session!.id, l);
-          }
-        } catch (e) {
-          print("Error saving AI message to DB: $e");
-        }
+      if (currentSessionId == null) {
+        throw Exception('No session selected');
+      }
+      await _dbService.addMessage(
+        currentSessionId!,
+        finalAiMessage,
+        state.uploadedFiles,
+      );
+      var l = _ref.read(panelManager).saveToJson();
+      if (l != null) {
+        await _dbService.writeLayout(state.session!.id, l);
       }
       // --- End Database Integration ---
     } catch (e) {
-      final errorMessage = ChatMessage(
-        id: aiResponseId,
-        sender: MessageSender.ai,
-        content: "Sorry, an error occurred: ${e.toString()}",
-        timestamp: DateTime.now(),
-      );
-      final updatedMessages = state.messages
-          .map((msg) => msg.id == aiResponseId ? errorMessage : msg)
-          .toList();
-      state = state.copyWith(messages: updatedMessages, error: e.toString());
+      state.newContentBuffer.write("<error>${e.toString()}</error>");
+      state.refreshFlag.value = !state.refreshFlag.value;
     } finally {
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(isLoading: false, isResponding: false);
     }
   }
 }

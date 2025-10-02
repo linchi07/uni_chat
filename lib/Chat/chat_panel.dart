@@ -421,12 +421,31 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
   }
 }
 
-class ChatPanel extends ConsumerWidget {
+class ChatPanel extends ConsumerStatefulWidget {
   const ChatPanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final chatState = ref.watch(chatStateProvider);
+  ConsumerState<ChatPanel> createState() => _ChatPanelState();
+}
+
+class _ChatPanelState extends ConsumerState<ChatPanel> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var chatState = ref.watch(chatStateProvider);
     final messages = chatState.messages;
     return Scaffold(
       backgroundColor: ref.watch(themeProvider).backgroundColor,
@@ -439,16 +458,40 @@ class ChatPanel extends ConsumerWidget {
                 child: SelectionArea(
                   selectionControls: MaterialTextSelectionControls(),
                   child: ListView.builder(
-                    reverse: true,
-                    itemCount: messages.length,
+                    controller: _scrollController,
+                    reverse: true, // 最新消息在底部
+                    itemCount: chatState.isResponding
+                        ? chatState.messages.length + 1
+                        : chatState.messages.length,
                     itemBuilder: (context, index) {
-                      final message = messages[messages.length - 1 - index];
-                      return ChatMessageBubble(
-                        message: message,
-                        enableAnimation:
-                            (index == messages.length - 1 &&
-                            chatState.isLoading),
-                      );
+                      // 1. **最新消息的位置 (index == 0) 用于显示流式组件**
+                      if (chatState.isResponding && index == 0) {
+                        return ChatMessageDynamicStream(
+                          contentBuffer: chatState.newContentBuffer,
+                          refreshFlag: chatState.refreshFlag,
+                        );
+                      }
+
+                      // 2. **历史消息的索引计算更直观**
+                      // 历史消息的索引从 0 (最新) 变为 N-1 (最旧)
+                      // 由于流式组件占用了 index=0 的位置，历史消息的索引需要 +1
+                      final messageIndex = chatState.isResponding
+                          ? index - 1
+                          : index;
+
+                      // 确保索引在有效范围内 (只处理历史消息)
+                      if (messageIndex >= 0 &&
+                          messageIndex < chatState.messages.length) {
+                        // messages[N - 1 - messageIndex] 仍然是正确的反转索引
+                        final message =
+                            messages[chatState.messages.length -
+                                1 -
+                                messageIndex];
+                        return PersistChatMessage(message: message);
+                      }
+
+                      // 理论上不会执行到这里，但为了安全可以返回一个空的 Widget
+                      return const SizedBox.shrink();
                     },
                   ),
                 ),
