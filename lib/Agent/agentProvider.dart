@@ -10,6 +10,7 @@ import 'package:uni_chat/utils/database_service.dart';
 
 import '../Chat/chat_models.dart';
 import '../llm_provider/api_service_provider.dart';
+import '../llm_provider/pre_built_models.dart';
 
 class ModelSpecifics {
   String? modelName;
@@ -122,11 +123,11 @@ class AgentProvider extends StateNotifier<Agent?> {
       final modelService = await ApiServiceProvider.instance.createApiService(
         agentData.modelProviderConfigureId,
       );
-      if (modelService == null) {
-        //TODO: 这里也需要更好的错误处理，在模型api管理删除模型提供者时，会触发这里
-        throw Exception('Failed to create API service for the agent.');
+      if (modelService != null) {
+        state = Agent.fromAgentData(agentData, modelService);
       }
-      state = Agent.fromAgentData(agentData, modelService);
+      //TODO: 这里也需要更好的错误处理，在模型api管理删除模型提供者时，会触发这里
+      //throw Exception('Failed to create API service for the agent.');
     }
   }
 
@@ -158,7 +159,7 @@ class AgentProvider extends StateNotifier<Agent?> {
   final Ref ref;
   Future<String?> fileUpload(File file, String mime) async {
     if (state != null) {
-      if (state!.model.abilities.contains(ApiAbility.supportFilesApi)) {
+      if (state!.model.abilities.contains(ApiAbility.supportsFilesApi)) {
         var r = await state!.model.fileUpload(
           file, // 使用拷贝后的文件
           mime,
@@ -342,13 +343,13 @@ class AgentProvider extends StateNotifier<Agent?> {
                   break;
                 case FileTypeDefine.image:
                   //当模型不支持图片识别的时候直接忽略图片
-                  if (!state!.model.abilities.contains(
-                    ApiAbility.visualUnderStanding,
+                  if (!state!.model.modelAbilities.contains(
+                    ModelAbility.visualUnderStanding,
                   )) {
                     continue;
                   }
                   if (!state!.model.abilities.contains(
-                    ApiAbility.supportFilesApi,
+                    ApiAbility.supportsFilesApi,
                   )) {
                     //当不支持文件API的时候我们必须一个个上传
                     if (await (await attachedFile.getFile()).exists()) {
@@ -401,7 +402,7 @@ class AgentProvider extends StateNotifier<Agent?> {
                   break;
                 case FileTypeDefine.pdf:
                   if (!state!.model.abilities.contains(
-                    ApiAbility.supportFilesApi,
+                    ApiAbility.supportsFilesApi,
                   )) {
                     //当不支持文件API的时候我们必须一个个上传
                     if (await (await attachedFile.getFile()).exists()) {

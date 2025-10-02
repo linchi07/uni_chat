@@ -1,8 +1,8 @@
-import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:uni_chat/llm_provider/api_service.dart';
+import 'package:uni_chat/llm_provider/pre_built_models.dart';
+import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uuid/uuid.dart';
-
-import 'api_service.dart';
 
 class PresetProvider {
   PresetProvider({
@@ -10,6 +10,7 @@ class PresetProvider {
     required this.name,
     required this.version,
     required this.description,
+    Set<ApiAbility>? abilities,
     this.type,
     required this.models,
     this.endPoint,
@@ -17,12 +18,15 @@ class PresetProvider {
     this.apiKeyHintWidget,
     this.step3Hint,
     this.step4Hint,
-  });
+  }) {
+    this.abilities = abilities ?? {};
+  }
   final String id;
   final String name;
   final int version;
   final String description;
   final String? type;
+  late final Set<ApiAbility> abilities;
   final String? endPoint;
   final Widget? step1Hint;
   final Widget? apiKeyHintWidget;
@@ -36,15 +40,13 @@ class PresetProvider {
       name: "OpenAI",
       version: 1,
       description: "OpenAI 官方 API",
-      endPoint: "https://api.openai.com/v1/chat/completions",
+      abilities: {ApiAbility.supportsFilesApi},
+      endPoint: "https://api.openai.com",
       step1Hint: Text("注意：此端点是官方API端点，若需要使用OpenAi兼容Api，请使用自定义端点"),
       type: "openai",
       models: [
-        ModelsConfigData(
-          callName: "gpt-3.5-turbo",
-          friendlyName: "GPT-3.5-Turbo",
-          abilities: {ApiAbility.supportFilesApi, ApiAbility.textGenerate},
-        ),
+        ?PreBuiltModels.models["gpt-4o"],
+        ?PreBuiltModels.models["gpt-5"],
       ],
     ),
     "Google": PresetProvider(
@@ -52,20 +54,22 @@ class PresetProvider {
       name: "Google",
       version: 1,
       description: "Google 官方 API",
-      endPoint: "https://chat.googleapis.com/v1/spaces/",
+      abilities: {ApiAbility.supportsFilesApi},
+      endPoint: "https://generativelanguage.googleapis.com",
       type: "google",
       step1Hint: Text("注意：此端点是官方API端点，若需要使用Google兼容Api，请使用自定义端点"),
       models: [
-        ModelsConfigData(
-          callName: "gemini-1.5-flash",
-          friendlyName: "Gemini 1.5 flash",
-          abilities: {
-            ApiAbility.textGenerate,
-            ApiAbility.supportFilesApi,
-            ApiAbility.visualUnderStanding,
-          },
-        ),
+        ?PreBuiltModels.models["gemini-2.5-flash"],
+        ?PreBuiltModels.models["gemini-2.5-pro"],
       ],
+    ),
+    "LmStudio": PresetProvider(
+      id: "lmstudio",
+      name: "LmStudio",
+      version: 1,
+      description: "LmStudio",
+      type: "openaiCompletion",
+      models: [],
     ),
     "custom": PresetProvider(
       id: "custom",
@@ -81,12 +85,14 @@ class ModelsConfigData {
   late final String id;
   final String callName;
   final String friendlyName;
-  final Set<ApiAbility> abilities;
+  final String? family;
+  final Set<ModelAbility> abilities;
   ModelsConfigData({
     String? id,
     required this.callName,
     required this.friendlyName,
     required this.abilities,
+    this.family,
   }) {
     this.id = id ?? const Uuid().v4();
   }
@@ -99,7 +105,7 @@ class ModelsConfigData {
       id: config.id,
       callName: config.callName,
       friendlyName: friendlyName,
-      abilities: config.abilities,
+      abilities: {},
     );
   }
 }

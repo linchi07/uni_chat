@@ -10,9 +10,7 @@ class ApiServiceProvider {
   static ApiServiceProvider get instance => _instance;
 
   /// 根据提供商-模型配置ID创建LLM API服务实例
-  Future<LLMApiService?> createApiService(
-    String providerModelConfigId,
-  ) async {
+  Future<LLMApiService?> createApiService(String providerModelConfigId) async {
     try {
       // 获取数据库实例
       final db = ApiDatabaseService.instance;
@@ -54,7 +52,8 @@ class ApiServiceProvider {
             apiKey: enabledApiKey.keyValue,
             endPoint: provider.apiEndpoint,
             modelName: config.callName, // 使用配置中的callName
-            abilities: config.abilities,
+            abilities: {ApiAbility.supportsFilesApi},
+            modelAbilities: model.abilities,
             providerName: provider.name,
           );
         case 'google':
@@ -62,15 +61,26 @@ class ApiServiceProvider {
             apiKey: enabledApiKey.keyValue,
             endPoint: provider.apiEndpoint,
             modelName: config.callName, // 使用配置中的callName
-            abilities: config.abilities,
+            abilities: {ApiAbility.supportsFilesApi},
+            modelAbilities: model.abilities,
+            providerName: provider.name,
+          );
+        case 'openaiCompletion':
+          return OpenAiCompletionService(
+            apiKey: enabledApiKey.keyValue,
+            endPoint: provider.apiEndpoint,
+            modelName: config.callName, // 使用配置中的callName
+            abilities: {},
+            modelAbilities: model.abilities,
             providerName: provider.name,
           );
         case 'sd': // Stable Diffusion
           return StableDiffusion(
             apiKey: enabledApiKey.keyValue,
             endPoint: provider.apiEndpoint,
+            abilities: {},
             modelName: config.callName, // 使用配置中的callName
-            abilities: config.abilities,
+            modelAbilities: model.abilities,
             providerName: provider.name,
           );
         default:

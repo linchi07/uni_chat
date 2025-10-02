@@ -1,18 +1,21 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:uni_chat/llm_provider/pre_build_providers.dart';
+
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:uni_chat/llm_provider/api_service.dart';
+import 'package:uni_chat/llm_provider/pre_build_providers.dart';
 import 'package:uuid/uuid.dart';
 
-import '../llm_provider/api_service.dart';
+import '../llm_provider/pre_built_models.dart';
 
 class ApiProvider {
   final String id;
   final String name;
   final String type;
   final String apiEndpoint;
+  final Set<ApiAbility> abilities;
   final bool isEnabled;
 
   ApiProvider({
@@ -20,6 +23,7 @@ class ApiProvider {
     required this.name,
     required this.type,
     required this.apiEndpoint,
+    required this.abilities,
     required this.isEnabled,
   });
 
@@ -28,12 +32,14 @@ class ApiProvider {
     String? name,
     String? type,
     String? apiEndpoint,
+    Set<ApiAbility>? abilities,
     bool? isEnabled,
   }) {
     return ApiProvider(
       id: id ?? this.id,
       name: name ?? this.name,
       type: type ?? this.type,
+      abilities: abilities ?? this.abilities,
       apiEndpoint: apiEndpoint ?? this.apiEndpoint,
       isEnabled: isEnabled ?? this.isEnabled,
     );
@@ -46,6 +52,9 @@ class ApiProvider {
       'type': type,
       'api_endpoint': apiEndpoint,
       'is_enabled': isEnabled ? 1 : 0,
+      'abilities': jsonEncode(
+        abilities.map((ability) => ability.index).toList(),
+      ),
     };
   }
 
@@ -55,6 +64,11 @@ class ApiProvider {
       name: map['name'],
       type: map['type'],
       apiEndpoint: map['api_endpoint'],
+      abilities: Set.from(
+        (jsonDecode(map['abilities']) as List).map(
+          (abilityIndex) => ApiAbility.values[abilityIndex as int],
+        ),
+      ),
       isEnabled: map['is_enabled'] == 1,
     );
   }
@@ -117,12 +131,14 @@ class Model {
   final String friendlyName;
   final bool isEnabled;
   final String family;
+  final Set<ModelAbility> abilities;
 
   Model({
     required this.id,
     required this.friendlyName,
     required this.isEnabled,
     required this.family,
+    required this.abilities,
   });
 
   Map<String, dynamic> toMap() {
@@ -131,6 +147,9 @@ class Model {
       'friendly_name': friendlyName,
       'is_enabled': isEnabled ? 1 : 0,
       'family': family,
+      'abilities': jsonEncode(
+        abilities.map((ability) => ability.index).toList(),
+      ),
     };
   }
 
@@ -140,6 +159,20 @@ class Model {
       family: map['family'],
       friendlyName: map['friendly_name'],
       isEnabled: map['is_enabled'] == 1,
+      abilities: Set.from(
+        (jsonDecode(map['abilities']) as List).map(
+          (abilityIndex) => ModelAbility.values[abilityIndex as int],
+        ),
+      ),
+    );
+  }
+
+  ModelsConfigData toConfigData() {
+    return ModelsConfigData(
+      callName: "",
+      friendlyName: friendlyName,
+      abilities: abilities,
+      family: family,
     );
   }
 }
@@ -149,7 +182,6 @@ class ProviderModelConfig {
   final String providerId;
   final String modelId;
   final String callName;
-  final Set<ApiAbility> abilities;
   final bool isEnabled;
 
   ProviderModelConfig({
@@ -157,7 +189,6 @@ class ProviderModelConfig {
     required this.providerId,
     required this.modelId,
     required this.callName,
-    required this.abilities,
     required this.isEnabled,
   });
 
@@ -167,25 +198,16 @@ class ProviderModelConfig {
       'provider_id': providerId,
       'model_id': modelId,
       'call_name': callName,
-      'abilities': jsonEncode(
-        abilities.map((ability) => ability.index).toList(),
-      ),
       'is_enabled': isEnabled ? 1 : 0,
     };
   }
 
   factory ProviderModelConfig.fromMap(Map<String, dynamic> map) {
-    final abilitiesList = jsonDecode(map['abilities']) as List;
-    final abilities = <ApiAbility>{};
-    for (var abilityIndex in abilitiesList) {
-      abilities.add(ApiAbility.values[abilityIndex as int]);
-    }
     return ProviderModelConfig(
       id: map['id'] as String,
       providerId: map['provider_id'] as String,
       modelId: map['model_id'] as String,
       callName: map['call_name'] as String,
-      abilities: abilities,
       isEnabled: map['is_enabled'] == 1,
     );
   }
@@ -237,7 +259,8 @@ class ApiDatabaseService {
         name TEXT NOT NULL,
         type TEXT NOT NULL,
         api_endpoint TEXT NOT NULL,
-        is_enabled INTEGER NOT NULL DEFAULT 1
+        is_enabled INTEGER NOT NULL DEFAULT 1,
+        abilities TEXT
       )
     ''');
 
@@ -259,7 +282,8 @@ class ApiDatabaseService {
         id TEXT PRIMARY KEY,
         friendly_name TEXT NOT NULL,
         is_enabled INTEGER NOT NULL DEFAULT 1,
-        family TEXT
+        family TEXT,
+        abilities TEXT
       )
     ''');
 
@@ -270,7 +294,6 @@ class ApiDatabaseService {
         provider_id TEXT NOT NULL,
         model_id TEXT NOT NULL,
         call_name TEXT NOT NULL,
-        abilities TEXT,
         is_enabled INTEGER NOT NULL DEFAULT 1,
         FOREIGN KEY (provider_id) REFERENCES api_providers (id) ON DELETE CASCADE,
         FOREIGN KEY (model_id) REFERENCES models (id) ON DELETE CASCADE
@@ -295,6 +318,7 @@ class ApiDatabaseService {
     required String name,
     required String type,
     required String apiEndpoint,
+    required Set<ApiAbility> abilities,
     bool isEnabled = true,
   }) async {
     final db = await database;
@@ -302,6 +326,7 @@ class ApiDatabaseService {
       id: _uuid.v4(),
       name: name,
       type: type,
+      abilities: abilities,
       apiEndpoint: apiEndpoint,
       isEnabled: isEnabled,
     );
@@ -463,7 +488,7 @@ class ApiDatabaseService {
 
   Future<Model> createModel({
     required String friendlyName,
-    required Set<ApiAbility> abilities,
+    required Set<ModelAbility> abilities,
     required String family,
     bool isEnabled = true,
   }) async {
@@ -473,13 +498,17 @@ class ApiDatabaseService {
       friendlyName: friendlyName,
       isEnabled: isEnabled,
       family: family,
+      abilities: abilities,
     );
 
     await db.insert('models', model.toMap());
     return model;
   }
 
-  Future<Model> findOrCreateModel(String modelFriendlyName) async {
+  Future<Model> findOrCreateModel(
+    String modelFriendlyName,
+    String modelFamily,
+  ) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'models',
@@ -492,8 +521,8 @@ class ApiDatabaseService {
     } else {
       return await createModel(
         friendlyName: modelFriendlyName,
-        abilities: {ApiAbility.textGenerate},
-        family: "1",
+        abilities: {ModelAbility.textGenerate},
+        family: modelFamily,
       );
     }
   }
@@ -571,7 +600,6 @@ class ApiDatabaseService {
     final config = ProviderModelConfig(
       id: modelConfigData.id,
       providerId: providerId,
-      abilities: modelConfigData.abilities,
       modelId: modelId,
       callName: modelConfigData.callName,
       isEnabled: true,

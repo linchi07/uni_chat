@@ -2,80 +2,18 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:uni_chat/llm_provider/pre_built_models.dart';
 
 import '../Chat/chat_models.dart';
 
-enum ApiAbility {
-  textGenerate,
-  imageGenerate,
-  image2imageGenerate,
-  pdfUnderstanding,
-  visualUnderStanding,
-  supportFilesApi,
-  embedding,
-}
-
-extension ApiAbilityExtension on ApiAbility {
-  String get name {
-    switch (this) {
-      case ApiAbility.textGenerate:
-        return '文本生成';
-      case ApiAbility.imageGenerate:
-        return '图像生成';
-      case ApiAbility.image2imageGenerate:
-        return '图像到图像生成';
-      case ApiAbility.visualUnderStanding:
-        return '视觉理解';
-      case ApiAbility.pdfUnderstanding:
-        return 'PDF理解';
-      case ApiAbility.supportFilesApi:
-        return '文件API支持(如果你不知道这是什么，请不要动)';
-      case ApiAbility.embedding:
-        return '嵌入';
-    }
-  }
-
-  //验证互斥的能力
-  Set<ApiAbility> validate(Set<ApiAbility> abilities) {
-    if (abilities.contains(ApiAbility.embedding)) {
-      return {ApiAbility.embedding};
-    }
-    return abilities;
-  }
-
-  ///在勾选能力的时候验证互斥能力
-  Set<ApiAbility> checkIfValid(Set<ApiAbility> abilities, ApiAbility ability) {
-    if (ability == ApiAbility.embedding) {
-      return {ApiAbility.embedding};
-    } else if (abilities.contains(ApiAbility.embedding)) {
-      abilities.remove(ApiAbility.embedding);
-    }
-    abilities.add(ability);
-    return abilities;
-  }
-
-  Widget get widget {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-      margin: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: Text(
-        (this == ApiAbility.supportFilesApi) ? "文件API支持" : name,
-        style: TextStyle(color: Colors.white, fontSize: 12),
-      ),
-    );
-  }
-}
+enum ApiAbility { supportsFilesApi }
 
 // 1. Abstract Base Class (Interface)
 abstract class LLMApiService {
   abstract final Set<ApiAbility> abilities;
+  abstract final Set<ModelAbility> modelAbilities;
   abstract final String apiKey;
   abstract final String endPoint;
   abstract final String modelName;
@@ -96,6 +34,7 @@ class OpenAiApiService implements LLMApiService {
     required this.abilities,
     required this.modelName,
     required this.providerName,
+    required this.modelAbilities,
   });
   @override
   final String apiKey;
@@ -340,6 +279,221 @@ class OpenAiApiService implements LLMApiService {
       throw Exception("Failed: ${response.statusCode}, body: $responseBody");
     }
   }
+
+  @override
+  Set<ModelAbility> modelAbilities;
+}
+
+///适用于一些老的例如LMStudio这样的服务
+class OpenAiCompletionService implements LLMApiService {
+  OpenAiCompletionService({
+    required this.apiKey,
+    required this.endPoint,
+    required this.modelName,
+    required this.abilities,
+    required this.modelAbilities,
+    required this.providerName,
+  });
+  @override
+  final String apiKey;
+  @override
+  final String endPoint;
+  @override
+  final String modelName;
+  @override
+  final Set<ApiAbility> abilities;
+  @override
+  final Set<ModelAbility> modelAbilities;
+  @override
+  final String providerName;
+
+  @override
+  Future<String?> fileUpload(File file, String mime) {
+    throw UnimplementedError();
+  }
+
+  void toContent(
+    List<FormattedChatMessage> i,
+    List<Map<String, dynamic>> contents,
+  ) {
+    for (final message in i) {
+      if (message.type == ChatMessageType.text) {
+        contents.add({'type': 'text', 'text': message.content});
+      } else if (message.type == ChatMessageType.image) {
+        contents.add({'type': 'input_image', 'file_id': message.content});
+      } else if (message.type == ChatMessageType.pdf) {
+        contents.add({'type': 'input_file', 'file_id': message.content});
+      } else if (message.type == ChatMessageType.base64Image) {
+        contents.add({
+          'type': 'input_image',
+          'image_url': "data:${message.mimeType};base64,${message.content}",
+        });
+      }
+    }
+  }
+
+  @override
+  Stream<ChatResponse> getStreamingResponse(
+    ModelRequestContent modelRequestContent,
+  ) async* {
+    final client = http.Client();
+    final request = http.Request(
+      'POST',
+      Uri.parse('$endPoint/v1/chat/completions'),
+    );
+
+    request.headers.addAll({
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $apiKey',
+    });
+
+    // 构建输入内容
+    final List<Map<String, dynamic>> contents = [];
+    toContent(modelRequestContent.staticSystemMessages, contents);
+    toContent(modelRequestContent.chatHistory, contents);
+    toContent(modelRequestContent.dynamicSystemMessages, contents);
+    toContent(modelRequestContent.uiMessages, contents);
+    toContent(modelRequestContent.usrMessage, contents);
+
+    final requestBody = {
+      'model': modelName,
+      'prompt': contents,
+      'stream': true,
+      'frequency_penalty': modelRequestContent.modelSpecifics.frequencyPenalty,
+      'presence_penalty': modelRequestContent.modelSpecifics.presencePenalty,
+      'temperature': modelRequestContent.modelSpecifics.temperature,
+      'top_p': modelRequestContent.modelSpecifics.topP,
+    };
+
+    request.body = jsonEncode(requestBody);
+
+    try {
+      final response = await client.send(request);
+      if (response.statusCode == 200) {
+        yield* response.stream
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .where((line) => line.startsWith('data: '))
+            .map((line) => line.substring(6))
+            .where((data) => data != '[DONE]')
+            .map((data) => jsonDecode(data))
+            .where(
+              (json) => json['choices'] != null && json['choices'].isNotEmpty,
+            )
+            .expand((json) {
+              try {
+                final outputItems = json['choices'] as List;
+                final List<ChatResponse> responses = [];
+
+                for (final item in outputItems) {
+                  if (item['text'] != null) {
+                    responses.add(
+                      ChatResponse(
+                        type: ResponseType.text,
+                        content: item['text'] as String,
+                      ),
+                    );
+                  }
+                }
+                return responses;
+              } catch (e) {
+                // 忽略解析错误
+                return <ChatResponse>[];
+              }
+            });
+      } else {
+        final errorBody = await response.stream.bytesToString();
+        yield ChatResponse(
+          type: ResponseType.error,
+          content: '',
+          error: 'OpenAI API Error: ${response.statusCode} - $errorBody',
+        );
+      }
+    } finally {
+      client.close();
+    }
+  }
+
+  @override
+  Future<String> imageCreation(String prompt, (int, int)? size) async {
+    final client = http.Client();
+    try {
+      final uri = Uri.parse('$endPoint/images/generations');
+      final request = http.Request('POST', uri);
+
+      request.headers.addAll({
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+      });
+
+      // 将尺寸转换为OpenAI API所需的格式
+      String sizeString = '1024x1024'; // 默认尺寸
+      if (size != null) {
+        sizeString = '${size.$1}x${size.$2}';
+      }
+
+      final requestBody = {
+        'model': modelName, // 使用DALL-E 3模型，更符合实际API
+        'prompt': prompt,
+        'n': 1,
+        'size': sizeString,
+        'response_format': 'b64_json', // 返回base64编码的图像数据
+      };
+
+      request.body = jsonEncode(requestBody);
+
+      // 注意：由于方法签名返回String，这里需要同步处理
+      // 在实际应用中，可能需要修改方法签名以支持异步操作
+      final response = await client.send(request);
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        final jsonResponse = jsonDecode(responseBody);
+
+        // 返回base64编码的图像数据
+        return jsonResponse['data'][0]['b64_json'] as String;
+      } else {
+        throw Exception(
+          'Image creation failed with status: ${response.statusCode}',
+        );
+      }
+    } finally {
+      client.close();
+    }
+  }
+
+  @override
+  Future<String> image2imageGeneration(
+    String prompt,
+    String base64Image,
+  ) async {
+    var uri = Uri.parse("$endPoint/images/edits");
+
+    var request = http.MultipartRequest("POST", uri)
+      ..headers['Authorization'] = 'Bearer $apiKey'
+      ..fields['model'] = modelName
+      ..fields['prompt'] = prompt;
+
+    // 把每张 base64 图片转成 MultipartFile
+    Uint8List bytes = base64Decode(base64Image);
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'image[]', // 注意这里字段名必须是 image[]
+        bytes,
+        filename: 'image.png',
+      ),
+    );
+
+    var response = await request.send();
+    var responseBody = await response.stream.bytesToString();
+
+    if (response.statusCode == 200) {
+      var jsonResponse = jsonDecode(responseBody);
+      String b64Json = jsonResponse['data'][0]['b64_json'];
+      return b64Json; // 返回 base64 图片字符串（调用方可 decode 保存为文件）
+    } else {
+      throw Exception("Failed: ${response.statusCode}, body: $responseBody");
+    }
+  }
 }
 
 // 3. Concrete Implementation for Gemini
@@ -349,6 +503,7 @@ class GeminiApiService implements LLMApiService {
     required this.endPoint,
     required this.modelName,
     required this.abilities,
+    required this.modelAbilities,
     required this.providerName,
   });
   @override
@@ -570,9 +725,8 @@ class GeminiApiService implements LLMApiService {
             });
       } else {
         final errorBody = await response.stream.bytesToString();
-        yield ChatResponse(
-          type: ResponseType.error,
-          content: 'Gemini API Error: ${response.statusCode} - $errorBody',
+        throw Exception(
+          'Gemini API Error: ${response.statusCode} - $errorBody',
         );
       }
     } finally {
@@ -666,6 +820,9 @@ class GeminiApiService implements LLMApiService {
       client.close();
     }
   }
+
+  @override
+  Set<ModelAbility> modelAbilities;
 }
 
 class StableDiffusion implements LLMApiService {
@@ -674,6 +831,7 @@ class StableDiffusion implements LLMApiService {
     required this.endPoint,
     required this.modelName,
     required this.abilities,
+    required this.modelAbilities,
     required this.providerName,
   });
   @override
@@ -798,4 +956,7 @@ class StableDiffusion implements LLMApiService {
       client.close();
     }
   }
+
+  @override
+  Set<ModelAbility> modelAbilities;
 }

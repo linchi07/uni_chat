@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/utils/llm_image_indexer.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
@@ -151,8 +152,8 @@ class AgentEditState {
 
   factory AgentEditState.fromAgentData(
     AgentData agentData,
-    ApiProvider provider,
-    Model model,
+    ApiProvider? provider,
+    Model? model,
   ) {
     return AgentEditState(
       id: agentData.id,
@@ -1005,7 +1006,7 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                 sizeFactor: _scaleAnimation,
                 child: SizedBox(
                   width: rb.size.width + 4,
-                  height: rb.size.height * 5 + 3,
+                  height: rb.size.height * 7 + 3,
                   child: Material(
                     elevation: 4,
                     color: theme.surfaceColor,
@@ -1034,7 +1035,15 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     const SizedBox(width: 16.0),
-                                    const FlutterLogo(size: 25),
+                                    CircleAvatar(
+                                      backgroundColor: Colors.transparent,
+                                      foregroundColor: Colors.transparent,
+                                      foregroundImage: AssetImage(
+                                        LLMImageIndexer.getImagePath(
+                                          selectedIndex!.family,
+                                        ),
+                                      ),
+                                    ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
@@ -1051,28 +1060,44 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                             const Divider(),
                             if (asyncSnapshot.data!.isEmpty)
                               const Center(child: Text('没有模型')),
+                            //只是用来绘制inkwell
                             Expanded(
-                              child: (_scaleAnimation.isCompleted)
-                                  ? SizedBox()
-                                  : ListView.builder(
-                                      itemCount: asyncSnapshot.data!.length,
-                                      itemBuilder: (context, index) {
-                                        return StdListTile(
-                                          onTap: () {
-                                            onTap(asyncSnapshot.data![index]);
-                                          },
-                                          title: Text(
-                                            asyncSnapshot
-                                                .data![index]
-                                                .friendlyName,
-                                          ),
-                                          subtitle: Text(
-                                            asyncSnapshot.data![index].family,
-                                          ),
-                                          leading: const FlutterLogo(),
-                                        );
-                                      },
-                                    ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: (_scaleAnimation.isCompleted)
+                                    ? SizedBox()
+                                    : ListView.builder(
+                                        itemCount: asyncSnapshot.data!.length,
+                                        itemBuilder: (context, index) {
+                                          return StdListTile(
+                                            onTap: () {
+                                              onTap(asyncSnapshot.data![index]);
+                                            },
+                                            title: Text(
+                                              asyncSnapshot
+                                                  .data![index]
+                                                  .friendlyName,
+                                            ),
+                                            subtitle: Text(
+                                              asyncSnapshot.data![index].family,
+                                            ),
+                                            leading: CircleAvatar(
+                                              backgroundColor:
+                                                  Colors.transparent,
+                                              foregroundColor:
+                                                  Colors.transparent,
+                                              foregroundImage: AssetImage(
+                                                LLMImageIndexer.getImagePath(
+                                                  asyncSnapshot
+                                                      .data![index]
+                                                      .family,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                              ),
                             ),
                           ],
                         );
@@ -1102,7 +1127,14 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(width: 16),
-                    const FlutterLogo(size: 25),
+                    CircleAvatar(
+                      radius: 13,
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.transparent,
+                      foregroundImage: AssetImage(
+                        LLMImageIndexer.getImagePath(selectedIndex!.family),
+                      ),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -1171,6 +1203,13 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
     if (as.model == null) {
       return SizedBox();
     }
+    ref.listen(agentEditState, (previous, next) {
+      if (previous != null &&
+          previous.provider != null &&
+          previous.model != next.model) {
+        selectedIndex = null;
+      }
+    });
     return SizedBox(
       height: 40,
       width: 350,
@@ -1190,7 +1229,7 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                 sizeFactor: _scaleAnimation,
                 child: SizedBox(
                   width: rb.size.width + 4,
-                  height: rb.size.height * 5 + 3,
+                  height: rb.size.height * 7 + 3,
                   child: Material(
                     elevation: 4,
                     color: theme.surfaceColor,
@@ -1221,7 +1260,15 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     const SizedBox(width: 16.0),
-                                    const FlutterLogo(size: 25),
+                                    CircleAvatar(
+                                      backgroundColor: Colors.transparent,
+                                      foregroundColor: Colors.transparent,
+                                      foregroundImage: AssetImage(
+                                        LLMImageIndexer.getImagePath(
+                                          selectedIndex!.name,
+                                        ),
+                                      ),
+                                    ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
@@ -1239,22 +1286,37 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                             if (asyncSnapshot.data!.isEmpty)
                               const Center(child: Text('没有供应商')),
                             Expanded(
-                              child: (_scaleAnimation.isCompleted)
-                                  ? SizedBox()
-                                  : ListView.builder(
-                                      itemCount: asyncSnapshot.data!.length,
-                                      itemBuilder: (context, index) {
-                                        return StdListTile(
-                                          onTap: () {
-                                            onTap(asyncSnapshot.data![index]);
-                                          },
-                                          title: Text(
-                                            asyncSnapshot.data![index].name,
-                                          ),
-                                          leading: const FlutterLogo(),
-                                        );
-                                      },
-                                    ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: (_scaleAnimation.isCompleted)
+                                    ? SizedBox()
+                                    : ListView.builder(
+                                        itemCount: asyncSnapshot.data!.length,
+                                        itemBuilder: (context, index) {
+                                          return StdListTile(
+                                            onTap: () {
+                                              onTap(asyncSnapshot.data![index]);
+                                            },
+                                            title: Text(
+                                              asyncSnapshot.data![index].name,
+                                            ),
+                                            leading: CircleAvatar(
+                                              backgroundColor:
+                                                  Colors.transparent,
+                                              foregroundColor:
+                                                  Colors.transparent,
+                                              foregroundImage: AssetImage(
+                                                LLMImageIndexer.getImagePath(
+                                                  asyncSnapshot
+                                                      .data![index]
+                                                      .name,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                              ),
                             ),
                           ],
                         );
@@ -1284,7 +1346,14 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(width: 16),
-                    const FlutterLogo(size: 25),
+                    CircleAvatar(
+                      radius: 13,
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.transparent,
+                      foregroundImage: AssetImage(
+                        LLMImageIndexer.getImagePath(selectedIndex!.name),
+                      ),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(

@@ -1,7 +1,7 @@
-import 'package:uni_chat/utils/api_database_service.dart';
-import 'package:uni_chat/utils/dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/utils/api_database_service.dart';
+import 'package:uni_chat/utils/dialog.dart';
 
 import '../theme_manager.dart';
 import '../utils/database_service.dart';
@@ -53,7 +53,8 @@ class _AgentPageState extends State<AgentPage> {
                   return StdButton(
                     text: "创建一个新的Agent",
                     onPressed: () {
-                      ref.read(agentEditState.notifier).state = AgentEditState();
+                      ref.read(agentEditState.notifier).state =
+                          AgentEditState();
                       setState(() {
                         _isEditing = true;
                       });
@@ -120,7 +121,7 @@ class AgentSelector extends ConsumerWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.black, fontSize: 12),
                     ),
-                  )
+                  ),
                 ],
               ),
               subtitle: Text(agent.description ?? ""),
@@ -129,20 +130,28 @@ class AgentSelector extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    onPressed: () async{
-                      var result = await ApiDatabaseService.instance.getProviderAndModelByModelConfig(agent.modelProviderConfigureId);
-                      if(result.$1 == null || result.$2 == null){
-                        return;
-                      }
-                      ref.read(agentEditState.notifier).state =
-                          AgentEditState.fromAgentData(agent,result.$1!,result.$2!);
+                    onPressed: () async {
+                      var result = await ApiDatabaseService.instance
+                          .getProviderAndModelByModelConfig(
+                            agent.modelProviderConfigureId,
+                          );
+                      ref
+                          .read(agentEditState.notifier)
+                          .state = AgentEditState.fromAgentData(
+                        agent,
+                        result.$1,
+                        result.$2,
+                      );
                       onEdit();
                     },
                     icon: Icon(Icons.edit),
                   ),
                   IconButton(
                     onPressed: () {
-                      OverlayPortalService.show(context, child: _confirmDeleteDialog(theme,context, agent.id));
+                      OverlayPortalService.show(
+                        context,
+                        child: _confirmDeleteDialog(theme, context, agent.id),
+                      );
                     },
                     icon: Icon(Icons.delete),
                   ),
@@ -154,7 +163,12 @@ class AgentSelector extends ConsumerWidget {
       },
     );
   }
-  Widget _confirmDeleteDialog(ThemeConfig  theme,BuildContext context, String agentId) {
+
+  Widget _confirmDeleteDialog(
+    ThemeConfig theme,
+    BuildContext context,
+    String agentId,
+  ) {
     return SizedBox(
       width: 300,
       height: 200,

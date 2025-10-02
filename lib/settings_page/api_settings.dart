@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/llm_provider/pre_build_providers.dart';
+import 'package:uni_chat/llm_provider/pre_built_models.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/dialog.dart';
+import 'package:uni_chat/utils/llm_image_indexer.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
-import '../llm_provider/api_service.dart';
 import '../utils/api_database_service.dart';
 
 // --- 为右侧内容区创建的占位小部件 ---
@@ -48,12 +50,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
         modelConfig.modelId,
       );
       if (model == null) continue;
-      mcd.add(
-        ModelsConfigData.fromProviderModelConfig(
-          modelConfig,
-          model.friendlyName,
-        ),
-      );
+      mcd.add(model.toConfigData());
     }
     ref.read(addApiState.notifier).state = AddApiState(
       name: provider.name,
@@ -103,6 +100,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
     for (var m in as.models) {
       var model = await ApiDatabaseService.instance.findOrCreateModel(
         m.friendlyName,
+        m.family ?? "",
       );
       await ApiDatabaseService.instance.createOrUpdateProviderModelConfig(
         modelConfigData: m,
@@ -259,7 +257,13 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                             ),
                             onTap: () {},
                             tileColor: theme.surfaceColor,
-                            leading: FlutterLogo(size: 50),
+                            leading: CircleAvatar(
+                              radius: 25,
+                              backgroundColor: Colors.transparent,
+                              foregroundImage: AssetImage(
+                                LLMImageIndexer.getImagePath(provider.name),
+                              ),
+                            ),
                             title: Text(provider.name),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,6 +391,7 @@ class AddApiState {
   //这些bool值时必要的，因为copy with传入null的时候他会设置为原始值，所以不能依靠他是不是null来判断是否需要设置
   final bool isNameSet;
   final String? type;
+  late final Set<ApiAbility> abilities;
   final bool isTypeSet;
   final String? endPoint;
   final bool isEndPointSet;
@@ -399,6 +404,7 @@ class AddApiState {
     this.type,
     this.endPoint,
     List<ApiKey>? keys,
+    Set<ApiAbility>? abilities,
     List<ModelsConfigData>? models,
     this.isKeysSet = false,
     this.isModelsSet = false,
@@ -406,6 +412,7 @@ class AddApiState {
     this.isTypeSet = false,
     this.isEndPointSet = false,
   }) {
+    this.abilities = abilities ?? {};
     this.models = models ?? [];
     this.keys = keys ?? [];
   }
@@ -414,6 +421,7 @@ class AddApiState {
     String? type,
     String? endPoint,
     List<ApiKey>? keys,
+    Set<ApiAbility>? abilities,
     List<ModelsConfigData>? models,
     bool? isKeysSet,
     bool? isModelsSet,
@@ -425,6 +433,7 @@ class AddApiState {
       name: name ?? this.name,
       type: type ?? this.type,
       endPoint: endPoint ?? this.endPoint,
+      abilities: abilities ?? this.abilities,
       keys: keys ?? this.keys,
       models: models ?? this.models,
       isKeysSet: isKeysSet ?? this.isKeysSet,
@@ -522,16 +531,20 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
           n.state = n.state.copyWith(
             isNameSet: true,
             isTypeSet: provider.type != null,
+            abilities: provider.abilities,
             isEndPointSet: provider.endPoint != null,
             name: provider.name,
             type: provider.type,
             endPoint: provider.endPoint,
           );
         },
-        leading: Container(
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-          clipBehavior: Clip.hardEdge,
-          child: FlutterLogo(),
+        leading: CircleAvatar(
+          radius: 17,
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.transparent,
+          foregroundImage: AssetImage(
+            LLMImageIndexer.getImagePath(provider.id),
+          ),
         ),
         title: Text(provider.name),
       ),
@@ -623,7 +636,11 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
               StdButton(
                 onPressed: () {
                   var n = ref.read(addApiState.notifier);
-                  n.state = n.state.copyWith(isKeysSet: true);
+                  if (n.state.keys.isEmpty) {
+                    return;
+                  } else {
+                    n.state = n.state.copyWith(isKeysSet: true);
+                  }
                 },
                 child: Text('下一步', style: TextStyle(color: Colors.white)),
               ),
@@ -635,7 +652,8 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
   }
 
   Widget _buildProviderInfo() {
-    var t = ref.read(addApiState).type;
+    var asn = ref.read(addApiState.notifier);
+    var t = asn.state.type;
     final formKey = GlobalKey<FormState>(); // 创建表单key用于验证
 
     return Form(
@@ -683,6 +701,10 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
               items: const [
                 DropdownMenuItem(value: 'openai', child: Text('OpenAI兼容')),
                 DropdownMenuItem(value: 'google', child: Text('Google兼容')),
+                DropdownMenuItem(
+                  value: 'openaiCompletion',
+                  child: Text(' OpenAi Completion （Legacy）兼容'),
+                ),
               ],
               onChanged: (value) {
                 if (value != null) {
@@ -699,6 +721,27 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
                 border: InputBorder.none, // 移除默认边框
               ),
             ),
+          ),
+          const SizedBox(height: 4),
+          StatefulBuilder(
+            builder: (context, setState) {
+              return StdCheckbox(
+                value: asn.state.abilities.contains(
+                  ApiAbility.supportsFilesApi,
+                ),
+                text: '是否支持文件Api',
+                onChanged: (value) {
+                  if (value != null && value) {
+                    asn.state = asn.state.copyWith(
+                      abilities: {ApiAbility.supportsFilesApi},
+                    );
+                  } else {
+                    asn.state = asn.state.copyWith(abilities: {});
+                  }
+                  setState(() {});
+                },
+              );
+            },
           ),
           const SizedBox(height: 30),
           Row(
@@ -891,6 +934,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
     var pv = await ApiDatabaseService.instance.createProvider(
       name: as.name!,
       type: as.type!,
+      abilities: as.abilities,
       apiEndpoint: as.endPoint!,
     );
     for (var key in as.keys) {
@@ -900,6 +944,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
     for (var model in as.models) {
       var m = await ApiDatabaseService.instance.findOrCreateModel(
         model.friendlyName,
+        model.family ?? "",
       );
       await ApiDatabaseService.instance.createOrUpdateProviderModelConfig(
         providerId: pv.id,
@@ -1389,12 +1434,12 @@ class ModelSelect extends ConsumerStatefulWidget {
 
 class _ModelSelectState extends ConsumerState<ModelSelect> {
   bool _isAddingNewModel = false;
-  Model? _selectedModel;
+  ModelsConfigData? _selectedModel;
 
   void _addNewModel(
     String friendlyName,
     String callName,
-    Set<ApiAbility> abilities,
+    Set<ModelAbility> abilities,
   ) {
     var as = ref.read(addApiState.notifier);
     final newModels = List<ModelsConfigData>.from(as.state.models)
@@ -1425,7 +1470,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
           const SizedBox(height: 10),
           StdListTile(
             title: Text(_selectedModel!.friendlyName),
-            subtitle: Text(_selectedModel!.family),
+            subtitle: Text(_selectedModel!.family ?? ''),
             isSelected: true,
           ),
           const SizedBox(height: 20),
@@ -1439,30 +1484,11 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
             ),
           ),
           const SizedBox(height: 20),
-          const Text("模型能力", style: TextStyle(fontSize: 16)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: ApiAbility.values.map((ability) {
-              return StdCheckbox(
-                value: selectedAbilities.contains(ability),
-                onChanged: (value) {
-                  setState(() {
-                    if (value == true) {
-                      selectedAbilities = ability.checkIfValid(
-                        selectedAbilities,
-                        ability,
-                      );
-                    } else {
-                      selectedAbilities.remove(ability);
-                    }
-                  });
-                },
-                text: ability.name,
-              );
-            }).toList(),
-          ),
+          if (selectedAbilities.contains(ModelAbility.embedding))
+            Text(
+              "请注意，该模型是嵌入模型，不能用作文本生成模型。",
+              style: TextStyle(color: Colors.red),
+            ),
           Expanded(child: SizedBox()),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -1497,7 +1523,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
     );
   }
 
-  Set<ApiAbility> selectedAbilities = {ApiAbility.textGenerate};
+  Set<ModelAbility> selectedAbilities = {ModelAbility.textGenerate};
   @override
   Widget build(BuildContext context) {
     theme = ref.watch(themeProvider);
@@ -1525,26 +1551,41 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 List<String> modelName = [];
+                Map<String, ModelsConfigData> models = {};
                 var currentModel = ref
                     .read(addApiState)
                     .models
                     .map((model) => model.friendlyName)
                     .toSet();
+                Set<String> prebuiltModels = {};
+                for (var m in PreBuiltModels.models.entries) {
+                  models[m.value.friendlyName] = m.value;
+                  prebuiltModels.add(m.value.friendlyName);
+                }
                 for (var item in asyncSnapshot.data!) {
                   //防止重复添加模型
-                  if (!currentModel.contains(item.friendlyName)) {
+                  if (!currentModel.contains(item.friendlyName) &&
+                      !prebuiltModels.contains(item.friendlyName)) {
                     modelName.add(item.friendlyName);
+                    models[item.friendlyName] = item.toConfigData();
                   }
                 }
+                prebuiltModels = prebuiltModels.difference(currentModel);
+                modelName.addAll(prebuiltModels);
                 return StdSearch(
                   searchItems: modelName,
                   itemBuilder: (BuildContext context, int index) {
                     return StdListTile(
                       title: Text(modelName[index]),
-                      subtitle: Text(asyncSnapshot.data![index].family),
+                      subtitle: Text(models[modelName[index]]?.family ?? ''),
                       onTap: () {
+                        _callNameController.text =
+                            models[modelName[index]]?.callName ?? '';
+                        selectedAbilities =
+                            models[modelName[index]]?.abilities ??
+                            {ModelAbility.textGenerate};
                         setState(() {
-                          _selectedModel = asyncSnapshot.data![index];
+                          _selectedModel = models[modelName[index]];
                         });
                       },
                     );
@@ -1588,7 +1629,7 @@ class _AddModelDialogState extends ConsumerState<AddModelDialog> {
   final _formKey = GlobalKey<FormState>();
 
   var oldString = '';
-  var selectedAbilities = <ApiAbility>{ApiAbility.textGenerate};
+  var selectedAbilities = <ModelAbility>{ModelAbility.textGenerate};
 
   late ThemeConfig theme;
 
@@ -1615,6 +1656,7 @@ class _AddModelDialogState extends ConsumerState<AddModelDialog> {
             callName: modelNameController.text.trim(),
             friendlyName: modelFriendlyNameController.text.trim(),
             abilities: selectedAbilities,
+            family: modelFamilyController.text.trim(),
           ),
         );
       ref.read(addApiState.notifier).state = as.copyWith(models: newModels);
@@ -1628,7 +1670,7 @@ class _AddModelDialogState extends ConsumerState<AddModelDialog> {
     modelFriendlyNameController.clear();
     modelFamilyController.clear();
     oldString = '';
-    selectedAbilities = {ApiAbility.textGenerate};
+    selectedAbilities = {ModelAbility.textGenerate};
   }
 
   @override
@@ -1757,7 +1799,7 @@ class _AddModelDialogState extends ConsumerState<AddModelDialog> {
         Wrap(
           spacing: 12,
           runSpacing: 8,
-          children: ApiAbility.values.map((ability) {
+          children: ModelAbility.values.map((ability) {
             return StdCheckbox(
               value: selectedAbilities.contains(ability),
               onChanged: (value) {
@@ -1799,7 +1841,28 @@ class AddIndicator extends ConsumerWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      SizedBox(height: 80, width: 80, child: FlutterLogo()),
+                      Container(
+                        clipBehavior: Clip.hardEdge,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(60),
+                              blurRadius: 2,
+                              spreadRadius: 1,
+                              offset: const Offset(1, 2),
+                            ),
+                          ],
+                        ),
+                        height: 150,
+                        width: 150,
+                        child: Image.asset(
+                          width: 150,
+                          height: 150,
+                          fit: BoxFit.fitWidth,
+                          LLMImageIndexer.getImagePath(as.name ?? ""),
+                        ),
+                      ),
                       Column(
                         children: [
                           _typeSet(context, as),
