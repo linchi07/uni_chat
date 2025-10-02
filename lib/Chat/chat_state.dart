@@ -11,6 +11,7 @@ import 'package:uni_chat/utils/chunked_string_buffer.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uuid/uuid.dart';
 
+import '../llm_provider/pre_built_models.dart';
 import 'chat_models.dart';
 
 const _uuid = Uuid();
@@ -209,10 +210,12 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     }
     String? r;
     if (ChatFile.imageExtensions.contains(p.extension(file.path)) &&
-        agentNotifier.state!.abilities.contains(
-          ApiAbility.visualUnderStanding,
+        agentNotifier.state!.model.modelAbilities.contains(
+          ModelAbility.visualUnderStanding,
         )) {
-      if (agentNotifier.state!.abilities.contains(ApiAbility.supportFilesApi)) {
+      if (agentNotifier.state!.abilities.contains(
+        ApiAbility.supportsFilesApi,
+      )) {
         r = await agentNotifier.fileUpload(
           file, // 使用拷贝后的文件
           ChatFile.getMimeType(p.extension(file.path)),
@@ -352,8 +355,21 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       }
       // --- End Database Integration ---
     } catch (e) {
+      state.newContentBuffer.clear();
       state.newContentBuffer.write("<error>${e.toString()}</error>");
+      var msg = ChatMessage(
+        id: _uuid.v4(),
+        sender: MessageSender.ai,
+        content: state.newContentBuffer.toString(),
+        timestamp: DateTime.now(),
+      );
+      state = state.copyWith(messages: [...state.messages, msg]);
       state.refreshFlag.value = !state.refreshFlag.value;
+      await _dbService.addMessage(currentSessionId!, msg, state.uploadedFiles);
+      var l = _ref.read(panelManager).saveToJson();
+      if (l != null) {
+        await _dbService.writeLayout(state.session!.id, l);
+      }
     } finally {
       state = state.copyWith(isLoading: false, isResponding: false);
     }

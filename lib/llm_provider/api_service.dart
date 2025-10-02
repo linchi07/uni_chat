@@ -141,10 +141,8 @@ class OpenAiApiService implements LLMApiService {
             });
       } else {
         final errorBody = await response.stream.bytesToString();
-        yield ChatResponse(
-          type: ResponseType.error,
-          content: '',
-          error: 'OpenAI API Error: ${response.statusCode} - $errorBody',
+        throw Exception(
+          'OpenAI API Error: ${response.statusCode} - $errorBody',
         );
       }
     } finally {
@@ -312,22 +310,49 @@ class OpenAiCompletionService implements LLMApiService {
     throw UnimplementedError();
   }
 
+  String getSender(MessageSender sender) {
+    switch (sender) {
+      case MessageSender.user:
+        return 'user';
+      case MessageSender.ai:
+        return 'assistant';
+      case MessageSender.system:
+        return 'system';
+    }
+  }
+
   void toContent(
     List<FormattedChatMessage> i,
     List<Map<String, dynamic>> contents,
   ) {
     for (final message in i) {
       if (message.type == ChatMessageType.text) {
-        contents.add({'type': 'text', 'text': message.content});
-      } else if (message.type == ChatMessageType.image) {
-        contents.add({'type': 'input_image', 'file_id': message.content});
-      } else if (message.type == ChatMessageType.pdf) {
-        contents.add({'type': 'input_file', 'file_id': message.content});
-      } else if (message.type == ChatMessageType.base64Image) {
         contents.add({
-          'type': 'input_image',
-          'image_url': "data:${message.mimeType};base64,${message.content}",
+          'role': getSender(message.sender),
+          'content': message.content,
         });
+      } else if (message.type == ChatMessageType.image) {
+        /*
+        contents.add({
+          'role': getSender(message.sender),
+          'type': 'input_image',
+          'content': message.content,
+        });*/
+        //这里我也不清楚，但是根据文档没有说可以上传图片
+      } else if (message.type == ChatMessageType.pdf) {
+        /*
+        contents.add({
+          'role': getSender(message.sender),
+          'type': 'input_file',
+          'content': message.content,
+        });*/
+      } else if (message.type == ChatMessageType.base64Image) {
+        /*
+        contents.add({
+          'role': getSender(message.sender),
+          'type': 'input_image',
+          'content': "data:${message.mimeType};base64,${message.content}",
+        });*/
       }
     }
   }
@@ -357,7 +382,7 @@ class OpenAiCompletionService implements LLMApiService {
 
     final requestBody = {
       'model': modelName,
-      'prompt': contents,
+      'messages': contents,
       'stream': true,
       'frequency_penalty': modelRequestContent.modelSpecifics.frequencyPenalty,
       'presence_penalty': modelRequestContent.modelSpecifics.presencePenalty,
@@ -386,11 +411,14 @@ class OpenAiCompletionService implements LLMApiService {
                 final List<ChatResponse> responses = [];
 
                 for (final item in outputItems) {
-                  if (item['text'] != null) {
+                  // 修改解析逻辑以适配官方OpenAI API格式
+                  if (item['delta'] != null &&
+                      item['delta']['content'] != null) {
+                    // 流式响应格式
                     responses.add(
                       ChatResponse(
                         type: ResponseType.text,
-                        content: item['text'] as String,
+                        content: item['delta']['content'] as String,
                       ),
                     );
                   }
@@ -403,10 +431,8 @@ class OpenAiCompletionService implements LLMApiService {
             });
       } else {
         final errorBody = await response.stream.bytesToString();
-        yield ChatResponse(
-          type: ResponseType.error,
-          content: '',
-          error: 'OpenAI API Error: ${response.statusCode} - $errorBody',
+        throw Exception(
+          'OpenAI Completion API Error: ${response.statusCode} - $errorBody',
         );
       }
     } finally {

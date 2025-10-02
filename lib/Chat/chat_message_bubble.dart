@@ -698,7 +698,6 @@ class BlockParser {
     }
 
     // 1. 动态构建一个能匹配所有目标标签的正则表达式
-    //    例如，如果 keys 是 ['UIQL', 'CustomTag']，那么 tagNames 将是 'UIQL|CustomTag'
     final tagNames = targetXMLs.keys.join('|');
     //    正则表达式解释:
     //    - <($tagNames)>: 匹配一个开标签，并将标签名(如 UIQL)捕获到分组1
@@ -751,6 +750,7 @@ class BlockParser {
   String tagName = '';
   String endTagName = '';
   ChunkedStringBuffer fullBuffer;
+  var blockStartPointer = 0;
   late ChunkedStringBuffer parseBuffer;
   BlockParser(this.fullBuffer) {
     parseBuffer = fullBuffer.clone();
@@ -777,7 +777,6 @@ class BlockParser {
     var tmpBuffer = parseBuffer.clone();
     //还有为了能够让两个缓冲区的索引同步，所有的索引都是通过master index（他两共有）来计算，并且转换到对应的local 索引中的
     var pointer = tmpBuffer.toMasterIndex(0);
-    var blockStartPointer = 0;
     while (tmpBuffer.length > 0) {
       switch (state) {
         // 寻找标签的开始
