@@ -11,6 +11,7 @@ import 'package:uni_chat/Chat/panels/panel_data.dart';
 import 'package:uni_chat/llm_provider/image_gen.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 
+import '../../../generated/l10n.dart';
 import '../../../utils/images.dart';
 
 class ImagePanel extends BasicPanel {
@@ -296,7 +297,7 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
                                     color: Colors.red,
                                     size: 48,
                                   ),
-                                  Text('图片加载失败'),
+                                  Text(S.of(context).image_load_fail),
                                 ],
                               ),
                             );
@@ -338,8 +339,11 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.error, color: Colors.red, size: 48),
-                        Text('加载失败: $_errorMessage'),
-                        TextButton(onPressed: _loadImage, child: Text('重试')),
+                        Text(S.of(context).loading_error(_errorMessage ?? "")),
+                        TextButton(
+                          onPressed: _loadImage,
+                          child: Text(S.of(context).retry),
+                        ),
                       ],
                     ),
                   )
@@ -357,7 +361,7 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
                             _pickAndUploadImage();
                           },
                           child: Text(
-                            '点击上传图片',
+                            S.of(context).click_upload_image,
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
@@ -374,7 +378,7 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.error_outline, color: Colors.red, size: 48),
-                  Text('加载失败: $e'),
+                  Text(S.of(context).loading_error(e)),
                 ],
               ),
             ),

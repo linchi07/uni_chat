@@ -10,6 +10,7 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
 import 'package:uni_chat/utils/dialog.dart';
 
+import '../generated/l10n.dart';
 import '../theme_manager.dart';
 
 class StdButton extends ConsumerWidget {
@@ -532,8 +533,8 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  late ThemeConfig theme;
+  void onShow() {
     Widget child = Column(
       children: [
         // 这个三元运算符可以简化
@@ -544,21 +545,47 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
           ),
         const Divider(),
         Expanded(
-          child: (_scaleAnimation.isCompleted)
-              ? SizedBox()
-              : ListView.builder(
-                  itemCount: widget.itemCount,
-                  itemBuilder: (context, index) {
-                    return widget.itemBuilder(context, index, onTap);
-                  },
-                ),
+          child: ListView.builder(
+            itemCount: widget.itemCount,
+            itemBuilder: (context, index) {
+              return widget.itemBuilder(context, index, onTap);
+            },
+          ),
         ),
       ],
     );
     if (widget.asyncWrapper != null) {
       child = widget.asyncWrapper!(child);
     }
-    var theme = ref.watch(themeProvider);
+    var rb = context.findRenderObject() as RenderBox;
+    OverlayPortalService.show(
+      context,
+      barrierVisible: false,
+      offset: rb.localToGlobal(Offset.zero),
+      // 这是你要求修改的部分
+      child: SizeTransition(
+        sizeFactor: _scaleAnimation,
+        child: SizedBox(
+          width: rb.size.width + 4,
+          height: rb.size.height * 6 + 3,
+          child: Material(
+            elevation: 4,
+            color: theme.surfaceColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+    // 启动动画 (这个是必须的)
+    _controller.forward(from: 0.0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    theme = ref.watch(themeProvider);
     return SizedBox(
       height: widget.height,
       width: widget.width,
@@ -568,46 +595,31 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
-            var rb = context.findRenderObject() as RenderBox;
-            OverlayPortalService.show(
-              context,
-              barrierVisible: false,
-              offset: rb.localToGlobal(Offset.zero),
-              // 这是你要求修改的部分
-              child: SizeTransition(
-                sizeFactor: _scaleAnimation,
-                child: SizedBox(
-                  width: rb.size.width + 4,
-                  height: rb.size.height * 5 + 3,
-                  child: Material(
-                    elevation: 4,
-                    color: theme.surfaceColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: child,
-                  ),
-                ),
-              ),
-            );
-            // 启动动画 (这个是必须的)
-            _controller.forward(from: 0.0);
+            onShow();
           },
-          child: (selectedIndex == null)
-              ? widget.initialWidget ??
-                    Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          widget.nullHint ?? SizedBox(),
-                          Icon(
-                            Icons.keyboard_arrow_down,
-                            color: theme.textColor,
-                          ),
-                        ],
-                      ),
-                    )
-              : widget.itemBuilder(context, selectedIndex!, onTap),
+          child: AbsorbPointer(
+            child: (selectedIndex == null)
+                ? widget.initialWidget ??
+                      Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            widget.nullHint ?? SizedBox(),
+                            Icon(
+                              Icons.keyboard_arrow_down,
+                              color: theme.textColor,
+                            ),
+                          ],
+                        ),
+                      )
+                : Center(
+                    child: widget.itemBuilder(
+                      context,
+                      selectedIndex!,
+                      (index) {},
+                    ),
+                  ),
+          ),
         ),
       ),
     );
@@ -872,7 +884,7 @@ class _StdAvatarPickerState extends State<StdAvatarPicker> {
               color: Colors.white.withAlpha(180),
               child: Center(
                 child: Text(
-                  '拖拽图片到此处',
+                  S.of(context).drag_image_hint,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

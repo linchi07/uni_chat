@@ -21,5 +21,7 @@ class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'zh';
 
   final messages = _notInlinedMessages(_notInlinedMessages);
-  static Map<String, Function> _notInlinedMessages(_) => <String, Function>{};
+  static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+    "no_agent": MessageLookupByLibrary.simpleMessage("暂无Agent,请添加一个"),
+  };
 }

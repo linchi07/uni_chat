@@ -11,6 +11,7 @@ import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
 
+import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/dialog.dart';
 
@@ -291,7 +292,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
             ListTile(
               dense: true,
               leading: Icon(Icons.person),
-              title: Text('设为默认'),
+              title: Text(S.of(context).set_as_default),
               onTap: () async {
                 OverlayPortalService.hide(context);
                 await DatabaseService.instance.setPersonaAsDefault(persona.id);
@@ -310,7 +311,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
             ListTile(
               dense: true,
               leading: Icon(Icons.edit),
-              title: Text('编辑'),
+              title: Text(S.of(context).edit),
               onTap: () {
                 _showEditor(context, persona: persona);
                 OverlayPortalService.hide(context);
@@ -322,7 +323,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
               iconColor: Colors.red,
               textColor: Colors.red,
               leading: Icon(Icons.delete),
-              title: Text('删除(长按)'),
+              title: Text(S.of(context).delete_long_press),
               onLongPress: () async {
                 OverlayPortalService.hide(context);
                 await DatabaseService.instance.deletePersona(persona.id);
@@ -364,7 +365,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
                   ),
                   padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   child: Text(
-                    "默认",
+                    S.of(context).DEFAULT,
                     style: TextStyle(
                       color: ColorParser.textColor(theme.primaryColor),
                       fontSize: 10,
@@ -464,7 +465,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
                               vertical: 2,
                             ),
                             child: Text(
-                              "默认",
+                              S.of(context).DEFAULT,
                               style: TextStyle(
                                 color: ColorParser.textColor(
                                   theme.primaryColor,
@@ -501,7 +502,10 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text("切换身份", style: TextStyle(fontSize: 16)),
+              Text(
+                S.of(context).switch_persona,
+                style: TextStyle(fontSize: 16),
+              ),
               Expanded(
                 child: ListView(
                   children: _buildPersonaListItems(
@@ -518,7 +522,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
                   Expanded(
                     child: SizedBox(
                       child: StdButton(
-                        text: "Add Persona",
+                        text: S.of(context).add_persona,
                         onPressed: () {
                           widget.onClose();
                           _showEditor(context);
@@ -618,7 +622,7 @@ class _PersonaEditorState extends State<PersonaEditor>
                 const SizedBox(height: 50),
                 Expanded(
                   child: Text(
-                    "确定要放弃更改吗？",
+                    S.of(context).give_up_edit_confirm,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -631,7 +635,7 @@ class _PersonaEditorState extends State<PersonaEditor>
                       onPressed: () {
                         OverlayPortalService.hide(context);
                       },
-                      text: "取消",
+                      text: S.of(context).cancel,
                     ),
                     const SizedBox(width: 16),
                     StdButton(
@@ -639,7 +643,7 @@ class _PersonaEditorState extends State<PersonaEditor>
                       onPressed: () async {
                         close();
                       },
-                      text: "确定",
+                      text: S.of(context).confirm,
                     ),
                   ],
                 ),
@@ -777,24 +781,24 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '编辑条目',
+                  S.of(context).edit_entries,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                Text('名称', style: TextStyle(fontSize: 16)),
+                Text(S.of(context).name, style: TextStyle(fontSize: 16)),
                 StdTextFormField(
                   controller: _entryNameController,
-                  hintText: '请输入名称',
-                  validateFailureText: '请输入名称',
+                  hintText: S.of(context).plz_enter_name,
+                  validateFailureText: S.of(context).plz_enter_name,
                 ),
                 const SizedBox(height: 16),
-                Text('内容', style: TextStyle(fontSize: 16)),
+                Text(S.of(context).content, style: TextStyle(fontSize: 16)),
                 Expanded(
                   child: StdTextFormField(
                     isExpanded: true,
                     controller: _entryContentController,
-                    hintText: '请输入内容',
-                    validateFailureText: '请输入内容',
+                    hintText: S.of(context).plz_enter_content,
+                    validateFailureText: S.of(context).plz_enter_content,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -803,7 +807,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                   children: [
                     StdButton(
                       color: theme.backgroundColor,
-                      text: '取消',
+                      text: S.of(context).cancel,
                       onPressed: () {
                         // 清除控制器文本
                         _entryNameController.clear();
@@ -813,7 +817,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                     ),
                     const SizedBox(width: 8),
                     StdButton(
-                      text: '保存',
+                      text: S.of(context).save,
                       onPressed: () {
                         if (!formKey.currentState!.validate()) {
                           return;
@@ -887,7 +891,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
             Padding(
               padding: const EdgeInsets.only(left: 10),
               child: Text(
-                "编辑身份",
+                S.of(context).edit_persona,
                 style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
               ),
             ),
@@ -963,7 +967,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                             ),
                           ),
                           Text(
-                            "点击或拖拽新图片来更改头像",
+                            S.of(context).avatar_change_hint,
                             style: TextStyle(
                               fontSize: 15,
                               color: theme.boxColor,
@@ -971,9 +975,9 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                           ),
                           const SizedBox(height: 15),
                           StdTextFormField(
-                            hintText: "请输入名称",
+                            hintText: S.of(context).plz_enter_name,
                             controller: _nameController,
-                            validateFailureText: "请输入名称",
+                            validateFailureText: S.of(context).plz_enter_name,
                             onChanged: (value) {
                               calculateToken();
                             },
@@ -982,9 +986,11 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                           Expanded(
                             child: StdTextFormField(
                               isExpanded: true,
-                              hintText: "请介绍一下自己",
+                              hintText: S.of(context).persona_description_hint,
                               controller: _descriptionController,
-                              validateFailureText: "请输入描述",
+                              validateFailureText: S
+                                  .of(context)
+                                  .plz_enter_description,
                               onChanged: (value) {
                                 calculateToken();
                               },
@@ -1004,7 +1010,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                           children: [
                             const SizedBox(width: 16),
                             Text(
-                              '编辑记忆条目',
+                              S.of(context).edit_entries,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -1012,7 +1018,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                             ),
                             Expanded(child: const SizedBox(width: 16)),
                             StdButton(
-                              text: "添加条目",
+                              text: S.of(context).add_entries,
                               onPressed: () {
                                 setState(() {
                                   _entryAdding = PersonaDataEntry(
@@ -1071,7 +1077,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                 ),
                 const SizedBox(width: 16),
                 StdCheckbox(
-                  text: "设置为默认身份",
+                  text: S.of(context).set_as_default,
                   value: widget.persona.isDefault,
                   onChanged: (b) {
                     setState(() {
@@ -1082,14 +1088,14 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                 const SizedBox(width: 16),
                 StdButton(
                   color: theme.backgroundColor,
-                  text: "取消",
+                  text: S.of(context).cancel,
                   onPressed: () {
                     widget.onClose();
                   },
                 ),
                 const SizedBox(width: 8),
                 StdButton(
-                  text: "保存",
+                  text: S.of(context).save,
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
                       _save();

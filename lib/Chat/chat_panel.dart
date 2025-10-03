@@ -13,6 +13,7 @@ import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
+import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/dialog.dart';
 import 'chat_message_bubble.dart';
@@ -116,7 +117,9 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                           );
                         }
                         if (asyncSnapshot.data == null) {
-                          return const Center(child: Text("发生错误"));
+                          return Center(
+                            child: Text(S.of(context).error_occurred),
+                          );
                         }
                         return Column(
                           children: [
@@ -144,7 +147,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                               ),
                             const Divider(),
                             if (asyncSnapshot.data!.$1.isEmpty)
-                              const Center(child: Text('没有agent')),
+                              Center(child: Text(S.of(context).no_agent)),
                             Expanded(
                               child: (_scaleAnimation.isCompleted)
                                   ? SizedBox()
@@ -191,7 +194,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "请选择Agent",
+                        S.of(context).plz_select_agent,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                       Icon(Icons.keyboard_arrow_down, color: theme.textColor),
@@ -320,7 +323,9 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                           );
                         }
                         if (asyncSnapshot.data == null) {
-                          return const Center(child: Text("发生错误"));
+                          return Center(
+                            child: Text(S.of(context).error_occurred),
+                          );
                         }
                         return Column(
                           children: [
@@ -354,7 +359,7 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                               ),
                             const Divider(),
                             if (asyncSnapshot.data!.$1.isEmpty)
-                              const Center(child: Text('没有人格')),
+                              Center(child: Text(S.of(context).no_persona)),
                             Expanded(
                               child: (_scaleAnimation.isCompleted)
                                   ? SizedBox()
@@ -401,7 +406,7 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "请选择人格",
+                        S.of(context).plz_select_persona,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                       Icon(Icons.keyboard_arrow_down, color: theme.textColor),
@@ -453,18 +458,33 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "选择一个Agent并开始聊天吧！",
+              S.of(context).choose_agent_and_chat_hint,
               style: TextStyle(fontSize: 16, color: theme.boxColor),
             ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("以  ", style: TextStyle(fontSize: 18)),
-                _PersonaDropDown(),
-                Text("  和  ", style: TextStyle(fontSize: 18)),
-                _AgentDropDown(),
-                Text("  开始聊天", style: TextStyle(fontSize: 18)),
+                Text(
+                  S.of(context).front_page_hintLine_char1,
+                  style: TextStyle(fontSize: 18),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _PersonaDropDown(),
+                ),
+                Text(
+                  S.of(context).front_page_hintLine_char2,
+                  style: TextStyle(fontSize: 18),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _AgentDropDown(),
+                ),
+                Text(
+                  S.of(context).front_page_hintLine_char3,
+                  style: TextStyle(fontSize: 18),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -740,7 +760,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           children: [
             AbsorbPointer(child: _buildChatPanel(isSendButtonDisabled)),
             Text(
-              'Drop files here',
+              S.of(context).drop_files_hint,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -927,8 +947,8 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             maxLines: 7,
             minLines: 2,
             controller: _textController,
-            decoration: const InputDecoration.collapsed(
-              hintText: 'Send a message...',
+            decoration: InputDecoration.collapsed(
+              hintText: S.of(context).send_a_message_hint,
             ),
             textCapitalization: TextCapitalization.sentences,
           ),

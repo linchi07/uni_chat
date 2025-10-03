@@ -1,1 +1,249 @@
-{}
+{
+  "no_agent": "暂无Agent,请添加一个",
+  "no_history": "暂无对话历史",
+  "hover_to_see_session": "鼠标悬停来预览会话",
+  "no_message": "没有消息",
+  "rename": "重命名",
+  "delete": "删除",
+  "confirm_delete_session": "确定要删除此对话记录吗？",
+  "cancel": "取消",
+  "confirm": "确定",
+  "confirm_long_press": "确定（长按）",
+  "modify_session_name": "修改对话记录名称",
+  "enter_session_name": "请输入对话记录名称",
+  "window_too_small_to_display_allPanels": "窗口过小，无法显示所有面板",
+  "auto_shrink_large_panel": "自动缩小大面板",
+  "or_expand_window": "或请拉大窗口",
+  "finish_edit": "完成编辑",
+  "confirm_delete_provider": "确定要删除此提供者吗？",
+  "loading_error": "加载错误{errorContent}",
+  "@loading_error": {
+    "placeholders": {
+      "errorContent": {
+      }
+    }
+  },
+  "api_settings": "API设置",
+  "add_provider": "添加提供商",
+  "no_provider": "暂无提供商",
+  "type_with_holder": "类型:{type}",
+  "@type": {
+    "placeholders": {
+      "type": {}
+    }
+  },
+  "end_point_with_holder": "端点：{endPoint}",
+  "@end_point": {
+    "placeholders": {
+      "endPoint": {}
+    }
+  },
+  "edit_provider": "编辑提供商：{provider}",
+  "@edit_provider": {
+    "placeholders": {
+      "provider": {}
+    }
+  },
+  "select_provider": "选择提供商",
+  "enter_provider_details": "请输入提供商详细信息",
+  "name": "名称",
+  "end_point": "端点",
+  "end_point_set": "端点已设置",
+  "enter_end_point": "输入API端点",
+  "end_point_type": "端点类型",
+  "end_point_type_set": "端点类型已设置",
+  "api_key": "API密钥",
+  "add_api_key": "添加API密钥",
+  "api_key_set": "API密钥已设置",
+  "api_key_total": "共{apiKey}个Key",
+  "@api_key_total": {
+    "placeholders": {
+      "apiKey": {}
+    }
+  },
+  "add_api_key_hint": "暂无 API 密钥 \n 请点击右下角+按钮添加",
+  "fill_in_api_key": "填写API密钥",
+  "fill_reminder_null_if_blank": "填写备注(留空默认无)",
+  "model": "模型",
+  "add_model_hint": "暂无模型\n请点击右下角+按钮添加",
+  "fill_model_call_name": "填写模型调用名",
+  "model_call_name_hint": "请输入模型调用名称（例如：qwen/qwen-7b-chat）",
+  "model_friendly_name": "模型友好名称",
+  "model_friendly_name_hint": "请输入模型友好名称（例如：Qwen 7B）",
+  "model_family": "模型家族",
+  "model_family_hint": "请输入模型家族（例如：qwen）",
+  "plz_fill_model_call_name": "请填写模型调用名",
+  "confirm_adding_model": "确认需要添加的模型",
+  "embedding_model_note": "请注意，该模型是嵌入模型，不能用作文本生成模型。",
+  "model_ability": "模型能力",
+  "select_model_hint": "选择一个模型",
+  "no_results": "无结果",
+  "create_new_model": "创建新模型",
+  "save": "保存",
+  "add": "添加",
+  "go_back": "返回",
+  "next_step": "下一步",
+  "select_api_type": "选择API类型",
+  "openai_compatible_api": "OpenAI兼容",
+  "google_compatible_api": "谷歌兼容",
+  "openai_completion_compatible_api": "OpenAi Completion (Legacy) 兼容",
+  "supports_files_api": "是否支持文件API",
+  "error_occurred": "发生错误",
+  "error_occurred_with_error": "发生错误:{error}",
+  "@error_occurred_with_error": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "plz_select_agent": "请选择Agent",
+  "no_persona": "没有人格",
+  "plz_select_persona": "请选择人格",
+  "choose_agent_and_chat_hint": "选择一个Agent并开始聊天吧!",
+  "front_page_hintLine_char1": "以 ",
+  "front_page_hintLine_char2": " 和 ",
+  "front_page_hintLine_char3": " 开始聊天",
+  "drop_files_hint": "在这里拖放文件",
+  "send_a_message_hint": "发送一条消息",
+  "ui_editing": "正在编辑UI...",
+  "ui_edited": "编辑了UI",
+  "show_source_code": "显示源码",
+  "hide_source_code": "隐藏源码",
+  "reasoning": "正在思考... {sec}秒",
+  "@reasoning": {
+    "placeholders": {
+      "sec": {}
+    }
+  },
+  "reasoned": "思考了{sec}秒",
+  "@reasoned": {
+    "placeholders": {
+      "sec": {}
+    }
+  },
+  "show_cot": "显示思维链",
+  "hide_cot": "隐藏思维链",
+  "searching_knowledge_base": "正在检索知识库...",
+  "searched_knowledge_base": "检索了知识库",
+  "show_knowledge_base_results": "查看检索结果",
+  "hide_knowledge_base_results": "隐藏检索结果",
+  "agent_sets": "Agent设置",
+  "select_image_hint": "拖拽或单击选择图片",
+  "model_sets": "模型设置",
+  "sys_prompt": "系统提示词",
+  "knowledge_base_and_contexts": "知识库&上下文检索",
+  "ui_interaction_set": "UI交互(BETA)设置",
+  "usr_persona_set": "用户身份设置",
+  "opening_set": "开场白设置",
+  "enable": "启用",
+  "disable": "禁用",
+  "cancel_long_press": "取消（长按）",
+  "model_context_not_enough": "模型上下文不足",
+  "system_internal_prompt" : "内建提示词（{token}Tokens）",
+  "@system_internal_prompt":{
+      "placeholders":{
+          "token":{}
+      }
+  },
+  "system_prompt_tokens" : "系统提示词（{token}Tokens）",
+  "@system_prompt_tokens":{
+      "placeholders":{
+          "token":{}
+      }
+  },
+  "knowledge_base_tokens" : "知识库（{token}Tokens）",
+  "@knowledge_base_tokens":{
+      "placeholders":{
+          "token":{}
+      }
+  },
+  "longest_opening" : "最长的开场白（{token}Tokens）",
+  "@longest_opening":{
+      "placeholders":{
+          "token":{}
+      }
+  },
+  "ui_interactions_tokens" : "UI交互提示词（{token}Tokens）",
+  "@ui_interactions_tokens":{
+      "placeholders":{
+          "token":{}
+      }
+  },
+  "knowledge_base": "知识库",
+  "opening": "开场白",
+  "ui_interactions": "UI操作",
+  "enlarge_context_or_simplify_prompt": "扩大模型上下文或简化提示词",
+  "token_available_for_chat" : "可用于对话的Token：{token}",
+  "@token_available_for_chat":{
+      "placeholders":{
+          "token":{}
+      }
+  },
+  "total_context_lim" : "总上下文上限：{lim}",
+  "@total_context_lim":{
+      "placeholders":{
+          "lim":{}
+      }
+  },
+  "agent_name_hint": "请给Agent起名",
+  "agent_desc_hint": "请输入Agent描述",
+  "model_select": "模型选择",
+  "provider_select": "提供商选择",
+  "model_property": "模型属性设置",
+  "model_maximum_context_length": "模型最大上下文长度",
+  "model_maximum_generate_length": "模型最大生成长度",
+  "model_basic_info_pass_through_setting": "模型基础信息传递设置",
+  "model_time_telling": "告知模型当前系统时间",
+  "model_system_telling": "告知模型当前操作系统（如：macos Sonoma）",
+  "model_local_telling": "告知模型当前用户地区和语言",
+  "model_advance_properties": "模型高级设置",
+  "temperature": "温度",
+  "top_p": "Top P",
+  "freq_penalty": "频度惩罚",
+  "pres_penalty": "存在惩罚",
+  "no_model": "无模型",
+  "plz_select_provider": "请选择提供商",
+  "enter_sys_prompt_here": "在这里输入系统提示词",
+  "enter_opening_here": "在这里输入开场白",
+  "over_maximum_context_length_hint" : "你已超出最大系统提示词上限，多余部分将会被截断，请增大模型上下文或者精简提示词{charCount}/{maxCount}",
+  "@over_maximum_context_length_hint":{
+      "placeholders":{
+          "charCount":{},
+          "maxCount":{}
+      }
+  },
+  "search_any_chat_message": "搜索任何聊天内容",
+  "start_conversation_with_selected_agent": "与所选Agent开始新对话",
+  "enable_ui_interactions": "启用UI交互功能",
+  "agent_manage": "Agent管理",
+  "create_new_agent": "创建一个新Agent",
+  "agent_delete_confirm": "确定要删除此Agent吗？\n 删除后所有和此Agent关联的聊天记录将会一并删除",
+  "no_model_plz_add": "没有模型，请前往API设置中添加",
+  "view_all_provider_provide_model": "查看所有提供此模型的提供者",
+  "model_delete_confirm": "确定要删除此模型吗？\n 删除后所有提供此模型的提供者将无法使用此模型。",
+  "image_load_fail": "图片加载失败",
+  "retry": "重试",
+  "click_upload_image": "点击上传图片",
+  "set_as_default": "设为默认",
+  "edit": "编辑",
+  "delete_long_press": "删除（长按）",
+  "DEFAULT": "默认",
+  "switch_persona": "切换人格",
+  "add_persona": "添加人格",
+  "edit_persona": "编辑人格",
+  "give_up_edit_confirm": "确定放弃编辑吗？",
+  "edit_entries": "编辑条目",
+  "add_entries": "添加条目",
+  "plz_enter_name": "请输入名称",
+  "plz_enter_content": "请输入内容",
+  "content": "内容",
+  "avatar_change_hint": "点击或拖拽新图片来更换头像",
+  "persona_description_hint": "请介绍一下自己",
+  "plz_enter_description": "请输入描述",
+  "drag_image_hint": "拖拽图片到此处",
+  "preferences": "设置",
+  "API_settings": "API设置",
+  "model_management": "模型管理",
+  "general_settings": "通用设置",
+  "language_settings": "语言设置",
+  "about": "关于"
+}

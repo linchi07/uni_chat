@@ -9,6 +9,7 @@ import 'package:uni_chat/utils/llm_image_indexer.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
+import '../generated/l10n.dart';
 import '../utils/api_database_service.dart';
 
 // --- 为右侧内容区创建的占位小部件 ---
@@ -127,7 +128,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                 const SizedBox(height: 50),
                 Expanded(
                   child: Text(
-                    "确定要删除此提供者吗？",
+                    S.of(context).confirm_delete_provider,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -140,7 +141,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                       onPressed: () {
                         OverlayPortalService.hide(context);
                       },
-                      text: "取消",
+                      text: S.of(context).cancel,
                     ),
                     const SizedBox(width: 16),
                     StdButton(
@@ -152,7 +153,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                         );
                         _refreshProviders();
                       },
-                      text: "确定(长按)",
+                      text: S.of(context).confirm_long_press,
                     ),
                   ],
                 ),
@@ -192,7 +193,9 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
             }
 
             if (snapshot.hasError) {
-              return Center(child: Text('加载错误: ${snapshot.error}'));
+              return Center(
+                child: Text(S.of(context).loading_error(snapshot.error ?? "")),
+              );
             }
 
             final providers = snapshot.data ?? [];
@@ -206,7 +209,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'API 设置',
+                        S.of(context).api_settings,
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       Consumer(
@@ -228,7 +231,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                             Icon(Icons.add, color: Colors.white),
                             const SizedBox(width: 8.0),
                             Text(
-                              '添加提供商',
+                              S.of(context).add_provider,
                               style: TextStyle(
                                 fontSize: 16.0,
                                 color: Colors.white,
@@ -241,7 +244,9 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                   ),
                 ),
                 if (providers.isEmpty)
-                  const Expanded(child: Center(child: Text('暂无API提供商，请添加一个')))
+                  Expanded(
+                    child: Center(child: Text(S.of(context).no_provider)),
+                  )
                 else
                   Expanded(
                     child: ListView.builder(
@@ -267,8 +272,16 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('类型: ${provider.type}'),
-                                Text('端点: ${provider.apiEndpoint}'),
+                                Text(
+                                  S.of(context).type_with_holder(provider.type),
+                                ),
+                                Text(
+                                  S
+                                      .of(context)
+                                      .end_point_with_holder(
+                                        provider.apiEndpoint,
+                                      ),
+                                ),
                               ],
                             ),
                             trailing: Row(
@@ -329,26 +342,26 @@ class _EditProviderState extends ConsumerState<EditProvider> {
       padding: EdgeInsets.symmetric(horizontal: 60),
       children: [
         Text(
-          "编辑提供商 ${as.name}",
+          S.of(context).edit_provider(as.name ?? ""),
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 20),
-        Text("名称"),
+        Text(S.of(context).name),
         const SizedBox(height: 4),
         StdTextField(controller: nameController, hintText: "eg: OpenAI"),
         const SizedBox(height: 10),
-        Text("端点"),
+        Text(S.of(context).end_point("")),
         const SizedBox(height: 4),
         StdTextField(
           controller: endPointController,
           hintText: "eg: https://api.openai.com/v1",
         ),
         const SizedBox(height: 10),
-        Text("API 密钥"),
+        Text(S.of(context).api_key),
         const SizedBox(height: 4),
         SizedBox(height: 400, child: ApiKeyManagerPanel()),
         const SizedBox(height: 10),
-        Text("模型"),
+        Text(S.of(context).model),
         const SizedBox(height: 4),
         SizedBox(
           height: 600,
@@ -360,14 +373,14 @@ class _EditProviderState extends ConsumerState<EditProvider> {
           children: [
             StdButton(
               color: theme.boxColor,
-              child: Text("取消"),
+              text: S.of(context).cancel,
               onPressed: () {
                 widget.onBack();
               },
             ),
             const SizedBox(width: 10),
             StdButton(
-              child: Text("保存", style: TextStyle(color: Colors.white)),
+              text: S.of(context).save,
               onPressed: () async {
                 ref.read(addApiState.notifier).state = as.copyWith(
                   endPoint: endPointController.text,
@@ -477,6 +490,11 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
   void initState() {
     super.initState();
     theme = ref.read(themeProvider);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     pages = [
       _providerSelect(),
       _buildProviderInfo(),
@@ -566,8 +584,8 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '选择提供商',
+            Text(
+              S.of(context).select_provider,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -605,8 +623,8 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '添加API密钥',
+          Text(
+            S.of(context).add_api_key,
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -625,7 +643,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
                     isNameSet: false,
                   );
                 },
-                child: Text('返回'),
+                text: S.of(context).go_back,
               ),
               const SizedBox(width: 16),
               StdButton(
@@ -637,7 +655,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
                     n.state = n.state.copyWith(isKeysSet: true);
                   }
                 },
-                child: Text('下一步', style: TextStyle(color: Colors.white)),
+                text: S.of(context).next_step,
               ),
             ],
           ),
@@ -650,18 +668,22 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
     var asn = ref.read(addApiState.notifier);
     var t = asn.state.type;
     final formKey = GlobalKey<FormState>(); // 创建表单key用于验证
-
+    List<(String, String)> dropDownItems = [
+      (S.of(context).openai_compatible_api, "openAi"),
+      (S.of(context).google_compatible_api, "google"),
+      (S.of(context).openai_completion_compatible_api, "openaiCompletion"),
+    ];
     return Form(
       key: formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '输入供应商详细信息',
+          Text(
+            S.of(context).enter_provider_details,
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          const Text("名称(例如：OpenAI)"),
+          Text("${S.of(context).name}(eg：OpenAI)"),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -676,46 +698,32 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return '请输入提供商名称';
+                  return S.of(context).enter_provider_details;
                 }
                 return null;
               },
             ),
           ),
           const SizedBox(height: 4),
-          const Text("API类型"),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: theme.boxColor,
-            ),
-            child: DropdownButtonFormField<String>(
-              dropdownColor: theme.boxColor,
-              value: t,
-              items: const [
-                DropdownMenuItem(value: 'openai', child: Text('OpenAI兼容')),
-                DropdownMenuItem(value: 'google', child: Text('Google兼容')),
-                DropdownMenuItem(
-                  value: 'openaiCompletion',
-                  child: Text(' OpenAi Completion （Legacy）兼容'),
+          Text(S.of(context).end_point_type),
+          StdDropDown(
+            height: 55,
+            width: double.infinity,
+            onChanged: (index) {
+              asn.state = asn.state.copyWith(type: dropDownItems[index].$2);
+            },
+            itemBuilder: (context, index, onTap) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: StdListTile(
+                  title: Text(dropDownItems[index].$1),
+                  onTap: () {
+                    onTap(index);
+                  },
                 ),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  t = value;
-                }
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return '请选择API类型';
-                }
-                return null;
-              },
-              decoration: const InputDecoration(
-                border: InputBorder.none, // 移除默认边框
-              ),
-            ),
+              );
+            },
+            itemCount: 3,
           ),
           const SizedBox(height: 4),
           StatefulBuilder(
@@ -724,7 +732,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
                 value: asn.state.abilities.contains(
                   ApiAbility.supportsFilesApi,
                 ),
-                text: '是否支持文件Api',
+                text: S.of(context).supports_files_api,
                 onChanged: (value) {
                   if (value != null && value) {
                     asn.state = asn.state.copyWith(
@@ -744,7 +752,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
             children: [
               StdButton(
                 color: theme.boxColor,
-                child: Text("返回"),
+                text: S.of(context).go_back,
                 onPressed: () {
                   var n = ref.read(addApiState.notifier);
                   n.state = n.state.copyWith(isNameSet: false);
@@ -752,7 +760,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
               ),
               const SizedBox(width: 16),
               StdButton(
-                child: Text("下一步", style: const TextStyle(color: Colors.white)),
+                text: S.of(context).next_step,
                 onPressed: () {
                   // 验证表单
                   if (formKey.currentState!.validate()) {
@@ -779,8 +787,8 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '确认需要添加的模型',
+          Text(
+            S.of(context).confirm_adding_model,
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -791,7 +799,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
             children: [
               StdButton(
                 color: theme.boxColor,
-                child: Text("返回"),
+                text: S.of(context).go_back,
                 onPressed: () {
                   var n = ref.read(addApiState.notifier);
                   n.state = n.state.copyWith(
@@ -802,7 +810,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
               ),
               const SizedBox(width: 16),
               StdButton(
-                child: Text("完成", style: TextStyle(color: Colors.white)),
+                text: S.of(context).save,
                 onPressed: () {
                   var n = ref.read(addApiState.notifier);
                   n.state = n.state.copyWith(isModelsSet: true);
@@ -825,8 +833,8 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '输入API端点',
+            Text(
+              S.of(context).enter_end_point,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -844,7 +852,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return '请输入API 端点';
+                    return S.of(context).enter_end_point;
                   }
                   return null;
                 },
@@ -856,7 +864,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
               children: [
                 StdButton(
                   color: theme.boxColor,
-                  child: Text("返回"),
+                  text: S.of(context).go_back,
                   onPressed: () {
                     var n = ref.read(addApiState.notifier);
                     n.state = n.state.copyWith(
@@ -868,10 +876,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
                 ),
                 const SizedBox(width: 16),
                 StdButton(
-                  child: Text(
-                    "下一步",
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                  text: S.of(context).next_step,
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       var n = ref.read(addApiState.notifier);
@@ -904,7 +909,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '添加新的提供商',
+            S.of(context).add_provider,
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           AddIndicator(key: ValueKey("11114514")),
@@ -1030,9 +1035,9 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
                 color: theme.surfaceColor,
               ),
               child: _apiKeys.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
-                        '暂无 API 密钥\n请点击右下角按钮添加',
+                        S.of(context).add_api_key_hint,
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
@@ -1117,8 +1122,8 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      '添加 API 密钥',
+                                    Text(
+                                      S.of(context).add_api_key,
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -1134,7 +1139,7 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
                                               CrossAxisAlignment.start,
                                           children: <Widget>[
                                             Text(
-                                              "填写API密钥",
+                                              S.of(context).fill_in_api_key,
                                               style: TextStyle(fontSize: 16),
                                             ),
                                             const SizedBox(height: 4),
@@ -1195,7 +1200,9 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
                                                 validator: (value) {
                                                   if (value == null ||
                                                       value.isEmpty) {
-                                                    return '请输入API密钥';
+                                                    return S
+                                                        .of(context)
+                                                        .fill_in_api_key;
                                                   }
                                                   return null;
                                                 },
@@ -1203,7 +1210,9 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
                                             ),
                                             const SizedBox(height: 10),
                                             Text(
-                                              "填写备注（留空默认无）",
+                                              S
+                                                  .of(context)
+                                                  .fill_reminder_null_if_blank,
                                               style: TextStyle(fontSize: 16),
                                             ),
                                             const SizedBox(height: 4),
@@ -1221,7 +1230,9 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
                                               child: TextField(
                                                 controller: remarkController,
                                                 decoration: InputDecoration(
-                                                  hintText: '备注（留空默认无）',
+                                                  hintText: S
+                                                      .of(context)
+                                                      .fill_reminder_null_if_blank,
                                                   border: InputBorder.none,
                                                   suffixIcon: IconButton(
                                                     constraints:
@@ -1247,19 +1258,14 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
                                       children: <Widget>[
                                         StdButton(
                                           color: theme.backgroundColor,
-                                          child: const Text('取消'),
+                                          text: S.of(context).cancel,
                                           onPressed: () {
                                             OverlayPortalService.hide(context);
                                           },
                                         ),
                                         const SizedBox(width: 8),
                                         StdButton(
-                                          child: const Text(
-                                            '添加',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
+                                          text: S.of(context).add,
                                           onPressed: () {
                                             if (_formKey.currentState!
                                                 .validate()) {
@@ -1349,9 +1355,9 @@ class _ModelManagePanelState extends ConsumerState<ModelManagePanel> {
                 color: Colors.white,
               ),
               child: as.models.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
-                        '暂无模型\n请点击右下角按钮添加',
+                        S.of(context).add_model_hint,
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
@@ -1459,7 +1465,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '填写模型调用名',
+            S.of(context).fill_model_call_name,
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
@@ -1474,14 +1480,14 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
             child: StdTextFormField(
               showClearButton: true,
               controller: _callNameController,
-              hintText: '请输入模型调用名',
-              validateFailureText: '请输入模型调用名',
+              hintText: S.of(context).plz_fill_model_call_name,
+              validateFailureText: S.of(context).plz_fill_model_call_name,
             ),
           ),
           const SizedBox(height: 20),
           if (selectedAbilities.contains(ModelAbility.embedding))
             Text(
-              "请注意，该模型是嵌入模型，不能用作文本生成模型。",
+              S.of(context).embedding_model_note,
               style: TextStyle(color: Colors.red),
             ),
           Expanded(child: SizedBox()),
@@ -1490,7 +1496,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
             children: [
               StdButton(
                 color: theme.boxColor,
-                text: '取消',
+                text: S.of(context).cancel,
                 onPressed: () {
                   setState(() {
                     _selectedModel = null;
@@ -1499,7 +1505,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
               ),
               const SizedBox(width: 8),
               StdButton(
-                text: '保存',
+                text: S.of(context).save,
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     _addNewModel(
@@ -1534,7 +1540,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '  选择一个模型',
+            S.of(context).select_model_hint,
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 5),
@@ -1588,10 +1594,10 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
                   noResultPage: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('没有结果'),
+                      Text(S.of(context).no_results),
                       const SizedBox(height: 20),
                       StdButton(
-                        text: '创建一个新的模型',
+                        text: S.of(context).create_new_model,
                         onPressed: () {
                           setState(() {
                             _isAddingNewModel = true;
@@ -1687,8 +1693,8 @@ class _AddModelDialogState extends ConsumerState<AddModelDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '添加模型',
+          Text(
+            S.of(context).create_new_model,
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 9),
@@ -1701,20 +1707,20 @@ class _AddModelDialogState extends ConsumerState<AddModelDialog> {
                   children: [
                     _buildTextField(
                       controller: modelNameController,
-                      label: "模型调用名称",
-                      hint: '请输入模型调用名称（例如：qwen/qwen-7b-chat）',
+                      label: S.of(context).fill_model_call_name,
+                      hint: S.of(context).model_call_name_hint,
                     ),
                     const SizedBox(height: 10),
                     _buildTextField(
                       controller: modelFriendlyNameController,
-                      label: "模型友好名",
-                      hint: '请输入模型友好名（例如：Qwen 7B）',
+                      label: S.of(context).model_friendly_name,
+                      hint: S.of(context).model_friendly_name_hint,
                     ),
                     const SizedBox(height: 10),
                     _buildTextField(
                       controller: modelFamilyController,
-                      label: "模型家族",
-                      hint: '请输入模型家族（例如：Qwen）',
+                      label: S.of(context).model_family,
+                      hint: S.of(context).model_family_hint,
                     ),
                     const SizedBox(height: 10),
                     _modelAbility(),
@@ -1728,17 +1734,14 @@ class _AddModelDialogState extends ConsumerState<AddModelDialog> {
             children: [
               StdButton(
                 color: theme.backgroundColor,
-                child: const Text('取消'),
+                text: S.of(context).cancel,
                 onPressed: () {
                   _resetForm();
                   OverlayPortalService.hide(context);
                 },
               ),
               const SizedBox(width: 8),
-              StdButton(
-                onPressed: _addModel,
-                child: const Text('添加', style: TextStyle(color: Colors.white)),
-              ),
+              StdButton(onPressed: _addModel, text: S.of(context).add),
             ],
           ),
         ],
@@ -1789,7 +1792,7 @@ class _AddModelDialogState extends ConsumerState<AddModelDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("模型能力", style: TextStyle(fontSize: 16)),
+        Text(S.of(context).model_ability, style: TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 12,
@@ -1824,53 +1827,66 @@ class AddIndicator extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     var as = ref.watch(addApiState);
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: as.isNameSet
-          ? Center(
-              key: ValueKey('logo_visible'),
-              child: SizedBox(
-                height: 200,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Container(
-                        clipBehavior: Clip.hardEdge,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(60),
-                              blurRadius: 2,
-                              spreadRadius: 1,
-                              offset: const Offset(1, 2),
-                            ),
-                          ],
-                        ),
-                        height: 150,
-                        width: 150,
-                        child: Image.asset(
-                          width: 150,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: as.isNameSet
+              ? Center(
+                  key: ValueKey('logo_visible'),
+                  child: SizedBox(
+                    height: 200,
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Container(
+                          clipBehavior: Clip.hardEdge,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(60),
+                                blurRadius: 2,
+                                spreadRadius: 1,
+                                offset: const Offset(1, 2),
+                              ),
+                            ],
+                          ),
                           height: 150,
-                          fit: BoxFit.fitWidth,
-                          LLMImageIndexer.getImagePath(as.name ?? ""),
+                          width: 150,
+                          child: Image.asset(
+                            width: 150,
+                            height: 150,
+                            fit: BoxFit.fitWidth,
+                            LLMImageIndexer.getImagePath(as.name ?? ""),
+                          ),
                         ),
                       ),
-                      Column(
-                        children: [
-                          _typeSet(context, as),
-                          _endPointSet(context, as),
-                          _apiKey(context, as),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            )
-          : SizedBox(key: ValueKey('logo_hidden'), height: 0),
+                )
+              : SizedBox(key: ValueKey('logo_hidden'), height: 0),
+        ),
+        ((as.isKeysSet || as.isTypeSet || as.isEndPointSet) && as.isNameSet)
+            ? SizedBox(width: 20)
+            : SizedBox(),
+        AnimatedSwitcher(
+          duration: _animationDuration,
+          child:
+              (((as.isKeysSet || as.isTypeSet || as.isEndPointSet) &&
+                  as.isNameSet))
+              ? Column(
+                  children: [
+                    _typeSet(context, as),
+                    _endPointSet(context, as),
+                    _apiKey(context, as),
+                  ],
+                )
+              : SizedBox(),
+        ),
+      ],
     );
   }
 
@@ -1885,7 +1901,7 @@ class AddIndicator extends ConsumerWidget {
                 dense: true,
                 leading: Icon(Icons.check, color: Colors.green),
                 title: Text(
-                  '端点类型已设置',
+                  S.of(context).end_point_type_set,
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(
@@ -1911,7 +1927,7 @@ class AddIndicator extends ConsumerWidget {
                 dense: true,
                 leading: Icon(Icons.check, color: Colors.green),
                 title: Text(
-                  '端点已设置',
+                  S.of(context).end_point_set,
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(
@@ -1937,37 +1953,11 @@ class AddIndicator extends ConsumerWidget {
                 dense: true,
                 leading: Icon(Icons.check, color: Colors.green),
                 title: Text(
-                  'ApiKey已设置',
+                  S.of(context).api_key_set,
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(
-                  '共${as.keys?.length}个Key',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-              )
-            : null,
-      ),
-    );
-  }
-
-  Widget _model(BuildContext context, AddApiState as) {
-    return SizedBox(
-      width: 200,
-      child: AnimatedSwitcher(
-        key: ValueKey('model_set'),
-        duration: _animationDuration,
-        child: (as.isModelsSet)
-            ? ListTile(
-                dense: true,
-                leading: Icon(Icons.check, color: Colors.green),
-                title: Text(
-                  '模型已设置',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  '共${as.models.length}个模型已添加',
+                  S.of(context).api_key_total(as.keys.length),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),

@@ -13,6 +13,7 @@ import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/images.dart';
 import 'package:uuid/uuid.dart';
 
+import '../generated/l10n.dart';
 import 'chat_models.dart';
 
 class ChatPageMain extends ConsumerStatefulWidget {
@@ -171,15 +172,15 @@ class PanelLayout extends ConsumerWidget {
                 size: 48,
               ),
               const SizedBox(height: 16),
-              const Text(
-                '窗口太小，无法显示所有面板',
+              Text(
+                S.of(context).window_too_small_to_display_allPanels,
                 style: TextStyle(color: Colors.white, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 icon: const Icon(Icons.aspect_ratio),
-                label: const Text('自动缩小过大的面板'),
+                label: Text(S.of(context).auto_shrink_large_panel),
                 onPressed: () {
                   // 调用引擎中的新方法来修复面板尺寸
                   plep.shrinkAllOversizedPanels();
@@ -190,7 +191,10 @@ class PanelLayout extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text('或请拉大窗口宽度', style: TextStyle(color: Colors.white70)),
+              Text(
+                S.of(context).or_expand_window,
+                style: TextStyle(color: Colors.white70),
+              ),
             ],
           ),
         ),
@@ -237,7 +241,10 @@ class PanelLayout extends ConsumerWidget {
                       children: [
                         const Icon(Icons.done, color: Colors.white),
                         const SizedBox(width: 2),
-                        Text('完成编辑', style: TextStyle(color: Colors.white)),
+                        Text(
+                          S.of(context).finish_edit,
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ],
                     ),
                   ),

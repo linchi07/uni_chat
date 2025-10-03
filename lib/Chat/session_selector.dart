@@ -10,6 +10,7 @@ import 'package:uni_chat/utils/dialog.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
 import '../Agent/agentProvider.dart';
+import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/database_service.dart';
 import 'chat_message_bubble.dart';
@@ -359,7 +360,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: '搜索任何聊天内容...',
+              hintText: S.of(context).search_any_chat_message,
               prefixIcon: Icon(Icons.search),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
@@ -387,7 +388,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
         ),
         if (selectedAgentId != null)
           StdButton(
-            text: '以所选的Agent开始新对话',
+            text: S.of(context).start_conversation_with_selected_agent,
             onPressed: () async {
               ref.read(chatStateProvider.notifier).clearSession();
               widget.onClose();
@@ -459,7 +460,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                         if (asyncSnapshot.data!.$1.isEmpty) {
                           return Center(
                             child: Text(
-                              "暂无Agent,请添加一个",
+                              S.of(context).no_agent,
                               style: TextStyle(color: theme.boxColor),
                             ),
                           );
@@ -504,7 +505,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                     child: (selectedAgentId == null)
                         ? Center(
                             child: Text(
-                              "暂无对话历史",
+                              S.of(context).no_history,
                               style: TextStyle(color: theme.boxColor),
                             ),
                           )
@@ -518,7 +519,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                               if (asyncSnapshot.data!.isEmpty) {
                                 return Center(
                                   child: Text(
-                                    "暂无对话历史",
+                                    S.of(context).no_history,
                                     style: TextStyle(color: theme.boxColor),
                                   ),
                                 );
@@ -559,7 +560,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                   child: _previewedSession == null
                       ? Center(
                           child: Text(
-                            "鼠标悬停来预览会话",
+                            S.of(context).hover_to_see_session,
                             style: TextStyle(color: theme.boxColor),
                           ),
                         )
@@ -573,7 +574,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                           child: (_previewedSession?.$1.length == 0)
                               ? Center(
                                   child: Text(
-                                    "没有消息",
+                                    S.of(context).no_message,
                                     style: TextStyle(color: theme.boxColor),
                                   ),
                                 )
@@ -768,7 +769,7 @@ class _SessionTileState extends State<_SessionTile> {
             ListTile(
               dense: true,
               leading: Icon(Icons.edit),
-              title: Text('重命名'),
+              title: Text(S.of(context).rename),
               onTap: () {
                 _hideOverlay();
                 OverlayPortalService.show(
@@ -782,7 +783,7 @@ class _SessionTileState extends State<_SessionTile> {
               iconColor: Colors.red,
               textColor: Colors.red,
               leading: Icon(Icons.delete),
-              title: Text('删除'),
+              title: Text(S.of(context).delete),
               onTap: () {
                 _hideOverlay();
                 OverlayPortalService.show(
@@ -821,7 +822,7 @@ class _SessionTileState extends State<_SessionTile> {
                   Expanded(
                     child: Center(
                       child: Text(
-                        "确定要删除此对话记录吗？",
+                        S.of(context).confirm_delete_session,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -838,7 +839,7 @@ class _SessionTileState extends State<_SessionTile> {
                         onPressed: () {
                           OverlayPortalService.hide(context);
                         },
-                        text: "取消",
+                        text: S.of(context).cancel,
                       ),
                       const SizedBox(width: 16),
                       StdButton(
@@ -850,7 +851,7 @@ class _SessionTileState extends State<_SessionTile> {
                           OverlayPortalService.hide(context);
                           setState(() {});
                         },
-                        text: "确定(长按)",
+                        text: S.of(context).confirm_long_press,
                       ),
                     ],
                   ),
@@ -884,10 +885,13 @@ class _SessionTileState extends State<_SessionTile> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    "更改对话记录名称",
+                    S.of(context).modify_session_name,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  StdTextField(controller: controller, hintText: "请输入对话记录名称"),
+                  StdTextField(
+                    controller: controller,
+                    hintText: S.of(context).enter_session_name,
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -896,7 +900,7 @@ class _SessionTileState extends State<_SessionTile> {
                         onPressed: () {
                           OverlayPortalService.hide(context);
                         },
-                        text: "取消",
+                        text: S.of(context).cancel,
                       ),
                       const SizedBox(width: 16),
                       StdButton(
@@ -922,7 +926,7 @@ class _SessionTileState extends State<_SessionTile> {
                           }
                           setState(() {});
                         },
-                        text: "确定",
+                        text: S.of(context).confirm,
                       ),
                     ],
                   ),
