@@ -1,12 +1,13 @@
 import 'dart:io' as io show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
-import 'package:macos_window_utils/toolbars/toolbars.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
+import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Chat/session_selector.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
 import 'package:uni_chat/settings_page/settings.dart';
@@ -37,8 +38,7 @@ Future<void> main() async {
     await WindowManipulator.initialize();
     await WindowManipulator.hideTitle();
     await WindowManipulator.makeTitlebarTransparent();
-    //这里我们将系统双击resize给覆盖掉，因为他会影响我们的顶栏的触控，在下面我们自己实现resize
-    await WindowManipulator.addToolbar(toolbar: BlockingToolbar());
+    await WindowManipulator.addToolbar();
     await WindowManipulator.setToolbarStyle(
       toolbarStyle: NSWindowToolbarStyle.unified,
     );
@@ -72,6 +72,7 @@ class UNIChat extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    var mainContent = MainCont();
     return ProviderScope(
       child: MaterialApp(
         localizationsDelegates: [
@@ -92,11 +93,141 @@ class UNIChat extends StatelessWidget {
               if (locale != null) {
                 S.load(locale!);
               }
-              return MainCont();
+              if (PlatForm().platform == Platform.macos) {
+                return MacOSMenuBar(mainContent: mainContent);
+              }
+              return mainContent;
             },
           ),
         ),
       ),
+    );
+  }
+}
+
+class MacOSMenuBar extends ConsumerStatefulWidget {
+  const MacOSMenuBar({super.key, required this.mainContent});
+
+  final MainCont mainContent;
+
+  @override
+  ConsumerState<MacOSMenuBar> createState() => _MacOSMenuBarState();
+}
+
+class _MacOSMenuBarState extends ConsumerState<MacOSMenuBar> {
+  OverlayEntry? _overlayEntry;
+  void _showSettingsMenu(BuildContext context) {
+    if (_overlayEntry != null) {
+      return;
+    }
+    final overlay = Overlay.of(context);
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          // 背景变暗和点击外部关闭
+          ModalBarrier(
+            color: Colors.black.withAlpha(80),
+            onDismiss: _hideSettingsMenu,
+          ),
+          SettingsMenu(onClose: _hideSettingsMenu),
+        ],
+      ),
+    );
+
+    overlay.insert(_overlayEntry!);
+  }
+
+  void _hideSettingsMenu() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PlatformMenuBar(
+      menus: [
+        PlatformMenu(
+          label: S.of(context).title,
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: S.of(context).preferences,
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.comma,
+                    meta: true,
+                  ),
+                  onSelected: () {
+                    _showSettingsMenu(context);
+                  },
+                ),
+                PlatformMenuItem(label: S.of(context).about, onSelected: () {}),
+              ],
+            ),
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: S.of(context).quit,
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyQ,
+                    meta: true,
+                  ),
+                  onSelected: () async {
+                    await WindowManipulator.closeWindow();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: S.of(context).chat,
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: S.of(context).new_chat_session,
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyN,
+                    meta: true,
+                  ),
+                  onSelected: () {
+                    ref.read(chatStateProvider.notifier).clearSession();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: "Agent",
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: S.of(context).create_new_agent,
+                  onSelected: () {},
+                ),
+              ],
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: S.of(context).help,
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: S.of(context).check_manual,
+                  onSelected: () {},
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+      child: widget.mainContent,
     );
   }
 }
@@ -203,7 +334,7 @@ class MainBanner extends ConsumerWidget {
                 const SizedBox(width: 50),
               const SizedBox(width: 21),
               Text(
-                "uniChat",
+                S.of(context).title,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ],

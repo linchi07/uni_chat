@@ -55,6 +55,11 @@ class S {
     return Localizations.of<S>(context, S);
   }
 
+  /// `UNIChat`
+  String get title {
+    return Intl.message('UNIChat', name: 'title', desc: '', args: []);
+  }
+
   /// `No agent , please add one`
   String get no_agent {
     return Intl.message(
@@ -1538,6 +1543,51 @@ class S {
   /// `About`
   String get about {
     return Intl.message('About', name: 'about', desc: '', args: []);
+  }
+
+  /// `Chat`
+  String get chat {
+    return Intl.message('Chat', name: 'chat', desc: '', args: []);
+  }
+
+  /// `Quit`
+  String get quit {
+    return Intl.message('Quit', name: 'quit', desc: '', args: []);
+  }
+
+  /// `New chat session`
+  String get new_chat_session {
+    return Intl.message(
+      'New chat session',
+      name: 'new_chat_session',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Help`
+  String get help {
+    return Intl.message('Help', name: 'help', desc: '', args: []);
+  }
+
+  /// `Check manual`
+  String get check_manual {
+    return Intl.message(
+      'Check manual',
+      name: 'check_manual',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Some changes may require a restart to take effect.`
+  String get language_switch_restart_note {
+    return Intl.message(
+      'Some changes may require a restart to take effect.',
+      name: 'language_switch_restart_note',
+      desc: '',
+      args: [],
+    );
   }
 }
 

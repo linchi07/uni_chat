@@ -94,6 +94,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "cancel_long_press": MessageLookupByLibrary.simpleMessage(
       "Cancel (LongPress)",
     ),
+    "chat": MessageLookupByLibrary.simpleMessage("Chat"),
+    "check_manual": MessageLookupByLibrary.simpleMessage("Check manual"),
     "choose_agent_and_chat_hint": MessageLookupByLibrary.simpleMessage(
       "Select an agent and start chatting",
     ),
@@ -191,6 +193,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "google_compatible_api": MessageLookupByLibrary.simpleMessage(
       "Google compatible API",
     ),
+    "help": MessageLookupByLibrary.simpleMessage("Help"),
     "hide_cot": MessageLookupByLibrary.simpleMessage("Hide  thoughts"),
     "hide_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
       "Hide knowledge base search results",
@@ -214,6 +217,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "language_settings": MessageLookupByLibrary.simpleMessage(
       "Language settings",
+    ),
+    "language_switch_restart_note": MessageLookupByLibrary.simpleMessage(
+      "Some changes may require a restart to take effect.",
     ),
     "loading_error": m6,
     "longest_opening": m7,
@@ -272,6 +278,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Modify session name",
     ),
     "name": MessageLookupByLibrary.simpleMessage("Name"),
+    "new_chat_session": MessageLookupByLibrary.simpleMessage(
+      "New chat session",
+    ),
     "next_step": MessageLookupByLibrary.simpleMessage("Next step"),
     "no_agent": MessageLookupByLibrary.simpleMessage(
       "No agent , please add one",
@@ -326,6 +335,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "provider_select": MessageLookupByLibrary.simpleMessage(
       "Select the provider",
     ),
+    "quit": MessageLookupByLibrary.simpleMessage("Quit"),
     "reasoned": m9,
     "reasoning": m10,
     "rename": MessageLookupByLibrary.simpleMessage("Rename"),
@@ -373,6 +383,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "system_internal_prompt": m11,
     "system_prompt_tokens": m12,
     "temperature": MessageLookupByLibrary.simpleMessage("Temperature"),
+    "title": MessageLookupByLibrary.simpleMessage("UNIChat"),
     "token_available_for_chat": m13,
     "top_p": MessageLookupByLibrary.simpleMessage("Top P"),
     "total_context_lim": m14,

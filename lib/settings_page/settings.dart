@@ -74,6 +74,11 @@ class _GeneralSettings extends StatelessWidget {
             );
           },
         ),
+        const SizedBox(height: 20),
+        Text(
+          S.of(context).language_switch_restart_note,
+          style: TextStyle(fontSize: 16),
+        ),
       ],
     );
   }

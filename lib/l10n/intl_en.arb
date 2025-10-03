@@ -1,4 +1,5 @@
 {
+  "title": "UNIChat",
   "no_agent":"No agent , please add one",
   "no_history":"no chat history",
   "hover_to_see_session":"Hover to preview session",
@@ -246,5 +247,11 @@
   "general_settings":"General settings",
   "language_settings":"Language settings",
   "language_select": "Select a language",
-  "about":"About"
+  "about":"About",
+  "chat": "Chat",
+  "quit": "Quit",
+  "new_chat_session": "New chat session",
+  "help": "Help",
+  "check_manual": "Check manual",
+  "language_switch_restart_note": "Some changes may require a restart to take effect."
 }

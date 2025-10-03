@@ -1,4 +1,5 @@
 {
+  "title": "UNIChat 通聊",
   "no_agent": "暂无Agent,请添加一个",
   "no_history": "暂无对话历史",
   "hover_to_see_session": "鼠标悬停来预览会话",
@@ -246,5 +247,11 @@
   "general_settings": "通用设置",
   "language_settings": "语言设置",
   "language_select": "选择语言",
-  "about": "关于"
+  "about": "关于",
+  "chat": "聊天",
+  "quit": "退出",
+  "new_chat_session": "新聊天会话",
+  "help": "帮助",
+  "check_manual": "查看帮助文档",
+  "language_switch_restart_note": "部分更改需要重启App来生效"
 }

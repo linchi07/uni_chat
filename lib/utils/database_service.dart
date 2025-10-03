@@ -157,7 +157,7 @@ class DatabaseService {
         name TEXT NOT NULL,
         description TEXT,
         configure TEXT,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
         is_default INTEGER NOT NULL DEFAULT 0
       )
     ''');
