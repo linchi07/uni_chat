@@ -197,11 +197,13 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
-          color: theme.boxColor,
+          color: theme.thirdGradeColor,
           borderRadius: BorderRadius.all(Radius.circular(5)),
         ),
         child: Text(
-          (agentState.model == null) ? "请选择模型" : "请选择模型提供商",
+          (agentState.model == null)
+              ? S.of(context).model_select
+              : S.of(context).plz_select_provider,
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.red, fontSize: 12),
         ),
@@ -212,8 +214,8 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
             padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             decoration: BoxDecoration(
               color: (agentState.editing == PropertyEditing.model)
-                  ? theme.surfaceColor
-                  : theme.boxColor,
+                  ? theme.zeroGradeColor
+                  : theme.thirdGradeColor,
               borderRadius: BorderRadius.all(Radius.circular(5)),
             ),
             child: Text(
@@ -246,7 +248,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: theme.surfaceColor,
+                      color: theme.zeroGradeColor,
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
@@ -379,7 +381,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                               color:
                                   (agentState.editing ==
                                       PropertyEditing.sysPrompt)
-                                  ? theme.surfaceColor
+                                  ? theme.zeroGradeColor
                                   : theme.primaryColor,
                             ),
                           ))
@@ -420,7 +422,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                       style: TextStyle(
                         fontSize: 12,
                         color: (agentState.editing == PropertyEditing.UIQL)
-                            ? theme.surfaceColor
+                            ? theme.zeroGradeColor
                             : theme.primaryColor,
                       ),
                     )),
@@ -463,7 +465,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                               color:
                                   (agentState.editing ==
                                       PropertyEditing.sysPrompt)
-                                  ? theme.surfaceColor
+                                  ? theme.zeroGradeColor
                                   : theme.primaryColor,
                             ),
                           ))
@@ -485,7 +487,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                 Expanded(
                   child: StdButton(
                     text: S.of(context).cancel_long_press,
-                    color: theme.boxColor,
+                    color: theme.thirdGradeColor,
                     onPressed: () {},
                     onLongPress: () {
                       ref.read(agentEditState.notifier).state =
@@ -1042,7 +1044,7 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
       width: 350,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
@@ -1059,7 +1061,7 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                   height: rb.size.height * 7 + 3,
                   child: Material(
                     elevation: 4,
-                    color: theme.surfaceColor,
+                    color: theme.zeroGradeColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1259,7 +1261,7 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
       width: 350,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
@@ -1276,7 +1278,7 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                   height: rb.size.height * 7 + 3,
                   child: Material(
                     elevation: 4,
-                    color: theme.surfaceColor,
+                    color: theme.zeroGradeColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

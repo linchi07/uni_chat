@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:macos_window_utils/toolbars/toolbars.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/session_selector.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
@@ -14,6 +15,11 @@ import 'package:uni_chat/utils/dialog.dart';
 
 import 'Agent/agent_page.dart';
 import 'generated/l10n.dart';
+
+final Map<String, Locale> languages = const {
+  "简体中文": Locale("zh"),
+  "English": Locale("en"),
+};
 
 Future<void> main() async {
   if (io.Platform.isAndroid) {
@@ -38,7 +44,10 @@ Future<void> main() async {
     );
     await WindowManipulator.enableFullSizeContentView();
   }
-  runApp(const MyApp());
+  final prefs = await SharedPreferences.getInstance();
+  var l = prefs.getString("language");
+  var local = languages[l];
+  runApp(UNIChat(locale: local));
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -56,8 +65,9 @@ class PlatForm {
   PlatForm._internal();
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class UNIChat extends StatelessWidget {
+  const UNIChat({super.key, this.locale});
+  final Locale? locale;
 
   // This widget is the root of your application.
   @override
@@ -70,12 +80,22 @@ class MyApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
+        supportedLocales: S.delegate.supportedLocales,
         navigatorKey: navigatorKey,
         title: '',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
-        home: OverlayPortalScope(child: MainCont()),
+        home: OverlayPortalScope(
+          child: Builder(
+            builder: (context) {
+              if (locale != null) {
+                S.load(locale!);
+              }
+              return MainCont();
+            },
+          ),
+        ),
       ),
     );
   }
@@ -114,7 +134,7 @@ class _MainContState extends ConsumerState<MainCont> {
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     return Scaffold(
-      backgroundColor: theme.backgroundColor,
+      backgroundColor: theme.secondGradeColor,
       body: Column(
         children: [
           MainBanner(bannerWidget: _bannerWidget()),
@@ -170,7 +190,7 @@ class MainBanner extends ConsumerWidget {
     final theme = ref.watch(themeProvider);
     return Container(
       height: 50,
-      color: theme.surfaceColor,
+      color: theme.zeroGradeColor,
       child: Stack(
         children: [
           Row(

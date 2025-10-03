@@ -24,7 +24,10 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('模型管理', style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            S.of(context).model_management,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 20),
           Expanded(
             child: FutureBuilder(
@@ -50,7 +53,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
                               onTap: () {},
-                              tileColor: theme.surfaceColor,
+                              tileColor: theme.zeroGradeColor,
                               leading: StdAvatar(
                                 length: 50,
                                 assetImage: AssetImage(
@@ -109,7 +112,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
       width: 300,
       height: 200,
       child: Material(
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -129,7 +132,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   StdButton(
-                    color: theme.boxColor,
+                    color: theme.thirdGradeColor,
                     onPressed: () {
                       OverlayPortalService.hide(context);
                     },
@@ -159,7 +162,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
       width: 400,
       height: 500,
       child: Material(
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         clipBehavior: Clip.hardEdge,
         child: Padding(

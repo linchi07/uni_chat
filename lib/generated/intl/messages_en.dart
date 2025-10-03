@@ -61,7 +61,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "DEFAULT": MessageLookupByLibrary.simpleMessage("Default"),
     "about": MessageLookupByLibrary.simpleMessage("About"),
     "add": MessageLookupByLibrary.simpleMessage("Add"),
-    "add_api_key": MessageLookupByLibrary.simpleMessage("add API key"),
+    "add_api_key": MessageLookupByLibrary.simpleMessage("Add API key"),
     "add_api_key_hint": MessageLookupByLibrary.simpleMessage(
       "No API keys yet \n Please press the + button to add one",
     ),
@@ -70,9 +70,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "No models yet \n Please press the + button to add one",
     ),
     "add_persona": MessageLookupByLibrary.simpleMessage("Add persona"),
-    "add_provider": MessageLookupByLibrary.simpleMessage("add a provider"),
+    "add_provider": MessageLookupByLibrary.simpleMessage("Add a provider"),
     "agent_delete_confirm": MessageLookupByLibrary.simpleMessage(
-      "Are you sure you want to delete this agent? \n All the sessions related to this agent will be deleted as well.",
+      "Are you sure to delete this agent? \n All sessions related to this agent will be deleted.",
     ),
     "agent_desc_hint": MessageLookupByLibrary.simpleMessage(
       "Enter description for the agent",
@@ -169,7 +169,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Fill in the API key",
     ),
     "fill_model_call_name": MessageLookupByLibrary.simpleMessage(
-      "Fill in the model\'s call name",
+      "Model call name",
     ),
     "fill_reminder_null_if_blank": MessageLookupByLibrary.simpleMessage(
       "Write a reminder (null if left blank)",
@@ -209,6 +209,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Knowledge base & contexts",
     ),
     "knowledge_base_tokens": m5,
+    "language_select": MessageLookupByLibrary.simpleMessage(
+      "Select a language",
+    ),
     "language_settings": MessageLookupByLibrary.simpleMessage(
       "Language settings",
     ),
@@ -224,7 +227,7 @@ class MessageLookup extends MessageLookupByLibrary {
           "Model basic info pass through settings",
         ),
     "model_call_name_hint": MessageLookupByLibrary.simpleMessage(
-      "Please fill in the model\'s call name (eg: qwen/qwen-7b-chat)",
+      "Enter call name (eg: qwen/qwen-7b-chat)",
     ),
     "model_context_not_enough": MessageLookupByLibrary.simpleMessage(
       "Reach prompt limit",
@@ -234,13 +237,13 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "model_family": MessageLookupByLibrary.simpleMessage("Model family"),
     "model_family_hint": MessageLookupByLibrary.simpleMessage(
-      "Please fill in the model\'s family (eg: qwen3)",
+      "Enter the model\'s family (eg: qwen3)",
     ),
     "model_friendly_name": MessageLookupByLibrary.simpleMessage(
       "Model friendly name",
     ),
     "model_friendly_name_hint": MessageLookupByLibrary.simpleMessage(
-      "Please fill in the model\'s friendly name (eg: Qwen 7B)",
+      "Enter the model\'s friendly name (eg: Qwen 7B)",
     ),
     "model_local_telling": MessageLookupByLibrary.simpleMessage(
       "Pass the local info",

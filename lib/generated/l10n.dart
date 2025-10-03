@@ -220,10 +220,10 @@ class S {
     );
   }
 
-  /// `add a provider`
+  /// `Add a provider`
   String get add_provider {
     return Intl.message(
-      'add a provider',
+      'Add a provider',
       name: 'add_provider',
       desc: '',
       args: [],
@@ -350,9 +350,9 @@ class S {
     return Intl.message('API Key', name: 'api_key', desc: '', args: []);
   }
 
-  /// `add API key`
+  /// `Add API key`
   String get add_api_key {
-    return Intl.message('add API key', name: 'add_api_key', desc: '', args: []);
+    return Intl.message('Add API key', name: 'add_api_key', desc: '', args: []);
   }
 
   /// `API key set`
@@ -415,20 +415,20 @@ class S {
     );
   }
 
-  /// `Fill in the model's call name`
+  /// `Model call name`
   String get fill_model_call_name {
     return Intl.message(
-      'Fill in the model\'s call name',
+      'Model call name',
       name: 'fill_model_call_name',
       desc: '',
       args: [],
     );
   }
 
-  /// `Please fill in the model's call name (eg: qwen/qwen-7b-chat)`
+  /// `Enter call name (eg: qwen/qwen-7b-chat)`
   String get model_call_name_hint {
     return Intl.message(
-      'Please fill in the model\'s call name (eg: qwen/qwen-7b-chat)',
+      'Enter call name (eg: qwen/qwen-7b-chat)',
       name: 'model_call_name_hint',
       desc: '',
       args: [],
@@ -445,10 +445,10 @@ class S {
     );
   }
 
-  /// `Please fill in the model's friendly name (eg: Qwen 7B)`
+  /// `Enter the model's friendly name (eg: Qwen 7B)`
   String get model_friendly_name_hint {
     return Intl.message(
-      'Please fill in the model\'s friendly name (eg: Qwen 7B)',
+      'Enter the model\'s friendly name (eg: Qwen 7B)',
       name: 'model_friendly_name_hint',
       desc: '',
       args: [],
@@ -465,10 +465,10 @@ class S {
     );
   }
 
-  /// `Please fill in the model's family (eg: qwen3)`
+  /// `Enter the model's family (eg: qwen3)`
   String get model_family_hint {
     return Intl.message(
-      'Please fill in the model\'s family (eg: qwen3)',
+      'Enter the model\'s family (eg: qwen3)',
       name: 'model_family_hint',
       desc: '',
       args: [],
@@ -1270,10 +1270,10 @@ class S {
     );
   }
 
-  /// `Are you sure you want to delete this agent? \n All the sessions related to this agent will be deleted as well.`
+  /// `Are you sure to delete this agent? \n All sessions related to this agent will be deleted.`
   String get agent_delete_confirm {
     return Intl.message(
-      'Are you sure you want to delete this agent? \n All the sessions related to this agent will be deleted as well.',
+      'Are you sure to delete this agent? \n All sessions related to this agent will be deleted.',
       name: 'agent_delete_confirm',
       desc: '',
       args: [],
@@ -1520,6 +1520,16 @@ class S {
     return Intl.message(
       'Language settings',
       name: 'language_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select a language`
+  String get language_select {
+    return Intl.message(
+      'Select a language',
+      name: 'language_select',
       desc: '',
       args: [],
     );

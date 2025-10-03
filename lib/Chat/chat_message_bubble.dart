@@ -45,7 +45,7 @@ class PersistChatMessage extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isUserMessage ? theme.boxColor : null,
+          color: isUserMessage ? theme.thirdGradeColor : null,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(

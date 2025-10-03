@@ -4,30 +4,48 @@ import 'package:riverpod/riverpod.dart';
 // 定义主题数据类
 class ThemeConfig {
   final Color primaryColor;
-  final Color surfaceColor;
-  final Color backgroundColor;
-  final Color boxColor;
+  final Color zeroGradeColor;
+  final Color secondGradeColor;
+  final Color thirdGradeColor;
   final Color textColor;
 
   ThemeConfig({
     required this.primaryColor,
-    required this.surfaceColor,
-    required this.backgroundColor,
-    required this.boxColor,
+    required this.zeroGradeColor,
+    required this.secondGradeColor,
+    required this.thirdGradeColor,
     required this.textColor,
   });
+
+  ThemeConfig copyWith({
+    Color? primaryColor,
+    Color? zeroGradeColor,
+    Color? secondGradeColor,
+    Color? thirdGradeColor,
+    Color? textColor,
+  }) {
+    return ThemeConfig(
+      primaryColor: primaryColor ?? this.primaryColor,
+      zeroGradeColor: zeroGradeColor ?? this.zeroGradeColor,
+      secondGradeColor: secondGradeColor ?? this.secondGradeColor,
+      thirdGradeColor: thirdGradeColor ?? this.thirdGradeColor,
+      textColor: textColor ?? this.textColor,
+    );
+  }
 }
 
 // 使用 StateNotifier 管理主题状态
 class ThemeManager extends StateNotifier<ThemeConfig> {
   ThemeManager()
-      : super(ThemeConfig(
-    primaryColor: const Color(0xFF000000),
-    surfaceColor: const Color(0xFFFFFFFF),
-    backgroundColor: const Color(0xFFF2F2F2),
-    boxColor: const Color(0xFFD7D7D7),
-    textColor: const Color(0xFF000000),
-  ));
+    : super(
+        ThemeConfig(
+          primaryColor: const Color(0xFF000000),
+          zeroGradeColor: const Color(0xFFFFFFFF),
+          secondGradeColor: const Color(0xFFF2F2F2),
+          thirdGradeColor: const Color(0xFFD7D7D7),
+          textColor: const Color(0xFF000000),
+        ),
+      );
 
   // 更新主题颜色的方法
   void updateTheme({
@@ -39,9 +57,9 @@ class ThemeManager extends StateNotifier<ThemeConfig> {
   }) {
     state = ThemeConfig(
       primaryColor: primaryColor ?? state.primaryColor,
-      surfaceColor: surfaceColor ?? state.surfaceColor,
-      backgroundColor: backgroundColor ?? state.backgroundColor,
-      boxColor: boxColor ?? state.boxColor,
+      zeroGradeColor: surfaceColor ?? state.zeroGradeColor,
+      secondGradeColor: backgroundColor ?? state.secondGradeColor,
+      thirdGradeColor: boxColor ?? state.thirdGradeColor,
       textColor: textColor ?? state.textColor,
     );
   }
@@ -50,9 +68,9 @@ class ThemeManager extends StateNotifier<ThemeConfig> {
   void setLightTheme() {
     state = ThemeConfig(
       primaryColor: const Color(0xFF000000),
-      surfaceColor: const Color(0xFFFFFFFF),
-      backgroundColor: const Color(0xFFF2F2F2),
-      boxColor: const Color(0xFFD7D7D7),
+      zeroGradeColor: const Color(0xFFFFFFFF),
+      secondGradeColor: const Color(0xFFF2F2F2),
+      thirdGradeColor: const Color(0xFFD7D7D7),
       textColor: const Color(0xFF000000),
     );
   }
@@ -60,16 +78,15 @@ class ThemeManager extends StateNotifier<ThemeConfig> {
   void setDarkTheme() {
     state = ThemeConfig(
       primaryColor: const Color(0xFFBB86FC),
-      surfaceColor: const Color(0xFF121212),
-      backgroundColor: const Color(0xFF1E1E1E),
-      boxColor: const Color(0xFF2D2D2D),
+      zeroGradeColor: const Color(0xFF121212),
+      secondGradeColor: const Color(0xFF1E1E1E),
+      thirdGradeColor: const Color(0xFF2D2D2D),
       textColor: const Color(0xFFFFFFFF),
     );
   }
 }
 
 // 创建 StateNotifierProvider
-final themeProvider =
-StateNotifierProvider<ThemeManager, ThemeConfig>((ref) {
+final themeProvider = StateNotifierProvider<ThemeManager, ThemeConfig>((ref) {
   return ThemeManager();
 });

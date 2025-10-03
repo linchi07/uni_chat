@@ -24,7 +24,7 @@
     }
   },
   "api_settings":"API settings",
-  "add_provider":"add a provider",
+  "add_provider":"Add a provider",
   "no_provider":"No providers ",
   "type_with_holder":"Type : {type}",
   "@type_with_holder": {
@@ -53,7 +53,7 @@
   "end_point_type":"EndPoint type",
   "end_point_type_set":"EndPoint type set",
   "api_key":"API Key",
-  "add_api_key":"add API key",
+  "add_api_key":"Add API key",
   "api_key_set":"API key set",
   "api_key_total":"{apiKey} total",
   "@api_key_total": {
@@ -66,12 +66,12 @@
   "fill_reminder_null_if_blank":"Write a reminder (null if left blank)",
   "model":"Model",
   "add_model_hint":"No models yet \n Please press the + button to add one",
-  "fill_model_call_name":"Fill in the model's call name",
-  "model_call_name_hint":"Please fill in the model's call name (eg: qwen/qwen-7b-chat)",
+  "fill_model_call_name":"Model call name",
+  "model_call_name_hint":"Enter call name (eg: qwen/qwen-7b-chat)",
   "model_friendly_name":"Model friendly name",
-  "model_friendly_name_hint":"Please fill in the model's friendly name (eg: Qwen 7B)",
+  "model_friendly_name_hint":"Enter the model's friendly name (eg: Qwen 7B)",
   "model_family":"Model family",
-  "model_family_hint":"Please fill in the model's family (eg: qwen3)",
+  "model_family_hint":"Enter the model's family (eg: qwen3)",
   "plz_fill_model_call_name":"Please fill in the model's call name",
   "confirm_adding_model":"Confirm to add this model",
   "embedding_model_note":"Note that this is an embedding model , which cannot be used to chat",
@@ -216,7 +216,7 @@
   "enable_ui_interactions":"Enable UI interactions",
   "agent_manage":"Agent management",
   "create_new_agent":"Create new agent",
-  "agent_delete_confirm":"Are you sure you want to delete this agent? \n All the sessions related to this agent will be deleted as well.",
+  "agent_delete_confirm":"Are you sure to delete this agent? \n All sessions related to this agent will be deleted.",
   "no_model_plz_add":"No model yet, please add one first.",
   "view_all_provider_provide_model":"Provider who provides this model",
   "model_delete_confirm":"Are you sure you want to delete this model?",
@@ -245,5 +245,6 @@
   "model_management":"Model management",
   "general_settings":"General settings",
   "language_settings":"Language settings",
+  "language_select": "Select a language",
   "about":"About"
 }

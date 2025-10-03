@@ -118,7 +118,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
         width: 300,
         height: 200,
         child: Material(
-          color: theme.surfaceColor,
+          color: theme.zeroGradeColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -137,7 +137,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     StdButton(
-                      color: theme.boxColor,
+                      color: theme.thirdGradeColor,
                       onPressed: () {
                         OverlayPortalService.hide(context);
                       },
@@ -261,7 +261,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                               borderRadius: BorderRadius.circular(8.0),
                             ),
                             onTap: () {},
-                            tileColor: theme.surfaceColor,
+                            tileColor: theme.zeroGradeColor,
                             leading: StdAvatar(
                               length: 50,
                               assetImage: AssetImage(
@@ -372,7 +372,7 @@ class _EditProviderState extends ConsumerState<EditProvider> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             StdButton(
-              color: theme.boxColor,
+              color: theme.thirdGradeColor,
               text: S.of(context).cancel,
               onPressed: () {
                 widget.onBack();
@@ -542,7 +542,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: StdListTile(
-        backgroundColor: theme.surfaceColor,
+        backgroundColor: theme.zeroGradeColor,
         onTap: () {
           var n = ref.read(addApiState.notifier);
           n.state = n.state.copyWith(
@@ -634,7 +634,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               StdButton(
-                color: theme.boxColor,
+                color: theme.thirdGradeColor,
                 onPressed: () {
                   var n = ref.read(addApiState.notifier);
                   n.state = n.state.copyWith(
@@ -688,7 +688,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: theme.boxColor,
+              color: theme.thirdGradeColor,
             ),
             child: TextFormField(
               controller: _nameController,
@@ -751,7 +751,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               StdButton(
-                color: theme.boxColor,
+                color: theme.thirdGradeColor,
                 text: S.of(context).go_back,
                 onPressed: () {
                   var n = ref.read(addApiState.notifier);
@@ -798,7 +798,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               StdButton(
-                color: theme.boxColor,
+                color: theme.thirdGradeColor,
                 text: S.of(context).go_back,
                 onPressed: () {
                   var n = ref.read(addApiState.notifier);
@@ -842,7 +842,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: theme.boxColor,
+                color: theme.thirdGradeColor,
               ),
               child: TextFormField(
                 controller: _endpointController,
@@ -863,7 +863,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 StdButton(
-                  color: theme.boxColor,
+                  color: theme.thirdGradeColor,
                   text: S.of(context).go_back,
                   onPressed: () {
                     var n = ref.read(addApiState.notifier);
@@ -1023,7 +1023,7 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8.0),
-        color: theme.boxColor,
+        color: theme.thirdGradeColor,
       ),
       child: Column(
         children: [
@@ -1032,7 +1032,7 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
               margin: const EdgeInsets.fromLTRB(8, 8, 8, 2),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8.0),
-                color: theme.surfaceColor,
+                color: theme.zeroGradeColor,
               ),
               child: _apiKeys.isEmpty
                   ? Center(
@@ -1110,7 +1110,7 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
                         width: 400,
                         height: 300,
                         child: Material(
-                          color: theme.surfaceColor,
+                          color: theme.zeroGradeColor,
                           clipBehavior: Clip.hardEdge,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -1152,7 +1152,7 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
                                               decoration: BoxDecoration(
                                                 borderRadius:
                                                     BorderRadius.circular(8),
-                                                color: theme.boxColor,
+                                                color: theme.thirdGradeColor,
                                               ),
                                               child: TextFormField(
                                                 controller: apiKeyController,
@@ -1225,7 +1225,7 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
                                               decoration: BoxDecoration(
                                                 borderRadius:
                                                     BorderRadius.circular(8),
-                                                color: theme.boxColor,
+                                                color: theme.thirdGradeColor,
                                               ),
                                               child: TextField(
                                                 controller: remarkController,
@@ -1257,7 +1257,7 @@ class _ApiKeyManagerPanelState extends ConsumerState<ApiKeyManagerPanel> {
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: <Widget>[
                                         StdButton(
-                                          color: theme.backgroundColor,
+                                          color: theme.secondGradeColor,
                                           text: S.of(context).cancel,
                                           onPressed: () {
                                             OverlayPortalService.hide(context);
@@ -1405,7 +1405,7 @@ class _ModelManagePanelState extends ConsumerState<ModelManagePanel> {
                         width: 400,
                         height: 600,
                         child: Material(
-                          color: theme.surfaceColor,
+                          color: theme.zeroGradeColor,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -1495,7 +1495,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               StdButton(
-                color: theme.boxColor,
+                color: theme.thirdGradeColor,
                 text: S.of(context).cancel,
                 onPressed: () {
                   setState(() {
@@ -1733,7 +1733,7 @@ class _AddModelDialogState extends ConsumerState<AddModelDialog> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               StdButton(
-                color: theme.backgroundColor,
+                color: theme.secondGradeColor,
                 text: S.of(context).cancel,
                 onPressed: () {
                   _resetForm();
@@ -1763,7 +1763,7 @@ class _AddModelDialogState extends ConsumerState<AddModelDialog> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: theme.boxColor,
+            color: theme.thirdGradeColor,
           ),
           child: TextFormField(
             controller: controller,

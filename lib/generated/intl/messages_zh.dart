@@ -132,7 +132,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "error_occurred": MessageLookupByLibrary.simpleMessage("发生错误"),
     "error_occurred_with_error": m4,
     "fill_in_api_key": MessageLookupByLibrary.simpleMessage("填写API密钥"),
-    "fill_model_call_name": MessageLookupByLibrary.simpleMessage("填写模型调用名"),
+    "fill_model_call_name": MessageLookupByLibrary.simpleMessage("模型调用名"),
     "fill_reminder_null_if_blank": MessageLookupByLibrary.simpleMessage(
       "填写备注(留空默认无)",
     ),
@@ -157,6 +157,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "知识库&上下文检索",
     ),
     "knowledge_base_tokens": m5,
+    "language_select": MessageLookupByLibrary.simpleMessage("选择语言"),
     "language_settings": MessageLookupByLibrary.simpleMessage("语言设置"),
     "loading_error": m6,
     "longest_opening": m7,

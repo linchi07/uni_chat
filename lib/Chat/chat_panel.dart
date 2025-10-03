@@ -81,12 +81,19 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     var agent = ref.watch(agentProvider);
+    if (agent?.id != selectedIndex?.$1 && agent != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          selectedIndex = (agent.id, agent.name);
+        });
+      });
+    }
     return SizedBox(
       height: 40,
       width: 180,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
@@ -103,7 +110,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                   height: rb.size.height * 5 + 3,
                   child: Material(
                     elevation: 4,
-                    color: theme.surfaceColor,
+                    color: theme.zeroGradeColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -215,6 +222,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                     Expanded(
                       child: Text(
                         selectedIndex!.$2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                     ),
@@ -287,12 +295,19 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     var persona = ref.watch(personaProvider);
+    if (persona.id != selectedIndex?.$1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          selectedIndex = (persona.id, persona.name);
+        });
+      });
+    }
     return SizedBox(
       height: 40,
       width: 180,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
@@ -309,7 +324,7 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                   height: rb.size.height * 5 + 3,
                   child: Material(
                     elevation: 4,
-                    color: theme.surfaceColor,
+                    color: theme.zeroGradeColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -427,6 +442,7 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                     Expanded(
                       child: Text(
                         selectedIndex!.$2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                     ),
@@ -447,7 +463,7 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     var theme = ref.watch(themeProvider);
     return Scaffold(
-      backgroundColor: theme.backgroundColor,
+      backgroundColor: theme.secondGradeColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -459,7 +475,7 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               S.of(context).choose_agent_and_chat_hint,
-              style: TextStyle(fontSize: 16, color: theme.boxColor),
+              style: TextStyle(fontSize: 16, color: theme.thirdGradeColor),
             ),
             const SizedBox(height: 8),
             Row(
@@ -526,7 +542,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
     var chatState = ref.watch(chatStateProvider);
     final messages = chatState.messages;
     return Scaffold(
-      backgroundColor: ref.watch(themeProvider).backgroundColor,
+      backgroundColor: ref.watch(themeProvider).secondGradeColor,
       body: Center(
         child: SizedBox(
           width: MediaQuery.of(context).size.width.clamp(0, 1000),
@@ -911,7 +927,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         margin: const EdgeInsets.all(16),
         clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
-          color: theme.surfaceColor,
+          color: theme.zeroGradeColor,
           borderRadius: BorderRadius.circular(8),
         ),
         child: childPanel,

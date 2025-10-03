@@ -66,7 +66,7 @@
   "fill_reminder_null_if_blank": "填写备注(留空默认无)",
   "model": "模型",
   "add_model_hint": "暂无模型\n请点击右下角+按钮添加",
-  "fill_model_call_name": "填写模型调用名",
+  "fill_model_call_name": "模型调用名",
   "model_call_name_hint": "请输入模型调用名称（例如：qwen/qwen-7b-chat）",
   "model_friendly_name": "模型友好名称",
   "model_friendly_name_hint": "请输入模型友好名称（例如：Qwen 7B）",
@@ -245,5 +245,6 @@
   "model_management": "模型管理",
   "general_settings": "通用设置",
   "language_settings": "语言设置",
+  "language_select": "选择语言",
   "about": "关于"
 }

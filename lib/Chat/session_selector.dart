@@ -79,14 +79,14 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
             }
           },
           padding: const EdgeInsets.all(6),
-          color: theme.backgroundColor,
+          color: theme.secondGradeColor,
           child: Icon(Icons.search, size: 20),
         ),
         const SizedBox(width: 8),
         SizedBox(
           width: 500,
           child: Material(
-            color: theme.backgroundColor,
+            color: theme.secondGradeColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -147,7 +147,7 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
             ref.read(chatStateProvider.notifier).clearSession();
           },
           padding: const EdgeInsets.all(6),
-          color: theme.backgroundColor,
+          color: theme.secondGradeColor,
           child: Icon(Icons.add_comment_outlined, size: 20),
         ),
       ],
@@ -269,7 +269,7 @@ class _SessionSelectorOverlayState
       },
       child: Material(
         elevation: 4.0,
-        color: theme.backgroundColor,
+        color: theme.secondGradeColor,
         borderRadius: BorderRadius.circular(8),
         child: FadeTransition(
           opacity: _opacityAnimation,
@@ -314,7 +314,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
 
   void _onHoverTimeout(String sid) async {
     var ps = await DatabaseService.instance.getMessagesForSession(sid);
-    setState(() {
+    internalSetState(() {
       _previewedSession = ps;
     });
   }
@@ -329,7 +329,9 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
         if (!_sessionScrollController.hasClients) {
           return;
         }
-        _sessionScrollController.jumpTo(64 * index.toDouble() - 128.0);
+        _sessionScrollController.jumpTo(
+          (64 * index.toDouble() - 128.0).clamp(0, double.maxFinite),
+        );
         //让选中的不在最上面
         isSessionScrolled = true;
       });
@@ -344,7 +346,9 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
         if (!_agentScrollController.hasClients) {
           return;
         }
-        _agentScrollController.jumpTo(48 * index.toDouble() - 96.0);
+        _agentScrollController.jumpTo(
+          (48 * index.toDouble() - 96.0).clamp(0, double.maxFinite),
+        );
         //让选中的不在最上面
         isAgentScrolled = true;
       });
@@ -377,12 +381,10 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                 borderRadius: BorderRadius.circular(8.0),
                 borderSide: BorderSide.none,
               ),
-              fillColor: theme.surfaceColor,
+              fillColor: theme.zeroGradeColor,
             ),
             onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
+              _searchQuery = value;
             },
           ),
         ),
@@ -429,6 +431,8 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
     return (agents, avatars);
   }
 
+  dynamic internalSetState;
+
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(chatStateProvider).session;
@@ -461,7 +465,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                           return Center(
                             child: Text(
                               S.of(context).no_agent,
-                              style: TextStyle(color: theme.boxColor),
+                              style: TextStyle(color: theme.thirdGradeColor),
                             ),
                           );
                         }
@@ -478,7 +482,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                 file: asyncSnapshot.data!.$2[index],
                                 length: 30,
                                 backgroundColor: isSelected
-                                    ? theme.surfaceColor
+                                    ? theme.zeroGradeColor
                                     : null,
                               ),
                               isSelected: isSelected,
@@ -499,104 +503,134 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                   ),
                 ),
                 Expanded(
-                  flex: 7,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: (selectedAgentId == null)
-                        ? Center(
-                            child: Text(
-                              S.of(context).no_history,
-                              style: TextStyle(color: theme.boxColor),
+                  flex: 15,
+                  child: StatefulBuilder(
+                    builder: (context, setState) {
+                      internalSetState = setState;
+                      return Row(
+                        children: [
+                          Expanded(
+                            flex: 7,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: (selectedAgentId == null)
+                                  ? Center(
+                                      child: Text(
+                                        S.of(context).no_history,
+                                        style: TextStyle(
+                                          color: theme.thirdGradeColor,
+                                        ),
+                                      ),
+                                    )
+                                  : FutureBuilder(
+                                      future: DatabaseService.instance
+                                          .getAllSessionsByAgent(
+                                            selectedAgentId!,
+                                          ),
+                                      builder: (context, asyncSnapshot) {
+                                        if (asyncSnapshot.data == null) {
+                                          return CircularProgressIndicator();
+                                        }
+                                        if (asyncSnapshot.data!.isEmpty) {
+                                          return Center(
+                                            child: Text(
+                                              S.of(context).no_history,
+                                              style: TextStyle(
+                                                color: theme.thirdGradeColor,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        for (
+                                          int i = 0;
+                                          i < asyncSnapshot.data!.length;
+                                          i++
+                                        ) {
+                                          //这里必须手动循环，因为listview有懒加载机制
+                                          if (asyncSnapshot.data![i].id ==
+                                              session?.id) {
+                                            scrollToSelectedSession(i);
+                                          }
+                                        }
+                                        return ListView.builder(
+                                          controller: _sessionScrollController,
+                                          itemCount: asyncSnapshot.data!.length,
+                                          itemBuilder: (context, index) {
+                                            return _SessionTile(
+                                              onClose: widget.onClose,
+                                              session:
+                                                  asyncSnapshot.data![index],
+                                              theme: theme,
+                                              startHoverTimer: startHoverTimer,
+                                              cancelHoverTimer:
+                                                  cancelHoverTimer,
+                                              switchSession: switchSession,
+                                              isSelected:
+                                                  asyncSnapshot
+                                                      .data![index]
+                                                      .id ==
+                                                  session?.id,
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
                             ),
-                          )
-                        : FutureBuilder(
-                            future: DatabaseService.instance
-                                .getAllSessionsByAgent(selectedAgentId!),
-                            builder: (context, asyncSnapshot) {
-                              if (asyncSnapshot.data == null) {
-                                return CircularProgressIndicator();
-                              }
-                              if (asyncSnapshot.data!.isEmpty) {
-                                return Center(
-                                  child: Text(
-                                    S.of(context).no_history,
-                                    style: TextStyle(color: theme.boxColor),
-                                  ),
-                                );
-                              }
-                              for (
-                                int i = 0;
-                                i < asyncSnapshot.data!.length;
-                                i++
-                              ) {
-                                //这里必须手动循环，因为listview有懒加载机制
-                                if (asyncSnapshot.data![i].id == session?.id) {
-                                  scrollToSelectedSession(i);
-                                }
-                              }
-                              return ListView.builder(
-                                controller: _sessionScrollController,
-                                itemCount: asyncSnapshot.data!.length,
-                                itemBuilder: (context, index) {
-                                  return _SessionTile(
-                                    onClose: widget.onClose,
-                                    session: asyncSnapshot.data![index],
-                                    theme: theme,
-                                    startHoverTimer: startHoverTimer,
-                                    cancelHoverTimer: cancelHoverTimer,
-                                    switchSession: switchSession,
-                                    isSelected:
-                                        asyncSnapshot.data![index].id ==
-                                        session?.id,
-                                  );
-                                },
-                              );
-                            },
                           ),
+                          Expanded(
+                            flex: 8,
+                            child: _previewedSession == null
+                                ? Center(
+                                    child: Text(
+                                      S.of(context).hover_to_see_session,
+                                      style: TextStyle(
+                                        color: theme.thirdGradeColor,
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    margin: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: theme.zeroGradeColor,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    // ignore: prefer_is_empty
+                                    child: (_previewedSession?.$1.length == 0)
+                                        ? Center(
+                                            child: Text(
+                                              S.of(context).no_message,
+                                              style: TextStyle(
+                                                color: theme.thirdGradeColor,
+                                              ),
+                                            ),
+                                          )
+                                        : SelectionArea(
+                                            selectionControls:
+                                                MaterialTextSelectionControls(),
+                                            child: ListView.builder(
+                                              reverse: true,
+                                              itemCount:
+                                                  _previewedSession?.$1.length,
+                                              itemBuilder: (context, index) {
+                                                final message =
+                                                    _previewedSession!
+                                                        .$1[_previewedSession!
+                                                            .$1
+                                                            .length -
+                                                        1 -
+                                                        index];
+                                                return PersistChatMessage(
+                                                  message: message,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                  ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                ),
-                Expanded(
-                  flex: 8,
-                  child: _previewedSession == null
-                      ? Center(
-                          child: Text(
-                            S.of(context).hover_to_see_session,
-                            style: TextStyle(color: theme.boxColor),
-                          ),
-                        )
-                      : Container(
-                          margin: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: theme.surfaceColor,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          // ignore: prefer_is_empty
-                          child: (_previewedSession?.$1.length == 0)
-                              ? Center(
-                                  child: Text(
-                                    S.of(context).no_message,
-                                    style: TextStyle(color: theme.boxColor),
-                                  ),
-                                )
-                              : SelectionArea(
-                                  selectionControls:
-                                      MaterialTextSelectionControls(),
-                                  child: ListView.builder(
-                                    reverse: true,
-                                    itemCount: _previewedSession?.$1.length,
-                                    itemBuilder: (context, index) {
-                                      final message =
-                                          _previewedSession!
-                                              .$1[_previewedSession!.$1.length -
-                                              1 -
-                                              index];
-                                      return PersistChatMessage(
-                                        message: message,
-                                      );
-                                    },
-                                  ),
-                                ),
-                        ),
                 ),
               ],
             ),
@@ -669,7 +703,7 @@ class _SessionTileState extends State<_SessionTile> {
         selectedColor: ColorParser.textColor(
           widget.isSelected
               ? widget.theme.primaryColor
-              : widget.theme.backgroundColor,
+              : widget.theme.secondGradeColor,
         ),
         title: Text(
           widget.session.name,
@@ -758,7 +792,7 @@ class _SessionTileState extends State<_SessionTile> {
     displayOverlay = true;
     return Material(
       elevation: 4.0,
-      color: widget.theme.surfaceColor,
+      color: widget.theme.zeroGradeColor,
       borderRadius: BorderRadius.circular(8),
       clipBehavior: Clip.hardEdge,
       child: SizedBox(
@@ -808,7 +842,7 @@ class _SessionTileState extends State<_SessionTile> {
         builder: (context, ref, child) {
           theme = ref.watch(themeProvider);
           return Material(
-            color: theme.surfaceColor,
+            color: theme.zeroGradeColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -835,7 +869,7 @@ class _SessionTileState extends State<_SessionTile> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       StdButton(
-                        color: theme.boxColor,
+                        color: theme.thirdGradeColor,
                         onPressed: () {
                           OverlayPortalService.hide(context);
                         },
@@ -873,7 +907,7 @@ class _SessionTileState extends State<_SessionTile> {
         builder: (context, ref, child) {
           theme = ref.watch(themeProvider);
           return Material(
-            color: theme.surfaceColor,
+            color: theme.zeroGradeColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -896,7 +930,7 @@ class _SessionTileState extends State<_SessionTile> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       StdButton(
-                        color: theme.boxColor,
+                        color: theme.thirdGradeColor,
                         onPressed: () {
                           OverlayPortalService.hide(context);
                         },

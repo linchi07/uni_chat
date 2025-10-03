@@ -109,7 +109,7 @@ class AgentSelector extends ConsumerWidget {
               children: [
                 Text(
                   S.of(context).no_agent,
-                  style: TextStyle(color: theme.boxColor),
+                  style: TextStyle(color: theme.thirdGradeColor),
                 ),
               ],
             ),
@@ -133,7 +133,7 @@ class AgentSelector extends ConsumerWidget {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
-                      color: theme.boxColor,
+                      color: theme.thirdGradeColor,
                       borderRadius: BorderRadius.all(Radius.circular(5)),
                     ),
                     child: Text(
@@ -193,7 +193,7 @@ class AgentSelector extends ConsumerWidget {
       width: 300,
       height: 200,
       child: Material(
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -213,7 +213,7 @@ class AgentSelector extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   StdButton(
-                    color: theme.boxColor,
+                    color: theme.thirdGradeColor,
                     onPressed: () {
                       OverlayPortalService.hide(context);
                     },

@@ -214,7 +214,7 @@ class _PersonaSwitcherContainerState extends State<PersonaSwitcherContainer>
               child: Material(
                 borderRadius: _borderRadiusAnimation.value,
                 clipBehavior: Clip.hardEdge,
-                color: theme.surfaceColor,
+                color: theme.zeroGradeColor,
                 elevation: 4,
                 child: Center(
                   child: (_opacityAnimation.value >= 0.7)
@@ -281,7 +281,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
   Widget _popupMenu(Persona persona, BuildContext context) {
     return Material(
       elevation: 4.0,
-      color: theme.surfaceColor,
+      color: theme.zeroGradeColor,
       borderRadius: BorderRadius.circular(8),
       clipBehavior: Clip.hardEdge,
       child: SizedBox(
@@ -612,7 +612,7 @@ class _PersonaEditorState extends State<PersonaEditor>
         width: 300,
         height: 200,
         child: Material(
-          color: theme.surfaceColor,
+          color: theme.zeroGradeColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -631,7 +631,7 @@ class _PersonaEditorState extends State<PersonaEditor>
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     StdButton(
-                      color: theme.boxColor,
+                      color: theme.thirdGradeColor,
                       onPressed: () {
                         OverlayPortalService.hide(context);
                       },
@@ -771,7 +771,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
       width: 400,
       height: 400,
       child: Material(
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -806,7 +806,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     StdButton(
-                      color: theme.backgroundColor,
+                      color: theme.secondGradeColor,
                       text: S.of(context).cancel,
                       onPressed: () {
                         // 清除控制器文本
@@ -880,7 +880,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
     });
     return Material(
       borderRadius: BorderRadius.circular(8),
-      color: theme.surfaceColor,
+      color: theme.zeroGradeColor,
       clipBehavior: Clip.hardEdge,
       elevation: 4,
       child: Padding(
@@ -908,7 +908,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                             clipBehavior: Clip.hardEdge,
                             margin: const EdgeInsets.fromLTRB(30, 30, 30, 5),
                             decoration: BoxDecoration(
-                              color: theme.surfaceColor,
+                              color: theme.zeroGradeColor,
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
@@ -970,7 +970,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                             S.of(context).avatar_change_hint,
                             style: TextStyle(
                               fontSize: 15,
-                              color: theme.boxColor,
+                              color: theme.thirdGradeColor,
                             ),
                           ),
                           const SizedBox(height: 15),
@@ -1041,7 +1041,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
-                              color: theme.backgroundColor,
+                              color: theme.secondGradeColor,
                             ),
                             child: ListView.builder(
                               itemCount: personaData.length,
@@ -1087,7 +1087,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                 ),
                 const SizedBox(width: 16),
                 StdButton(
-                  color: theme.backgroundColor,
+                  color: theme.secondGradeColor,
                   text: S.of(context).cancel,
                   onPressed: () {
                     widget.onClose();

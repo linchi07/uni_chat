@@ -88,11 +88,11 @@ class StdListTile extends ConsumerWidget {
       trailing: trailing,
       tileColor: backgroundColor,
       textColor: ColorParser.textColor(
-        (isSelected) ? priColor : highlightColor ?? theme.backgroundColor,
+        (isSelected) ? priColor : highlightColor ?? theme.secondGradeColor,
       ),
       selectedTileColor: priColor,
       selectedColor: ColorParser.textColor(
-        (isSelected) ? priColor : highlightColor ?? theme.backgroundColor,
+        (isSelected) ? priColor : highlightColor ?? theme.secondGradeColor,
       ),
       selected: isSelected,
     );
@@ -173,7 +173,7 @@ class StdTextFormField extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: theme.boxColor,
+        color: theme.thirdGradeColor,
       ),
       child: TextFormField(
         maxLines: maxLines,
@@ -236,7 +236,7 @@ class StdTextField extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: theme.boxColor,
+        color: theme.thirdGradeColor,
       ),
       child: TextField(
         maxLines: maxLines,
@@ -410,8 +410,8 @@ class StdSlider extends ConsumerWidget {
             min: min,
             max: max,
             activeColor: theme.primaryColor,
-            inactiveColor: theme.boxColor,
-            thumbColor: theme.surfaceColor,
+            inactiveColor: theme.thirdGradeColor,
+            thumbColor: theme.zeroGradeColor,
             value: toInt ? value.roundToDouble() : value,
             onChanged: (val) {
               val = val.clamp(min, max);
@@ -426,7 +426,7 @@ class StdSlider extends ConsumerWidget {
           width: 60,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: theme.boxColor,
+            color: theme.thirdGradeColor,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
           child: TextField(
@@ -570,7 +570,7 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
           height: rb.size.height * 6 + 3,
           child: Material(
             elevation: 4,
-            color: theme.surfaceColor,
+            color: theme.zeroGradeColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -591,7 +591,7 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
       width: widget.width,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
