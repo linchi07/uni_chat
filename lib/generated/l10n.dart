@@ -55,944 +55,1099 @@ class S {
     return Localizations.of<S>(context, S);
   }
 
-  /// `暂无Agent,请添加一个`
+  /// `No agent , please add one`
   String get no_agent {
-    return Intl.message('暂无Agent,请添加一个', name: 'no_agent', desc: '', args: []);
+    return Intl.message(
+      'No agent , please add one',
+      name: 'no_agent',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `暂无对话历史`
+  /// `no chat history`
   String get no_history {
-    return Intl.message('暂无对话历史', name: 'no_history', desc: '', args: []);
+    return Intl.message(
+      'no chat history',
+      name: 'no_history',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `鼠标悬停来预览会话`
+  /// `Hover to preview session`
   String get hover_to_see_session {
     return Intl.message(
-      '鼠标悬停来预览会话',
+      'Hover to preview session',
       name: 'hover_to_see_session',
       desc: '',
       args: [],
     );
   }
 
-  /// `没有消息`
+  /// `no message`
   String get no_message {
-    return Intl.message('没有消息', name: 'no_message', desc: '', args: []);
+    return Intl.message('no message', name: 'no_message', desc: '', args: []);
   }
 
-  /// `重命名`
+  /// `Rename`
   String get rename {
-    return Intl.message('重命名', name: 'rename', desc: '', args: []);
+    return Intl.message('Rename', name: 'rename', desc: '', args: []);
   }
 
-  /// `删除`
+  /// `Delete`
   String get delete {
-    return Intl.message('删除', name: 'delete', desc: '', args: []);
+    return Intl.message('Delete', name: 'delete', desc: '', args: []);
   }
 
-  /// `确定要删除此对话记录吗？`
+  /// `Are you sure to delete this chat?`
   String get confirm_delete_session {
     return Intl.message(
-      '确定要删除此对话记录吗？',
+      'Are you sure to delete this chat?',
       name: 'confirm_delete_session',
       desc: '',
       args: [],
     );
   }
 
-  /// `取消`
+  /// `Cancel`
   String get cancel {
-    return Intl.message('取消', name: 'cancel', desc: '', args: []);
+    return Intl.message('Cancel', name: 'cancel', desc: '', args: []);
   }
 
-  /// `确定`
+  /// `Confirm`
   String get confirm {
-    return Intl.message('确定', name: 'confirm', desc: '', args: []);
+    return Intl.message('Confirm', name: 'confirm', desc: '', args: []);
   }
 
-  /// `确定（长按）`
+  /// `Confirm (LongPress)`
   String get confirm_long_press {
     return Intl.message(
-      '确定（长按）',
+      'Confirm (LongPress)',
       name: 'confirm_long_press',
       desc: '',
       args: [],
     );
   }
 
-  /// `修改对话记录名称`
+  /// `Modify session name`
   String get modify_session_name {
     return Intl.message(
-      '修改对话记录名称',
+      'Modify session name',
       name: 'modify_session_name',
       desc: '',
       args: [],
     );
   }
 
-  /// `请输入对话记录名称`
+  /// `Enter new session name`
   String get enter_session_name {
     return Intl.message(
-      '请输入对话记录名称',
+      'Enter new session name',
       name: 'enter_session_name',
       desc: '',
       args: [],
     );
   }
 
-  /// `窗口过小，无法显示所有面板`
+  /// `The window is too small for fitting all the panels`
   String get window_too_small_to_display_allPanels {
     return Intl.message(
-      '窗口过小，无法显示所有面板',
+      'The window is too small for fitting all the panels',
       name: 'window_too_small_to_display_allPanels',
       desc: '',
       args: [],
     );
   }
 
-  /// `自动缩小大面板`
+  /// `Automatically shrink panels to fit the window`
   String get auto_shrink_large_panel {
     return Intl.message(
-      '自动缩小大面板',
+      'Automatically shrink panels to fit the window',
       name: 'auto_shrink_large_panel',
       desc: '',
       args: [],
     );
   }
 
-  /// `或请拉大窗口`
+  /// `or please make the window bigger`
   String get or_expand_window {
-    return Intl.message('或请拉大窗口', name: 'or_expand_window', desc: '', args: []);
+    return Intl.message(
+      'or please make the window bigger',
+      name: 'or_expand_window',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `完成编辑`
+  /// `Finish editing`
   String get finish_edit {
-    return Intl.message('完成编辑', name: 'finish_edit', desc: '', args: []);
+    return Intl.message(
+      'Finish editing',
+      name: 'finish_edit',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `确定要删除此提供者吗？`
+  /// `Are you sure to delete this provider?`
   String get confirm_delete_provider {
     return Intl.message(
-      '确定要删除此提供者吗？',
+      'Are you sure to delete this provider?',
       name: 'confirm_delete_provider',
       desc: '',
       args: [],
     );
   }
 
-  /// `加载错误{errorContent}`
+  /// `Loading error:{errorContent}`
   String loading_error(Object errorContent) {
     return Intl.message(
-      '加载错误$errorContent',
+      'Loading error:$errorContent',
       name: 'loading_error',
       desc: '',
       args: [errorContent],
     );
   }
 
-  /// `API设置`
+  /// `API settings`
   String get api_settings {
-    return Intl.message('API设置', name: 'api_settings', desc: '', args: []);
+    return Intl.message(
+      'API settings',
+      name: 'api_settings',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `添加提供商`
+  /// `add a provider`
   String get add_provider {
-    return Intl.message('添加提供商', name: 'add_provider', desc: '', args: []);
+    return Intl.message(
+      'add a provider',
+      name: 'add_provider',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `暂无提供商`
+  /// `No providers `
   String get no_provider {
-    return Intl.message('暂无提供商', name: 'no_provider', desc: '', args: []);
+    return Intl.message(
+      'No providers ',
+      name: 'no_provider',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `类型:{type}`
+  /// `Type : {type}`
   String type_with_holder(Object type) {
     return Intl.message(
-      '类型:$type',
+      'Type : $type',
       name: 'type_with_holder',
       desc: '',
       args: [type],
     );
   }
 
-  /// `端点：{endPoint}`
+  /// `EndPoint:{endPoint}`
   String end_point_with_holder(Object endPoint) {
     return Intl.message(
-      '端点：$endPoint',
+      'EndPoint:$endPoint',
       name: 'end_point_with_holder',
       desc: '',
       args: [endPoint],
     );
   }
 
-  /// `编辑提供商：{provider}`
+  /// `Edit provider:{provider}`
   String edit_provider(Object provider) {
     return Intl.message(
-      '编辑提供商：$provider',
+      'Edit provider:$provider',
       name: 'edit_provider',
       desc: '',
       args: [provider],
     );
   }
 
-  /// `选择提供商`
+  /// `Select provider`
   String get select_provider {
-    return Intl.message('选择提供商', name: 'select_provider', desc: '', args: []);
+    return Intl.message(
+      'Select provider',
+      name: 'select_provider',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `请输入提供商详细信息`
+  /// `Enter provider details`
   String get enter_provider_details {
     return Intl.message(
-      '请输入提供商详细信息',
+      'Enter provider details',
       name: 'enter_provider_details',
       desc: '',
       args: [],
     );
   }
 
-  /// `名称`
+  /// `Name`
   String get name {
-    return Intl.message('名称', name: 'name', desc: '', args: []);
+    return Intl.message('Name', name: 'name', desc: '', args: []);
   }
 
-  /// `端点`
+  /// `EndPoint`
   String end_point(Object endPoint) {
-    return Intl.message('端点', name: 'end_point', desc: '', args: [endPoint]);
+    return Intl.message(
+      'EndPoint',
+      name: 'end_point',
+      desc: '',
+      args: [endPoint],
+    );
   }
 
-  /// `端点已设置`
+  /// `EndPoint set`
   String get end_point_set {
-    return Intl.message('端点已设置', name: 'end_point_set', desc: '', args: []);
+    return Intl.message(
+      'EndPoint set',
+      name: 'end_point_set',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `输入API端点`
+  /// `Enter API endpoint`
   String get enter_end_point {
-    return Intl.message('输入API端点', name: 'enter_end_point', desc: '', args: []);
+    return Intl.message(
+      'Enter API endpoint',
+      name: 'enter_end_point',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `端点类型`
+  /// `EndPoint type`
   String get end_point_type {
-    return Intl.message('端点类型', name: 'end_point_type', desc: '', args: []);
+    return Intl.message(
+      'EndPoint type',
+      name: 'end_point_type',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `端点类型已设置`
+  /// `EndPoint type set`
   String get end_point_type_set {
     return Intl.message(
-      '端点类型已设置',
+      'EndPoint type set',
       name: 'end_point_type_set',
       desc: '',
       args: [],
     );
   }
 
-  /// `API密钥`
+  /// `API Key`
   String get api_key {
-    return Intl.message('API密钥', name: 'api_key', desc: '', args: []);
+    return Intl.message('API Key', name: 'api_key', desc: '', args: []);
   }
 
-  /// `添加API密钥`
+  /// `add API key`
   String get add_api_key {
-    return Intl.message('添加API密钥', name: 'add_api_key', desc: '', args: []);
+    return Intl.message('add API key', name: 'add_api_key', desc: '', args: []);
   }
 
-  /// `API密钥已设置`
+  /// `API key set`
   String get api_key_set {
-    return Intl.message('API密钥已设置', name: 'api_key_set', desc: '', args: []);
+    return Intl.message('API key set', name: 'api_key_set', desc: '', args: []);
   }
 
-  /// `共{apiKey}个Key`
+  /// `{apiKey} total`
   String api_key_total(Object apiKey) {
     return Intl.message(
-      '共$apiKey个Key',
+      '$apiKey total',
       name: 'api_key_total',
       desc: '',
       args: [apiKey],
     );
   }
 
-  /// `暂无 API 密钥 \n 请点击右下角+按钮添加`
+  /// `No API keys yet \n Please press the + button to add one`
   String get add_api_key_hint {
     return Intl.message(
-      '暂无 API 密钥 \n 请点击右下角+按钮添加',
+      'No API keys yet \n Please press the + button to add one',
       name: 'add_api_key_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `填写API密钥`
+  /// `Fill in the API key`
   String get fill_in_api_key {
-    return Intl.message('填写API密钥', name: 'fill_in_api_key', desc: '', args: []);
+    return Intl.message(
+      'Fill in the API key',
+      name: 'fill_in_api_key',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `填写备注(留空默认无)`
+  /// `Write a reminder (null if left blank)`
   String get fill_reminder_null_if_blank {
     return Intl.message(
-      '填写备注(留空默认无)',
+      'Write a reminder (null if left blank)',
       name: 'fill_reminder_null_if_blank',
       desc: '',
       args: [],
     );
   }
 
-  /// `模型`
+  /// `Model`
   String get model {
-    return Intl.message('模型', name: 'model', desc: '', args: []);
+    return Intl.message('Model', name: 'model', desc: '', args: []);
   }
 
-  /// `暂无模型\n请点击右下角+按钮添加`
+  /// `No models yet \n Please press the + button to add one`
   String get add_model_hint {
     return Intl.message(
-      '暂无模型\n请点击右下角+按钮添加',
+      'No models yet \n Please press the + button to add one',
       name: 'add_model_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `填写模型调用名`
+  /// `Fill in the model's call name`
   String get fill_model_call_name {
     return Intl.message(
-      '填写模型调用名',
+      'Fill in the model\'s call name',
       name: 'fill_model_call_name',
       desc: '',
       args: [],
     );
   }
 
-  /// `请输入模型调用名称（例如：qwen/qwen-7b-chat）`
+  /// `Please fill in the model's call name (eg: qwen/qwen-7b-chat)`
   String get model_call_name_hint {
     return Intl.message(
-      '请输入模型调用名称（例如：qwen/qwen-7b-chat）',
+      'Please fill in the model\'s call name (eg: qwen/qwen-7b-chat)',
       name: 'model_call_name_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `模型友好名称`
+  /// `Model friendly name`
   String get model_friendly_name {
     return Intl.message(
-      '模型友好名称',
+      'Model friendly name',
       name: 'model_friendly_name',
       desc: '',
       args: [],
     );
   }
 
-  /// `请输入模型友好名称（例如：Qwen 7B）`
+  /// `Please fill in the model's friendly name (eg: Qwen 7B)`
   String get model_friendly_name_hint {
     return Intl.message(
-      '请输入模型友好名称（例如：Qwen 7B）',
+      'Please fill in the model\'s friendly name (eg: Qwen 7B)',
       name: 'model_friendly_name_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `模型家族`
+  /// `Model family`
   String get model_family {
-    return Intl.message('模型家族', name: 'model_family', desc: '', args: []);
+    return Intl.message(
+      'Model family',
+      name: 'model_family',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `请输入模型家族（例如：qwen）`
+  /// `Please fill in the model's family (eg: qwen3)`
   String get model_family_hint {
     return Intl.message(
-      '请输入模型家族（例如：qwen）',
+      'Please fill in the model\'s family (eg: qwen3)',
       name: 'model_family_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `请填写模型调用名`
+  /// `Please fill in the model's call name`
   String get plz_fill_model_call_name {
     return Intl.message(
-      '请填写模型调用名',
+      'Please fill in the model\'s call name',
       name: 'plz_fill_model_call_name',
       desc: '',
       args: [],
     );
   }
 
-  /// `确认需要添加的模型`
+  /// `Confirm to add this model`
   String get confirm_adding_model {
     return Intl.message(
-      '确认需要添加的模型',
+      'Confirm to add this model',
       name: 'confirm_adding_model',
       desc: '',
       args: [],
     );
   }
 
-  /// `请注意，该模型是嵌入模型，不能用作文本生成模型。`
+  /// `Note that this is an embedding model , which cannot be used to chat`
   String get embedding_model_note {
     return Intl.message(
-      '请注意，该模型是嵌入模型，不能用作文本生成模型。',
+      'Note that this is an embedding model , which cannot be used to chat',
       name: 'embedding_model_note',
       desc: '',
       args: [],
     );
   }
 
-  /// `模型能力`
+  /// `Model ability`
   String get model_ability {
-    return Intl.message('模型能力', name: 'model_ability', desc: '', args: []);
+    return Intl.message(
+      'Model ability',
+      name: 'model_ability',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `选择一个模型`
+  /// `Please select a model`
   String get select_model_hint {
     return Intl.message(
-      '选择一个模型',
+      'Please select a model',
       name: 'select_model_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `无结果`
+  /// `No results`
   String get no_results {
-    return Intl.message('无结果', name: 'no_results', desc: '', args: []);
+    return Intl.message('No results', name: 'no_results', desc: '', args: []);
   }
 
-  /// `创建新模型`
+  /// `Create new model`
   String get create_new_model {
-    return Intl.message('创建新模型', name: 'create_new_model', desc: '', args: []);
+    return Intl.message(
+      'Create new model',
+      name: 'create_new_model',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `保存`
+  /// `Save`
   String get save {
-    return Intl.message('保存', name: 'save', desc: '', args: []);
+    return Intl.message('Save', name: 'save', desc: '', args: []);
   }
 
-  /// `添加`
+  /// `Add`
   String get add {
-    return Intl.message('添加', name: 'add', desc: '', args: []);
+    return Intl.message('Add', name: 'add', desc: '', args: []);
   }
 
-  /// `返回`
+  /// `Go back`
   String get go_back {
-    return Intl.message('返回', name: 'go_back', desc: '', args: []);
+    return Intl.message('Go back', name: 'go_back', desc: '', args: []);
   }
 
-  /// `下一步`
+  /// `Next step`
   String get next_step {
-    return Intl.message('下一步', name: 'next_step', desc: '', args: []);
+    return Intl.message('Next step', name: 'next_step', desc: '', args: []);
   }
 
-  /// `选择API类型`
+  /// `Select the type of the API`
   String get select_api_type {
-    return Intl.message('选择API类型', name: 'select_api_type', desc: '', args: []);
+    return Intl.message(
+      'Select the type of the API',
+      name: 'select_api_type',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `OpenAI兼容`
+  /// `OpenAI compatible API`
   String get openai_compatible_api {
     return Intl.message(
-      'OpenAI兼容',
+      'OpenAI compatible API',
       name: 'openai_compatible_api',
       desc: '',
       args: [],
     );
   }
 
-  /// `谷歌兼容`
+  /// `Google compatible API`
   String get google_compatible_api {
     return Intl.message(
-      '谷歌兼容',
+      'Google compatible API',
       name: 'google_compatible_api',
       desc: '',
       args: [],
     );
   }
 
-  /// `OpenAi Completion (Legacy) 兼容`
+  /// `OpenAI Completion (Legacy) compatible API`
   String get openai_completion_compatible_api {
     return Intl.message(
-      'OpenAi Completion (Legacy) 兼容',
+      'OpenAI Completion (Legacy) compatible API',
       name: 'openai_completion_compatible_api',
       desc: '',
       args: [],
     );
   }
 
-  /// `是否支持文件API`
+  /// `Whether this provider supports files API?`
   String get supports_files_api {
     return Intl.message(
-      '是否支持文件API',
+      'Whether this provider supports files API?',
       name: 'supports_files_api',
       desc: '',
       args: [],
     );
   }
 
-  /// `发生错误`
+  /// `Error`
   String get error_occurred {
-    return Intl.message('发生错误', name: 'error_occurred', desc: '', args: []);
+    return Intl.message('Error', name: 'error_occurred', desc: '', args: []);
   }
 
-  /// `发生错误:{error}`
+  /// `Error:{error}`
   String error_occurred_with_error(Object error) {
     return Intl.message(
-      '发生错误:$error',
+      'Error:$error',
       name: 'error_occurred_with_error',
       desc: '',
       args: [error],
     );
   }
 
-  /// `请选择Agent`
+  /// `Please select an agent`
   String get plz_select_agent {
     return Intl.message(
-      '请选择Agent',
+      'Please select an agent',
       name: 'plz_select_agent',
       desc: '',
       args: [],
     );
   }
 
-  /// `没有人格`
+  /// `No persona`
   String get no_persona {
-    return Intl.message('没有人格', name: 'no_persona', desc: '', args: []);
+    return Intl.message('No persona', name: 'no_persona', desc: '', args: []);
   }
 
-  /// `请选择人格`
+  /// `Please select a persona`
   String get plz_select_persona {
     return Intl.message(
-      '请选择人格',
+      'Please select a persona',
       name: 'plz_select_persona',
       desc: '',
       args: [],
     );
   }
 
-  /// `选择一个Agent并开始聊天吧!`
+  /// `Select an agent and start chatting`
   String get choose_agent_and_chat_hint {
     return Intl.message(
-      '选择一个Agent并开始聊天吧!',
+      'Select an agent and start chatting',
       name: 'choose_agent_and_chat_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `以 `
+  /// `Use `
   String get front_page_hintLine_char1 {
     return Intl.message(
-      '以 ',
+      'Use ',
       name: 'front_page_hintLine_char1',
       desc: '',
       args: [],
     );
   }
 
-  /// ` 和 `
+  /// ` to chat with `
   String get front_page_hintLine_char2 {
     return Intl.message(
-      ' 和 ',
+      ' to chat with ',
       name: 'front_page_hintLine_char2',
       desc: '',
       args: [],
     );
   }
 
-  /// ` 开始聊天`
+  /// ``
   String get front_page_hintLine_char3 {
     return Intl.message(
-      ' 开始聊天',
+      '',
       name: 'front_page_hintLine_char3',
       desc: '',
       args: [],
     );
   }
 
-  /// `在这里拖放文件`
+  /// `Drop files here`
   String get drop_files_hint {
-    return Intl.message('在这里拖放文件', name: 'drop_files_hint', desc: '', args: []);
+    return Intl.message(
+      'Drop files here',
+      name: 'drop_files_hint',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `发送一条消息`
+  /// `Send a message`
   String get send_a_message_hint {
     return Intl.message(
-      '发送一条消息',
+      'Send a message',
       name: 'send_a_message_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `正在编辑UI...`
+  /// `Editing UI`
   String get ui_editing {
-    return Intl.message('正在编辑UI...', name: 'ui_editing', desc: '', args: []);
+    return Intl.message('Editing UI', name: 'ui_editing', desc: '', args: []);
   }
 
-  /// `编辑了UI`
+  /// `Edited UI`
   String get ui_edited {
-    return Intl.message('编辑了UI', name: 'ui_edited', desc: '', args: []);
+    return Intl.message('Edited UI', name: 'ui_edited', desc: '', args: []);
   }
 
-  /// `显示源码`
+  /// `Show source code`
   String get show_source_code {
-    return Intl.message('显示源码', name: 'show_source_code', desc: '', args: []);
+    return Intl.message(
+      'Show source code',
+      name: 'show_source_code',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `隐藏源码`
+  /// `Hide source code`
   String get hide_source_code {
-    return Intl.message('隐藏源码', name: 'hide_source_code', desc: '', args: []);
+    return Intl.message(
+      'Hide source code',
+      name: 'hide_source_code',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `正在思考... {sec}秒`
+  /// `Thinking...{sec}s`
   String reasoning(Object sec) {
     return Intl.message(
-      '正在思考... $sec秒',
+      'Thinking...${sec}s',
       name: 'reasoning',
       desc: '',
       args: [sec],
     );
   }
 
-  /// `思考了{sec}秒`
+  /// `Thought {sec}s`
   String reasoned(Object sec) {
-    return Intl.message('思考了$sec秒', name: 'reasoned', desc: '', args: [sec]);
+    return Intl.message(
+      'Thought ${sec}s',
+      name: 'reasoned',
+      desc: '',
+      args: [sec],
+    );
   }
 
-  /// `显示思维链`
+  /// `Show thoughts`
   String get show_cot {
-    return Intl.message('显示思维链', name: 'show_cot', desc: '', args: []);
+    return Intl.message('Show thoughts', name: 'show_cot', desc: '', args: []);
   }
 
-  /// `隐藏思维链`
+  /// `Hide  thoughts`
   String get hide_cot {
-    return Intl.message('隐藏思维链', name: 'hide_cot', desc: '', args: []);
+    return Intl.message('Hide  thoughts', name: 'hide_cot', desc: '', args: []);
   }
 
-  /// `正在检索知识库...`
+  /// `Searching Knowledge Base...`
   String get searching_knowledge_base {
     return Intl.message(
-      '正在检索知识库...',
+      'Searching Knowledge Base...',
       name: 'searching_knowledge_base',
       desc: '',
       args: [],
     );
   }
 
-  /// `检索了知识库`
+  /// `Searched Knowledge Base`
   String get searched_knowledge_base {
     return Intl.message(
-      '检索了知识库',
+      'Searched Knowledge Base',
       name: 'searched_knowledge_base',
       desc: '',
       args: [],
     );
   }
 
-  /// `查看检索结果`
+  /// `Show knowledge base search results`
   String get show_knowledge_base_results {
     return Intl.message(
-      '查看检索结果',
+      'Show knowledge base search results',
       name: 'show_knowledge_base_results',
       desc: '',
       args: [],
     );
   }
 
-  /// `隐藏检索结果`
+  /// `Hide knowledge base search results`
   String get hide_knowledge_base_results {
     return Intl.message(
-      '隐藏检索结果',
+      'Hide knowledge base search results',
       name: 'hide_knowledge_base_results',
       desc: '',
       args: [],
     );
   }
 
-  /// `Agent设置`
+  /// `Agent Settings`
   String get agent_sets {
-    return Intl.message('Agent设置', name: 'agent_sets', desc: '', args: []);
+    return Intl.message(
+      'Agent Settings',
+      name: 'agent_sets',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `拖拽或单击选择图片`
+  /// `Click to select or drop an image`
   String get select_image_hint {
     return Intl.message(
-      '拖拽或单击选择图片',
+      'Click to select or drop an image',
       name: 'select_image_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `模型设置`
+  /// `Model settings`
   String get model_sets {
-    return Intl.message('模型设置', name: 'model_sets', desc: '', args: []);
+    return Intl.message(
+      'Model settings',
+      name: 'model_sets',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `系统提示词`
+  /// `System prompt`
   String get sys_prompt {
-    return Intl.message('系统提示词', name: 'sys_prompt', desc: '', args: []);
+    return Intl.message(
+      'System prompt',
+      name: 'sys_prompt',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `知识库&上下文检索`
+  /// `Knowledge base & contexts`
   String get knowledge_base_and_contexts {
     return Intl.message(
-      '知识库&上下文检索',
+      'Knowledge base & contexts',
       name: 'knowledge_base_and_contexts',
       desc: '',
       args: [],
     );
   }
 
-  /// `UI交互(BETA)设置`
+  /// `UI interaction (BETA) settings`
   String get ui_interaction_set {
     return Intl.message(
-      'UI交互(BETA)设置',
+      'UI interaction (BETA) settings',
       name: 'ui_interaction_set',
       desc: '',
       args: [],
     );
   }
 
-  /// `用户身份设置`
+  /// `User Persona Settings`
   String get usr_persona_set {
-    return Intl.message('用户身份设置', name: 'usr_persona_set', desc: '', args: []);
+    return Intl.message(
+      'User Persona Settings',
+      name: 'usr_persona_set',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `开场白设置`
+  /// `Opening settings`
   String get opening_set {
-    return Intl.message('开场白设置', name: 'opening_set', desc: '', args: []);
+    return Intl.message(
+      'Opening settings',
+      name: 'opening_set',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `启用`
+  /// `Enable`
   String get enable {
-    return Intl.message('启用', name: 'enable', desc: '', args: []);
+    return Intl.message('Enable', name: 'enable', desc: '', args: []);
   }
 
-  /// `禁用`
+  /// `Disable`
   String get disable {
-    return Intl.message('禁用', name: 'disable', desc: '', args: []);
+    return Intl.message('Disable', name: 'disable', desc: '', args: []);
   }
 
-  /// `取消（长按）`
+  /// `Cancel (LongPress)`
   String get cancel_long_press {
     return Intl.message(
-      '取消（长按）',
+      'Cancel (LongPress)',
       name: 'cancel_long_press',
       desc: '',
       args: [],
     );
   }
 
-  /// `模型上下文不足`
+  /// `Reach prompt limit`
   String get model_context_not_enough {
     return Intl.message(
-      '模型上下文不足',
+      'Reach prompt limit',
       name: 'model_context_not_enough',
       desc: '',
       args: [],
     );
   }
 
-  /// `内建提示词（{token}Tokens）`
+  /// `System internal prompt({token}Tokens)`
   String system_internal_prompt(Object token) {
     return Intl.message(
-      '内建提示词（${token}Tokens）',
+      'System internal prompt(${token}Tokens)',
       name: 'system_internal_prompt',
       desc: '',
       args: [token],
     );
   }
 
-  /// `系统提示词（{token}Tokens）`
+  /// `System prompt({token}Tokens)`
   String system_prompt_tokens(Object token) {
     return Intl.message(
-      '系统提示词（${token}Tokens）',
+      'System prompt(${token}Tokens)',
       name: 'system_prompt_tokens',
       desc: '',
       args: [token],
     );
   }
 
-  /// `知识库（{token}Tokens）`
+  /// `Knowledge base({token}Tokens)`
   String knowledge_base_tokens(Object token) {
     return Intl.message(
-      '知识库（${token}Tokens）',
+      'Knowledge base(${token}Tokens)',
       name: 'knowledge_base_tokens',
       desc: '',
       args: [token],
     );
   }
 
-  /// `最长的开场白（{token}Tokens）`
+  /// `Longest opening({token}Tokens)`
   String longest_opening(Object token) {
     return Intl.message(
-      '最长的开场白（${token}Tokens）',
+      'Longest opening(${token}Tokens)',
       name: 'longest_opening',
       desc: '',
       args: [token],
     );
   }
 
-  /// `UI交互提示词（{token}Tokens）`
+  /// `UI interactions({token}Tokens)`
   String ui_interactions_tokens(Object token) {
     return Intl.message(
-      'UI交互提示词（${token}Tokens）',
+      'UI interactions(${token}Tokens)',
       name: 'ui_interactions_tokens',
       desc: '',
       args: [token],
     );
   }
 
-  /// `知识库`
+  /// `Knowledge base`
   String get knowledge_base {
-    return Intl.message('知识库', name: 'knowledge_base', desc: '', args: []);
+    return Intl.message(
+      'Knowledge base',
+      name: 'knowledge_base',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `开场白`
+  /// `Opening`
   String get opening {
-    return Intl.message('开场白', name: 'opening', desc: '', args: []);
+    return Intl.message('Opening', name: 'opening', desc: '', args: []);
   }
 
-  /// `UI操作`
+  /// `UI interactions`
   String get ui_interactions {
-    return Intl.message('UI操作', name: 'ui_interactions', desc: '', args: []);
+    return Intl.message(
+      'UI interactions',
+      name: 'ui_interactions',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `扩大模型上下文或简化提示词`
+  /// `Enlarge context or simplify prompt`
   String get enlarge_context_or_simplify_prompt {
     return Intl.message(
-      '扩大模型上下文或简化提示词',
+      'Enlarge context or simplify prompt',
       name: 'enlarge_context_or_simplify_prompt',
       desc: '',
       args: [],
     );
   }
 
-  /// `可用于对话的Token：{token}`
+  /// `{token} Tokens available for chat`
   String token_available_for_chat(Object token) {
     return Intl.message(
-      '可用于对话的Token：$token',
+      '$token Tokens available for chat',
       name: 'token_available_for_chat',
       desc: '',
       args: [token],
     );
   }
 
-  /// `总上下文上限：{lim}`
+  /// `{lim} Tokens available for total context`
   String total_context_lim(Object lim) {
     return Intl.message(
-      '总上下文上限：$lim',
+      '$lim Tokens available for total context',
       name: 'total_context_lim',
       desc: '',
       args: [lim],
     );
   }
 
-  /// `请给Agent起名`
+  /// `Name the agent`
   String get agent_name_hint {
     return Intl.message(
-      '请给Agent起名',
+      'Name the agent',
       name: 'agent_name_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `请输入Agent描述`
+  /// `Enter description for the agent`
   String get agent_desc_hint {
     return Intl.message(
-      '请输入Agent描述',
+      'Enter description for the agent',
       name: 'agent_desc_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `模型选择`
+  /// `Select a model`
   String get model_select {
-    return Intl.message('模型选择', name: 'model_select', desc: '', args: []);
+    return Intl.message(
+      'Select a model',
+      name: 'model_select',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `提供商选择`
+  /// `Select the provider`
   String get provider_select {
-    return Intl.message('提供商选择', name: 'provider_select', desc: '', args: []);
+    return Intl.message(
+      'Select the provider',
+      name: 'provider_select',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `模型属性设置`
+  /// `Model Property Settings`
   String get model_property {
-    return Intl.message('模型属性设置', name: 'model_property', desc: '', args: []);
+    return Intl.message(
+      'Model Property Settings',
+      name: 'model_property',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `模型最大上下文长度`
+  /// `Model maximum context length`
   String get model_maximum_context_length {
     return Intl.message(
-      '模型最大上下文长度',
+      'Model maximum context length',
       name: 'model_maximum_context_length',
       desc: '',
       args: [],
     );
   }
 
-  /// `模型最大生成长度`
+  /// `Model maximum generate length`
   String get model_maximum_generate_length {
     return Intl.message(
-      '模型最大生成长度',
+      'Model maximum generate length',
       name: 'model_maximum_generate_length',
       desc: '',
       args: [],
     );
   }
 
-  /// `模型基础信息传递设置`
+  /// `Model basic info pass through settings`
   String get model_basic_info_pass_through_setting {
     return Intl.message(
-      '模型基础信息传递设置',
+      'Model basic info pass through settings',
       name: 'model_basic_info_pass_through_setting',
       desc: '',
       args: [],
     );
   }
 
-  /// `告知模型当前系统时间`
+  /// `Pass the current time`
   String get model_time_telling {
     return Intl.message(
-      '告知模型当前系统时间',
+      'Pass the current time',
       name: 'model_time_telling',
       desc: '',
       args: [],
     );
   }
 
-  /// `告知模型当前操作系统（如：macos Sonoma）`
+  /// `Pass the system info (eg: macOS Sonoma)`
   String get model_system_telling {
     return Intl.message(
-      '告知模型当前操作系统（如：macos Sonoma）',
+      'Pass the system info (eg: macOS Sonoma)',
       name: 'model_system_telling',
       desc: '',
       args: [],
     );
   }
 
-  /// `告知模型当前用户地区和语言`
+  /// `Pass the local info`
   String get model_local_telling {
     return Intl.message(
-      '告知模型当前用户地区和语言',
+      'Pass the local info',
       name: 'model_local_telling',
       desc: '',
       args: [],
     );
   }
 
-  /// `模型高级设置`
+  /// `Model advance properties`
   String get model_advance_properties {
     return Intl.message(
-      '模型高级设置',
+      'Model advance properties',
       name: 'model_advance_properties',
       desc: '',
       args: [],
     );
   }
 
-  /// `温度`
+  /// `Temperature`
   String get temperature {
-    return Intl.message('温度', name: 'temperature', desc: '', args: []);
+    return Intl.message('Temperature', name: 'temperature', desc: '', args: []);
   }
 
   /// `Top P`
@@ -1000,304 +1155,379 @@ class S {
     return Intl.message('Top P', name: 'top_p', desc: '', args: []);
   }
 
-  /// `频度惩罚`
+  /// `Frequency Penalty`
   String get freq_penalty {
-    return Intl.message('频度惩罚', name: 'freq_penalty', desc: '', args: []);
+    return Intl.message(
+      'Frequency Penalty',
+      name: 'freq_penalty',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `存在惩罚`
+  /// `Presence Penalty`
   String get pres_penalty {
-    return Intl.message('存在惩罚', name: 'pres_penalty', desc: '', args: []);
+    return Intl.message(
+      'Presence Penalty',
+      name: 'pres_penalty',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `无模型`
+  /// `No model yet`
   String get no_model {
-    return Intl.message('无模型', name: 'no_model', desc: '', args: []);
+    return Intl.message('No model yet', name: 'no_model', desc: '', args: []);
   }
 
-  /// `请选择提供商`
+  /// `Please select a provider`
   String get plz_select_provider {
     return Intl.message(
-      '请选择提供商',
+      'Please select a provider',
       name: 'plz_select_provider',
       desc: '',
       args: [],
     );
   }
 
-  /// `在这里输入系统提示词`
+  /// `Enter system prompt here...`
   String get enter_sys_prompt_here {
     return Intl.message(
-      '在这里输入系统提示词',
+      'Enter system prompt here...',
       name: 'enter_sys_prompt_here',
       desc: '',
       args: [],
     );
   }
 
-  /// `在这里输入开场白`
+  /// `Enter opening here...`
   String get enter_opening_here {
     return Intl.message(
-      '在这里输入开场白',
+      'Enter opening here...',
       name: 'enter_opening_here',
       desc: '',
       args: [],
     );
   }
 
-  /// `你已超出最大系统提示词上限，多余部分将会被截断，请增大模型上下文或者精简提示词{charCount}/{maxCount}`
+  /// `You have exceeded the maximum context length of {charCount}/{maxCount} characters.`
   String over_maximum_context_length_hint(Object charCount, Object maxCount) {
     return Intl.message(
-      '你已超出最大系统提示词上限，多余部分将会被截断，请增大模型上下文或者精简提示词$charCount/$maxCount',
+      'You have exceeded the maximum context length of $charCount/$maxCount characters.',
       name: 'over_maximum_context_length_hint',
       desc: '',
       args: [charCount, maxCount],
     );
   }
 
-  /// `搜索任何聊天内容`
+  /// `Search any chat message...`
   String get search_any_chat_message {
     return Intl.message(
-      '搜索任何聊天内容',
+      'Search any chat message...',
       name: 'search_any_chat_message',
       desc: '',
       args: [],
     );
   }
 
-  /// `与所选Agent开始新对话`
+  /// `Start conversation with selected agent`
   String get start_conversation_with_selected_agent {
     return Intl.message(
-      '与所选Agent开始新对话',
+      'Start conversation with selected agent',
       name: 'start_conversation_with_selected_agent',
       desc: '',
       args: [],
     );
   }
 
-  /// `启用UI交互功能`
+  /// `Enable UI interactions`
   String get enable_ui_interactions {
     return Intl.message(
-      '启用UI交互功能',
+      'Enable UI interactions',
       name: 'enable_ui_interactions',
       desc: '',
       args: [],
     );
   }
 
-  /// `Agent管理`
+  /// `Agent management`
   String get agent_manage {
-    return Intl.message('Agent管理', name: 'agent_manage', desc: '', args: []);
+    return Intl.message(
+      'Agent management',
+      name: 'agent_manage',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `创建一个新Agent`
+  /// `Create new agent`
   String get create_new_agent {
     return Intl.message(
-      '创建一个新Agent',
+      'Create new agent',
       name: 'create_new_agent',
       desc: '',
       args: [],
     );
   }
 
-  /// `确定要删除此Agent吗？\n 删除后所有和此Agent关联的聊天记录将会一并删除`
+  /// `Are you sure you want to delete this agent? \n All the sessions related to this agent will be deleted as well.`
   String get agent_delete_confirm {
     return Intl.message(
-      '确定要删除此Agent吗？\n 删除后所有和此Agent关联的聊天记录将会一并删除',
+      'Are you sure you want to delete this agent? \n All the sessions related to this agent will be deleted as well.',
       name: 'agent_delete_confirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `没有模型，请前往API设置中添加`
+  /// `No model yet, please add one first.`
   String get no_model_plz_add {
     return Intl.message(
-      '没有模型，请前往API设置中添加',
+      'No model yet, please add one first.',
       name: 'no_model_plz_add',
       desc: '',
       args: [],
     );
   }
 
-  /// `查看所有提供此模型的提供者`
+  /// `Provider who provides this model`
   String get view_all_provider_provide_model {
     return Intl.message(
-      '查看所有提供此模型的提供者',
+      'Provider who provides this model',
       name: 'view_all_provider_provide_model',
       desc: '',
       args: [],
     );
   }
 
-  /// `确定要删除此模型吗？\n 删除后所有提供此模型的提供者将无法使用此模型。`
+  /// `Are you sure you want to delete this model?`
   String get model_delete_confirm {
     return Intl.message(
-      '确定要删除此模型吗？\n 删除后所有提供此模型的提供者将无法使用此模型。',
+      'Are you sure you want to delete this model?',
       name: 'model_delete_confirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `图片加载失败`
+  /// `Image load failed.`
   String get image_load_fail {
-    return Intl.message('图片加载失败', name: 'image_load_fail', desc: '', args: []);
+    return Intl.message(
+      'Image load failed.',
+      name: 'image_load_fail',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `重试`
+  /// `Retry`
   String get retry {
-    return Intl.message('重试', name: 'retry', desc: '', args: []);
+    return Intl.message('Retry', name: 'retry', desc: '', args: []);
   }
 
-  /// `点击上传图片`
+  /// `Click to upload a image`
   String get click_upload_image {
     return Intl.message(
-      '点击上传图片',
+      'Click to upload a image',
       name: 'click_upload_image',
       desc: '',
       args: [],
     );
   }
 
-  /// `设为默认`
+  /// `Set as default`
   String get set_as_default {
-    return Intl.message('设为默认', name: 'set_as_default', desc: '', args: []);
+    return Intl.message(
+      'Set as default',
+      name: 'set_as_default',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `编辑`
+  /// `Edit`
   String get edit {
-    return Intl.message('编辑', name: 'edit', desc: '', args: []);
+    return Intl.message('Edit', name: 'edit', desc: '', args: []);
   }
 
-  /// `删除（长按）`
+  /// `Delete (LongPress)`
   String get delete_long_press {
     return Intl.message(
-      '删除（长按）',
+      'Delete (LongPress)',
       name: 'delete_long_press',
       desc: '',
       args: [],
     );
   }
 
-  /// `默认`
+  /// `Default`
   String get DEFAULT {
-    return Intl.message('默认', name: 'DEFAULT', desc: '', args: []);
+    return Intl.message('Default', name: 'DEFAULT', desc: '', args: []);
   }
 
-  /// `切换人格`
+  /// `Switch persona`
   String get switch_persona {
-    return Intl.message('切换人格', name: 'switch_persona', desc: '', args: []);
+    return Intl.message(
+      'Switch persona',
+      name: 'switch_persona',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `添加人格`
+  /// `Add persona`
   String get add_persona {
-    return Intl.message('添加人格', name: 'add_persona', desc: '', args: []);
+    return Intl.message('Add persona', name: 'add_persona', desc: '', args: []);
   }
 
-  /// `编辑人格`
+  /// `Edit persona`
   String get edit_persona {
-    return Intl.message('编辑人格', name: 'edit_persona', desc: '', args: []);
+    return Intl.message(
+      'Edit persona',
+      name: 'edit_persona',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `确定放弃编辑吗？`
+  /// `Give up edit?`
   String get give_up_edit_confirm {
     return Intl.message(
-      '确定放弃编辑吗？',
+      'Give up edit?',
       name: 'give_up_edit_confirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `编辑条目`
+  /// `Edit entries`
   String get edit_entries {
-    return Intl.message('编辑条目', name: 'edit_entries', desc: '', args: []);
+    return Intl.message(
+      'Edit entries',
+      name: 'edit_entries',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `添加条目`
+  /// `Add entries`
   String get add_entries {
-    return Intl.message('添加条目', name: 'add_entries', desc: '', args: []);
+    return Intl.message('Add entries', name: 'add_entries', desc: '', args: []);
   }
 
-  /// `请输入名称`
+  /// `Please enter your name`
   String get plz_enter_name {
-    return Intl.message('请输入名称', name: 'plz_enter_name', desc: '', args: []);
+    return Intl.message(
+      'Please enter your name',
+      name: 'plz_enter_name',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `请输入内容`
+  /// `Please enter content`
   String get plz_enter_content {
-    return Intl.message('请输入内容', name: 'plz_enter_content', desc: '', args: []);
+    return Intl.message(
+      'Please enter content',
+      name: 'plz_enter_content',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `内容`
+  /// `Content`
   String get content {
-    return Intl.message('内容', name: 'content', desc: '', args: []);
+    return Intl.message('Content', name: 'content', desc: '', args: []);
   }
 
-  /// `点击或拖拽新图片来更换头像`
+  /// `Click or drag a new image to change the avatar`
   String get avatar_change_hint {
     return Intl.message(
-      '点击或拖拽新图片来更换头像',
+      'Click or drag a new image to change the avatar',
       name: 'avatar_change_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `请介绍一下自己`
+  /// `Describe yourself...`
   String get persona_description_hint {
     return Intl.message(
-      '请介绍一下自己',
+      'Describe yourself...',
       name: 'persona_description_hint',
       desc: '',
       args: [],
     );
   }
 
-  /// `请输入描述`
+  /// `Please enter description`
   String get plz_enter_description {
     return Intl.message(
-      '请输入描述',
+      'Please enter description',
       name: 'plz_enter_description',
       desc: '',
       args: [],
     );
   }
 
-  /// `拖拽图片到此处`
+  /// `Drop image here`
   String get drag_image_hint {
-    return Intl.message('拖拽图片到此处', name: 'drag_image_hint', desc: '', args: []);
+    return Intl.message(
+      'Drop image here',
+      name: 'drag_image_hint',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `设置`
+  /// `Preferences`
   String get preferences {
-    return Intl.message('设置', name: 'preferences', desc: '', args: []);
+    return Intl.message('Preferences', name: 'preferences', desc: '', args: []);
   }
 
-  /// `API设置`
+  /// `API settings`
   String get API_settings {
-    return Intl.message('API设置', name: 'API_settings', desc: '', args: []);
+    return Intl.message(
+      'API settings',
+      name: 'API_settings',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `模型管理`
+  /// `Model management`
   String get model_management {
-    return Intl.message('模型管理', name: 'model_management', desc: '', args: []);
+    return Intl.message(
+      'Model management',
+      name: 'model_management',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `通用设置`
+  /// `General settings`
   String get general_settings {
-    return Intl.message('通用设置', name: 'general_settings', desc: '', args: []);
+    return Intl.message(
+      'General settings',
+      name: 'general_settings',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `语言设置`
+  /// `Language settings`
   String get language_settings {
-    return Intl.message('语言设置', name: 'language_settings', desc: '', args: []);
+    return Intl.message(
+      'Language settings',
+      name: 'language_settings',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `关于`
+  /// `About`
   String get about {
-    return Intl.message('关于', name: 'about', desc: '', args: []);
+    return Intl.message('About', name: 'about', desc: '', args: []);
   }
 }
 

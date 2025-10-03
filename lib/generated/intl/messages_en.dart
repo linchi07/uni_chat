@@ -20,260 +20,376 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'en';
 
-  static String m0(apiKey) => "共${apiKey}个Key";
+  static String m0(apiKey) => "${apiKey} total";
 
-  static String m1(provider) => "编辑提供商：${provider}";
+  static String m1(provider) => "Edit provider:${provider}";
 
-  static String m2(endPoint) => "端点";
+  static String m2(endPoint) => "EndPoint";
 
-  static String m3(endPoint) => "端点：${endPoint}";
+  static String m3(endPoint) => "EndPoint:${endPoint}";
 
-  static String m4(error) => "发生错误:${error}";
+  static String m4(error) => "Error:${error}";
 
-  static String m5(token) => "知识库（${token}Tokens）";
+  static String m5(token) => "Knowledge base(${token}Tokens)";
 
-  static String m6(errorContent) => "加载错误${errorContent}";
+  static String m6(errorContent) => "Loading error:${errorContent}";
 
-  static String m7(token) => "最长的开场白（${token}Tokens）";
+  static String m7(token) => "Longest opening(${token}Tokens)";
 
   static String m8(charCount, maxCount) =>
-      "你已超出最大系统提示词上限，多余部分将会被截断，请增大模型上下文或者精简提示词${charCount}/${maxCount}";
+      "You have exceeded the maximum context length of ${charCount}/${maxCount} characters.";
 
-  static String m9(sec) => "思考了${sec}秒";
+  static String m9(sec) => "Thought ${sec}s";
 
-  static String m10(sec) => "正在思考... ${sec}秒";
+  static String m10(sec) => "Thinking...${sec}s";
 
-  static String m11(token) => "内建提示词（${token}Tokens）";
+  static String m11(token) => "System internal prompt(${token}Tokens)";
 
-  static String m12(token) => "系统提示词（${token}Tokens）";
+  static String m12(token) => "System prompt(${token}Tokens)";
 
-  static String m13(token) => "可用于对话的Token：${token}";
+  static String m13(token) => "${token} Tokens available for chat";
 
-  static String m14(lim) => "总上下文上限：${lim}";
+  static String m14(lim) => "${lim} Tokens available for total context";
 
-  static String m15(type) => "类型:${type}";
+  static String m15(type) => "Type : ${type}";
 
-  static String m16(token) => "UI交互提示词（${token}Tokens）";
+  static String m16(token) => "UI interactions(${token}Tokens)";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
-    "API_settings": MessageLookupByLibrary.simpleMessage("API设置"),
-    "DEFAULT": MessageLookupByLibrary.simpleMessage("默认"),
-    "about": MessageLookupByLibrary.simpleMessage("关于"),
-    "add": MessageLookupByLibrary.simpleMessage("添加"),
-    "add_api_key": MessageLookupByLibrary.simpleMessage("添加API密钥"),
+    "API_settings": MessageLookupByLibrary.simpleMessage("API settings"),
+    "DEFAULT": MessageLookupByLibrary.simpleMessage("Default"),
+    "about": MessageLookupByLibrary.simpleMessage("About"),
+    "add": MessageLookupByLibrary.simpleMessage("Add"),
+    "add_api_key": MessageLookupByLibrary.simpleMessage("add API key"),
     "add_api_key_hint": MessageLookupByLibrary.simpleMessage(
-      "暂无 API 密钥 \n 请点击右下角+按钮添加",
+      "No API keys yet \n Please press the + button to add one",
     ),
-    "add_entries": MessageLookupByLibrary.simpleMessage("添加条目"),
-    "add_model_hint": MessageLookupByLibrary.simpleMessage("暂无模型\n请点击右下角+按钮添加"),
-    "add_persona": MessageLookupByLibrary.simpleMessage("添加人格"),
-    "add_provider": MessageLookupByLibrary.simpleMessage("添加提供商"),
+    "add_entries": MessageLookupByLibrary.simpleMessage("Add entries"),
+    "add_model_hint": MessageLookupByLibrary.simpleMessage(
+      "No models yet \n Please press the + button to add one",
+    ),
+    "add_persona": MessageLookupByLibrary.simpleMessage("Add persona"),
+    "add_provider": MessageLookupByLibrary.simpleMessage("add a provider"),
     "agent_delete_confirm": MessageLookupByLibrary.simpleMessage(
-      "确定要删除此Agent吗？\n 删除后所有和此Agent关联的聊天记录将会一并删除",
+      "Are you sure you want to delete this agent? \n All the sessions related to this agent will be deleted as well.",
     ),
-    "agent_desc_hint": MessageLookupByLibrary.simpleMessage("请输入Agent描述"),
-    "agent_manage": MessageLookupByLibrary.simpleMessage("Agent管理"),
-    "agent_name_hint": MessageLookupByLibrary.simpleMessage("请给Agent起名"),
-    "agent_sets": MessageLookupByLibrary.simpleMessage("Agent设置"),
-    "api_key": MessageLookupByLibrary.simpleMessage("API密钥"),
-    "api_key_set": MessageLookupByLibrary.simpleMessage("API密钥已设置"),
+    "agent_desc_hint": MessageLookupByLibrary.simpleMessage(
+      "Enter description for the agent",
+    ),
+    "agent_manage": MessageLookupByLibrary.simpleMessage("Agent management"),
+    "agent_name_hint": MessageLookupByLibrary.simpleMessage("Name the agent"),
+    "agent_sets": MessageLookupByLibrary.simpleMessage("Agent Settings"),
+    "api_key": MessageLookupByLibrary.simpleMessage("API Key"),
+    "api_key_set": MessageLookupByLibrary.simpleMessage("API key set"),
     "api_key_total": m0,
-    "api_settings": MessageLookupByLibrary.simpleMessage("API设置"),
-    "auto_shrink_large_panel": MessageLookupByLibrary.simpleMessage("自动缩小大面板"),
-    "avatar_change_hint": MessageLookupByLibrary.simpleMessage("点击或拖拽新图片来更换头像"),
-    "cancel": MessageLookupByLibrary.simpleMessage("取消"),
-    "cancel_long_press": MessageLookupByLibrary.simpleMessage("取消（长按）"),
-    "choose_agent_and_chat_hint": MessageLookupByLibrary.simpleMessage(
-      "选择一个Agent并开始聊天吧!",
+    "api_settings": MessageLookupByLibrary.simpleMessage("API settings"),
+    "auto_shrink_large_panel": MessageLookupByLibrary.simpleMessage(
+      "Automatically shrink panels to fit the window",
     ),
-    "click_upload_image": MessageLookupByLibrary.simpleMessage("点击上传图片"),
-    "confirm": MessageLookupByLibrary.simpleMessage("确定"),
-    "confirm_adding_model": MessageLookupByLibrary.simpleMessage("确认需要添加的模型"),
+    "avatar_change_hint": MessageLookupByLibrary.simpleMessage(
+      "Click or drag a new image to change the avatar",
+    ),
+    "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
+    "cancel_long_press": MessageLookupByLibrary.simpleMessage(
+      "Cancel (LongPress)",
+    ),
+    "choose_agent_and_chat_hint": MessageLookupByLibrary.simpleMessage(
+      "Select an agent and start chatting",
+    ),
+    "click_upload_image": MessageLookupByLibrary.simpleMessage(
+      "Click to upload a image",
+    ),
+    "confirm": MessageLookupByLibrary.simpleMessage("Confirm"),
+    "confirm_adding_model": MessageLookupByLibrary.simpleMessage(
+      "Confirm to add this model",
+    ),
     "confirm_delete_provider": MessageLookupByLibrary.simpleMessage(
-      "确定要删除此提供者吗？",
+      "Are you sure to delete this provider?",
     ),
     "confirm_delete_session": MessageLookupByLibrary.simpleMessage(
-      "确定要删除此对话记录吗？",
+      "Are you sure to delete this chat?",
     ),
-    "confirm_long_press": MessageLookupByLibrary.simpleMessage("确定（长按）"),
-    "content": MessageLookupByLibrary.simpleMessage("内容"),
-    "create_new_agent": MessageLookupByLibrary.simpleMessage("创建一个新Agent"),
-    "create_new_model": MessageLookupByLibrary.simpleMessage("创建新模型"),
-    "delete": MessageLookupByLibrary.simpleMessage("删除"),
-    "delete_long_press": MessageLookupByLibrary.simpleMessage("删除（长按）"),
-    "disable": MessageLookupByLibrary.simpleMessage("禁用"),
-    "drag_image_hint": MessageLookupByLibrary.simpleMessage("拖拽图片到此处"),
-    "drop_files_hint": MessageLookupByLibrary.simpleMessage("在这里拖放文件"),
-    "edit": MessageLookupByLibrary.simpleMessage("编辑"),
-    "edit_entries": MessageLookupByLibrary.simpleMessage("编辑条目"),
-    "edit_persona": MessageLookupByLibrary.simpleMessage("编辑人格"),
+    "confirm_long_press": MessageLookupByLibrary.simpleMessage(
+      "Confirm (LongPress)",
+    ),
+    "content": MessageLookupByLibrary.simpleMessage("Content"),
+    "create_new_agent": MessageLookupByLibrary.simpleMessage(
+      "Create new agent",
+    ),
+    "create_new_model": MessageLookupByLibrary.simpleMessage(
+      "Create new model",
+    ),
+    "delete": MessageLookupByLibrary.simpleMessage("Delete"),
+    "delete_long_press": MessageLookupByLibrary.simpleMessage(
+      "Delete (LongPress)",
+    ),
+    "disable": MessageLookupByLibrary.simpleMessage("Disable"),
+    "drag_image_hint": MessageLookupByLibrary.simpleMessage("Drop image here"),
+    "drop_files_hint": MessageLookupByLibrary.simpleMessage("Drop files here"),
+    "edit": MessageLookupByLibrary.simpleMessage("Edit"),
+    "edit_entries": MessageLookupByLibrary.simpleMessage("Edit entries"),
+    "edit_persona": MessageLookupByLibrary.simpleMessage("Edit persona"),
     "edit_provider": m1,
     "embedding_model_note": MessageLookupByLibrary.simpleMessage(
-      "请注意，该模型是嵌入模型，不能用作文本生成模型。",
+      "Note that this is an embedding model , which cannot be used to chat",
     ),
-    "enable": MessageLookupByLibrary.simpleMessage("启用"),
-    "enable_ui_interactions": MessageLookupByLibrary.simpleMessage("启用UI交互功能"),
+    "enable": MessageLookupByLibrary.simpleMessage("Enable"),
+    "enable_ui_interactions": MessageLookupByLibrary.simpleMessage(
+      "Enable UI interactions",
+    ),
     "end_point": m2,
-    "end_point_set": MessageLookupByLibrary.simpleMessage("端点已设置"),
-    "end_point_type": MessageLookupByLibrary.simpleMessage("端点类型"),
-    "end_point_type_set": MessageLookupByLibrary.simpleMessage("端点类型已设置"),
+    "end_point_set": MessageLookupByLibrary.simpleMessage("EndPoint set"),
+    "end_point_type": MessageLookupByLibrary.simpleMessage("EndPoint type"),
+    "end_point_type_set": MessageLookupByLibrary.simpleMessage(
+      "EndPoint type set",
+    ),
     "end_point_with_holder": m3,
     "enlarge_context_or_simplify_prompt": MessageLookupByLibrary.simpleMessage(
-      "扩大模型上下文或简化提示词",
+      "Enlarge context or simplify prompt",
     ),
-    "enter_end_point": MessageLookupByLibrary.simpleMessage("输入API端点"),
-    "enter_opening_here": MessageLookupByLibrary.simpleMessage("在这里输入开场白"),
+    "enter_end_point": MessageLookupByLibrary.simpleMessage(
+      "Enter API endpoint",
+    ),
+    "enter_opening_here": MessageLookupByLibrary.simpleMessage(
+      "Enter opening here...",
+    ),
     "enter_provider_details": MessageLookupByLibrary.simpleMessage(
-      "请输入提供商详细信息",
+      "Enter provider details",
     ),
-    "enter_session_name": MessageLookupByLibrary.simpleMessage("请输入对话记录名称"),
-    "enter_sys_prompt_here": MessageLookupByLibrary.simpleMessage("在这里输入系统提示词"),
-    "error_occurred": MessageLookupByLibrary.simpleMessage("发生错误"),
+    "enter_session_name": MessageLookupByLibrary.simpleMessage(
+      "Enter new session name",
+    ),
+    "enter_sys_prompt_here": MessageLookupByLibrary.simpleMessage(
+      "Enter system prompt here...",
+    ),
+    "error_occurred": MessageLookupByLibrary.simpleMessage("Error"),
     "error_occurred_with_error": m4,
-    "fill_in_api_key": MessageLookupByLibrary.simpleMessage("填写API密钥"),
-    "fill_model_call_name": MessageLookupByLibrary.simpleMessage("填写模型调用名"),
+    "fill_in_api_key": MessageLookupByLibrary.simpleMessage(
+      "Fill in the API key",
+    ),
+    "fill_model_call_name": MessageLookupByLibrary.simpleMessage(
+      "Fill in the model\'s call name",
+    ),
     "fill_reminder_null_if_blank": MessageLookupByLibrary.simpleMessage(
-      "填写备注(留空默认无)",
+      "Write a reminder (null if left blank)",
     ),
-    "finish_edit": MessageLookupByLibrary.simpleMessage("完成编辑"),
-    "freq_penalty": MessageLookupByLibrary.simpleMessage("频度惩罚"),
-    "front_page_hintLine_char1": MessageLookupByLibrary.simpleMessage("以 "),
-    "front_page_hintLine_char2": MessageLookupByLibrary.simpleMessage(" 和 "),
-    "front_page_hintLine_char3": MessageLookupByLibrary.simpleMessage(" 开始聊天"),
-    "general_settings": MessageLookupByLibrary.simpleMessage("通用设置"),
-    "give_up_edit_confirm": MessageLookupByLibrary.simpleMessage("确定放弃编辑吗？"),
-    "go_back": MessageLookupByLibrary.simpleMessage("返回"),
-    "google_compatible_api": MessageLookupByLibrary.simpleMessage("谷歌兼容"),
-    "hide_cot": MessageLookupByLibrary.simpleMessage("隐藏思维链"),
+    "finish_edit": MessageLookupByLibrary.simpleMessage("Finish editing"),
+    "freq_penalty": MessageLookupByLibrary.simpleMessage("Frequency Penalty"),
+    "front_page_hintLine_char1": MessageLookupByLibrary.simpleMessage("Use "),
+    "front_page_hintLine_char2": MessageLookupByLibrary.simpleMessage(
+      " to chat with ",
+    ),
+    "front_page_hintLine_char3": MessageLookupByLibrary.simpleMessage(""),
+    "general_settings": MessageLookupByLibrary.simpleMessage(
+      "General settings",
+    ),
+    "give_up_edit_confirm": MessageLookupByLibrary.simpleMessage(
+      "Give up edit?",
+    ),
+    "go_back": MessageLookupByLibrary.simpleMessage("Go back"),
+    "google_compatible_api": MessageLookupByLibrary.simpleMessage(
+      "Google compatible API",
+    ),
+    "hide_cot": MessageLookupByLibrary.simpleMessage("Hide  thoughts"),
     "hide_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
-      "隐藏检索结果",
+      "Hide knowledge base search results",
     ),
-    "hide_source_code": MessageLookupByLibrary.simpleMessage("隐藏源码"),
-    "hover_to_see_session": MessageLookupByLibrary.simpleMessage("鼠标悬停来预览会话"),
-    "image_load_fail": MessageLookupByLibrary.simpleMessage("图片加载失败"),
-    "knowledge_base": MessageLookupByLibrary.simpleMessage("知识库"),
+    "hide_source_code": MessageLookupByLibrary.simpleMessage(
+      "Hide source code",
+    ),
+    "hover_to_see_session": MessageLookupByLibrary.simpleMessage(
+      "Hover to preview session",
+    ),
+    "image_load_fail": MessageLookupByLibrary.simpleMessage(
+      "Image load failed.",
+    ),
+    "knowledge_base": MessageLookupByLibrary.simpleMessage("Knowledge base"),
     "knowledge_base_and_contexts": MessageLookupByLibrary.simpleMessage(
-      "知识库&上下文检索",
+      "Knowledge base & contexts",
     ),
     "knowledge_base_tokens": m5,
-    "language_settings": MessageLookupByLibrary.simpleMessage("语言设置"),
+    "language_settings": MessageLookupByLibrary.simpleMessage(
+      "Language settings",
+    ),
     "loading_error": m6,
     "longest_opening": m7,
-    "model": MessageLookupByLibrary.simpleMessage("模型"),
-    "model_ability": MessageLookupByLibrary.simpleMessage("模型能力"),
-    "model_advance_properties": MessageLookupByLibrary.simpleMessage("模型高级设置"),
+    "model": MessageLookupByLibrary.simpleMessage("Model"),
+    "model_ability": MessageLookupByLibrary.simpleMessage("Model ability"),
+    "model_advance_properties": MessageLookupByLibrary.simpleMessage(
+      "Model advance properties",
+    ),
     "model_basic_info_pass_through_setting":
-        MessageLookupByLibrary.simpleMessage("模型基础信息传递设置"),
+        MessageLookupByLibrary.simpleMessage(
+          "Model basic info pass through settings",
+        ),
     "model_call_name_hint": MessageLookupByLibrary.simpleMessage(
-      "请输入模型调用名称（例如：qwen/qwen-7b-chat）",
+      "Please fill in the model\'s call name (eg: qwen/qwen-7b-chat)",
     ),
-    "model_context_not_enough": MessageLookupByLibrary.simpleMessage("模型上下文不足"),
+    "model_context_not_enough": MessageLookupByLibrary.simpleMessage(
+      "Reach prompt limit",
+    ),
     "model_delete_confirm": MessageLookupByLibrary.simpleMessage(
-      "确定要删除此模型吗？\n 删除后所有提供此模型的提供者将无法使用此模型。",
+      "Are you sure you want to delete this model?",
     ),
-    "model_family": MessageLookupByLibrary.simpleMessage("模型家族"),
+    "model_family": MessageLookupByLibrary.simpleMessage("Model family"),
     "model_family_hint": MessageLookupByLibrary.simpleMessage(
-      "请输入模型家族（例如：qwen）",
+      "Please fill in the model\'s family (eg: qwen3)",
     ),
-    "model_friendly_name": MessageLookupByLibrary.simpleMessage("模型友好名称"),
+    "model_friendly_name": MessageLookupByLibrary.simpleMessage(
+      "Model friendly name",
+    ),
     "model_friendly_name_hint": MessageLookupByLibrary.simpleMessage(
-      "请输入模型友好名称（例如：Qwen 7B）",
+      "Please fill in the model\'s friendly name (eg: Qwen 7B)",
     ),
     "model_local_telling": MessageLookupByLibrary.simpleMessage(
-      "告知模型当前用户地区和语言",
+      "Pass the local info",
     ),
-    "model_management": MessageLookupByLibrary.simpleMessage("模型管理"),
+    "model_management": MessageLookupByLibrary.simpleMessage(
+      "Model management",
+    ),
     "model_maximum_context_length": MessageLookupByLibrary.simpleMessage(
-      "模型最大上下文长度",
+      "Model maximum context length",
     ),
     "model_maximum_generate_length": MessageLookupByLibrary.simpleMessage(
-      "模型最大生成长度",
+      "Model maximum generate length",
     ),
-    "model_property": MessageLookupByLibrary.simpleMessage("模型属性设置"),
-    "model_select": MessageLookupByLibrary.simpleMessage("模型选择"),
-    "model_sets": MessageLookupByLibrary.simpleMessage("模型设置"),
+    "model_property": MessageLookupByLibrary.simpleMessage(
+      "Model Property Settings",
+    ),
+    "model_select": MessageLookupByLibrary.simpleMessage("Select a model"),
+    "model_sets": MessageLookupByLibrary.simpleMessage("Model settings"),
     "model_system_telling": MessageLookupByLibrary.simpleMessage(
-      "告知模型当前操作系统（如：macos Sonoma）",
+      "Pass the system info (eg: macOS Sonoma)",
     ),
-    "model_time_telling": MessageLookupByLibrary.simpleMessage("告知模型当前系统时间"),
-    "modify_session_name": MessageLookupByLibrary.simpleMessage("修改对话记录名称"),
-    "name": MessageLookupByLibrary.simpleMessage("名称"),
-    "next_step": MessageLookupByLibrary.simpleMessage("下一步"),
-    "no_agent": MessageLookupByLibrary.simpleMessage("暂无Agent,请添加一个"),
-    "no_history": MessageLookupByLibrary.simpleMessage("暂无对话历史"),
-    "no_message": MessageLookupByLibrary.simpleMessage("没有消息"),
-    "no_model": MessageLookupByLibrary.simpleMessage("无模型"),
+    "model_time_telling": MessageLookupByLibrary.simpleMessage(
+      "Pass the current time",
+    ),
+    "modify_session_name": MessageLookupByLibrary.simpleMessage(
+      "Modify session name",
+    ),
+    "name": MessageLookupByLibrary.simpleMessage("Name"),
+    "next_step": MessageLookupByLibrary.simpleMessage("Next step"),
+    "no_agent": MessageLookupByLibrary.simpleMessage(
+      "No agent , please add one",
+    ),
+    "no_history": MessageLookupByLibrary.simpleMessage("no chat history"),
+    "no_message": MessageLookupByLibrary.simpleMessage("no message"),
+    "no_model": MessageLookupByLibrary.simpleMessage("No model yet"),
     "no_model_plz_add": MessageLookupByLibrary.simpleMessage(
-      "没有模型，请前往API设置中添加",
+      "No model yet, please add one first.",
     ),
-    "no_persona": MessageLookupByLibrary.simpleMessage("没有人格"),
-    "no_provider": MessageLookupByLibrary.simpleMessage("暂无提供商"),
-    "no_results": MessageLookupByLibrary.simpleMessage("无结果"),
-    "openai_compatible_api": MessageLookupByLibrary.simpleMessage("OpenAI兼容"),
+    "no_persona": MessageLookupByLibrary.simpleMessage("No persona"),
+    "no_provider": MessageLookupByLibrary.simpleMessage("No providers "),
+    "no_results": MessageLookupByLibrary.simpleMessage("No results"),
+    "openai_compatible_api": MessageLookupByLibrary.simpleMessage(
+      "OpenAI compatible API",
+    ),
     "openai_completion_compatible_api": MessageLookupByLibrary.simpleMessage(
-      "OpenAi Completion (Legacy) 兼容",
+      "OpenAI Completion (Legacy) compatible API",
     ),
-    "opening": MessageLookupByLibrary.simpleMessage("开场白"),
-    "opening_set": MessageLookupByLibrary.simpleMessage("开场白设置"),
-    "or_expand_window": MessageLookupByLibrary.simpleMessage("或请拉大窗口"),
+    "opening": MessageLookupByLibrary.simpleMessage("Opening"),
+    "opening_set": MessageLookupByLibrary.simpleMessage("Opening settings"),
+    "or_expand_window": MessageLookupByLibrary.simpleMessage(
+      "or please make the window bigger",
+    ),
     "over_maximum_context_length_hint": m8,
-    "persona_description_hint": MessageLookupByLibrary.simpleMessage("请介绍一下自己"),
-    "plz_enter_content": MessageLookupByLibrary.simpleMessage("请输入内容"),
-    "plz_enter_description": MessageLookupByLibrary.simpleMessage("请输入描述"),
-    "plz_enter_name": MessageLookupByLibrary.simpleMessage("请输入名称"),
-    "plz_fill_model_call_name": MessageLookupByLibrary.simpleMessage(
-      "请填写模型调用名",
+    "persona_description_hint": MessageLookupByLibrary.simpleMessage(
+      "Describe yourself...",
     ),
-    "plz_select_agent": MessageLookupByLibrary.simpleMessage("请选择Agent"),
-    "plz_select_persona": MessageLookupByLibrary.simpleMessage("请选择人格"),
-    "plz_select_provider": MessageLookupByLibrary.simpleMessage("请选择提供商"),
-    "preferences": MessageLookupByLibrary.simpleMessage("设置"),
-    "pres_penalty": MessageLookupByLibrary.simpleMessage("存在惩罚"),
-    "provider_select": MessageLookupByLibrary.simpleMessage("提供商选择"),
+    "plz_enter_content": MessageLookupByLibrary.simpleMessage(
+      "Please enter content",
+    ),
+    "plz_enter_description": MessageLookupByLibrary.simpleMessage(
+      "Please enter description",
+    ),
+    "plz_enter_name": MessageLookupByLibrary.simpleMessage(
+      "Please enter your name",
+    ),
+    "plz_fill_model_call_name": MessageLookupByLibrary.simpleMessage(
+      "Please fill in the model\'s call name",
+    ),
+    "plz_select_agent": MessageLookupByLibrary.simpleMessage(
+      "Please select an agent",
+    ),
+    "plz_select_persona": MessageLookupByLibrary.simpleMessage(
+      "Please select a persona",
+    ),
+    "plz_select_provider": MessageLookupByLibrary.simpleMessage(
+      "Please select a provider",
+    ),
+    "preferences": MessageLookupByLibrary.simpleMessage("Preferences"),
+    "pres_penalty": MessageLookupByLibrary.simpleMessage("Presence Penalty"),
+    "provider_select": MessageLookupByLibrary.simpleMessage(
+      "Select the provider",
+    ),
     "reasoned": m9,
     "reasoning": m10,
-    "rename": MessageLookupByLibrary.simpleMessage("重命名"),
-    "retry": MessageLookupByLibrary.simpleMessage("重试"),
-    "save": MessageLookupByLibrary.simpleMessage("保存"),
-    "search_any_chat_message": MessageLookupByLibrary.simpleMessage("搜索任何聊天内容"),
-    "searched_knowledge_base": MessageLookupByLibrary.simpleMessage("检索了知识库"),
+    "rename": MessageLookupByLibrary.simpleMessage("Rename"),
+    "retry": MessageLookupByLibrary.simpleMessage("Retry"),
+    "save": MessageLookupByLibrary.simpleMessage("Save"),
+    "search_any_chat_message": MessageLookupByLibrary.simpleMessage(
+      "Search any chat message...",
+    ),
+    "searched_knowledge_base": MessageLookupByLibrary.simpleMessage(
+      "Searched Knowledge Base",
+    ),
     "searching_knowledge_base": MessageLookupByLibrary.simpleMessage(
-      "正在检索知识库...",
+      "Searching Knowledge Base...",
     ),
-    "select_api_type": MessageLookupByLibrary.simpleMessage("选择API类型"),
-    "select_image_hint": MessageLookupByLibrary.simpleMessage("拖拽或单击选择图片"),
-    "select_model_hint": MessageLookupByLibrary.simpleMessage("选择一个模型"),
-    "select_provider": MessageLookupByLibrary.simpleMessage("选择提供商"),
-    "send_a_message_hint": MessageLookupByLibrary.simpleMessage("发送一条消息"),
-    "set_as_default": MessageLookupByLibrary.simpleMessage("设为默认"),
-    "show_cot": MessageLookupByLibrary.simpleMessage("显示思维链"),
+    "select_api_type": MessageLookupByLibrary.simpleMessage(
+      "Select the type of the API",
+    ),
+    "select_image_hint": MessageLookupByLibrary.simpleMessage(
+      "Click to select or drop an image",
+    ),
+    "select_model_hint": MessageLookupByLibrary.simpleMessage(
+      "Please select a model",
+    ),
+    "select_provider": MessageLookupByLibrary.simpleMessage("Select provider"),
+    "send_a_message_hint": MessageLookupByLibrary.simpleMessage(
+      "Send a message",
+    ),
+    "set_as_default": MessageLookupByLibrary.simpleMessage("Set as default"),
+    "show_cot": MessageLookupByLibrary.simpleMessage("Show thoughts"),
     "show_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
-      "查看检索结果",
+      "Show knowledge base search results",
     ),
-    "show_source_code": MessageLookupByLibrary.simpleMessage("显示源码"),
+    "show_source_code": MessageLookupByLibrary.simpleMessage(
+      "Show source code",
+    ),
     "start_conversation_with_selected_agent":
-        MessageLookupByLibrary.simpleMessage("与所选Agent开始新对话"),
-    "supports_files_api": MessageLookupByLibrary.simpleMessage("是否支持文件API"),
-    "switch_persona": MessageLookupByLibrary.simpleMessage("切换人格"),
-    "sys_prompt": MessageLookupByLibrary.simpleMessage("系统提示词"),
+        MessageLookupByLibrary.simpleMessage(
+          "Start conversation with selected agent",
+        ),
+    "supports_files_api": MessageLookupByLibrary.simpleMessage(
+      "Whether this provider supports files API?",
+    ),
+    "switch_persona": MessageLookupByLibrary.simpleMessage("Switch persona"),
+    "sys_prompt": MessageLookupByLibrary.simpleMessage("System prompt"),
     "system_internal_prompt": m11,
     "system_prompt_tokens": m12,
-    "temperature": MessageLookupByLibrary.simpleMessage("温度"),
+    "temperature": MessageLookupByLibrary.simpleMessage("Temperature"),
     "token_available_for_chat": m13,
     "top_p": MessageLookupByLibrary.simpleMessage("Top P"),
     "total_context_lim": m14,
     "type_with_holder": m15,
-    "ui_edited": MessageLookupByLibrary.simpleMessage("编辑了UI"),
-    "ui_editing": MessageLookupByLibrary.simpleMessage("正在编辑UI..."),
-    "ui_interaction_set": MessageLookupByLibrary.simpleMessage("UI交互(BETA)设置"),
-    "ui_interactions": MessageLookupByLibrary.simpleMessage("UI操作"),
+    "ui_edited": MessageLookupByLibrary.simpleMessage("Edited UI"),
+    "ui_editing": MessageLookupByLibrary.simpleMessage("Editing UI"),
+    "ui_interaction_set": MessageLookupByLibrary.simpleMessage(
+      "UI interaction (BETA) settings",
+    ),
+    "ui_interactions": MessageLookupByLibrary.simpleMessage("UI interactions"),
     "ui_interactions_tokens": m16,
-    "usr_persona_set": MessageLookupByLibrary.simpleMessage("用户身份设置"),
+    "usr_persona_set": MessageLookupByLibrary.simpleMessage(
+      "User Persona Settings",
+    ),
     "view_all_provider_provide_model": MessageLookupByLibrary.simpleMessage(
-      "查看所有提供此模型的提供者",
+      "Provider who provides this model",
     ),
     "window_too_small_to_display_allPanels":
-        MessageLookupByLibrary.simpleMessage("窗口过小，无法显示所有面板"),
+        MessageLookupByLibrary.simpleMessage(
+          "The window is too small for fitting all the panels",
+        ),
   };
 }
