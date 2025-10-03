@@ -5,6 +5,7 @@ import 'package:uni_chat/utils/dialog.dart';
 import 'package:uni_chat/utils/llm_image_indexer.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
+import '../generated/l10n.dart';
 import '../theme_manager.dart';
 
 class ModelSettings extends ConsumerStatefulWidget {
@@ -23,7 +24,10 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('模型管理', style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            S.of(context).model_management,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 20),
           Expanded(
             child: FutureBuilder(
@@ -33,7 +37,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.data!.isEmpty) {
-                  return const Center(child: Text('没有模型,请前往API设置中添加'));
+                  return Center(child: Text(S.of(context).no_model_plz_add));
                 }
                 return ListView.builder(
                   itemCount: snapshot.data!.length,
@@ -49,7 +53,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
                               onTap: () {},
-                              tileColor: theme.surfaceColor,
+                              tileColor: theme.zeroGradeColor,
                               leading: StdAvatar(
                                 length: 50,
                                 assetImage: AssetImage(
@@ -77,7 +81,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: Text(
-                                "查看所有提供该模型的提供商",
+                                S.of(context).view_all_provider_provide_model,
                                 style: TextStyle(color: Colors.white),
                               ),
                             ),
@@ -108,7 +112,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
       width: 300,
       height: 200,
       child: Material(
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -119,7 +123,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
             children: [
               Expanded(
                 child: Text(
-                  "确定要删除此模型吗？\n 删除后所有提供此模型的提供者将无法使用此模型。",
+                  S.of(context).model_delete_confirm,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -128,11 +132,11 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   StdButton(
-                    color: theme.boxColor,
+                    color: theme.thirdGradeColor,
                     onPressed: () {
                       OverlayPortalService.hide(context);
                     },
-                    text: "取消",
+                    text: S.of(context).cancel,
                   ),
                   const SizedBox(width: 16),
                   StdButton(
@@ -142,7 +146,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
                       await ApiDatabaseService.instance.deleteModel(modelId);
                       setState(() {});
                     },
-                    text: "确定(长按)",
+                    text: S.of(context).confirm_long_press,
                   ),
                 ],
               ),
@@ -158,7 +162,7 @@ class _ModelSettingsState extends ConsumerState<ModelSettings> {
       width: 400,
       height: 500,
       child: Material(
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         clipBehavior: Clip.hardEdge,
         child: Padding(

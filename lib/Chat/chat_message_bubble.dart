@@ -9,6 +9,7 @@ import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
 
+import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import 'chat_models.dart';
 
@@ -44,7 +45,7 @@ class PersistChatMessage extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isUserMessage ? theme.boxColor : null,
+          color: isUserMessage ? theme.thirdGradeColor : null,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -273,7 +274,9 @@ class _UiqlBlockState extends State<_UiqlBlock> {
               const SizedBox(width: 12),
               Flexible(
                 child: Text(
-                  widget.isComplete ? '编辑了UI' : '正在编辑 UI...',
+                  widget.isComplete
+                      ? S.of(context).ui_edited
+                      : S.of(context).ui_editing,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -284,7 +287,11 @@ class _UiqlBlockState extends State<_UiqlBlock> {
                       isShowingSource = !isShowingSource;
                     });
                   },
-                  child: Text(isShowingSource ? '隐藏源码' : '查看源码'),
+                  child: Text(
+                    isShowingSource
+                        ? S.of(context).hide_source_code
+                        : S.of(context).show_source_code,
+                  ),
                 ),
               if (!widget.isComplete) const SizedBox(width: 12),
               if (!widget.isComplete)
@@ -344,7 +351,7 @@ class _ErrorBlock extends StatelessWidget {
           const SizedBox(width: 12),
           Flexible(
             child: Text(
-              '发生错误：$content',
+              S.of(context).error_occurred_with_error(content),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.red,
@@ -474,8 +481,12 @@ class _ReasonBlockState extends State<_ReasonBlock>
                     }
                     return Text(
                       widget.isComplete
-                          ? '思考了${elapsedTime.toStringAsFixed(1)}秒'
-                          : '正在思考${elapsedTime.toStringAsFixed(1)}秒... ',
+                          ? S
+                                .of(context)
+                                .reasoned(elapsedTime.toStringAsFixed(1))
+                          : S
+                                .of(context)
+                                .reasoning(elapsedTime.toStringAsFixed(1)),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     );
                   },
@@ -488,7 +499,9 @@ class _ReasonBlockState extends State<_ReasonBlock>
                       isShowing = !isShowing;
                     });
                   },
-                  child: Text(isShowing ? '隐藏思维链' : '查看思维链'),
+                  child: Text(
+                    isShowing ? S.of(context).hide_cot : S.of(context).show_cot,
+                  ),
                 ),
               if (!widget.isComplete) const SizedBox(width: 12),
               if (!widget.isComplete)
@@ -619,7 +632,9 @@ class _RagBlockState extends State<_RagBlock>
               const SizedBox(width: 12),
               Flexible(
                 child: Text(
-                  widget.isComplete ? '检索了知识库' : '正在检索知识库... ',
+                  widget.isComplete
+                      ? S.of(context).searched_knowledge_base
+                      : S.of(context).searching_knowledge_base,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -630,7 +645,11 @@ class _RagBlockState extends State<_RagBlock>
                       isShowing = !isShowing;
                     });
                   },
-                  child: Text(isShowing ? '隐藏内容' : '查看检索结果'),
+                  child: Text(
+                    isShowing
+                        ? S.of(context).hide_knowledge_base_results
+                        : S.of(context).show_knowledge_base_results,
+                  ),
                 ),
               if (!widget.isComplete) const SizedBox(width: 12),
               if (!widget.isComplete)

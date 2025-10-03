@@ -1,93 +1,90 @@
-import 'package:uni_chat/settings_page/model_settings.dart';
-import 'package:uni_chat/utils/dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uni_chat/settings_page/model_settings.dart';
+import 'package:uni_chat/utils/dialog.dart';
 
+import '../generated/l10n.dart';
+import '../main.dart';
 import '../theme_manager.dart';
 import '../utils/prebuilt_widgets.dart';
 import 'api_settings.dart';
 
 /// “账户”设置页面的占位符
-class _AccountSettingsView extends StatelessWidget {
+class _GeneralSettings extends StatelessWidget {
+  Future<int?> selectedIndex() async {
+    final prefs = await SharedPreferences.getInstance();
+    final language = prefs.getString('language');
+    if (language == null) {
+      return null;
+    }
+    var l = languages.keys.toList();
+    return l.indexOf(language);
+  }
+
   @override
   Widget build(BuildContext context) {
+    var languageCount = languages.keys.toList();
+    var languageLocale = languages.values.toList();
     return ListView(
       padding: const EdgeInsets.all(24.0),
       children: [
-        Text('账户设置', style: Theme.of(context).textTheme.headlineSmall),
+        Text(
+          S.of(context).general_settings,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
         const SizedBox(height: 20),
-        ListTile(
-          leading: const Icon(Icons.person),
-          title: const Text('个人资料'),
-          subtitle: const Text('更新您的照片和个人信息'),
-          onTap: () {},
-        ),
-        ListTile(
-          leading: const Icon(Icons.lock),
-          title: const Text('更改密码'),
-          subtitle: const Text('为了您的账户安全，建议定期更换'),
-          onTap: () {},
-        ),
-        ListTile(
-          leading: const Icon(Icons.delete_forever),
-          title: const Text('删除账户'),
-          subtitle: const Text('此操作不可恢复'),
-          tileColor: Colors.red.withOpacity(0.05),
-          onTap: () {},
+        Text(S.of(context).language_settings, style: TextStyle(fontSize: 18)),
+        const SizedBox(height: 20),
+        Consumer(
+          builder: (context, ref, child) {
+            return FutureBuilder(
+              future: selectedIndex(),
+              builder: (context, asyncSnapshot) {
+                if (asyncSnapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                return StdDropDown(
+                  initialWidget: Center(
+                    child: Text(
+                      S.of(context).language_select,
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                  initialIndex: asyncSnapshot.data,
+                  height: 55.0,
+                  onChanged: (index) async {
+                    await S.load(languageLocale[index]);
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('language', languageCount[index]);
+                    //由于大量组件都是接入theme的所以这样相当于让界面重新构建了
+                    ref.read(themeProvider.notifier).updateTheme();
+                  },
+                  itemBuilder: (context, index, onTap) {
+                    return StdListTile(
+                      title: Text(languageCount[index]),
+                      onTap: () {
+                        onTap(index);
+                      },
+                    );
+                  },
+                  itemCount: languageCount.length,
+                );
+              },
+            );
+          },
         ),
       ],
     );
   }
 }
 
-/// “显示”设置页面的占位符
-class _DisplaySettingsView extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(24.0),
-      children: [
-        Text('显示设置', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 20),
-        SwitchListTile(
-          title: const Text('深色模式'),
-          subtitle: const Text('为眼睛提供更舒适的体验'),
-          value: true,
-          onChanged: (value) {},
-        ),
-        ListTile(
-          title: const Text('字体大小'),
-          subtitle: Text('当前: 中等'),
-          onTap: () {},
-        ),
-      ],
-    );
-  }
-}
+class AboutPage extends StatelessWidget {
+  const AboutPage({super.key});
 
-/// “语言”设置页面的占位符
-class _LanguageSettingsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(24.0),
-      children: [
-        Text('语言和区域', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 20),
-        RadioListTile<String>(
-          title: const Text('简体中文'),
-          value: 'zh_CN',
-          groupValue: 'zh_CN',
-          onChanged: (value) {},
-        ),
-        RadioListTile<String>(
-          title: const Text('English'),
-          value: 'en_US',
-          groupValue: 'zh_CN',
-          onChanged: (value) {},
-        ),
-      ],
-    );
+    return const Placeholder();
   }
 }
 
@@ -126,35 +123,6 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
   // 标记当前是否为最大化状态
   bool _isMaximized = false;
   int _selectedIndex = 0; // 新增：追踪当前选中的索引，默认为0
-
-  // 使用数据列表来驱动UI，更易于维护
-  final List<_SettingItem> _settingItems = [
-    _SettingItem(
-      icon: Icons.network_check,
-      title: "API设置",
-      contentWidget: ApiSettingsView(),
-    ),
-    _SettingItem(
-      icon: Icons.model_training,
-      title: "模型管理",
-      contentWidget: ModelSettings(),
-    ),
-    _SettingItem(
-      icon: Icons.person_outline,
-      title: '账户',
-      contentWidget: _AccountSettingsView(),
-    ),
-    _SettingItem(
-      icon: Icons.display_settings,
-      title: '显示',
-      contentWidget: _DisplaySettingsView(),
-    ),
-    _SettingItem(
-      icon: Icons.language,
-      title: '语言',
-      contentWidget: _LanguageSettingsView(),
-    ),
-  ];
 
   @override
   void initState() {
@@ -218,6 +186,28 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
 
   @override
   Widget build(BuildContext context) {
+    var settingItems = [
+      _SettingItem(
+        icon: Icons.network_check,
+        title: S.of(context).api_settings,
+        contentWidget: ApiSettingsView(),
+      ),
+      _SettingItem(
+        icon: Icons.model_training,
+        title: S.of(context).model_management,
+        contentWidget: ModelSettings(),
+      ),
+      _SettingItem(
+        icon: Icons.settings_outlined,
+        title: S.of(context).general_settings,
+        contentWidget: _GeneralSettings(),
+      ),
+      _SettingItem(
+        icon: Icons.info_outline,
+        title: S.of(context).about,
+        contentWidget: AboutPage(),
+      ),
+    ];
     final screenSize = MediaQuery.of(context).size;
     theme = ref.watch(themeProvider);
     // 根据是否最大化，计算菜单的目标尺寸
@@ -254,88 +244,84 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
             // 使用ClipRRect来确保子内容不会溢出圆角
             clipBehavior: Clip.hardEdge,
             //创建的overlay缺少了很多的属性，所以这里创建了一个新的MaterialApp来提供这些属性
-            child: MaterialApp(
-              theme: Theme.of(context),
-              home: OverlayPortalScope(
-                child: Material(
-                  color: theme.backgroundColor,
-                  child: Column(
-                    children: [
-                      // 标题栏
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          IconButton(
-                            tooltip: _isMaximized ? '还原' : '最大化',
-                            icon: Icon(
-                              _isMaximized
-                                  ? Icons.close_fullscreen
-                                  : Icons.open_in_full_sharp,
-                            ),
-                            onPressed: _toggleMaximize,
+            child: OverlayPortalScope(
+              child: Material(
+                color: theme.secondGradeColor,
+                child: Column(
+                  children: [
+                    // 标题栏
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          tooltip: _isMaximized ? '还原' : '最大化',
+                          icon: Icon(
+                            _isMaximized
+                                ? Icons.close_fullscreen
+                                : Icons.open_in_full_sharp,
                           ),
-                          IconButton(
-                            tooltip: '关闭',
-                            icon: const Icon(Icons.close),
-                            onPressed: _handleClose,
+                          onPressed: _toggleMaximize,
+                        ),
+                        IconButton(
+                          tooltip: '关闭',
+                          icon: const Icon(Icons.close),
+                          onPressed: _handleClose,
+                        ),
+                      ],
+                    ),
+                    // 内容区
+                    Expanded(
+                      child: Row(
+                        children: [
+                          // 左侧导航栏
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                ),
+                                child: Text(
+                                  S.of(context).preferences,
+                                  style: TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: SizedBox(
+                                  width: 230,
+                                  child: ClipRect(
+                                    child: ListView.builder(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16.0,
+                                        horizontal: 8.0,
+                                      ),
+                                      itemCount: settingItems.length,
+                                      itemBuilder: (context, index) {
+                                        final item = settingItems[index];
+                                        return StdListTile(
+                                          leading: Icon(item.icon),
+                                          title: Text(item.title),
+                                          isSelected: _selectedIndex == index,
+                                          onTap: () => _onSelectItem(index),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          // 右侧内容区
+                          Expanded(
+                            child: settingItems[_selectedIndex].contentWidget,
                           ),
                         ],
                       ),
-                      // 内容区
-                      Expanded(
-                        child: Row(
-                          children: [
-                            // 左侧导航栏
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0,
-                                  ),
-                                  child: Text(
-                                    "设置",
-                                    style: TextStyle(
-                                      fontSize: 30,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: SizedBox(
-                                    width: 230,
-                                    child: ClipRect(
-                                      child: ListView.builder(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 16.0,
-                                          horizontal: 8.0,
-                                        ),
-                                        itemCount: _settingItems.length,
-                                        itemBuilder: (context, index) {
-                                          final item = _settingItems[index];
-                                          return StdListTile(
-                                            leading: Icon(item.icon),
-                                            title: Text(item.title),
-                                            isSelected: _selectedIndex == index,
-                                            onTap: () => _onSelectItem(index),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // 右侧内容区
-                            Expanded(
-                              child:
-                                  _settingItems[_selectedIndex].contentWidget,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

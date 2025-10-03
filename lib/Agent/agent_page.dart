@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/dialog.dart';
 
+import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/database_service.dart';
 import '../utils/prebuilt_widgets.dart';
@@ -46,14 +47,14 @@ class _AgentPageState extends State<AgentPage> {
             children: [
               const SizedBox(width: 60),
               Text(
-                "Agent管理",
+                S.of(context).agent_manage,
                 style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold),
               ),
               Expanded(child: SizedBox()),
               Consumer(
                 builder: (BuildContext context, WidgetRef ref, Widget? child) {
                   return StdButton(
-                    text: "创建一个新的Agent",
+                    text: S.of(context).create_new_agent,
                     onPressed: () {
                       ref.read(agentEditState.notifier).state =
                           AgentEditState();
@@ -106,7 +107,10 @@ class AgentSelector extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("没有可用的Agent", style: TextStyle(color: theme.boxColor)),
+                Text(
+                  S.of(context).no_agent,
+                  style: TextStyle(color: theme.thirdGradeColor),
+                ),
               ],
             ),
           );
@@ -129,7 +133,7 @@ class AgentSelector extends ConsumerWidget {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
-                      color: theme.boxColor,
+                      color: theme.thirdGradeColor,
                       borderRadius: BorderRadius.all(Radius.circular(5)),
                     ),
                     child: Text(
@@ -189,7 +193,7 @@ class AgentSelector extends ConsumerWidget {
       width: 300,
       height: 200,
       child: Material(
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -200,7 +204,7 @@ class AgentSelector extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  "确定要删除此Agent吗？\n 删除后所有和此Agent关联的聊天记录将会一并删除",
+                  S.of(context).agent_delete_confirm,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -209,11 +213,11 @@ class AgentSelector extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   StdButton(
-                    color: theme.boxColor,
+                    color: theme.thirdGradeColor,
                     onPressed: () {
                       OverlayPortalService.hide(context);
                     },
-                    text: "取消",
+                    text: S.of(context).cancel,
                   ),
                   const SizedBox(width: 16),
                   StdButton(
@@ -222,7 +226,7 @@ class AgentSelector extends ConsumerWidget {
                       OverlayPortalService.hide(context);
                       await DatabaseService.instance.deleteAgent(agentId);
                     },
-                    text: "确定(长按)",
+                    text: S.of(context).confirm_long_press,
                   ),
                 ],
               ),

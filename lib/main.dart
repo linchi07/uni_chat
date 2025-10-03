@@ -1,20 +1,25 @@
-import 'package:uni_chat/Agent/agent_set_page.dart';
-import 'package:uni_chat/Chat/session_selector.dart';
+import 'dart:io' as io show Platform;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:macos_window_utils/macos_window_utils.dart';
+import 'package:macos_window_utils/toolbars/toolbars.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
+import 'package:uni_chat/Chat/session_selector.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
 import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/dialog.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:macos_window_utils/macos_window_utils.dart';
-import 'package:macos_window_utils/toolbars/toolbars.dart';
-import 'dart:io' as io show Platform;
-
-import 'package:macos_window_utils/window_manipulator.dart';
 
 import 'Agent/agent_page.dart';
+import 'generated/l10n.dart';
+
+final Map<String, Locale> languages = const {
+  "简体中文": Locale("zh"),
+  "English": Locale("en"),
+};
 
 Future<void> main() async {
   if (io.Platform.isAndroid) {
@@ -39,7 +44,10 @@ Future<void> main() async {
     );
     await WindowManipulator.enableFullSizeContentView();
   }
-  runApp(const MyApp());
+  final prefs = await SharedPreferences.getInstance();
+  var l = prefs.getString("language");
+  var local = languages[l];
+  runApp(UNIChat(locale: local));
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -57,20 +65,37 @@ class PlatForm {
   PlatForm._internal();
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class UNIChat extends StatelessWidget {
+  const UNIChat({super.key, this.locale});
+  final Locale? locale;
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
       child: MaterialApp(
+        localizationsDelegates: [
+          S.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: S.delegate.supportedLocales,
         navigatorKey: navigatorKey,
         title: '',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
-        home: OverlayPortalScope(child: MainCont()),
+        home: OverlayPortalScope(
+          child: Builder(
+            builder: (context) {
+              if (locale != null) {
+                S.load(locale!);
+              }
+              return MainCont();
+            },
+          ),
+        ),
       ),
     );
   }
@@ -109,7 +134,7 @@ class _MainContState extends ConsumerState<MainCont> {
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     return Scaffold(
-      backgroundColor: theme.backgroundColor,
+      backgroundColor: theme.secondGradeColor,
       body: Column(
         children: [
           MainBanner(bannerWidget: _bannerWidget()),
@@ -165,7 +190,7 @@ class MainBanner extends ConsumerWidget {
     final theme = ref.watch(themeProvider);
     return Container(
       height: 50,
-      color: theme.surfaceColor,
+      color: theme.zeroGradeColor,
       child: Stack(
         children: [
           Row(

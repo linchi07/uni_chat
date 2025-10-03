@@ -11,6 +11,7 @@ import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
 
+import '../generated/l10n.dart';
 import '../utils/dialog.dart';
 import '../utils/file_utils.dart';
 import 'agentProvider.dart';
@@ -37,7 +38,7 @@ class AgentSetPage extends StatelessWidget {
             children: [
               const SizedBox(height: 20),
               Text(
-                "Agent设置",
+                S.of(context).agent_sets,
                 style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
@@ -196,11 +197,13 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
-          color: theme.boxColor,
+          color: theme.thirdGradeColor,
           borderRadius: BorderRadius.all(Radius.circular(5)),
         ),
         child: Text(
-          (agentState.model == null) ? "请选择模型" : "请选择模型提供商",
+          (agentState.model == null)
+              ? S.of(context).model_select
+              : S.of(context).plz_select_provider,
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.red, fontSize: 12),
         ),
@@ -211,8 +214,8 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
             padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             decoration: BoxDecoration(
               color: (agentState.editing == PropertyEditing.model)
-                  ? theme.surfaceColor
-                  : theme.boxColor,
+                  ? theme.zeroGradeColor
+                  : theme.thirdGradeColor,
               borderRadius: BorderRadius.all(Radius.circular(5)),
             ),
             child: Text(
@@ -245,7 +248,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: theme.surfaceColor,
+                      color: theme.zeroGradeColor,
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
@@ -258,7 +261,10 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                     ),
                     child: StdAvatarPicker(
                       initialWidget: Center(
-                        child: Text("拖拽或单击选择图片", textAlign: TextAlign.center),
+                        child: Text(
+                          S.of(context).select_image_hint,
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                       onImageChanged: (s, e, setImage) async {
                         final sessionFilesDir = Directory(
@@ -292,11 +298,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                           controller: nameController,
                           decoration: InputDecoration(
                             isDense: true,
-                            hintText:
-                                (agentState.name == null &&
-                                    agentState.isValidateMode)
-                                ? "请给助手起名"
-                                : "给助手取名",
+                            hintText: S.of(context).agent_name_hint,
                             border: InputBorder.none,
                             hintStyle:
                                 (agentState.name == null &&
@@ -317,7 +319,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                           maxLines: 2,
                           decoration: InputDecoration(
                             isDense: true,
-                            hintText: "描述你的助手",
+                            hintText: S.of(context).agent_desc_hint,
                             border: InputBorder.none,
                           ),
                           onChanged: (value) {
@@ -336,7 +338,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(
-              "Agent设置",
+              S.of(context).agent_sets,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
@@ -348,7 +350,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                 children: [
                   StdListTile(
                     title: Text(
-                      "模型设置",
+                      S.of(context).model_sets,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -363,7 +365,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                   const Divider(),
                   StdListTile(
                     title: Text(
-                      "系统提示词",
+                      S.of(context).sys_prompt,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -379,7 +381,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                               color:
                                   (agentState.editing ==
                                       PropertyEditing.sysPrompt)
-                                  ? theme.surfaceColor
+                                  ? theme.zeroGradeColor
                                   : theme.primaryColor,
                             ),
                           ))
@@ -392,7 +394,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                   const Divider(),
                   StdListTile(
                     title: Text(
-                      "知识库&上下文检索",
+                      S.of(context).knowledge_base_and_contexts,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -407,18 +409,20 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                   const Divider(),
                   StdListTile(
                     title: Text(
-                      "UI交互设置 (BETA)",
+                      S.of(context).ui_interaction_set,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),
                     ),
                     trailing: (Text(
-                      (agentState.enableUIQL) ? "启用" : "禁用",
+                      (agentState.enableUIQL)
+                          ? S.of(context).enable
+                          : S.of(context).disable,
                       style: TextStyle(
                         fontSize: 12,
                         color: (agentState.editing == PropertyEditing.UIQL)
-                            ? theme.surfaceColor
+                            ? theme.zeroGradeColor
                             : theme.primaryColor,
                       ),
                     )),
@@ -430,7 +434,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                   const Divider(),
                   StdListTile(
                     title: Text(
-                      "用户身份设置",
+                      S.of(context).usr_persona_set,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -445,7 +449,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                   const Divider(),
                   StdListTile(
                     title: Text(
-                      "开场白设置",
+                      S.of(context).opening_set,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -461,7 +465,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                               color:
                                   (agentState.editing ==
                                       PropertyEditing.sysPrompt)
-                                  ? theme.surfaceColor
+                                  ? theme.zeroGradeColor
                                   : theme.primaryColor,
                             ),
                           ))
@@ -482,8 +486,8 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
               children: [
                 Expanded(
                   child: StdButton(
-                    text: "取消(长按)",
-                    color: theme.boxColor,
+                    text: S.of(context).cancel_long_press,
+                    color: theme.thirdGradeColor,
                     onPressed: () {},
                     onLongPress: () {
                       ref.read(agentEditState.notifier).state =
@@ -550,7 +554,9 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
     return Transform.translate(
       offset: Offset(_animation.value, 0), // 根据动画值设置水平位移
       child: StdButton(
-        text: (!agentState.isTokenEnough) ? "提示词上下文不足" : "保存",
+        text: (!agentState.isTokenEnough)
+            ? S.of(context).model_context_not_enough
+            : S.of(context).save,
         onPressed: () async {
           ref.read(agentEditState.notifier).state = agentState.copyWith(
             isValidateMode: true,
@@ -638,7 +644,7 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
           child: PieChart(
             PieChartData(
               startDegreeOffset: -90,
-              sections: _getSections(),
+              sections: _getSections(context),
               centerSpaceRadius: 35,
               sectionsSpace: 2,
               pieTouchData: PieTouchData(
@@ -649,18 +655,18 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
             ),
           ),
         ),
-        _buildLegend(),
+        _buildLegend(context),
       ],
     );
   }
 
-  List<PieChartSectionData> _getSections() {
+  List<PieChartSectionData> _getSections(BuildContext context) {
     return [
       PieChartSectionData(
         color: Colors.deepOrange,
         value: percentages[1].$1,
         showTitle: false,
-        title: '系统内部',
+        title: "",
         radius: innerRadius,
         titleStyle: TextStyle(
           fontSize: 16,
@@ -671,7 +677,7 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
       PieChartSectionData(
         color: Colors.orangeAccent,
         value: percentages[2].$1,
-        title: 'SysPrompt',
+        title: S.of(context).sys_prompt,
         showTitle: false,
         radius: innerRadius,
         titleStyle: TextStyle(
@@ -683,7 +689,7 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
       PieChartSectionData(
         color: Colors.indigoAccent,
         value: percentages[3].$1,
-        title: '知识库',
+        title: S.of(context).knowledge_base,
         radius: innerRadius,
         showTitle: false,
         titleStyle: TextStyle(
@@ -695,7 +701,7 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
       PieChartSectionData(
         color: Colors.green,
         value: percentages[4].$1,
-        title: '开场白',
+        title: S.of(context).opening,
         radius: innerRadius,
         showTitle: false,
         titleStyle: TextStyle(
@@ -707,7 +713,7 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
       PieChartSectionData(
         color: Colors.purple,
         value: percentages[5].$1,
-        title: 'UI操作',
+        title: S.of(context).ui_interactions,
         radius: innerRadius,
         showTitle: false,
         titleStyle: TextStyle(
@@ -719,13 +725,13 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
     ];
   }
 
-  Widget _buildLegend() {
+  Widget _buildLegend(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         (percentages[6].$2 == 0)
             ? Text(
-                "增大上下文或精简提示词",
+                S.of(context).enlarge_context_or_simplify_prompt,
                 style: TextStyle(
                   color: Colors.red,
                   fontSize: 16,
@@ -733,29 +739,35 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
                 ),
               )
             : Text(
-                '可用于对话的Token：${percentages[6].$2}',
+                S.of(context).token_available_for_chat(percentages[6].$2),
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
         const SizedBox(height: 4),
         Text(
-          '总上下文上限：${percentages[0].$2}',
+          S.of(context).total_context_lim(percentages[0].$2),
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 4),
         _buildLegendItem(
           Colors.deepOrange,
-          '内建提示词(${percentages[1].$2}Tokens)',
+          S.of(context).system_internal_prompt(percentages[1].$2),
         ),
         _buildLegendItem(
           Colors.orangeAccent,
-          '系统提示词(${percentages[2].$2}Tokens)',
+          S.of(context).system_prompt_tokens(percentages[2].$2),
         ),
         _buildLegendItem(
           Colors.indigoAccent,
-          '知识库 (${percentages[3].$2}Tokens)',
+          S.of(context).knowledge_base_tokens(percentages[3].$2),
         ),
-        _buildLegendItem(Colors.green, '最长的开场白(${percentages[4].$2}Tokens)'),
-        _buildLegendItem(Colors.purple, 'UI交互提示词(${percentages[5].$2}Tokens)'),
+        _buildLegendItem(
+          Colors.green,
+          S.of(context).longest_opening(percentages[4].$2),
+        ),
+        _buildLegendItem(
+          Colors.purple,
+          S.of(context).ui_interactions_tokens(percentages[5].$2),
+        ),
       ],
     );
   }
@@ -818,7 +830,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
         Row(
           children: [
             Text(
-              '模型设置',
+              S.of(context).model_sets,
               style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
@@ -835,7 +847,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
           child: ListView(
             children: [
               Text(
-                "模型选择",
+                S.of(context).model_select,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               Padding(
@@ -846,7 +858,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 child: Row(children: [ModelDropDown()]),
               ),
               Text(
-                "提供商设置",
+                S.of(context).provider_select,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               Padding(
@@ -857,11 +869,11 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 child: Row(children: [_ProviderDropDown()]),
               ),
               Text(
-                "模型属性设置",
+                S.of(context).model_property,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               StdSlider(
-                label: "模型最大上下文长度",
+                label: S.of(context).model_maximum_context_length,
                 value: modelConf.maxContextTokens.toDouble(),
                 toInt: true,
                 onChanged: (value) {
@@ -875,7 +887,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 max: 1145141919,
               ),
               StdSlider(
-                label: "模型最大生成长度",
+                label: S.of(context).model_maximum_generate_length,
                 value: modelConf.maxGenerationTokens.toDouble(),
                 toInt: true,
                 onChanged: (value) {
@@ -889,12 +901,12 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 max: 1145141919,
               ),
               Text(
-                "基础信息传递设置",
+                S.of(context).model_basic_info_pass_through_setting,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               StdCheckbox(
-                text: "告知模型当前系统时间",
+                text: S.of(context).model_time_telling,
                 value: modelConf.enableTimeTelling,
                 onChanged: (val) {
                   if (val == null) return;
@@ -903,7 +915,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 },
               ),
               StdCheckbox(
-                text: "告知模型当前用户系统（如：macOS Sonoma）",
+                text: S.of(context).model_system_telling,
                 value: modelConf.enableUsrSystemInformation,
                 onChanged: (val) {
                   if (val == null) return;
@@ -912,7 +924,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 },
               ),
               StdCheckbox(
-                text: "告知模型当前用户地区和语言",
+                text: S.of(context).model_local_telling,
                 value: modelConf.enableUsrLanguage,
                 onChanged: (val) {
                   if (val == null) return;
@@ -922,11 +934,11 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
               ),
               const SizedBox(height: 8),
               Text(
-                "模型高级设置",
+                S.of(context).model_advance_properties,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               StdSlider(
-                label: "温度",
+                label: S.of(context).temperature,
                 value: modelConf.temperature,
                 onChanged: (value) {
                   modelConf.temperature = value;
@@ -936,7 +948,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 max: 2,
               ),
               StdSlider(
-                label: "重复惩罚",
+                label: S.of(context).freq_penalty,
                 value: modelConf.frequencyPenalty,
                 min: -2,
                 max: 2,
@@ -946,7 +958,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 },
               ),
               StdSlider(
-                label: "存在惩罚",
+                label: S.of(context).pres_penalty,
                 value: modelConf.presencePenalty,
                 min: -2,
                 max: 2,
@@ -956,7 +968,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 },
               ),
               StdSlider(
-                label: "Top P",
+                label: S.of(context).top_p,
                 value: modelConf.topP,
                 min: 0,
                 max: 1,
@@ -1032,7 +1044,7 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
       width: 350,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
@@ -1049,7 +1061,7 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                   height: rb.size.height * 7 + 3,
                   child: Material(
                     elevation: 4,
-                    color: theme.surfaceColor,
+                    color: theme.zeroGradeColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1063,7 +1075,9 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                           );
                         }
                         if (asyncSnapshot.data == null) {
-                          return const Center(child: Text("发生错误"));
+                          return Center(
+                            child: Text(S.of(context).error_occurred),
+                          );
                         }
                         return Column(
                           children: [
@@ -1097,7 +1111,7 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                               ),
                             const Divider(),
                             if (asyncSnapshot.data!.isEmpty)
-                              const Center(child: Text('没有模型')),
+                              Center(child: Text(S.of(context).no_model)),
                             //只是用来绘制inkwell
                             Expanded(
                               child: Material(
@@ -1150,7 +1164,7 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "请选择模型",
+                        S.of(context).select_model_hint,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                       Icon(Icons.keyboard_arrow_down, color: theme.textColor),
@@ -1247,7 +1261,7 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
       width: 350,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
@@ -1264,7 +1278,7 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                   height: rb.size.height * 7 + 3,
                   child: Material(
                     elevation: 4,
-                    color: theme.surfaceColor,
+                    color: theme.zeroGradeColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1280,7 +1294,9 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                           );
                         }
                         if (asyncSnapshot.data == null) {
-                          return const Center(child: Text("发生错误"));
+                          return Center(
+                            child: Text(S.of(context).error_occurred),
+                          );
                         }
                         return Column(
                           children: [
@@ -1314,7 +1330,7 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                               ),
                             const Divider(),
                             if (asyncSnapshot.data!.isEmpty)
-                              const Center(child: Text('没有供应商')),
+                              Center(child: Text(S.of(context).no_provider)),
                             Expanded(
                               child: Material(
                                 color: Colors.transparent,
@@ -1361,7 +1377,7 @@ class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "请选择提供商",
+                        S.of(context).plz_select_provider,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                       Icon(Icons.keyboard_arrow_down, color: theme.textColor),
@@ -1437,7 +1453,7 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
         Row(
           children: [
             Text(
-              '系统提示词设置',
+              S.of(context).sys_prompt,
               style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
@@ -1458,7 +1474,7 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
             decoration: InputDecoration(
               fillColor: theme.primaryColor,
               focusColor: theme.primaryColor,
-              hintText: '在这里输入系统提示词',
+              hintText: S.of(context).enter_sys_prompt_here,
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: (charCount <= s.modelSettings.maxContextTokens)
@@ -1485,7 +1501,12 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
               ),
               counterText: (charCount <= s.modelSettings.maxContextTokens)
                   ? '$charCount/${s.modelSettings.maxContextTokens}'
-                  : '你已超出最大系统提示词上限，多余部分将会被截断，请增大模型上下文或者精简提示词 $charCount/${s.modelSettings.maxContextTokens}',
+                  : S
+                        .of(context)
+                        .over_maximum_context_length_hint(
+                          charCount,
+                          s.modelSettings.maxContextTokens,
+                        ),
             ),
             // 监听文本变化更新计数
             onChanged: (value) {
@@ -1552,7 +1573,7 @@ class _OpeningState extends ConsumerState<Opening> {
         Row(
           children: [
             Text(
-              '开场白设置',
+              S.of(context).opening_set,
               style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
@@ -1573,7 +1594,7 @@ class _OpeningState extends ConsumerState<Opening> {
             decoration: InputDecoration(
               fillColor: theme.primaryColor,
               focusColor: theme.primaryColor,
-              hintText: '在这里输入开场白',
+              hintText: S.of(context).enter_opening_here,
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   color: (charCount <= s.modelSettings.maxContextTokens)
@@ -1600,7 +1621,12 @@ class _OpeningState extends ConsumerState<Opening> {
               ),
               counterText: (charCount <= s.modelSettings.maxContextTokens)
                   ? '$charCount/${s.modelSettings.maxContextTokens}'
-                  : '你已超出最大Token上限，多余部分将会被截断，请增大模型上下文或者精简提示词 $charCount/${s.modelSettings.maxContextTokens}',
+                  : S
+                        .of(context)
+                        .over_maximum_context_length_hint(
+                          charCount,
+                          s.modelSettings.maxContextTokens,
+                        ),
             ),
             // 监听文本变化更新计数
             onChanged: (value) {
@@ -1632,7 +1658,7 @@ class Uiql extends ConsumerWidget {
         Row(
           children: [
             Text(
-              'UI交互设置(BETA)',
+              S.of(context).ui_interaction_set,
               style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
@@ -1641,7 +1667,7 @@ class Uiql extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          '该功能是一个实验功能，目前正在完善，更多相关信息请查看文档',
+          '该功能是一个实验功能，目前正在完善，更多相关信息请查看文档 \n This is a experimental feature, more information please see the documentation ',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
@@ -1651,7 +1677,7 @@ class Uiql extends ConsumerWidget {
             var n = ref.read(agentEditState.notifier);
             n.state = agent.copyWith(enableUIQL: value);
           },
-          text: '是否启用UI交互功能',
+          text: S.of(context).enable_ui_interactions,
         ),
       ],
     );

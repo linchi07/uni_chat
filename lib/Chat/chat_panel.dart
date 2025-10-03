@@ -13,6 +13,7 @@ import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
+import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/dialog.dart';
 import 'chat_message_bubble.dart';
@@ -80,12 +81,19 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     var agent = ref.watch(agentProvider);
+    if (agent?.id != selectedIndex?.$1 && agent != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          selectedIndex = (agent.id, agent.name);
+        });
+      });
+    }
     return SizedBox(
       height: 40,
       width: 180,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
@@ -102,7 +110,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                   height: rb.size.height * 5 + 3,
                   child: Material(
                     elevation: 4,
-                    color: theme.surfaceColor,
+                    color: theme.zeroGradeColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -116,7 +124,9 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                           );
                         }
                         if (asyncSnapshot.data == null) {
-                          return const Center(child: Text("发生错误"));
+                          return Center(
+                            child: Text(S.of(context).error_occurred),
+                          );
                         }
                         return Column(
                           children: [
@@ -144,7 +154,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                               ),
                             const Divider(),
                             if (asyncSnapshot.data!.$1.isEmpty)
-                              const Center(child: Text('没有agent')),
+                              Center(child: Text(S.of(context).no_agent)),
                             Expanded(
                               child: (_scaleAnimation.isCompleted)
                                   ? SizedBox()
@@ -191,7 +201,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "请选择Agent",
+                        S.of(context).plz_select_agent,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                       Icon(Icons.keyboard_arrow_down, color: theme.textColor),
@@ -212,6 +222,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                     Expanded(
                       child: Text(
                         selectedIndex!.$2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                     ),
@@ -284,12 +295,19 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     var persona = ref.watch(personaProvider);
+    if (persona.id != selectedIndex?.$1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          selectedIndex = (persona.id, persona.name);
+        });
+      });
+    }
     return SizedBox(
       height: 40,
       width: 180,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.surfaceColor,
+        color: theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
@@ -306,7 +324,7 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                   height: rb.size.height * 5 + 3,
                   child: Material(
                     elevation: 4,
-                    color: theme.surfaceColor,
+                    color: theme.zeroGradeColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -320,7 +338,9 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                           );
                         }
                         if (asyncSnapshot.data == null) {
-                          return const Center(child: Text("发生错误"));
+                          return Center(
+                            child: Text(S.of(context).error_occurred),
+                          );
                         }
                         return Column(
                           children: [
@@ -354,7 +374,7 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                               ),
                             const Divider(),
                             if (asyncSnapshot.data!.$1.isEmpty)
-                              const Center(child: Text('没有人格')),
+                              Center(child: Text(S.of(context).no_persona)),
                             Expanded(
                               child: (_scaleAnimation.isCompleted)
                                   ? SizedBox()
@@ -401,7 +421,7 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "请选择人格",
+                        S.of(context).plz_select_persona,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                       Icon(Icons.keyboard_arrow_down, color: theme.textColor),
@@ -422,6 +442,7 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                     Expanded(
                       child: Text(
                         selectedIndex!.$2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                     ),
@@ -442,7 +463,7 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     var theme = ref.watch(themeProvider);
     return Scaffold(
-      backgroundColor: theme.backgroundColor,
+      backgroundColor: theme.secondGradeColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -453,18 +474,33 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "选择一个Agent并开始聊天吧！",
-              style: TextStyle(fontSize: 16, color: theme.boxColor),
+              S.of(context).choose_agent_and_chat_hint,
+              style: TextStyle(fontSize: 16, color: theme.thirdGradeColor),
             ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("以  ", style: TextStyle(fontSize: 18)),
-                _PersonaDropDown(),
-                Text("  和  ", style: TextStyle(fontSize: 18)),
-                _AgentDropDown(),
-                Text("  开始聊天", style: TextStyle(fontSize: 18)),
+                Text(
+                  S.of(context).front_page_hintLine_char1,
+                  style: TextStyle(fontSize: 18),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _PersonaDropDown(),
+                ),
+                Text(
+                  S.of(context).front_page_hintLine_char2,
+                  style: TextStyle(fontSize: 18),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _AgentDropDown(),
+                ),
+                Text(
+                  S.of(context).front_page_hintLine_char3,
+                  style: TextStyle(fontSize: 18),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -506,7 +542,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
     var chatState = ref.watch(chatStateProvider);
     final messages = chatState.messages;
     return Scaffold(
-      backgroundColor: ref.watch(themeProvider).backgroundColor,
+      backgroundColor: ref.watch(themeProvider).secondGradeColor,
       body: Center(
         child: SizedBox(
           width: MediaQuery.of(context).size.width.clamp(0, 1000),
@@ -740,7 +776,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           children: [
             AbsorbPointer(child: _buildChatPanel(isSendButtonDisabled)),
             Text(
-              'Drop files here',
+              S.of(context).drop_files_hint,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -891,7 +927,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         margin: const EdgeInsets.all(16),
         clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
-          color: theme.surfaceColor,
+          color: theme.zeroGradeColor,
           borderRadius: BorderRadius.circular(8),
         ),
         child: childPanel,
@@ -927,8 +963,8 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             maxLines: 7,
             minLines: 2,
             controller: _textController,
-            decoration: const InputDecoration.collapsed(
-              hintText: 'Send a message...',
+            decoration: InputDecoration.collapsed(
+              hintText: S.of(context).send_a_message_hint,
             ),
             textCapitalization: TextCapitalization.sentences,
           ),
