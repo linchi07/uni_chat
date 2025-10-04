@@ -15,6 +15,7 @@ import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/dialog.dart';
 
 import 'Agent/agent_page.dart';
+import 'RAG/RAG_main_page.dart';
 import 'generated/l10n.dart';
 
 final Map<String, Locale> languages = const {
@@ -239,7 +240,7 @@ class MainCont extends ConsumerStatefulWidget {
   ConsumerState<MainCont> createState() => _MainContState();
 }
 
-enum Pages { chat, agent }
+enum Pages { chat, agent, Rag }
 
 class _MainContState extends ConsumerState<MainCont> {
   Pages page = Pages.chat;
@@ -248,6 +249,8 @@ class _MainContState extends ConsumerState<MainCont> {
       case Pages.chat:
         return ChatBannerWidget();
       case Pages.agent:
+        return null;
+      case Pages.Rag:
         return null;
     }
   }
@@ -258,6 +261,8 @@ class _MainContState extends ConsumerState<MainCont> {
         return ChatPageMain();
       case Pages.agent:
         return AgentPage();
+      case Pages.Rag:
+        return RagPage();
     }
   }
 
@@ -292,6 +297,14 @@ class _MainContState extends ConsumerState<MainCont> {
                           });
                         },
                         icon: Icon(Icons.groups_outlined),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            page = Pages.Rag;
+                          });
+                        },
+                        icon: Icon(Icons.book_outlined),
                       ),
                       IconButton(
                         onPressed: () {},

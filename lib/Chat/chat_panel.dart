@@ -10,6 +10,7 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
@@ -720,12 +721,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       _isUploading = true;
       _attachments.add((previewId, UploadStatus.uploading));
     });
-    final appDocDir = await getApplicationDocumentsDirectory();
-    final sessionFilesDir = Directory('${appDocDir.path}/chat/session_files');
-    if (!await sessionFilesDir.exists()) {
-      await sessionFilesDir.create(recursive: true);
-    }
-    final file = File("${sessionFilesDir.path}/$previewId$fileExtension");
+    var path = await PathProvider.getPath(
+      "chat/session_files/$previewId$fileExtension",
+    );
+    final file = File(path);
     final sink = file.openWrite();
     await f.getStream().forEach(sink.add);
     await sink.close();

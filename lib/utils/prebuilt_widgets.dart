@@ -31,7 +31,8 @@ class StdButton extends ConsumerWidget {
   final String? text;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var c = color ?? ref.watch(themeProvider).primaryColor;
+    var theme = ref.watch(themeProvider);
+    var c = color ?? theme.primaryColor;
     return Material(
       color: c,
       clipBehavior: Clip.hardEdge,
@@ -47,7 +48,7 @@ class StdButton extends ConsumerWidget {
               Text(
                 text ?? "",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: ColorParser.textColor(c)),
+                style: TextStyle(color: theme.getTextColor(c)),
               ),
         ),
       ),
@@ -258,6 +259,56 @@ class StdTextField extends ConsumerWidget {
           onSubmitted?.call(controller.text);
         },
         onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class StdTextFieldOutlined extends ConsumerWidget {
+  StdTextFieldOutlined({
+    super.key,
+    TextEditingController? controller,
+    this.hintText,
+    this.maxLines,
+    this.minLines,
+    this.validateFailureText,
+    this.onChanged,
+    this.onSubmitted,
+    this.isExpanded,
+  }) {
+    this.controller = controller ?? TextEditingController();
+  }
+  late final TextEditingController controller;
+  final String? validateFailureText;
+  final String? hintText;
+  final int? maxLines;
+  final int? minLines;
+  final bool? isExpanded;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var theme = ref.watch(themeProvider);
+    return TextField(
+      controller: controller,
+      maxLines: (isExpanded ?? false) ? null : maxLines ?? 1,
+      expands: isExpanded ?? false,
+      onChanged: onChanged,
+      onEditingComplete: () {
+        onSubmitted?.call(controller.text);
+      },
+      textAlignVertical: TextAlignVertical.top,
+      decoration: InputDecoration(
+        fillColor: theme.primaryColor,
+        focusColor: theme.primaryColor,
+        hintText: hintText,
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: theme.primaryColor, width: 2),
+        ),
+        border: const OutlineInputBorder(),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: theme.primaryColor, width: 1.0),
+        ),
       ),
     );
   }
