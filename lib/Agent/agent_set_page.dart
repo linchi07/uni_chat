@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/llm_provider/pre_built_models.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/database_service.dart';
@@ -1066,7 +1067,10 @@ class _ModelDropDownState extends ConsumerState<ModelDropDown>
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: FutureBuilder(
-                      future: ApiDatabaseService.instance.getAllModels(),
+                      future: ApiDatabaseService.instance.getAllModels(
+                        withAbilities: {ModelAbility.textGenerate},
+                        exceptAbilities: {ModelAbility.embedding},
+                      ),
                       builder: (context, asyncSnapshot) {
                         if (asyncSnapshot.connectionState ==
                             ConnectionState.waiting) {

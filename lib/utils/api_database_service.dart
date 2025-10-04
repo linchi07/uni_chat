@@ -505,24 +505,21 @@ class ApiDatabaseService {
     return model;
   }
 
-  Future<Model> findOrCreateModel(
-    String modelFriendlyName,
-    String modelFamily,
-  ) async {
+  Future<Model> findOrCreateModel(ModelsConfigData modelConfigData) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'models',
       where: 'friendly_name = ?',
-      whereArgs: [modelFriendlyName],
+      whereArgs: [modelConfigData.friendlyName],
       limit: 1,
     );
     if (maps.isNotEmpty) {
       return Model.fromMap(maps.first);
     } else {
       return await createModel(
-        friendlyName: modelFriendlyName,
-        abilities: {ModelAbility.textGenerate},
-        family: modelFamily,
+        friendlyName: modelConfigData.friendlyName,
+        abilities: modelConfigData.abilities,
+        family: modelConfigData.family ?? '',
       );
     }
   }
@@ -556,10 +553,31 @@ class ApiDatabaseService {
     return maps.map((map) => Model.fromMap(map)).toList();
   }
 
-  Future<List<Model>> getAllModels() async {
+  Future<List<Model>> getAllModels({
+    Set<ModelAbility>? withAbilities,
+    Set<ModelAbility>? exceptAbilities,
+  }) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('models');
-    return maps.map((map) => Model.fromMap(map)).toList();
+    var results = maps.map((map) => Model.fromMap(map)).toList();
+
+    if (withAbilities != null) {
+      results = results
+          .where((model) => model.abilities.containsAll(withAbilities))
+          .toList();
+    }
+
+    if (exceptAbilities != null) {
+      results = results
+          .where(
+            (model) => !exceptAbilities.any(
+              (ability) => model.abilities.contains(ability),
+            ),
+          )
+          .toList();
+    }
+
+    return results;
   }
 
   Future<List<Model>> getEnabledModelsByProvider(String providerId) async {

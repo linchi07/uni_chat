@@ -99,10 +99,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
       }
     }
     for (var m in as.models) {
-      var model = await ApiDatabaseService.instance.findOrCreateModel(
-        m.friendlyName,
-        m.family ?? "",
-      );
+      var model = await ApiDatabaseService.instance.findOrCreateModel(m);
       await ApiDatabaseService.instance.createOrUpdateProviderModelConfig(
         modelConfigData: m,
         modelId: model.id,
@@ -942,10 +939,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
       await ApiDatabaseService.instance.createOrUpdateApiKey(apiKey: key);
     }
     for (var model in as.models) {
-      var m = await ApiDatabaseService.instance.findOrCreateModel(
-        model.friendlyName,
-        model.family ?? "",
-      );
+      var m = await ApiDatabaseService.instance.findOrCreateModel(model);
       await ApiDatabaseService.instance.createOrUpdateProviderModelConfig(
         providerId: pv.id,
         modelId: m.id,
@@ -1441,6 +1435,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
     String friendlyName,
     String callName,
     Set<ModelAbility> abilities,
+    String family,
   ) {
     var as = ref.read(addApiState.notifier);
     final newModels = List<ModelsConfigData>.from(as.state.models)
@@ -1449,6 +1444,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
           callName: callName,
           friendlyName: friendlyName,
           abilities: abilities,
+          family: family,
         ),
       );
     as.state = as.state.copyWith(models: newModels);
@@ -1512,6 +1508,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
                       _selectedModel!.friendlyName,
                       _callNameController.text.trim(),
                       selectedAbilities,
+                      _selectedModel!.family ?? '',
                     );
                     OverlayPortalService.hide(context);
                   }
