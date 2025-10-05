@@ -284,6 +284,9 @@ class _MainContState extends ConsumerState<MainCont> {
                     children: [
                       IconButton(
                         onPressed: () {
+                          if (page == Pages.chat) {
+                            return;
+                          }
                           setState(() {
                             page = Pages.chat;
                           });
@@ -292,6 +295,9 @@ class _MainContState extends ConsumerState<MainCont> {
                       ),
                       IconButton(
                         onPressed: () {
+                          if (page == Pages.agent) {
+                            return;
+                          }
                           setState(() {
                             page = Pages.agent;
                           });
@@ -300,6 +306,9 @@ class _MainContState extends ConsumerState<MainCont> {
                       ),
                       IconButton(
                         onPressed: () {
+                          if (page == Pages.Rag) {
+                            return;
+                          }
                           setState(() {
                             page = Pages.Rag;
                           });

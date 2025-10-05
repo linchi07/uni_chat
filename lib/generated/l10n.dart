@@ -1185,6 +1185,16 @@ class S {
     return Intl.message('No model yet', name: 'no_model', desc: '', args: []);
   }
 
+  /// `No embedding model \n Embedding models are different from chat models,check whether you really got one.`
+  String get no_embedding_model {
+    return Intl.message(
+      'No embedding model \n Embedding models are different from chat models,check whether you really got one.',
+      name: 'no_embedding_model',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Please select a provider`
   String get plz_select_provider {
     return Intl.message(
@@ -1585,6 +1595,441 @@ class S {
     return Intl.message(
       'Some changes may require a restart to take effect.',
       name: 'language_switch_restart_note',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit knowledge base`
+  String get edit_knowledge_base {
+    return Intl.message(
+      'Edit knowledge base',
+      name: 'edit_knowledge_base',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter knowledge base name`
+  String get enter_knowledge_base_name {
+    return Intl.message(
+      'Enter knowledge base name',
+      name: 'enter_knowledge_base_name',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter knowledge base description`
+  String get enter_knowledge_base_description {
+    return Intl.message(
+      'Enter knowledge base description',
+      name: 'enter_knowledge_base_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Embedding model`
+  String get embedding_model {
+    return Intl.message(
+      'Embedding model',
+      name: 'embedding_model',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Embedding dimension`
+  String get embedding_dimension {
+    return Intl.message(
+      'Embedding dimension',
+      name: 'embedding_dimension',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please select embedding dimension`
+  String get plz_select_embedding_dimension {
+    return Intl.message(
+      'Please select embedding dimension',
+      name: 'plz_select_embedding_dimension',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Default index method`
+  String get default_index_method {
+    return Intl.message(
+      'Default index method',
+      name: 'default_index_method',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File manage`
+  String get file_manage {
+    return Intl.message('File manage', name: 'file_manage', desc: '', args: []);
+  }
+
+  /// `Website manage`
+  String get website_manage {
+    return Intl.message(
+      'Website manage',
+      name: 'website_manage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Memory manage`
+  String get memory_manage {
+    return Intl.message(
+      'Memory manage',
+      name: 'memory_manage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Auto index rules setting`
+  String get auto_index_rules_set {
+    return Intl.message(
+      'Auto index rules setting',
+      name: 'auto_index_rules_set',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Vector index`
+  String get vector_index {
+    return Intl.message(
+      'Vector index',
+      name: 'vector_index',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Keyword index`
+  String get keyword_index {
+    return Intl.message(
+      'Keyword index',
+      name: 'keyword_index',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Regex index`
+  String get regex_index {
+    return Intl.message('Regex index', name: 'regex_index', desc: '', args: []);
+  }
+
+  /// `Model or dimension not set`
+  String get model_or_dimension_not_set {
+    return Intl.message(
+      'Model or dimension not set',
+      name: 'model_or_dimension_not_set',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Click to select or drop files here`
+  String get click_or_drop_files_here {
+    return Intl.message(
+      'Click to select or drop files here',
+      name: 'click_or_drop_files_here',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `md,docx,csv,txt,json,html`
+  String get support_formats {
+    return Intl.message(
+      'md,docx,csv,txt,json,html',
+      name: 'support_formats',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No file`
+  String get no_file {
+    return Intl.message('No file', name: 'no_file', desc: '', args: []);
+  }
+
+  /// `No file selected`
+  String get no_file_selected {
+    return Intl.message(
+      'No file selected',
+      name: 'no_file_selected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unsupported format`
+  String get unsupported_format {
+    return Intl.message(
+      'Unsupported format',
+      name: 'unsupported_format',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Index settings`
+  String get index_settings {
+    return Intl.message(
+      'Index settings',
+      name: 'index_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No index method selected, this content will never be inserted into conversation`
+  String get no_index_method_warning {
+    return Intl.message(
+      'No index method selected, this content will never be inserted into conversation',
+      name: 'no_index_method_warning',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Match the chunks of content which are similar to the query`
+  String get vec_index_hint {
+    return Intl.message(
+      'Match the chunks of content which are similar to the query',
+      name: 'vec_index_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `When message contains any keywords, the whole content will be sent`
+  String get keyword_index_hint {
+    return Intl.message(
+      'When message contains any keywords, the whole content will be sent',
+      name: 'keyword_index_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `When message matches any regex, the whole content will be sent`
+  String get regex_index_hint {
+    return Intl.message(
+      'When message matches any regex, the whole content will be sent',
+      name: 'regex_index_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No preview available`
+  String get no_preview {
+    return Intl.message(
+      'No preview available',
+      name: 'no_preview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter keywords separated by comma`
+  String get enter_key_word_hint {
+    return Intl.message(
+      'Enter keywords separated by comma',
+      name: 'enter_key_word_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter regex`
+  String get enter_regex_hint {
+    return Intl.message(
+      'Enter regex',
+      name: 'enter_regex_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No memory`
+  String get no_memory {
+    return Intl.message('No memory', name: 'no_memory', desc: '', args: []);
+  }
+
+  /// `Select or add a memory`
+  String get select_or_add_memory {
+    return Intl.message(
+      'Select or add a memory',
+      name: 'select_or_add_memory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Memory name`
+  String get memory_name {
+    return Intl.message('Memory name', name: 'memory_name', desc: '', args: []);
+  }
+
+  /// `Memory name cannot be empty`
+  String get memory_name_waring {
+    return Intl.message(
+      'Memory name cannot be empty',
+      name: 'memory_name_waring',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Memory content`
+  String get memory_content {
+    return Intl.message(
+      'Memory content',
+      name: 'memory_content',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Memory content cannot be empty`
+  String get memory_content_waring {
+    return Intl.message(
+      'Memory content cannot be empty',
+      name: 'memory_content_waring',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Create a new rule`
+  String get create_new_rule {
+    return Intl.message(
+      'Create a new rule',
+      name: 'create_new_rule',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No rules`
+  String get no_rules {
+    return Intl.message('No rules', name: 'no_rules', desc: '', args: []);
+  }
+
+  /// `When chat with`
+  String get auto_index_rules_1 {
+    return Intl.message(
+      'When chat with',
+      name: 'auto_index_rules_1',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select agent`
+  String get select_agent {
+    return Intl.message(
+      'Select agent',
+      name: 'select_agent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{num} selected`
+  String selected_agent(Object num) {
+    return Intl.message(
+      '$num selected',
+      name: 'selected_agent',
+      desc: '',
+      args: [num],
+    );
+  }
+
+  /// `and`
+  String get auto_index_rules_2 {
+    return Intl.message('and', name: 'auto_index_rules_2', desc: '', args: []);
+  }
+
+  /// `will be indexed`
+  String get auto_index_rules_3 {
+    return Intl.message(
+      'will be indexed',
+      name: 'auto_index_rules_3',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `AI`
+  String get ai {
+    return Intl.message('AI', name: 'ai', desc: '', args: []);
+  }
+
+  /// `User`
+  String get user {
+    return Intl.message('User', name: 'user', desc: '', args: []);
+  }
+
+  /// `Any`
+  String get any {
+    return Intl.message('Any', name: 'any', desc: '', args: []);
+  }
+
+  /// `Index all`
+  String get index_all {
+    return Intl.message('Index all', name: 'index_all', desc: '', args: []);
+  }
+
+  /// `Keyword match`
+  String get keyword_match {
+    return Intl.message(
+      'Keyword match',
+      name: 'keyword_match',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Regex match`
+  String get regex_match {
+    return Intl.message('Regex match', name: 'regex_match', desc: '', args: []);
+  }
+
+  /// `OK`
+  String get base_stat_OK {
+    return Intl.message('OK', name: 'base_stat_OK', desc: '', args: []);
+  }
+
+  /// `Processing`
+  String get base_stat_processing {
+    return Intl.message(
+      'Processing',
+      name: 'base_stat_processing',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pending`
+  String get base_stat_PENDING {
+    return Intl.message(
+      'Pending',
+      name: 'base_stat_PENDING',
       desc: '',
       args: [],
     );

@@ -43,6 +43,13 @@ dependencies:
   local_hero: ^0.3.0
   device_info_plus: ^11.5.0
   shared_preferences: ^2.5.3
+  objectbox: ^5.0.0
+  sqlite3_flutter_libs: ^0.5.40
+  sqlite3_simple: ^1.0.6
+  docx_to_text: ^1.0.1
+  langchain_community: ^0.2.0+1
+  xxh3: ^1.2.0
+  jieba_flutter: ^0.2.0
   
 
 dev_dependencies:
@@ -51,6 +58,8 @@ dev_dependencies:
 
 
   flutter_lints: ^5.0.0
+  build_runner: ^2.7.1
+  objectbox_generator: any
 
 flutter:
 

@@ -1,0 +1,569 @@
+// ignore_for_file: prefer_final_fields
+
+import 'dart:convert';
+
+import 'package:flutter/widgets.dart';
+import 'package:objectbox/objectbox.dart';
+
+import '../generated/l10n.dart';
+
+enum RAGIndexMethod { vector, keyword, regex }
+
+enum KnowledgeBaseStat { OK, pending, requireIndex }
+
+extension KnowledgeBaseStatExtension on KnowledgeBaseStat {
+  String getName(BuildContext context) {
+    switch (this) {
+      case KnowledgeBaseStat.OK:
+        return S.of(context).base_stat_OK;
+      case KnowledgeBaseStat.pending:
+        return S.of(context).base_stat_PENDING;
+      case KnowledgeBaseStat.requireIndex:
+        return S.of(context).base_stat_processing;
+    }
+  }
+}
+
+class KnowledgeBase {
+  final String id;
+  final String name;
+  final String description;
+  final Set<RAGIndexMethod> defaultIndexMethod;
+  final List<Embedding> embeddings;
+  final DateTime createdAt;
+  final KnowledgeBaseStat status;
+
+  KnowledgeBase({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.defaultIndexMethod,
+    required this.embeddings,
+    required this.createdAt,
+    this.status = KnowledgeBaseStat.pending,
+  });
+
+  factory KnowledgeBase.fromMap(Map<String, dynamic> map) {
+    final List<String> methodStrings =
+        (jsonDecode(map['default_index_method']) as List).cast<String>();
+    return KnowledgeBase(
+      id: map['id'],
+      name: map['name'],
+      description: map['description'],
+      defaultIndexMethod: methodStrings.map((methodString) {
+        // 2. 查找匹配的枚举值
+        return RAGIndexMethod.values.firstWhere(
+          (element) => element.toString() == methodString,
+        );
+      }).toSet(),
+      embeddings: jsonDecode(
+        map['embeddings'],
+      ).map<Embedding>((embedding) => Embedding.fromMap(embedding)).toList(),
+      createdAt: DateTime.parse(map['created_at']),
+      status: KnowledgeBaseStat.values.firstWhere(
+        (element) => element.toString() == map['status'],
+      ),
+    );
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'default_index_method': jsonEncode(
+        defaultIndexMethod.map((method) => method.toString()).toList(),
+      ),
+      'embeddings': jsonEncode(
+        embeddings.map((embedding) => embedding.toMap()).toList(),
+      ),
+      'created_at': createdAt.toIso8601String(),
+      'status': status.toString(),
+    };
+  }
+}
+
+class Embedding {
+  final String id;
+  final String modelConfigId;
+  final String knowledgeBaseId;
+  final String embeddingModelName;
+  final int vectorDimension;
+
+  Embedding({
+    required this.id,
+    required this.modelConfigId,
+    required this.knowledgeBaseId,
+    required this.embeddingModelName,
+    required this.vectorDimension,
+  });
+
+  factory Embedding.fromMap(Map<String, dynamic> map) {
+    return Embedding(
+      id: map['id'],
+      modelConfigId: map['model_config_id'],
+      knowledgeBaseId: map['knowledge_base_id'],
+      embeddingModelName: map['embedding_model_name'],
+      vectorDimension: map['vector_dimension'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'model_config_id': modelConfigId,
+      'knowledge_base_id': knowledgeBaseId,
+      'embedding_model_name': embeddingModelName,
+      'vector_dimension': vectorDimension,
+    };
+  }
+}
+
+//真的是一个蠢的要死的数据库
+//必须使用这种曲线救国的方法才能继承
+//你猜啥？ObjectBox - Entity Super Classes
+// Only available for Java/Kotlin at the moment
+// 哦，太厉害了，我们用 compose multi platform 重写一遍吧
+//这个数据库我都不敢存具体的文件只是拿来放向量
+//还是sqlite靠谱，我曾经一直以为nosql都能够像mongo那样存文件的。。。。
+//你知道我为了通过编译花了多久嘛？直接继承-不行！用getter setter不行！
+//用普通函数 不行！ 哦 原来不能有私有的属性 哇你太厉害了！
+abstract class VectorQueryObject {
+  int getId();
+  String getChunkId();
+  List<double> getEmbedding();
+  void setEmbedding(List<double> embedding);
+  int dimensions();
+
+  VectorQueryObject();
+}
+
+@Entity()
+class VectorQueryObject384 extends VectorQueryObject {
+  @Id()
+  int id;
+  String chunkId;
+  @HnswIndex(dimensions: 384, distanceType: VectorDistanceType.cosine)
+  @Property(type: PropertyType.floatVector)
+  List<double> embedding;
+
+  VectorQueryObject384({
+    required this.id,
+    required this.chunkId,
+    required this.embedding,
+  });
+
+  @override
+  int getId() => id;
+
+  @override
+  String getChunkId() => chunkId;
+
+  @override
+  List<double> getEmbedding() => embedding;
+
+  @override
+  void setEmbedding(List<double> embedding) {
+    this.embedding = embedding;
+  }
+
+  @override
+  int dimensions() => 384;
+}
+
+@Entity()
+class VectorQueryObject768 extends VectorQueryObject {
+  @Id()
+  int id;
+  String chunkId;
+  @HnswIndex(dimensions: 768, distanceType: VectorDistanceType.cosine)
+  @Property(type: PropertyType.floatVector)
+  List<double> embedding;
+
+  VectorQueryObject768({
+    required this.id,
+    required this.chunkId,
+    required this.embedding,
+  });
+
+  @override
+  int getId() => id;
+
+  @override
+  String getChunkId() => chunkId;
+
+  @override
+  List<double> getEmbedding() => embedding;
+
+  @override
+  void setEmbedding(List<double> embedding) {
+    this.embedding = embedding;
+  }
+
+  @override
+  int dimensions() => 768;
+}
+
+@Entity()
+class VectorQueryObject1024 extends VectorQueryObject {
+  @Id()
+  int id;
+  String chunkId;
+  @HnswIndex(dimensions: 1024, distanceType: VectorDistanceType.cosine)
+  @Property(type: PropertyType.floatVector)
+  List<double> embedding;
+
+  VectorQueryObject1024({
+    required this.id,
+    required this.chunkId,
+    required this.embedding,
+  });
+
+  @override
+  int getId() => id;
+
+  @override
+  String getChunkId() => chunkId;
+
+  @override
+  List<double> getEmbedding() => embedding;
+
+  @override
+  void setEmbedding(List<double> embedding) {
+    this.embedding = embedding;
+  }
+
+  @override
+  int dimensions() => 1024;
+}
+
+@Entity()
+class VectorQueryObject1536 extends VectorQueryObject {
+  @Id()
+  int id;
+  String chunkId;
+  @HnswIndex(dimensions: 1536, distanceType: VectorDistanceType.cosine)
+  @Property(type: PropertyType.floatVector)
+  List<double> embedding;
+
+  VectorQueryObject1536({
+    required this.id,
+    required this.chunkId,
+    required this.embedding,
+  });
+
+  @override
+  int getId() => id;
+
+  @override
+  String getChunkId() => chunkId;
+
+  @override
+  List<double> getEmbedding() => embedding;
+
+  @override
+  void setEmbedding(List<double> embedding) {
+    this.embedding = embedding;
+  }
+
+  @override
+  int dimensions() => 1536;
+}
+
+//虽然叫做content chunk但是基本上只为了向量搜索服务
+class ContentChunk {
+  final String id;
+  final String knowledgeBaseId;
+  final String originalContentId;
+  final String content;
+  final int hash;
+  final Map<String, String> chunkMetadata;
+  ContentChunk({
+    required this.id,
+    required this.knowledgeBaseId,
+    required this.originalContentId,
+    required this.hash,
+    required this.content,
+    required this.chunkMetadata,
+  });
+
+  factory ContentChunk.fromMap(Map<String, dynamic> json) {
+    return ContentChunk(
+      id: json['id'],
+      knowledgeBaseId: json['knowledge_base_id'],
+      originalContentId: json['original_content_id'],
+      hash: json['hash'],
+      content: json['content'],
+      chunkMetadata: json['chunk_metadata'] != null
+          ? (json['chunk_metadata'] as Map<String, dynamic>).map(
+              (key, value) => MapEntry(key, value.toString()),
+            )
+          : {},
+    );
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'knowledge_base_id': knowledgeBaseId,
+      'original_content_id': originalContentId,
+      'hash': hash,
+      'content': content,
+      'chunk_metadata': chunkMetadata,
+    };
+  }
+}
+
+enum RagContentType { document, website, memory, chatHistory }
+
+class OriginalContent {
+  final String id;
+  final String knowledgeBaseId;
+  String keyWords;
+  late final List<String> regex;
+  final int? hash;
+  final String content;
+  final DateTime insertedAt;
+  final RagContentType contentType;
+  final Set<RAGIndexMethod> indexMethod;
+  final MetaData metadata;
+  final bool isEmbedded;
+  final bool isTokenized;
+  OriginalContent({
+    required this.id,
+    required this.knowledgeBaseId,
+    this.hash,
+    required this.content,
+    required this.insertedAt,
+    required this.contentType,
+    required this.indexMethod,
+    required this.metadata,
+    this.isEmbedded = false,
+    this.keyWords = "",
+    List<String>? regex,
+    this.isTokenized = false,
+  }) {
+    this.regex = regex ?? [];
+  }
+
+  OriginalContent copyWith({
+    String? id,
+    String? knowledgeBaseId,
+    int? hash,
+    String? keyWords,
+    String? content,
+    DateTime? insertedAt,
+    RagContentType? contentType,
+    Set<RAGIndexMethod>? indexMethod,
+    MetaData? metadata,
+    bool? isEmbedded,
+    List<String>? regex,
+  }) {
+    return OriginalContent(
+      id: id ?? this.id,
+      knowledgeBaseId: knowledgeBaseId ?? this.knowledgeBaseId,
+      keyWords: keyWords ?? this.keyWords,
+      hash: hash ?? this.hash,
+      content: content ?? this.content,
+      insertedAt: insertedAt ?? this.insertedAt,
+      contentType: contentType ?? this.contentType,
+      indexMethod: indexMethod ?? this.indexMethod,
+      metadata: metadata ?? this.metadata,
+      isEmbedded: isEmbedded ?? this.isEmbedded,
+      regex: regex ?? this.regex,
+      isTokenized: isTokenized,
+    );
+  }
+
+  factory OriginalContent.fromMap(Map<String, dynamic> map) {
+    //为了加速查询，这里使用bool而不是set转换为json的方式
+    var indexMethod = <RAGIndexMethod>{};
+    if (map['is_vec_index'] == 1) {
+      indexMethod.add(RAGIndexMethod.vector);
+    }
+    if (map['is_keyword_index'] == 1) {
+      indexMethod.add(RAGIndexMethod.keyword);
+    }
+    if (map['is_regex_index'] == 1) {
+      indexMethod.add(RAGIndexMethod.regex);
+    }
+    return OriginalContent(
+      id: map['id'],
+      knowledgeBaseId: map['knowledge_base_id'],
+      content: map['content'],
+      hash: map['hash'],
+      keyWords: map['key_words'],
+      insertedAt: DateTime.parse(map['inserted_at']),
+      contentType: RagContentType.values.firstWhere(
+        (element) => element.toString() == map['content_type'],
+      ),
+      regex: map['regex'] != null
+          ? (jsonDecode(map['regex']) as List<dynamic>).cast<String>()
+          : null,
+      indexMethod: indexMethod,
+      metadata: MetaData.fromMap(jsonDecode(map['metadata'])),
+      isEmbedded: map['is_embedded'] == 1,
+      isTokenized: map['is_tokenized'] == 1,
+    );
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'knowledge_base_id': knowledgeBaseId,
+      'content': content,
+      'key_words': "asdfdsafsdafsdafsdafsdaf",
+      'inserted_at': insertedAt.toIso8601String(),
+      'content_type': contentType.toString(),
+      'is_vec_index': indexMethod.contains(RAGIndexMethod.vector) ? 1 : 0,
+      'is_keyword_index': indexMethod.contains(RAGIndexMethod.keyword) ? 1 : 0,
+      'is_regex_index': indexMethod.contains(RAGIndexMethod.regex) ? 1 : 0,
+      'metadata': jsonEncode(metadata.toMap()),
+      'regex': jsonEncode(regex),
+      'is_embedded': isEmbedded ? 1 : 0,
+      'is_tokenized': isTokenized ? 1 : 0,
+      'hash': hash,
+    };
+  }
+}
+
+class MetaData {
+  String? originalName;
+  final String? author;
+  final String? url;
+  final String? description;
+  final DateTime? createdAt;
+  final DateTime? lastModified;
+  final String? extension;
+  late final Map<String, String> data;
+  MetaData({
+    this.originalName,
+    this.author,
+    this.url,
+    this.description,
+    this.createdAt,
+    this.lastModified,
+    this.extension,
+    Map<String, String>? data,
+  }) {
+    this.data = data ?? {};
+  }
+
+  MetaData copyWith({
+    String? originalName,
+    String? author,
+    String? url,
+    String? description,
+    DateTime? createdAt,
+    DateTime? lastModified,
+    String? extension,
+    Map<String, String>? data,
+  }) {
+    return MetaData(
+      originalName: originalName ?? this.originalName,
+      author: author ?? this.author,
+      url: url ?? this.url,
+      description: description ?? this.description,
+      createdAt: createdAt ?? this.createdAt,
+      lastModified: lastModified ?? this.lastModified,
+      extension: extension ?? this.extension,
+      data: data ?? this.data,
+    );
+  }
+
+  factory MetaData.fromMap(Map<String, dynamic> json) {
+    return MetaData(
+      originalName: json['original_name'],
+      author: json['author'],
+      url: json['url'],
+      description: json['description'],
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      lastModified: json['last_modified'] != null
+          ? DateTime.parse(json['last_modified'])
+          : null,
+      extension: json['extension'],
+      data: json['data'] != null
+          ? (json['data'] as Map<String, dynamic>).map(
+              (key, value) => MapEntry(key, value.toString()),
+            )
+          : {},
+    );
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'original_name': originalName,
+      'author': author,
+      'url': url,
+      'description': description,
+      'created_at': createdAt?.toIso8601String(),
+      'last_modified': lastModified?.toIso8601String(),
+      'extension': extension,
+      'data': data,
+    };
+  }
+}
+
+enum Issuer { user, assistant, any }
+
+enum AutoIndexMethod { regex, keyword, always }
+
+class AutoIndexRule {
+  final String id;
+  final String knowledgeBaseId;
+  List<String> agents;
+  final Set<RAGIndexMethod> ragIndexMethod;
+  AutoIndexMethod autoIndexMethod;
+  String? keyword;
+  Issuer? issuer;
+  List<String>? regex;
+  AutoIndexRule({
+    required this.id,
+    required this.knowledgeBaseId,
+    required this.agents,
+    required this.autoIndexMethod,
+    required this.ragIndexMethod,
+    this.keyword,
+    this.issuer,
+    this.regex,
+  });
+  factory AutoIndexRule.fromMap(Map<String, dynamic> map) {
+    return AutoIndexRule(
+      id: map['id'],
+      knowledgeBaseId: map['knowledge_base_id'],
+      agents: (jsonDecode(map['agents']) as List<dynamic>).cast<String>(),
+      ragIndexMethod: (jsonDecode(map['rag_index_method']) as List<dynamic>)
+          .map<RAGIndexMethod>(
+            (method) => RAGIndexMethod.values.firstWhere(
+              (element) => element.toString() == method,
+            ),
+          )
+          .toSet(),
+      autoIndexMethod: AutoIndexMethod.values.firstWhere(
+        (element) => element.toString() == map['auto_index_method'],
+      ),
+      keyword: map['keyword'],
+      issuer: map['issuer'] != null
+          ? Issuer.values.firstWhere(
+              (element) => element.toString() == map['issuer'],
+            )
+          : null,
+      regex: map['regex'] != null
+          ? (jsonDecode(map['regex']) as List<dynamic>).cast<String>()
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'knowledge_base_id': knowledgeBaseId,
+      'agents': jsonEncode(agents),
+      'rag_index_method': jsonEncode(
+        ragIndexMethod.map((method) => method.toString()).toList(),
+      ),
+      'auto_index_method': autoIndexMethod.toString(),
+      'keyword': keyword,
+      'issuer': issuer?.toString(),
+      'regex': regex != null ? jsonEncode(regex) : null,
+    };
+  }
+}

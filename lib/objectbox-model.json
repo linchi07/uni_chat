@@ -1,0 +1,132 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:8001683930286863590",
+      "lastPropertyId": "4:8641084489542781430",
+      "name": "VectorQueryObject1024",
+      "properties": [
+        {
+          "id": "1:7937841496436511238",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "3:5329314641450822060",
+          "name": "chunkId",
+          "type": 9
+        },
+        {
+          "id": "4:8641084489542781430",
+          "name": "embedding",
+          "indexId": "5:4059720193560210819",
+          "type": 28,
+          "flags": 8
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:4516592352703106748",
+      "lastPropertyId": "4:265275311139452338",
+      "name": "VectorQueryObject1536",
+      "properties": [
+        {
+          "id": "1:7800007715475430260",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "3:2987906692772672927",
+          "name": "chunkId",
+          "type": 9
+        },
+        {
+          "id": "4:265275311139452338",
+          "name": "embedding",
+          "indexId": "6:191570679810021719",
+          "type": 28,
+          "flags": 8
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:6082567141989829605",
+      "lastPropertyId": "4:1020703042506374568",
+      "name": "VectorQueryObject384",
+      "properties": [
+        {
+          "id": "1:5436179558352414741",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "3:3740269702890355911",
+          "name": "chunkId",
+          "type": 9
+        },
+        {
+          "id": "4:1020703042506374568",
+          "name": "embedding",
+          "indexId": "7:3709718771155285881",
+          "type": 28,
+          "flags": 8
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:1644127769993034001",
+      "lastPropertyId": "4:3174077998503644527",
+      "name": "VectorQueryObject768",
+      "properties": [
+        {
+          "id": "1:1288904205378451365",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "3:2820715848253976210",
+          "name": "chunkId",
+          "type": 9
+        },
+        {
+          "id": "4:3174077998503644527",
+          "name": "embedding",
+          "indexId": "8:2092130301566339729",
+          "type": 28,
+          "flags": 8
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "4:1644127769993034001",
+  "lastIndexId": "8:2092130301566339729",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [
+    5350696812232343158,
+    1920171254633875237,
+    8489971654036426380,
+    1480161122123000580
+  ],
+  "retiredPropertyUids": [
+    4247944410172469336,
+    4819405260127586611,
+    3427678450927411164,
+    6481424380038309076
+  ],
+  "retiredRelationUids": [],
+  "version": 1
+}

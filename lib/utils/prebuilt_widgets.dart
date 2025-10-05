@@ -519,9 +519,11 @@ class StdDropDown extends ConsumerStatefulWidget {
     this.nullHint,
     required this.itemCount,
     this.onChanged,
+    this.color,
   });
   final int? initialIndex;
   final Widget? initialWidget;
+  final Color? color;
   final double height;
   final double width;
   final Widget Function(Widget child)? asyncWrapper;
@@ -621,7 +623,7 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
           height: rb.size.height * 6 + 3,
           child: Material(
             elevation: 4,
-            color: theme.zeroGradeColor,
+            color: widget.color ?? theme.zeroGradeColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -642,7 +644,7 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
       width: widget.width,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.zeroGradeColor,
+        color: widget.color ?? theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {
