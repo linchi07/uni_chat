@@ -213,20 +213,19 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final chunkIdOffset = fbb.writeString(object.chunkId);
         final embeddingOffset = fbb.writeListFloat32(object.embedding);
         fbb.startTable(5);
-        fbb.addInt64(0, object.id);
+        fbb.addInt64(0, object.id ?? 0);
         fbb.addOffset(2, chunkIdOffset);
         fbb.addOffset(3, embeddingOffset);
         fbb.finish(fbb.endTable());
-        return object.id;
+        return object.id ?? 0;
       },
       objectFromFB: (obx.Store store, ByteData fbData) {
         final buffer = fb.BufferContext(fbData);
         final rootOffset = buffer.derefObject(0);
-        final idParam = const fb.Int64Reader().vTableGet(
+        final idParam = const fb.Int64Reader().vTableGetNullable(
           buffer,
           rootOffset,
           4,
-          0,
         );
         final chunkIdParam = const fb.StringReader(
           asciiOptimization: true,
@@ -256,20 +255,19 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final chunkIdOffset = fbb.writeString(object.chunkId);
         final embeddingOffset = fbb.writeListFloat32(object.embedding);
         fbb.startTable(5);
-        fbb.addInt64(0, object.id);
+        fbb.addInt64(0, object.id ?? 0);
         fbb.addOffset(2, chunkIdOffset);
         fbb.addOffset(3, embeddingOffset);
         fbb.finish(fbb.endTable());
-        return object.id;
+        return object.id ?? 0;
       },
       objectFromFB: (obx.Store store, ByteData fbData) {
         final buffer = fb.BufferContext(fbData);
         final rootOffset = buffer.derefObject(0);
-        final idParam = const fb.Int64Reader().vTableGet(
+        final idParam = const fb.Int64Reader().vTableGetNullable(
           buffer,
           rootOffset,
           4,
-          0,
         );
         final chunkIdParam = const fb.StringReader(
           asciiOptimization: true,
@@ -299,20 +297,19 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final chunkIdOffset = fbb.writeString(object.chunkId);
         final embeddingOffset = fbb.writeListFloat32(object.embedding);
         fbb.startTable(5);
-        fbb.addInt64(0, object.id);
+        fbb.addInt64(0, object.id ?? 0);
         fbb.addOffset(2, chunkIdOffset);
         fbb.addOffset(3, embeddingOffset);
         fbb.finish(fbb.endTable());
-        return object.id;
+        return object.id ?? 0;
       },
       objectFromFB: (obx.Store store, ByteData fbData) {
         final buffer = fb.BufferContext(fbData);
         final rootOffset = buffer.derefObject(0);
-        final idParam = const fb.Int64Reader().vTableGet(
+        final idParam = const fb.Int64Reader().vTableGetNullable(
           buffer,
           rootOffset,
           4,
-          0,
         );
         final chunkIdParam = const fb.StringReader(
           asciiOptimization: true,
@@ -342,20 +339,19 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final chunkIdOffset = fbb.writeString(object.chunkId);
         final embeddingOffset = fbb.writeListFloat32(object.embedding);
         fbb.startTable(5);
-        fbb.addInt64(0, object.id);
+        fbb.addInt64(0, object.id ?? 0);
         fbb.addOffset(2, chunkIdOffset);
         fbb.addOffset(3, embeddingOffset);
         fbb.finish(fbb.endTable());
-        return object.id;
+        return object.id ?? 0;
       },
       objectFromFB: (obx.Store store, ByteData fbData) {
         final buffer = fb.BufferContext(fbData);
         final rootOffset = buffer.derefObject(0);
-        final idParam = const fb.Int64Reader().vTableGet(
+        final idParam = const fb.Int64Reader().vTableGetNullable(
           buffer,
           rootOffset,
           4,
-          0,
         );
         final chunkIdParam = const fb.StringReader(
           asciiOptimization: true,

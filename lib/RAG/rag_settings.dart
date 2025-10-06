@@ -101,6 +101,7 @@ class RagEditState {
     for (var c in contentModifiedRequireConfirmed.values) {
       if (c.content.isNotEmpty &&
           (c.metadata.originalName?.isNotEmpty ?? false)) {
+        c.hash = await RagProcessor.xxH3(c.content);
         await RAGDatabaseManager().updateOriginalContent(c);
       }
     }
@@ -1101,7 +1102,7 @@ class _RagFileManagementState extends ConsumerState<RagFileManagement> {
   void process(String path) async {
     try {
       //这个在后台运行
-      var oc = await DocumentLoader.loadTextDocument(
+      var oc = await RagProcessor.loadTextDocument(
         path,
         ragState.id,
         ragState.defaultIndexMethods,
@@ -1704,11 +1705,11 @@ class _RagMemoryManagementState extends ConsumerState<RagMemoryManagement> {
                   knowledgeBaseId: ragState.id,
                   content: "",
                   insertedAt: DateTime.now(),
-                  contentType: RagContentType.memory,
                   indexMethod: {...ragState.defaultIndexMethods},
                   metadata: MetaData(
                     originalName: "",
                     description: "",
+                    contentType: RagContentType.memory,
                     createdAt: DateTime.now(),
                     lastModified: DateTime.now(),
                   ),

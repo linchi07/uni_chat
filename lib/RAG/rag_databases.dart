@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:jieba_flutter/analysis/jieba_segmenter.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:uni_chat/RAG/rag_process.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 
 import '../objectbox.g.dart';
@@ -175,6 +177,7 @@ ON agent_rule_relations (agent_id)
   // 插入知识库
   Future<void> insertOrUpdateKnowledgeBase(KnowledgeBase kb) async {
     final db = await database;
+    kb.status = KnowledgeBaseStat.pending;
     await db.transaction((txn) async {
       final count = await txn.rawQuery(
         'SELECT COUNT(*) FROM knowledge_bases WHERE id = ?',
@@ -201,7 +204,7 @@ ON agent_rule_relations (agent_id)
     return maps.map((map) => KnowledgeBase.fromMap(map)).toList();
   }
 
-  Future<KnowledgeBase?> getKnowledgeBasesById(String knowledgeBaseId) async {
+  Future<KnowledgeBase?> getKnowledgeBaseById(String knowledgeBaseId) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'knowledge_bases',
@@ -214,6 +217,153 @@ ON agent_rule_relations (agent_id)
     }
 
     return KnowledgeBase.fromMap(maps.first);
+  }
+
+  Future<Set<RAGIndexMethod>> getIndexMethodOfKnowledgeBase(
+    String knowledgeBaseId,
+  ) async {
+    final db = await database;
+    Set<RAGIndexMethod> indexMethods = <RAGIndexMethod>{};
+
+    // 使用三个并行的 EXISTS 查询
+    final List<Future<bool>> queries = [
+      _existsQuery(db, knowledgeBaseId, 'is_vec_index'),
+      _existsQuery(db, knowledgeBaseId, 'is_keyword_index'),
+      _existsQuery(db, knowledgeBaseId, 'is_regex_index'),
+    ];
+
+    final List<bool> results = await Future.wait(queries);
+
+    if (results[0]) indexMethods.add(RAGIndexMethod.vector);
+    if (results[1]) indexMethods.add(RAGIndexMethod.keyword);
+    if (results[2]) indexMethods.add(RAGIndexMethod.regex);
+
+    return indexMethods;
+  }
+
+  Future<bool> _existsQuery(
+    Database db,
+    String knowledgeBaseId,
+    String column,
+  ) async {
+    final result = await db.rawQuery(
+      'SELECT EXISTS(SELECT 1 FROM original_contents WHERE knowledge_base_id = ? AND $column = 1) as exists_result',
+      [knowledgeBaseId],
+    );
+    return result.first['exists_result'] == 1;
+  }
+
+  Future<List<String>?> getNotOkKnowledgeBaseIds() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'knowledge_bases',
+      where: 'status != ?',
+      whereArgs: [KnowledgeBaseStat.OK.toString()],
+    );
+    if (maps.isEmpty) {
+      return null;
+    }
+    return maps.map((e) => e['id'] as String).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getRawOriginalContentOfBase(
+    String knowledgeBaseId, {
+    Set<RAGIndexMethod>? indexMethod,
+    bool getOnlyUnfinished = false,
+  }) async {
+    final db = await database;
+    List<Object?> whereArgs = [knowledgeBaseId];
+    List<String> whereConditions = ['knowledge_base_id = ?'];
+
+    if (indexMethod != null) {
+      whereConditions.add(
+        'is_vec_index = ? AND is_keyword_index = ? AND is_regex_index = ?',
+      );
+      if (indexMethod.contains(RAGIndexMethod.vector)) {
+        whereArgs.add(1);
+      } else {
+        whereArgs.add(0);
+      }
+      if (indexMethod.contains(RAGIndexMethod.keyword)) {
+        whereArgs.add(1);
+      } else {
+        whereArgs.add(0);
+      }
+      if (indexMethod.contains(RAGIndexMethod.regex)) {
+        whereArgs.add(1);
+      } else {
+        whereArgs.add(1);
+      }
+    }
+
+    if (getOnlyUnfinished) {
+      if (indexMethod?.contains(RAGIndexMethod.vector) ?? false) {
+        whereConditions.add('is_embedded = ?');
+        whereArgs.add(0);
+      }
+      if (indexMethod?.contains(RAGIndexMethod.keyword) ?? false) {
+        whereConditions.add('is_tokenized = ?');
+        whereArgs.add(0);
+      }
+    }
+
+    return await db.query(
+      'original_contents',
+      where: whereConditions.join(' AND '),
+      whereArgs: whereArgs,
+    );
+  }
+
+  Future<List<SimpleContent>> getKeywordsMatchSimpleContent(
+    String baseId,
+    String content,
+  ) async {
+    await JiebaSegmenter.init();
+    List<String> searchTokens = JiebaSegmenter().sentenceProcess(content);
+    String ftsQuery = searchTokens.join(' OR ');
+
+    // 2. 执行 FTS 查询。关键：使用 JOIN 从主表取出原始关键词！
+    // 这一步直接从可能匹配的条目中，把我们需要精确匹配的原始关键词拿出来
+    var db = await database;
+    final List<Map<String, dynamic>> coarseResults = await db.rawQuery(
+      '''
+    SELECT T2.content ,T2.metadata,T2.hash FROM original_contents_fts AS T1
+    JOIN original_contents AS T2 ON T1.rowid = T2.row_id
+    WHERE T1.original_contents_fts MATCH ? AND T2.knowledge_base_id = ? AND T2.is_keyword_index = 1 AND T2.is_tokenized = 1
+  ''',
+      [ftsQuery, baseId],
+    );
+    return coarseResults
+        .map((e) => SimpleContent.fromOriginalContent(e))
+        .toList();
+  }
+
+  Future<List<SimpleContent>> getManySimpleContentOfContentChunk(
+    List<String> cid,
+  ) async {
+    final db = await database;
+    if (cid.isEmpty) return [];
+
+    final placeholders = List.generate(cid.length, (index) => '?').join(',');
+
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+     SELECT 
+    cc.content,
+    cc.hash,
+    oc.metadata as original_metadata,
+    oc.hash as original_hash
+  FROM content_chunks cc
+  LEFT JOIN original_contents oc ON cc.original_content_id = oc.id
+  WHERE cc.id IN ($placeholders)
+  ''', cid);
+
+    return maps.map((map) {
+      return SimpleContent.fromMapContentChunk(
+        map,
+        map['original_metadata'],
+        map['original_hash'],
+      );
+    }).toList();
   }
 
   Future<List<OriginalContent>> getAllOriginalContentOfKnowledgeBaseIdWithType(
@@ -230,19 +380,99 @@ ON agent_rule_relations (agent_id)
     return maps.map((map) => OriginalContent.fromMap(map)).toList();
   }
 
+  Future<List<SimpleContent>> getManySimpleContents(
+    List<String> contentIds,
+  ) async {
+    final db = await database;
+    final placeholders = List.generate(
+      contentIds.length,
+      (index) => '?',
+    ).join(',');
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      'original_contents',
+      columns: ['content', 'metadata', 'hash'],
+      where: 'id IN ($placeholders)',
+      whereArgs: contentIds,
+    );
+
+    return maps.map((map) => SimpleContent.fromOriginalContent(map)).toList();
+  }
+
+  Future<List<(String, RegExp)>> getOriginalContentRequireRegex(
+    String knowledgeBaseId,
+  ) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'original_contents',
+      where: 'knowledge_base_id = ? and is_regex_index = ?',
+      whereArgs: [knowledgeBaseId, 1],
+    );
+    List<(String, RegExp)> result = [];
+    for (var item in maps) {
+      var r = item['regex'] != null
+          ? (jsonDecode(item['regex']) as List<dynamic>).cast<String>()
+          : null;
+      if (r != null) {
+        result.add((item['id'], RegExp(jsonDecode(r.first))));
+      }
+    }
+    return result;
+  }
+
   // 插入原始内容
   Future<void> insertOriginalContent(OriginalContent oc) async {
     final db = await database;
-    print(oc.toMap());
     await db.insert('original_contents', oc.toMap());
   }
 
   // 插入原始内容
   Future<void> updateOriginalContent(OriginalContent oc) async {
     final db = await database;
+    var old = await db.query(
+      'original_contents',
+      where: "id = ?",
+      whereArgs: [oc.id],
+      limit: 1,
+    );
+    if (old.isEmpty) {
+      await insertOriginalContent(oc);
+      return;
+    }
+    var requireReEmbedding =
+        ((oc.hash == null || (old.first['hash'] as int != oc.hash)) &&
+        oc.indexMethod.contains(RAGIndexMethod.vector));
+    var requireReTokenized =
+        (oc.indexMethod.contains(RAGIndexMethod.keyword) &&
+        oc.keyWords != old.first['key_words']);
+    if (requireReEmbedding) {
+      //当设置为向量索引同时内容改变时，让向量索引失效
+      //由于设置了级联删除，删除oc向量索引也会全部删除
+      //也就是这种时候就直接删除再插入了
+      await db.transaction((txn) async {
+        await txn.delete(
+          'original_contents',
+          where: "id = ?",
+          whereArgs: [oc.id],
+        );
+        oc.isEmbedded = !requireReEmbedding;
+        oc.isTokenized = !requireReTokenized;
+        var m = oc.toMap();
+        await txn.insert('original_contents', m);
+        return;
+      });
+    }
+    //如果只是需要重新分词的话，则只更新分词字段即可
+    oc.isTokenized = !requireReTokenized;
+    oc.isEmbedded = !requireReEmbedding;
     var m = oc.toMap();
-    m.remove("id");
-    await db.update('original_contents', m);
+    m.remove('id');
+    await db.update(
+      'original_contents',
+      m,
+      where: "id = ?",
+      whereArgs: [oc.id],
+    );
   }
 
   // 插入原始内容
@@ -274,17 +504,39 @@ ON agent_rule_relations (agent_id)
     return ContentChunk.fromMap(maps.first);
   }
 
-  Future<List<ContentChunk>> keywordsMatchContent(
-    String content,
-    String knowledgeBaseId,
-  ) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'content_chunks',
-      where: 'knowledge_base_id = ? and index_method = ? and key_words like ?',
-      whereArgs: [knowledgeBaseId, '%$content%', 'keyword'],
-    );
-    return maps.map((map) => ContentChunk.fromMap(map)).toList();
+  ///使用一个事务批量更新数据库
+  ///[anythingElse]如果这个失败了，那么其他数据库也会回滚，实际上就是拿来写向量数据库的
+  Future<void> updateDBsWithTransaction(
+    ContentProcessResult cpr, [
+    Future<void> Function()? anythingElse,
+  ]) {
+    return database.then((db) async {
+      await db.transaction((txn) async {
+        for (var oc in cpr.updateToOriginalContent) {
+          oc.remove("id");
+          await txn.update('original_contents', oc);
+        }
+        for (var rawChunk in cpr.writeToContentChunkRaw) {
+          await txn.insert(
+            'content_chunks',
+            rawChunk,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+        if (anythingElse != null) {
+          await anythingElse();
+        }
+        for (var (id, content) in cpr.rewriteToFTS5) {
+          await txn.update(
+            'original_contents_fts',
+            {'key_words': content},
+            where: 'rowid = ?',
+            whereArgs: [id],
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      });
+    });
   }
 
   // 获取特定知识库的所有内容块

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:docx_to_text/docx_to_text.dart';
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,8 @@ import 'package:langchain_community/langchain_community.dart';
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/RAG/rag_databases.dart';
 import 'package:uni_chat/RAG/rag_entity.dart';
+import 'package:uni_chat/llm_provider/api_service.dart';
+import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
 import 'package:xxh3/xxh3.dart';
 
@@ -22,7 +25,7 @@ class LoadParams {
 
 enum SplitType { text, json, csv, webPage, markdown }
 
-class DocumentLoader {
+class RagProcessor {
   static Set<String> supportedExtensions = {"docx", 'txt', 'md'};
 
   /// 核心的耗时逻辑：必须是一个顶级函数或静态方法
@@ -35,7 +38,8 @@ class DocumentLoader {
     var metadata = MetaData(
       originalName: p.basename(file.path),
       extension: p.extension(file.path),
-      lastModified: await file.lastModified(), // 这是一个异步操作，但很快
+      contentType: RagContentType.document,
+      lastModified: await file.lastModified(),
     );
     String text;
 
@@ -54,7 +58,6 @@ class DocumentLoader {
       knowledgeBaseId: params.knowledgeBaseId,
       content: text,
       insertedAt: DateTime.now(),
-      contentType: RagContentType.document,
       indexMethod: {...params.indexMethod},
       metadata: metadata,
     );
@@ -172,4 +175,246 @@ class DocumentLoader {
     }
     return doc;
   }
+
+  /*
+  static Future<void> processSingleContent(OriginalContent oc)async{
+      try {
+        var content = oc;
+        content.hash = xxH3Sync(content.content);
+        //如果他需要关键词索引
+        if (content.indexMethod.contains(RAGIndexMethod.keyword) &&
+            !content.isTokenized) {
+          var chn =  RegExp(r'[\u4e00-\u9fa5]');
+          //这里只有中文需要分词，英文的话数据库自己搞定了
+          if (chn.hasMatch(content.content)) {
+            var tk = Tokenizer();
+            await tk.initJieba();
+            var c = tk.zhHansTokenizeSync(content.content);
+            //这里需要注意，fts5用的是row id一个int来关联，original content的主键实际上是一个int，但是对外抽象成string的
+            result.rewriteToFTS5.add((item['row_id'], c));
+          }
+          content.isTokenized = true;
+        }
+        //如果需要向量索引
+        if (content.indexMethod.contains(RAGIndexMethod.vector) &&
+            !content.isEmbedded) {
+          var splitter =
+          //TODO:add manual adjustment to this
+          RecursiveCharacterTextSplitter(
+            chunkSize: 1000,
+            chunkOverlap: 100,
+          );
+          var chunks = splitter.splitText(content.content);
+          var uuid = Uuid();
+          var cc = <ContentChunk>[];
+          for (var chunk in chunks) {
+            //用v7对数据库更加友好一点
+            var id = uuid.v7();
+            cc.add(
+              ContentChunk(
+                id: id,
+                knowledgeBaseId: kb.id,
+                originalContentId: content.id,
+                hash: xxH3Sync(chunk),
+                content: chunk,
+                //TODO: implement page based metadata
+                chunkMetadata: {},
+              ),
+            );
+          }
+          if (apiService == null) {
+            throw Exception("apiService is null");
+          }
+          var er = await apiService.embedding(
+            chunks,
+            kb.embeddings.first.vectorDimension,
+          );
+          var vectors = <VectorQueryObject>[];
+          for (int i = 0; i < er.length; i++) {
+            switch (kb.embeddings.first.vectorDimension) {
+              case 384:
+                vectors.add(
+                  VectorQueryObject384(chunkId: cc[i].id, embedding: er[i]),
+                );
+                break;
+              case 768:
+                vectors.add(
+                  VectorQueryObject768(chunkId: cc[i].id, embedding: er[i]),
+                );
+                break;
+              case 1024:
+                vectors.add(
+                  VectorQueryObject1024(chunkId: cc[i].id, embedding: er[i]),
+                );
+                break;
+              case 1536:
+                vectors.add(
+                  VectorQueryObject1536(chunkId: cc[i].id, embedding: er[i]),
+                );
+              default:
+                throw Exception(
+                  "Vector dimension ${kb.embeddings.first.vectorDimension} is not supported",
+                );
+            }
+          }
+          content.isEmbedded = true;
+        }
+        result.updateToOriginalContent.add(content.toMap());
+      } catch (eo) {
+        var e = eo as Exception;
+        result.isFullyFinished = false;
+        result.onError = Exception(e);
+        exceptions ??= [];
+        exceptions.add(e);
+        port.send(result);
+        continue;
+      }
+      result.isFullyFinished = false;
+      port.send(result);
+  }
+*/
+  static Future<void> processContent(
+    KnowledgeBase kb,
+    List<Map<String, dynamic>> rawContent,
+    LLMApiService? apiService,
+    SendPort port,
+  ) async {
+    var tokenizer = Tokenizer();
+    RegExp? chn;
+    Uuid? uuid;
+    TextSplitter? splitter;
+    List<Exception>? exceptions;
+    //在后台反序列化
+    try {
+      for (var item in rawContent) {
+        var result = ContentProcessResult();
+        try {
+          var content = OriginalContent.fromMap(item);
+          content.hash = xxH3Sync(content.content);
+          //如果他需要关键词索引
+          if (content.indexMethod.contains(RAGIndexMethod.keyword) &&
+              !content.isTokenized) {
+            chn ??= RegExp(r'[\u4e00-\u9fa5]');
+            //这里只有中文需要分词，英文的话数据库自己搞定了
+            if (chn.hasMatch(content.content)) {
+              await tokenizer.initJieba();
+              var tk = tokenizer.zhHansTokenizeSync(content.content);
+              //这里需要注意，fts5用的是row id一个int来关联，original content的主键实际上是一个int，但是对外抽象成string的
+              result.rewriteToFTS5.add((item['row_id'], tk));
+            }
+            content.isTokenized = true;
+          }
+          //如果需要向量索引
+          if (content.indexMethod.contains(RAGIndexMethod.vector) &&
+              !content.isEmbedded) {
+            splitter ??=
+                //TODO:add manual adjustment to this
+                RecursiveCharacterTextSplitter(
+                  chunkSize: 1000,
+                  chunkOverlap: 100,
+                );
+            var chunks = splitter.splitText(content.content);
+            uuid ??= Uuid();
+            var cc = <ContentChunk>[];
+            for (var chunk in chunks) {
+              //用v7对数据库更加友好一点
+              var id = uuid.v7();
+              cc.add(
+                ContentChunk(
+                  id: id,
+                  knowledgeBaseId: kb.id,
+                  originalContentId: content.id,
+                  hash: xxH3Sync(chunk),
+                  content: chunk,
+                  //TODO: implement page based metadata
+                  chunkMetadata: {},
+                ),
+              );
+            }
+            if (apiService == null) {
+              throw Exception("apiService is null");
+            }
+            var er = await apiService.embedding(
+              chunks,
+              kb.embeddings.first.vectorDimension,
+            );
+            var vectors = <VectorQueryObject>[];
+            for (int i = 0; i < er.length; i++) {
+              switch (kb.embeddings.first.vectorDimension) {
+                case 384:
+                  vectors.add(
+                    VectorQueryObject384(chunkId: cc[i].id, embedding: er[i]),
+                  );
+                  break;
+                case 768:
+                  vectors.add(
+                    VectorQueryObject768(chunkId: cc[i].id, embedding: er[i]),
+                  );
+                  break;
+                case 1024:
+                  vectors.add(
+                    VectorQueryObject1024(chunkId: cc[i].id, embedding: er[i]),
+                  );
+                  break;
+                case 1536:
+                  vectors.add(
+                    VectorQueryObject1536(chunkId: cc[i].id, embedding: er[i]),
+                  );
+                default:
+                  throw Exception(
+                    "Vector dimension ${kb.embeddings.first.vectorDimension} is not supported",
+                  );
+              }
+            }
+            content.isEmbedded = true;
+            result.writeToVectorDB.addAll(vectors);
+          }
+          result.updateToOriginalContent.add(content.toMap());
+        } catch (eo) {
+          var e = eo as Exception;
+          result.isFullyFinished = false;
+          result.onError = Exception(e);
+          exceptions ??= [];
+          exceptions.add(e);
+          port.send(result);
+          continue;
+        }
+        result.isFullyFinished = false;
+        port.send(result);
+      }
+    } catch (e) {
+      port.send(
+        ContentProcessResult(
+          isFullyFinished: true,
+          onError: Exception(
+            "$e,${(exceptions != null) ? exceptions.toString() : ""}",
+          ),
+        ),
+      );
+      return;
+    }
+    port.send(
+      ContentProcessResult(
+        isFullyFinished: true,
+        onError: (exceptions != null) ? Exception(exceptions.toString()) : null,
+      ),
+    );
+  }
+}
+
+class ContentProcessResult {
+  bool isFullyFinished = false;
+  Exception? onError;
+  List<VectorQueryObject> writeToVectorDB;
+  List<Map<String, dynamic>> writeToContentChunkRaw;
+  List<Map<String, dynamic>> updateToOriginalContent;
+  List<(int, String)> rewriteToFTS5;
+  ContentProcessResult({
+    this.isFullyFinished = false,
+    this.onError,
+    this.writeToVectorDB = const [],
+    this.writeToContentChunkRaw = const [],
+    this.updateToOriginalContent = const [],
+    this.rewriteToFTS5 = const [],
+  });
 }

@@ -68,4 +68,22 @@ class Tokenizer {
       return token.join(",");
     }, text);
   }
+
+  bool isInit = false;
+  JiebaSegmenter? _jieba;
+  Future<void> initJieba() async {
+    if (isInit) return;
+    await JiebaSegmenter.init();
+    _jieba = JiebaSegmenter();
+    isInit = true;
+  }
+
+  String zhHansTokenizeSync(String text) {
+    if (!isInit || _jieba == null) {
+      throw Exception("JiebaSegmenter not init");
+    }
+    var segToken = _jieba!.process(text, SegMode.SEARCH);
+    var token = segToken.map((t) => t.word);
+    return token.join(",");
+  }
 }

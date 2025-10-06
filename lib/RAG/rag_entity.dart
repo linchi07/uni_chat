@@ -9,7 +9,7 @@ import '../generated/l10n.dart';
 
 enum RAGIndexMethod { vector, keyword, regex }
 
-enum KnowledgeBaseStat { OK, pending, requireIndex }
+enum KnowledgeBaseStat { OK, pending }
 
 extension KnowledgeBaseStatExtension on KnowledgeBaseStat {
   String getName(BuildContext context) {
@@ -18,8 +18,6 @@ extension KnowledgeBaseStatExtension on KnowledgeBaseStat {
         return S.of(context).base_stat_OK;
       case KnowledgeBaseStat.pending:
         return S.of(context).base_stat_PENDING;
-      case KnowledgeBaseStat.requireIndex:
-        return S.of(context).base_stat_processing;
     }
   }
 }
@@ -31,7 +29,7 @@ class KnowledgeBase {
   final Set<RAGIndexMethod> defaultIndexMethod;
   final List<Embedding> embeddings;
   final DateTime createdAt;
-  final KnowledgeBaseStat status;
+  KnowledgeBaseStat status;
 
   KnowledgeBase({
     required this.id,
@@ -128,7 +126,7 @@ class Embedding {
 //你知道我为了通过编译花了多久嘛？直接继承-不行！用getter setter不行！
 //用普通函数 不行！ 哦 原来不能有私有的属性 哇你太厉害了！
 abstract class VectorQueryObject {
-  int getId();
+  int? getId();
   String getChunkId();
   List<double> getEmbedding();
   void setEmbedding(List<double> embedding);
@@ -139,21 +137,21 @@ abstract class VectorQueryObject {
 
 @Entity()
 class VectorQueryObject384 extends VectorQueryObject {
-  @Id()
-  int id;
+  @Id(assignable: false)
+  int? id;
   String chunkId;
   @HnswIndex(dimensions: 384, distanceType: VectorDistanceType.cosine)
   @Property(type: PropertyType.floatVector)
   List<double> embedding;
 
   VectorQueryObject384({
-    required this.id,
+    this.id,
     required this.chunkId,
     required this.embedding,
   });
 
   @override
-  int getId() => id;
+  int? getId() => id;
 
   @override
   String getChunkId() => chunkId;
@@ -172,21 +170,21 @@ class VectorQueryObject384 extends VectorQueryObject {
 
 @Entity()
 class VectorQueryObject768 extends VectorQueryObject {
-  @Id()
-  int id;
+  @Id(assignable: false)
+  int? id;
   String chunkId;
   @HnswIndex(dimensions: 768, distanceType: VectorDistanceType.cosine)
   @Property(type: PropertyType.floatVector)
   List<double> embedding;
 
   VectorQueryObject768({
-    required this.id,
+    this.id,
     required this.chunkId,
     required this.embedding,
   });
 
   @override
-  int getId() => id;
+  int? getId() => id;
 
   @override
   String getChunkId() => chunkId;
@@ -205,21 +203,21 @@ class VectorQueryObject768 extends VectorQueryObject {
 
 @Entity()
 class VectorQueryObject1024 extends VectorQueryObject {
-  @Id()
-  int id;
+  @Id(assignable: false)
+  int? id;
   String chunkId;
   @HnswIndex(dimensions: 1024, distanceType: VectorDistanceType.cosine)
   @Property(type: PropertyType.floatVector)
   List<double> embedding;
 
   VectorQueryObject1024({
-    required this.id,
+    this.id,
     required this.chunkId,
     required this.embedding,
   });
 
   @override
-  int getId() => id;
+  int? getId() => id;
 
   @override
   String getChunkId() => chunkId;
@@ -238,21 +236,21 @@ class VectorQueryObject1024 extends VectorQueryObject {
 
 @Entity()
 class VectorQueryObject1536 extends VectorQueryObject {
-  @Id()
-  int id;
+  @Id(assignable: false)
+  int? id;
   String chunkId;
   @HnswIndex(dimensions: 1536, distanceType: VectorDistanceType.cosine)
   @Property(type: PropertyType.floatVector)
   List<double> embedding;
 
   VectorQueryObject1536({
-    required this.id,
+    this.id,
     required this.chunkId,
     required this.embedding,
   });
 
   @override
-  int getId() => id;
+  int? getId() => id;
 
   @override
   String getChunkId() => chunkId;
@@ -319,21 +317,19 @@ class OriginalContent {
   final String knowledgeBaseId;
   String keyWords;
   late final List<String> regex;
-  final int? hash;
+  int? hash;
   final String content;
   final DateTime insertedAt;
-  final RagContentType contentType;
   final Set<RAGIndexMethod> indexMethod;
   final MetaData metadata;
-  final bool isEmbedded;
-  final bool isTokenized;
+  bool isEmbedded;
+  bool isTokenized;
   OriginalContent({
     required this.id,
     required this.knowledgeBaseId,
     this.hash,
     required this.content,
     required this.insertedAt,
-    required this.contentType,
     required this.indexMethod,
     required this.metadata,
     this.isEmbedded = false,
@@ -351,7 +347,6 @@ class OriginalContent {
     String? keyWords,
     String? content,
     DateTime? insertedAt,
-    RagContentType? contentType,
     Set<RAGIndexMethod>? indexMethod,
     MetaData? metadata,
     bool? isEmbedded,
@@ -364,7 +359,6 @@ class OriginalContent {
       hash: hash ?? this.hash,
       content: content ?? this.content,
       insertedAt: insertedAt ?? this.insertedAt,
-      contentType: contentType ?? this.contentType,
       indexMethod: indexMethod ?? this.indexMethod,
       metadata: metadata ?? this.metadata,
       isEmbedded: isEmbedded ?? this.isEmbedded,
@@ -392,9 +386,6 @@ class OriginalContent {
       hash: map['hash'],
       keyWords: map['key_words'],
       insertedAt: DateTime.parse(map['inserted_at']),
-      contentType: RagContentType.values.firstWhere(
-        (element) => element.toString() == map['content_type'],
-      ),
       regex: map['regex'] != null
           ? (jsonDecode(map['regex']) as List<dynamic>).cast<String>()
           : null,
@@ -409,9 +400,8 @@ class OriginalContent {
       'id': id,
       'knowledge_base_id': knowledgeBaseId,
       'content': content,
-      'key_words': "asdfdsafsdafsdafsdafsdaf",
+      'key_words': keyWords,
       'inserted_at': insertedAt.toIso8601String(),
-      'content_type': contentType.toString(),
       'is_vec_index': indexMethod.contains(RAGIndexMethod.vector) ? 1 : 0,
       'is_keyword_index': indexMethod.contains(RAGIndexMethod.keyword) ? 1 : 0,
       'is_regex_index': indexMethod.contains(RAGIndexMethod.regex) ? 1 : 0,
@@ -432,6 +422,8 @@ class MetaData {
   final DateTime? createdAt;
   final DateTime? lastModified;
   final String? extension;
+  final String? sessionId;
+  final RagContentType contentType;
   late final Map<String, String> data;
   MetaData({
     this.originalName,
@@ -441,6 +433,8 @@ class MetaData {
     this.createdAt,
     this.lastModified,
     this.extension,
+    this.sessionId,
+    required this.contentType,
     Map<String, String>? data,
   }) {
     this.data = data ?? {};
@@ -455,6 +449,8 @@ class MetaData {
     DateTime? lastModified,
     String? extension,
     Map<String, String>? data,
+    String? sessionId,
+    RagContentType? contentType,
   }) {
     return MetaData(
       originalName: originalName ?? this.originalName,
@@ -465,6 +461,8 @@ class MetaData {
       lastModified: lastModified ?? this.lastModified,
       extension: extension ?? this.extension,
       data: data ?? this.data,
+      sessionId: sessionId ?? this.sessionId,
+      contentType: contentType ?? this.contentType,
     );
   }
 
@@ -486,6 +484,10 @@ class MetaData {
               (key, value) => MapEntry(key, value.toString()),
             )
           : {},
+      sessionId: json['session_id'],
+      contentType: RagContentType.values.firstWhere(
+        (element) => element.toString() == json['content_type'],
+      ),
     );
   }
   Map<String, dynamic> toMap() {
@@ -498,6 +500,8 @@ class MetaData {
       'last_modified': lastModified?.toIso8601String(),
       'extension': extension,
       'data': data,
+      'session_id': sessionId,
+      'content_type': contentType.toString(),
     };
   }
 }
@@ -565,5 +569,66 @@ class AutoIndexRule {
       'issuer': issuer?.toString(),
       'regex': regex != null ? jsonEncode(regex) : null,
     };
+  }
+
+  RegExp? _regExp;
+  RegExp? get _regexInstance {
+    if (regex?.firstOrNull == null) return null;
+    return _regExp ??= RegExp(regex!.first);
+  }
+
+  bool match(String text) {
+    switch (autoIndexMethod) {
+      case AutoIndexMethod.keyword:
+        if (keyword == null || keyword!.isEmpty) return false;
+        return text.contains(keyword!);
+      case AutoIndexMethod.regex:
+        if (_regexInstance?.hasMatch(text) ?? false) return true;
+        return false;
+      case AutoIndexMethod.always:
+        return true;
+    }
+  }
+}
+
+///在rag中我们查询的时候不一定需要返回所有的数据
+///这个类能够显著加速反序列化的过程
+class SimpleContent {
+  final String content;
+  final MetaData metadata;
+  final bool isContentChunk;
+  final int hash;
+  //这一列只是content chunk和original content之间查重
+  final int? originalContentHash;
+
+  SimpleContent({
+    required this.content,
+    required this.metadata,
+    required this.hash,
+    this.originalContentHash,
+    required this.isContentChunk,
+  });
+
+  factory SimpleContent.fromOriginalContent(Map<String, dynamic> map) {
+    return SimpleContent(
+      content: map['content'],
+      metadata: MetaData.fromMap(jsonDecode(map['metadata'])),
+      hash: map['hash'],
+      isContentChunk: false,
+    );
+  }
+
+  factory SimpleContent.fromMapContentChunk(
+    Map<String, dynamic> map,
+    dynamic metadata,
+    dynamic ocHash,
+  ) {
+    return SimpleContent(
+      content: map['content'],
+      metadata: MetaData.fromMap(jsonDecode(metadata)),
+      hash: map['hash'],
+      originalContentHash: ocHash,
+      isContentChunk: true,
+    );
   }
 }
