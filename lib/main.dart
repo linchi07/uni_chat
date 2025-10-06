@@ -12,6 +12,7 @@ import 'package:uni_chat/Chat/session_selector.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
 import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/top_banner.dart';
 import 'package:uni_chat/utils/dialog.dart';
 
 import 'Agent/agent_page.dart';
@@ -333,68 +334,6 @@ class _MainContState extends ConsumerState<MainCont> {
       ),
     );
   }
-}
-
-class MainBanner extends ConsumerWidget {
-  const MainBanner({super.key, this.bannerWidget});
-  final Widget? bannerWidget;
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeProvider);
-    return Container(
-      height: 50,
-      color: theme.zeroGradeColor,
-      child: Stack(
-        children: [
-          Row(
-            children: [
-              const SizedBox(width: 21),
-              if (PlatForm._instance.platform == Platform.macos)
-                //这里解释一下，因为macOS的标题栏有3个点，所以这里要绘制3个点，我们的那个包默认下是在窗口失去焦点的时候直接不显示红绿灯，所以这里直接画一个上去
-                CustomPaint(size: Size(50, 50), painter: ThreeDotsPainter()),
-              if (PlatForm._instance.platform != Platform.macos)
-                const SizedBox(width: 50),
-              const SizedBox(width: 21),
-              Text(
-                S.of(context).title,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          Center(child: bannerWidget),
-        ],
-      ),
-    );
-  }
-}
-
-class ThreeDotsPainter extends CustomPainter {
-  final Color dotColor;
-  final double dotRadius;
-
-  ThreeDotsPainter({this.dotColor = Colors.grey, this.dotRadius = 5.7});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = dotColor.withAlpha(200)
-      ..style = PaintingStyle.fill;
-
-    // 计算三个点的位置（水平居中排列）
-    final centerX = size.width / 2;
-    final centerY = size.height / 2 + 1;
-    const dotSpacing = 20;
-
-    // 绘制三个点
-    canvas.drawCircle(Offset(centerX - dotSpacing, centerY), dotRadius, paint);
-
-    canvas.drawCircle(Offset(centerX, centerY), dotRadius, paint);
-
-    canvas.drawCircle(Offset(centerX + dotSpacing, centerY), dotRadius, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class SettingsMenuButton extends StatefulWidget {

@@ -29,7 +29,7 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
 
   void showSessionSelector() {
     final overlay = Overlay.of(context);
-    final rb = context.findRenderObject() as RenderBox;
+    var rb = context.findRenderObject() as RenderBox;
     final pos = rb.localToGlobal(Offset.zero);
     final size = rb.size;
     final screenSize = MediaQuery.of(context).size;
@@ -67,90 +67,105 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
     var theme = ref.watch(themeProvider);
     var state = ref.watch(chatStateProvider);
     var agent = ref.watch(agentProvider);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        StdButton(
-          onPressed: () {
-            if (_overlayEntry == null) {
-              showSessionSelector();
-            } else {
-              _hide();
-            }
-          },
-          padding: const EdgeInsets.all(6),
-          color: theme.secondGradeColor,
-          child: Icon(Icons.search, size: 20),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 500,
-          child: Material(
-            color: theme.secondGradeColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            clipBehavior: Clip.hardEdge,
-            child: InkWell(
-              onTap: () {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            StdButton(
+              onPressed: () {
                 if (_overlayEntry == null) {
                   showSessionSelector();
                 } else {
                   _hide();
                 }
               },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Row(
-                  children: [
-                    FutureBuilder(
-                      future: agent?.getAvatar(),
-                      builder: (context, snapshot) {
-                        return StdAvatar(file: snapshot.data, length: 23);
-                      },
+              padding: const EdgeInsets.all(6),
+              color: theme.secondGradeColor,
+              child: Icon(Icons.search, size: 20),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: min(
+                500,
+                constraints.maxWidth - 80,
+              ), //这里的80是两个按钮各32 + 16的spacing
+              child: Material(
+                color: theme.secondGradeColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                clipBehavior: Clip.hardEdge,
+                child: InkWell(
+                  onTap: () {
+                    if (_overlayEntry == null) {
+                      showSessionSelector();
+                    } else {
+                      _hide();
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 1,
-                      child: Text(
-                        overflow: TextOverflow.ellipsis,
-                        agent?.name ?? "Agent",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                    child: Row(
+                      children: [
+                        FutureBuilder(
+                          future: agent?.getAvatar(),
+                          builder: (context, snapshot) {
+                            return StdAvatar(file: snapshot.data, length: 23);
+                          },
                         ),
-                      ),
-                    ),
-                    Container(width: 1.5, color: Colors.grey[300], height: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        overflow: TextOverflow.ellipsis,
-                        state.session?.name ?? "UNIChat",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            overflow: TextOverflow.ellipsis,
+                            agent?.name ?? "Agent",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
+                        Container(
+                          width: 1.5,
+                          color: Colors.grey[300],
+                          height: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            overflow: TextOverflow.ellipsis,
+                            state.session?.name ?? "UNIChat",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.expand_more),
+                      ],
                     ),
-                    Icon(Icons.expand_more),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        StdButton(
-          onPressed: () {
-            ref.read(chatStateProvider.notifier).clearSession();
-          },
-          padding: const EdgeInsets.all(6),
-          color: theme.secondGradeColor,
-          child: Icon(Icons.add_comment_outlined, size: 20),
-        ),
-      ],
+            const SizedBox(width: 8),
+            StdButton(
+              onPressed: () {
+                ref.read(chatStateProvider.notifier).clearSession();
+              },
+              padding: const EdgeInsets.all(6),
+              color: theme.secondGradeColor,
+              child: Icon(Icons.add_comment_outlined, size: 20),
+            ),
+          ],
+        );
+      },
     );
   }
 }
