@@ -17,7 +17,7 @@ class AgentData {
   final String modelProviderConfigureId;
   final String? description;
   final String? systemPrompt;
-  final String? knowledgeBases;
+  late final List<String> knowledgeBases;
   final ModelSpecifics modelSpecifics;
   final DateTime createdAt;
   final bool isDefault;
@@ -29,10 +29,12 @@ class AgentData {
     required this.modelSpecifics,
     this.description,
     this.systemPrompt,
-    this.knowledgeBases,
+    List<String>? knowledgeBases,
     required this.createdAt,
     this.isDefault = false,
-  });
+  }) {
+    this.knowledgeBases = knowledgeBases ?? [];
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -40,7 +42,7 @@ class AgentData {
       'name': name,
       'description': description,
       'system_prompt': systemPrompt,
-      'knowledge_bases': knowledgeBases,
+      'knowledge_bases': jsonEncode(knowledgeBases),
       'created_at': createdAt.toIso8601String(),
       'is_default': isDefault ? 1 : 0,
     };
@@ -95,6 +97,8 @@ class AgentData {
       modelSpecifics: ModelSpecifics.fromJson(parameters['model_specifics']),
       description: map['description'] as String?,
       systemPrompt: parameters['system_prompt'] as String?,
+      knowledgeBases: (parameters['knowledge_bases'] as List<dynamic>)
+          .cast<String>(),
       createdAt: DateTime.parse(map['created_at']),
       isDefault: map['is_default'] == 1,
     );
@@ -108,7 +112,7 @@ class AgentData {
       modelSpecifics: ModelSpecifics.fromJson(map['model_specifics']),
       modelProviderConfigureId: map['model_provider_configure_id'],
       systemPrompt: map['system_prompt'],
-      knowledgeBases: map['knowledge_bases'],
+      knowledgeBases: (map['knowledge_bases'] as List<dynamic>).cast<String>(),
       createdAt: DateTime.parse(map['created_at']),
       isDefault: map['is_default'] == 1,
     );

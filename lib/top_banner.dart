@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/theme_manager.dart';
-import 'package:uni_chat/utils/dialog.dart';
 
 import 'generated/l10n.dart';
 import 'main.dart';
@@ -85,51 +84,31 @@ class ActivityMonitor extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: theme.primaryColor),
+            SizedBox(
+              width: 15,
+              height: 15,
+              child: CircularProgressIndicator(
+                color: theme.primaryColor,
+                strokeWidth: 3,
+              ),
+            ),
             const SizedBox(width: 10),
             Text(activity.name),
           ],
         );
       } else {
-        child = CircularProgressIndicator(color: theme.primaryColor);
-      }
-      return MouseRegion(
-        onExit: (event) {
-          OverlayPortalService.hide(context);
-        },
-        onEnter: (event) {
-          var rb = context.findRenderObject() as RenderBox;
-          OverlayPortalService.show(
-            barrierVisible: false,
-            offset: rb.localToGlobal(Offset(0, 50)),
-            context,
-            child: SizedBox(
-              width: 100,
-              height: 50,
-              child: Material(
-                color: theme.zeroGradeColor,
-                clipBehavior: Clip.hardEdge,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Row(
-                    children: [
-                      CircularProgressIndicator(color: theme.primaryColor),
-                      const SizedBox(width: 8),
-                      Text(
-                        "${activity.name} ${S.of(context).base_stat_processing}",
-                        style: TextStyle(color: theme.primaryColor),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+        child = Center(
+          child: SizedBox(
+            width: 15,
+            height: 15,
+            child: CircularProgressIndicator(
+              color: theme.primaryColor,
+              strokeWidth: 3,
             ),
-          );
-        },
-        child: child,
-      );
+          ),
+        );
+      }
+      return child;
     }
     return const SizedBox.shrink();
   }

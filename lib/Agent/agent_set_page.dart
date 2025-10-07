@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/RAG/rag_databases.dart';
+import 'package:uni_chat/RAG/rag_settings.dart';
 import 'package:uni_chat/llm_provider/pre_built_models.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
@@ -74,9 +76,10 @@ class AgentEditState {
   late final ModelSpecifics modelSettings;
   final String? systemPrompt;
   final String? configure;
-  final String? knowledgeBases;
+  late final Set<String> knowledgeBases;
   final bool enableUIQL;
   late final DateTime createdAt;
+  bool autoCreateMDB;
   AgentEditState({
     String? id,
     this.isTokenEnough = true,
@@ -90,9 +93,11 @@ class AgentEditState {
     this.description,
     this.systemPrompt,
     this.configure,
-    this.knowledgeBases,
+    Set<String>? knowledgeBases,
     DateTime? createdAt,
+    this.autoCreateMDB = true,
   }) {
+    this.knowledgeBases = knowledgeBases ?? <String>{};
     this.id = id ?? Uuid().v4();
     this.createdAt = createdAt ?? DateTime.now();
     this.modelSettings = modelSettings ?? ModelSpecifics();
@@ -107,12 +112,13 @@ class AgentEditState {
     String? description,
     String? systemPrompt,
     String? configure,
-    String? knowledgeBases,
+    Set<String>? knowledgeBases,
     DateTime? createdAt,
     ApiProvider? provider,
     Model? model,
     bool? enableUIQL,
     ModelSpecifics? modelSettings,
+    bool? autoCreateMDB,
   }) {
     return AgentEditState(
       id: id ?? this.id,
@@ -129,6 +135,7 @@ class AgentEditState {
       configure: configure ?? this.configure,
       knowledgeBases: knowledgeBases ?? this.knowledgeBases,
       createdAt: createdAt ?? this.createdAt,
+      autoCreateMDB: autoCreateMDB ?? this.autoCreateMDB,
     );
   }
 
@@ -149,7 +156,7 @@ class AgentEditState {
       description: description,
       modelProviderConfigureId: modelConfig.first.id,
       systemPrompt: systemPrompt,
-      knowledgeBases: knowledgeBases,
+      knowledgeBases: knowledgeBases.toList(),
       createdAt: createdAt,
       modelSpecifics: modelSettings,
     );
@@ -167,7 +174,7 @@ class AgentEditState {
       model: model,
       description: agentData.description,
       systemPrompt: agentData.systemPrompt,
-      knowledgeBases: agentData.knowledgeBases,
+      knowledgeBases: agentData.knowledgeBases.toSet(),
       createdAt: agentData.createdAt,
     );
   }
@@ -799,6 +806,8 @@ class AgentEditDetails extends ConsumerWidget {
         return _SysPromptEdit();
       case PropertyEditing.opening:
         return Opening();
+      case PropertyEditing.knowledgeBase:
+        return MemoryBase();
       case PropertyEditing.UIQL:
         return Uiql();
       default:
@@ -1525,6 +1534,157 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
           ),
         ),
         const SizedBox(height: 16),
+      ],
+    );
+  }
+}
+
+class MemoryBase extends ConsumerStatefulWidget {
+  const MemoryBase({super.key});
+
+  @override
+  ConsumerState<MemoryBase> createState() => _MemoryBaseState();
+}
+
+class _MemoryBaseState extends ConsumerState<MemoryBase> {
+  Widget _autoCreateInfo() {
+    return SizedBox();
+  }
+
+  OverlayEntry? _overlayEntry;
+  void showMemoryBaseCreation() {
+    final overlay = Overlay.of(context);
+    var size = MediaQuery.of(context).size;
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Stack(
+        alignment: Alignment.center,
+        children: [
+          // 背景变暗
+          ModalBarrier(color: Colors.black.withAlpha(80)),
+          SizedBox(
+            height: size.height * 0.9,
+            width: size.width * 0.9,
+            child: Material(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              color: theme.secondGradeColor,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: OverlayPortalScope(
+                  child: RagSettingPage(onBack: _dismiss),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    overlay.insert(_overlayEntry!);
+  }
+
+  void _dismiss() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    setState(() {});
+  }
+
+  late ThemeConfig theme;
+  @override
+  Widget build(BuildContext context) {
+    theme = ref.watch(themeProvider);
+    var as = ref.watch(agentEditState);
+    var mdb = as.knowledgeBases;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Text(
+              "记忆库设置",
+              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            IconButton(icon: Icon(Icons.info_outline), onPressed: () {}),
+          ],
+        ),
+        /*
+        Container(
+          padding: EdgeInsets.all(16),
+          width: double.maxFinite,
+          height: 100,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: [
+              Text("自动创建Agent专属记忆库"),
+              StdCheckbox(
+                text: "是否启用",
+                value: as.autoCreateMDB,
+                onChanged: (value) {
+                  ref.read(agentEditState).autoCreateMDB = value ?? false;
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),*/
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                "请选择与要与该Agent关联的记忆库",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 16),
+            StdButton(
+              text: "创建一个新记忆库",
+              onPressed: () {
+                showMemoryBaseCreation();
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: FutureBuilder(
+            future: RAGDatabaseManager().getAllKnowledgeBases(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return Center(child: CircularProgressIndicator());
+              }
+              return ListView.builder(
+                itemCount: snapshot.data!.length,
+                itemBuilder: (context, index) {
+                  final item = snapshot.data![index];
+                  return StatefulBuilder(
+                    builder: (context, setState) {
+                      return StdListTile(
+                        leading: StdCheckbox(
+                          value: mdb.contains(item.id),
+                          onChanged: (value) {
+                            if (value ?? false) {
+                              mdb.add(item.id);
+                            } else {
+                              mdb.remove(item.id);
+                            }
+                            setState(() {});
+                          },
+                        ),
+                        title: Text(item.name),
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
       ],
     );
   }

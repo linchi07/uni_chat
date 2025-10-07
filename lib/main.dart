@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
@@ -45,6 +46,8 @@ Future<void> main() async {
       toolbarStyle: NSWindowToolbarStyle.unified,
     );
     await WindowManipulator.enableFullSizeContentView();
+    var d = await getApplicationDocumentsDirectory();
+    print(d);
   }
   final prefs = await SharedPreferences.getInstance();
   var l = prefs.getString("language");
