@@ -7,6 +7,7 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/RAG/rag_databases.dart';
 import 'package:uni_chat/RAG/rag_entity.dart';
 import 'package:uni_chat/RAG/rag_process.dart';
+import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/pre_built_models.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/database_service.dart';
@@ -86,7 +87,7 @@ class RagEditState {
 
   //这么多循环，或许需要放到后台线程执行
   //TODO: throw this into a background thread
-  Future<void> save() async {
+  Future<KnowledgeBase> save() async {
     for (var cr in contentRemoveRequireConfirmed) {
       await RAGDatabaseManager().deleteOriginalContent(cr);
     }
@@ -129,6 +130,7 @@ class RagEditState {
       createdAt: DateTime.now(),
     );
     await RAGDatabaseManager().insertOrUpdateKnowledgeBase(kb);
+    return kb;
   }
 
   RagEditState copyWith({
@@ -416,7 +418,9 @@ class _RagSettingPageState extends ConsumerState<RagSettingPage>
   static List<int> dimensions = const [512, 768, 1024, 1536];
   Widget _dimensionDropDown() {
     return StdDropDown(
-      initialIndex: dimensions.indexWhere((e) => ragState.dimensions == e),
+      initialIndex: (ragState.dimensions == null)
+          ? null
+          : dimensions.indexWhere((e) => ragState.dimensions == e),
       height: 50,
       width: double.maxFinite,
       nullHint: Text(S.of(context).plz_select_embedding_dimension),
@@ -494,7 +498,8 @@ class _RagSettingPageState extends ConsumerState<RagSettingPage>
             isValidateMode: true,
           );
           if (ragState.validate()) {
-            await ragState.save();
+            var kb = await ragState.save();
+            ref.read(ragProvider).processKnowledgeBase(kb);
             widget.onBack();
           } else {
             _controller.forward(from: 0);
@@ -1704,6 +1709,7 @@ class _RagMemoryManagementState extends ConsumerState<RagMemoryManagement> {
                   id: Uuid().v7(),
                   knowledgeBaseId: ragState.id,
                   content: "",
+                  contentType: RagContentType.memory,
                   insertedAt: DateTime.now(),
                   indexMethod: {...ragState.defaultIndexMethods},
                   metadata: MetaData(

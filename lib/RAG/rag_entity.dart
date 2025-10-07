@@ -125,6 +125,10 @@ class Embedding {
 //还是sqlite靠谱，我曾经一直以为nosql都能够像mongo那样存文件的。。。。
 //你知道我为了通过编译花了多久嘛？直接继承-不行！用getter setter不行！
 //用普通函数 不行！ 哦 原来不能有私有的属性 哇你太厉害了！
+//以及在macOS下：https://github.com/objectbox/objectbox-dart/issues/248
+//Sandboxed macOS apps To use ObjectBox in a sandboxed macOS app, create an app group and pass the ID to macosApplicationGroup. Note: due to limitations in macOS the ID can be at most 19 characters long. By convention, the ID is <Developer team ID>.<group name>. You can verify the ID is correctly configured, by checking that the macos/ Runner/*.entitlements files contain the relevant key and value, for example: <dict> <key>com. apple. security. application-groups</ key> <array> <string>FGDTDLOBXDJ. demo</ string> </ array> </ dict> This is required to enable additional interprocess communication (IPC), like POSIX semaphores, used by mutexes in the ObjectBox database library for macOS. Specifically, macOS requires that semaphore names are prefixed with an application group ID.
+//这个问题在官方文档下完全没有说明，就在create store的注释的最底下那里稍微提了一嘴。。。
+//真的是垃圾，很难有一个数据库能够rang wo
 abstract class VectorQueryObject {
   int? getId();
   String getChunkId();
@@ -292,7 +296,7 @@ class ContentChunk {
       hash: json['hash'],
       content: json['content'],
       chunkMetadata: json['chunk_metadata'] != null
-          ? (json['chunk_metadata'] as Map<String, dynamic>).map(
+          ? (jsonDecode(json['chunk_metadata']) as Map<String, dynamic>).map(
               (key, value) => MapEntry(key, value.toString()),
             )
           : {},
@@ -305,7 +309,7 @@ class ContentChunk {
       'original_content_id': originalContentId,
       'hash': hash,
       'content': content,
-      'chunk_metadata': chunkMetadata,
+      'chunk_metadata': jsonEncode(chunkMetadata),
     };
   }
 }
@@ -322,6 +326,7 @@ class OriginalContent {
   final DateTime insertedAt;
   final Set<RAGIndexMethod> indexMethod;
   final MetaData metadata;
+  final RagContentType contentType;
   bool isEmbedded;
   bool isTokenized;
   OriginalContent({
@@ -331,6 +336,7 @@ class OriginalContent {
     required this.content,
     required this.insertedAt,
     required this.indexMethod,
+    required this.contentType,
     required this.metadata,
     this.isEmbedded = false,
     this.keyWords = "",
@@ -348,6 +354,7 @@ class OriginalContent {
     String? content,
     DateTime? insertedAt,
     Set<RAGIndexMethod>? indexMethod,
+    RagContentType? contentType,
     MetaData? metadata,
     bool? isEmbedded,
     List<String>? regex,
@@ -360,6 +367,7 @@ class OriginalContent {
       content: content ?? this.content,
       insertedAt: insertedAt ?? this.insertedAt,
       indexMethod: indexMethod ?? this.indexMethod,
+      contentType: contentType ?? this.contentType,
       metadata: metadata ?? this.metadata,
       isEmbedded: isEmbedded ?? this.isEmbedded,
       regex: regex ?? this.regex,
@@ -386,6 +394,9 @@ class OriginalContent {
       hash: map['hash'],
       keyWords: map['key_words'],
       insertedAt: DateTime.parse(map['inserted_at']),
+      contentType: RagContentType.values.firstWhere(
+        (element) => element.toString() == map['content_type'],
+      ),
       regex: map['regex'] != null
           ? (jsonDecode(map['regex']) as List<dynamic>).cast<String>()
           : null,
@@ -410,6 +421,7 @@ class OriginalContent {
       'is_embedded': isEmbedded ? 1 : 0,
       'is_tokenized': isTokenized ? 1 : 0,
       'hash': hash,
+      'content_type': contentType.toString(),
     };
   }
 }

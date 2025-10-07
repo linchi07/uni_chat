@@ -83,30 +83,12 @@ class RAGDatabaseManager {
   )
 ''');
 
-        // 创建一个触发器，当 original_contents 表插入数据时，自动更新 FTS5 表
-        await db.execute('''
-  CREATE TRIGGER original_contents_ai AFTER INSERT ON original_contents
-  BEGIN
-    INSERT INTO original_contents_fts(rowid, key_words) VALUES (new.row_id, new.key_words);
-  END
-''');
-
-        // 更新触发器
-        await db.execute('''
-  CREATE TRIGGER original_contents_au AFTER UPDATE ON original_contents
-  BEGIN
-    INSERT INTO original_contents_fts(original_contents_fts, rowid, key_words) 
-    VALUES('delete', old.row_id, old.key_words);
-    INSERT INTO original_contents_fts(rowid, key_words) VALUES (new.row_id, new.key_words);
-  END
-''');
-
         // 删除触发器
         await db.execute('''
   CREATE TRIGGER original_contents_ad AFTER DELETE ON original_contents
   BEGIN
     INSERT INTO original_contents_fts(original_contents_fts, rowid, key_words) 
-    VALUES('delete', old.id, old.key_words);
+    VALUES('delete', old.row_id, old.key_words);
   END
 ''');
 
@@ -124,7 +106,7 @@ class RAGDatabaseManager {
     original_content_id TEXT NOT NULL,
     content TEXT NOT NULL,
     hash INTEGER NOT NULL ,
-    metadata TEXT,
+    chunk_metadata TEXT,
     FOREIGN KEY (knowledge_base_id) REFERENCES knowledge_bases(id) ON DELETE CASCADE,
     FOREIGN KEY (original_content_id) REFERENCES original_contents(id) ON DELETE CASCADE
   )
@@ -196,6 +178,17 @@ ON agent_rule_relations (agent_id)
     });
   }
 
+  // 插入知识库
+  Future<void> setBaseOk(String id) async {
+    final db = await database;
+    await db.update(
+      'knowledge_bases',
+      {'status': 'KnowledgeBaseStat.OK'},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   // 获取所有知识库
   Future<List<KnowledgeBase>> getAllKnowledgeBases() async {
     final db = await database;
@@ -217,6 +210,15 @@ ON agent_rule_relations (agent_id)
     }
 
     return KnowledgeBase.fromMap(maps.first);
+  }
+
+  Future<void> deleteKnowledgeBase(String knowledgeBaseId) async {
+    final db = await database;
+    await db.delete(
+      'knowledge_bases',
+      where: 'id = ?',
+      whereArgs: [knowledgeBaseId],
+    );
   }
 
   Future<Set<RAGIndexMethod>> getIndexMethodOfKnowledgeBase(
@@ -475,7 +477,6 @@ ON agent_rule_relations (agent_id)
     );
   }
 
-  // 插入原始内容
   Future<void> deleteOriginalContent(String id) async {
     final db = await database;
     await db.delete('original_contents', where: 'id = ?', whereArgs: [id]);
@@ -513,8 +514,14 @@ ON agent_rule_relations (agent_id)
     return database.then((db) async {
       await db.transaction((txn) async {
         for (var oc in cpr.updateToOriginalContent) {
+          var id = oc["id"];
           oc.remove("id");
-          await txn.update('original_contents', oc);
+          await txn.update(
+            'original_contents',
+            where: "id = ?",
+            whereArgs: [id],
+            oc,
+          );
         }
         for (var rawChunk in cpr.writeToContentChunkRaw) {
           await txn.insert(
@@ -527,13 +534,10 @@ ON agent_rule_relations (agent_id)
           await anythingElse();
         }
         for (var (id, content) in cpr.rewriteToFTS5) {
-          await txn.update(
-            'original_contents_fts',
-            {'key_words': content},
-            where: 'rowid = ?',
-            whereArgs: [id],
-            conflictAlgorithm: ConflictAlgorithm.replace,
-          );
+          await txn.insert('original_contents_fts', {
+            'rowid': id,
+            'key_words': content,
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
       });
     });
@@ -777,22 +781,38 @@ class VectorSearchManager {
     switch (dimension) {
       case 384:
         _store384 = Box<VectorQueryObject384>(
-          (Store(getObjectBoxModel(), directory: path)),
+          (Store(
+            getObjectBoxModel(),
+            directory: path,
+            macosApplicationGroup: "LZ87PRQRHH.objectbox",
+          )),
         );
         break;
       case 768:
         _store768 = Box<VectorQueryObject768>(
-          (Store(getObjectBoxModel(), directory: path)),
+          (Store(
+            getObjectBoxModel(),
+            directory: path,
+            macosApplicationGroup: "LZ87PRQRHH.objbox",
+          )),
         );
         break;
       case 1024:
         _store1024 = Box<VectorQueryObject1024>(
-          (Store(getObjectBoxModel(), directory: path)),
+          (Store(
+            getObjectBoxModel(),
+            directory: path,
+            macosApplicationGroup: "LZ87PRQRHH.objbox",
+          )),
         );
         break;
       case 1536:
         _store1536 = Box<VectorQueryObject1536>(
-          (Store(getObjectBoxModel(), directory: path)),
+          (Store(
+            getObjectBoxModel(),
+            directory: path,
+            macosApplicationGroup: "LZ87PRQRHH.objbox",
+          )),
         );
         break;
       default:
@@ -874,21 +894,21 @@ class VectorSearchManager {
     _checkInitialized();
     switch (dimension) {
       case 384:
-        return await _store384!.putManyAsync(
-          objects as List<VectorQueryObject384>,
-        );
+        List<VectorQueryObject384> convertedList = objects
+            .cast<VectorQueryObject384>();
+        return await _store384!.putManyAsync(convertedList);
       case 768:
-        return await _store768!.putManyAsync(
-          objects as List<VectorQueryObject768>,
-        );
+        List<VectorQueryObject768> convertedList = objects
+            .cast<VectorQueryObject768>();
+        return await _store768!.putManyAsync(convertedList);
       case 1024:
-        return await _store1024!.putManyAsync(
-          objects as List<VectorQueryObject1024>,
-        );
+        List<VectorQueryObject1024> convertedList = objects
+            .cast<VectorQueryObject1024>();
+        return await _store1024!.putManyAsync(convertedList);
       case 1536:
-        return await _store1536!.putManyAsync(
-          objects as List<VectorQueryObject1536>,
-        );
+        List<VectorQueryObject1536> convertedList = objects
+            .cast<VectorQueryObject1536>();
+        return await _store1536!.putManyAsync(convertedList);
       default:
         // This case should ideally not be reached if constructor logic is sound
         throw Exception('Invalid dimension for putMany');

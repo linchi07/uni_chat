@@ -58,6 +58,7 @@ class RagProcessor {
       knowledgeBaseId: params.knowledgeBaseId,
       content: text,
       insertedAt: DateTime.now(),
+      contentType: RagContentType.document,
       indexMethod: {...params.indexMethod},
       metadata: metadata,
     );
@@ -294,14 +295,10 @@ class RagProcessor {
           //如果他需要关键词索引
           if (content.indexMethod.contains(RAGIndexMethod.keyword) &&
               !content.isTokenized) {
-            chn ??= RegExp(r'[\u4e00-\u9fa5]');
-            //这里只有中文需要分词，英文的话数据库自己搞定了
-            if (chn.hasMatch(content.content)) {
-              await tokenizer.initJieba();
-              var tk = tokenizer.zhHansTokenizeSync(content.content);
-              //这里需要注意，fts5用的是row id一个int来关联，original content的主键实际上是一个int，但是对外抽象成string的
-              result.rewriteToFTS5.add((item['row_id'], tk));
-            }
+            await tokenizer.initJieba();
+            var tk = tokenizer.zhHansTokenizeSync(content.content);
+            //这里需要注意，fts5用的是row id一个int来关联，original content的主键实际上是一个int，但是对外抽象成string的
+            result.rewriteToFTS5.add((item['row_id'], tk));
             content.isTokenized = true;
           }
           //如果需要向量索引
@@ -331,6 +328,7 @@ class RagProcessor {
                 ),
               );
             }
+            result.writeToContentChunkRaw = cc.map((e) => e.toMap()).toList();
             if (apiService == null) {
               throw Exception("apiService is null");
             }
@@ -340,6 +338,16 @@ class RagProcessor {
             );
             var vectors = <VectorQueryObject>[];
             for (int i = 0; i < er.length; i++) {
+              if (er[i].length > 1536) {
+                vectors.add(
+                  //TODO：figure a better way
+                  VectorQueryObject1536(
+                    chunkId: cc[i].id,
+                    embedding: er[i].sublist(0, 1536),
+                  ),
+                );
+                continue;
+              }
               switch (kb.embeddings.first.vectorDimension) {
                 case 384:
                   vectors.add(
@@ -361,9 +369,6 @@ class RagProcessor {
                     VectorQueryObject1536(chunkId: cc[i].id, embedding: er[i]),
                   );
                 default:
-                  throw Exception(
-                    "Vector dimension ${kb.embeddings.first.vectorDimension} is not supported",
-                  );
               }
             }
             content.isEmbedded = true;
@@ -405,16 +410,22 @@ class RagProcessor {
 class ContentProcessResult {
   bool isFullyFinished = false;
   Exception? onError;
-  List<VectorQueryObject> writeToVectorDB;
-  List<Map<String, dynamic>> writeToContentChunkRaw;
-  List<Map<String, dynamic>> updateToOriginalContent;
-  List<(int, String)> rewriteToFTS5;
+  late List<VectorQueryObject> writeToVectorDB;
+  late List<Map<String, dynamic>> writeToContentChunkRaw;
+  late List<Map<String, dynamic>> updateToOriginalContent;
+  late List<(int, String)> rewriteToFTS5;
   ContentProcessResult({
     this.isFullyFinished = false,
     this.onError,
-    this.writeToVectorDB = const [],
-    this.writeToContentChunkRaw = const [],
-    this.updateToOriginalContent = const [],
-    this.rewriteToFTS5 = const [],
-  });
+    List<VectorQueryObject>? writeToVectorDB,
+    List<Map<String, dynamic>>? writeToContentChunkRaw,
+    List<Map<String, dynamic>>? updateToOriginalContent,
+    List<(int, String)>? rewriteToFTS5,
+  }) {
+    //dart似乎觉得const list不允许写，不知道哪个睿智想出来的
+    this.writeToVectorDB = writeToVectorDB ?? [];
+    this.writeToContentChunkRaw = writeToContentChunkRaw ?? [];
+    this.updateToOriginalContent = updateToOriginalContent ?? [];
+    this.rewriteToFTS5 = rewriteToFTS5 ?? [];
+  }
 }

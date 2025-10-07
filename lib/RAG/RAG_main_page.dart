@@ -4,6 +4,7 @@ import 'package:uni_chat/RAG/rag_databases.dart';
 import 'package:uni_chat/RAG/rag_entity.dart';
 import 'package:uni_chat/RAG/rag_settings.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
+import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
@@ -50,12 +51,19 @@ class _RagPageState extends State<RagPage> {
                 style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold),
               ),
               Expanded(child: SizedBox()),
-              StdButton(
-                text: "新建知识库",
-                onPressed: () {
-                  setState(() {
-                    _isEditing = true;
-                  });
+              Consumer(
+                builder: (context, ref, child) {
+                  return StdButton(
+                    text: "新建知识库",
+                    onPressed: () {
+                      ref.read(ragEditState.notifier).state = RagEditState(
+                        id: Uuid().v7(),
+                      );
+                      setState(() {
+                        _isEditing = true;
+                      });
+                    },
+                  );
                 },
               ),
               const SizedBox(width: 30),
@@ -73,12 +81,17 @@ class _RagPageState extends State<RagPage> {
   }
 }
 
-class RAGSelector extends ConsumerWidget {
+class RAGSelector extends ConsumerStatefulWidget {
   const RAGSelector({super.key, required this.onEdit});
   final dynamic onEdit;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RAGSelector> createState() => _RAGSelectorState();
+}
+
+class _RAGSelectorState extends ConsumerState<RAGSelector> {
+  @override
+  Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     return FutureBuilder(
       future: RAGDatabaseManager().getAllKnowledgeBases(),
@@ -151,7 +164,7 @@ class RAGSelector extends ConsumerWidget {
                         indexMethods: kb.defaultIndexMethod,
                         indexRules: {for (var r in r) r.id: r},
                       );
-                      onEdit();
+                      widget.onEdit();
                     },
                     icon: Icon(Icons.edit),
                   ),
@@ -176,7 +189,7 @@ class RAGSelector extends ConsumerWidget {
   Widget _confirmDeleteDialog(
     ThemeConfig theme,
     BuildContext context,
-    String agentId,
+    String baseId,
   ) {
     return SizedBox(
       width: 300,
@@ -213,6 +226,8 @@ class RAGSelector extends ConsumerWidget {
                     color: Colors.red,
                     onLongPress: () async {
                       OverlayPortalService.hide(context);
+                      await RAGDatabaseManager().deleteKnowledgeBase(baseId);
+                      setState(() {});
                     },
                     text: S.of(context).confirm_long_press,
                   ),

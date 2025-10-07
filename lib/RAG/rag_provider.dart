@@ -9,6 +9,7 @@ import 'package:uni_chat/RAG/rag_entity.dart';
 import 'package:uni_chat/RAG/rag_process.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/llm_provider/api_service_provider.dart';
+import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uuid/uuid.dart';
 
@@ -30,7 +31,7 @@ class RagProvider {
   String? sessionId;
   SendPort? embeddingRequestSend;
   Future<void> loadKnowledgeBases(
-    List<String> kbIds,
+    AgentData agentdata,
     ChatSession session,
   ) async {
     sessionId = session.id;
@@ -47,7 +48,7 @@ class RagProvider {
     loadedKBs.clear();
     messagesCached.clear();
     Map<String, LLMApiService> embeddingInstances = {};
-    for (var k in kbIds) {
+    for (var k in agentdata.knowledgeBases ?? []) {
       var kb = await RAGDatabaseManager().getKnowledgeBaseById(k);
       if (kb == null) {
         print("Knowledge base $kb not found");
@@ -258,6 +259,7 @@ class RagProvider {
               content: message.content,
               insertedAt: message.timestamp,
               indexMethod: rule.ragIndexMethod,
+              contentType: RagContentType.chatHistory,
               metadata: MetaData(
                 originalName: session.name,
                 contentType: RagContentType.chatHistory,
@@ -280,7 +282,7 @@ class RagProvider {
     }
     var kbs = await RAGDatabaseManager().getRawOriginalContentOfBase(kb.id);
     ref.read(activityProvider.notifier).state = ActivityState(
-      name: kb.name,
+      name: "正在处理记忆库...${kb.name}",
       hint: "正在处理记忆库...",
     );
     final processResult = ReceivePort();
@@ -293,12 +295,14 @@ class RagProvider {
     processResult.listen((data) async {
       var result = data as ContentProcessResult;
       //整个都用事务包裹，保证统一
+      await PathProvider.getPath("RAG/VectorSearch/${kb.embeddings.first.id}");
+
       await RAGDatabaseManager().updateDBsWithTransaction(result, () async {
         if (result.writeToVectorDB.isNotEmpty) {
           var vdb = vectorDbInstances[kb.embeddings.first.id] ??=
               VectorSearchManager(
                 await PathProvider.getPath(
-                  "RAG/VectorSearch/${kb.embeddings.first.id}",
+                  "RAG/VectorSearch/${kb.embeddings.first.id}.mdb",
                 ),
                 kb.embeddings.first.vectorDimension,
               );
@@ -318,6 +322,8 @@ class RagProvider {
         await RAGDatabaseManager().insertOrUpdateKnowledgeBase(kb);
       }
     });
+    ref.read(activityProvider.notifier).state = null;
+    await RAGDatabaseManager().setBaseOk(kb.id);
     vectorDbInstances.clear();
   }
 }

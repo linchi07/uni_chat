@@ -286,7 +286,7 @@ class OpenAiApiService implements LLMApiService {
   Future<List<List<double>>> embedding(List<String> input, int dims) async {
     final client = http.Client();
     try {
-      final uri = Uri.parse('$endPoint/embeddings');
+      final uri = Uri.parse('$endPoint/v1/embeddings');
       final request = http.Request('POST', uri);
 
       request.headers.addAll({
@@ -574,7 +574,7 @@ class OpenAiCompletionService implements LLMApiService {
   Future<List<List<double>>> embedding(List<String> input, int dim) async {
     final client = http.Client();
     try {
-      final uri = Uri.parse('$endPoint/embeddings');
+      final uri = Uri.parse('$endPoint/v1/embeddings');
       final request = http.Request('POST', uri);
 
       request.headers.addAll({
