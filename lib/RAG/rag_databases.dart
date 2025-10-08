@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:jieba_flutter/analysis/jieba_segmenter.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uni_chat/RAG/rag_process.dart';
@@ -27,6 +28,9 @@ class RAGDatabaseManager {
     return await openDatabase(
       path,
       version: 1,
+      onOpen: (db) async {
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
       onCreate: (db, version) async {
         // 创建知识库表
         await db.execute('''
@@ -156,7 +160,10 @@ ON agent_rule_relations (agent_id)
     );
   }
 
-  // 插入知识库
+  /// 更新记忆库
+  /// 注意！ 不论是任意更新，哪怕手动将status 写为 OK
+  /// 在触发更新的时候，都会将status 写为 Pending
+  /// 需要手动调用OK函数
   Future<void> insertOrUpdateKnowledgeBase(KnowledgeBase kb) async {
     final db = await database;
     kb.status = KnowledgeBaseStat.pending;
@@ -178,7 +185,7 @@ ON agent_rule_relations (agent_id)
     });
   }
 
-  // 插入知识库
+  // 将数据库设置为OK
   Future<void> setBaseOk(String id) async {
     final db = await database;
     await db.update(
@@ -681,9 +688,10 @@ ON agent_rule_relations (agent_id)
       final List<String> agents = agentMaps
           .map((map) => map['agent_id'] as String)
           .toList();
-
-      ruleMap['agents'] = jsonEncode(agents);
-      rules.add(AutoIndexRule.fromMap(ruleMap));
+      //传回来的map不可✍写
+      var newMap = ruleMap.map((key, value) => MapEntry(key, value));
+      newMap['agents'] = jsonEncode(agents);
+      rules.add(AutoIndexRule.fromMap(newMap));
     }
 
     return rules;
@@ -775,45 +783,32 @@ class VectorSearchManager {
   late final Box<VectorQueryObject1024>? _store1024;
   late final Box<VectorQueryObject1536>? _store1536;
   late final int dimension;
+  late Store _store;
+  //连接到同一个数据库的实例只能初始化一次，否则要close。
+  //而且dart没有天杀的西沟函数，真的是服了
+  void close() {
+    _store.close();
+  }
 
   final String path;
   VectorSearchManager(this.path, this.dimension) {
+    _store = Store(
+      getObjectBoxModel(),
+      directory: path,
+      macosApplicationGroup: "LZ87PRQRHH.objbox",
+    );
     switch (dimension) {
       case 384:
-        _store384 = Box<VectorQueryObject384>(
-          (Store(
-            getObjectBoxModel(),
-            directory: path,
-            macosApplicationGroup: "LZ87PRQRHH.objectbox",
-          )),
-        );
+        _store384 = Box<VectorQueryObject384>((_store));
         break;
       case 768:
-        _store768 = Box<VectorQueryObject768>(
-          (Store(
-            getObjectBoxModel(),
-            directory: path,
-            macosApplicationGroup: "LZ87PRQRHH.objbox",
-          )),
-        );
+        _store768 = Box<VectorQueryObject768>((_store));
         break;
       case 1024:
-        _store1024 = Box<VectorQueryObject1024>(
-          (Store(
-            getObjectBoxModel(),
-            directory: path,
-            macosApplicationGroup: "LZ87PRQRHH.objbox",
-          )),
-        );
+        _store1024 = Box<VectorQueryObject1024>((_store));
         break;
       case 1536:
-        _store1536 = Box<VectorQueryObject1536>(
-          (Store(
-            getObjectBoxModel(),
-            directory: path,
-            macosApplicationGroup: "LZ87PRQRHH.objbox",
-          )),
-        );
+        _store1536 = Box<VectorQueryObject1536>((_store));
         break;
       default:
         throw Exception('Invalid dimension');
@@ -867,7 +862,7 @@ class VectorSearchManager {
         final queryObject = _store1536!
             .query(
               VectorQueryObject1536_.embedding.nearestNeighborsF32(
-                queryVec,
+                Float32List.fromList(queryVec),
                 maxResultCount,
               ),
             )

@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/inline_dynamic_fc_parser.dart';
+import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
 import 'package:uni_chat/utils/database_service.dart';
@@ -150,9 +151,10 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       if (session == null) {
         throw Exception('Session not found');
       }
-
-      await _ref.read(agentProvider.notifier).loadAgentById(session.agentId);
-
+      //TODO: 最好让这里的逻辑都放到agent_provider里面
+      var agd = await _ref
+          .read(agentProvider.notifier)
+          .loadAgentById(session.agentId);
       // 6. Load messages and layout (existing logic)
       final (messages, files) = await _dbService.getMessagesForSession(
         sessionId,
@@ -313,6 +315,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         select: pm.select,
       );
       final stream = agentNotifier.getStreamingResponse(
+        state.session!,
         history,
         userMessage,
         state.uploadedFiles,
@@ -335,6 +338,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         content: state.newContentBuffer.toString(),
         timestamp: DateTime.now(),
       );
+      _ref.read(ragProvider).onAgentNewMessage(finalAiMessage);
       state = state.copyWith(
         isResponding: false,
         messages: [...state.messages, finalAiMessage],

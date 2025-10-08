@@ -338,35 +338,49 @@ class RagProcessor {
             );
             var vectors = <VectorQueryObject>[];
             for (int i = 0; i < er.length; i++) {
-              if (er[i].length > 1536) {
-                vectors.add(
-                  //TODO：figure a better way
-                  VectorQueryObject1536(
-                    chunkId: cc[i].id,
-                    embedding: er[i].sublist(0, 1536),
-                  ),
-                );
-                continue;
-              }
               switch (kb.embeddings.first.vectorDimension) {
                 case 384:
                   vectors.add(
-                    VectorQueryObject384(chunkId: cc[i].id, embedding: er[i]),
+                    VectorQueryObject384(
+                      chunkId: cc[i].id,
+                      embedding: matchDimensions(
+                        er[i],
+                        kb.embeddings.first.vectorDimension,
+                      ),
+                    ),
                   );
                   break;
                 case 768:
                   vectors.add(
-                    VectorQueryObject768(chunkId: cc[i].id, embedding: er[i]),
+                    VectorQueryObject768(
+                      chunkId: cc[i].id,
+                      embedding: matchDimensions(
+                        er[i],
+                        kb.embeddings.first.vectorDimension,
+                      ),
+                    ),
                   );
                   break;
                 case 1024:
                   vectors.add(
-                    VectorQueryObject1024(chunkId: cc[i].id, embedding: er[i]),
+                    VectorQueryObject1024(
+                      chunkId: cc[i].id,
+                      embedding: matchDimensions(
+                        er[i],
+                        kb.embeddings.first.vectorDimension,
+                      ),
+                    ),
                   );
                   break;
                 case 1536:
                   vectors.add(
-                    VectorQueryObject1536(chunkId: cc[i].id, embedding: er[i]),
+                    VectorQueryObject1536(
+                      chunkId: cc[i].id,
+                      embedding: matchDimensions(
+                        er[i],
+                        kb.embeddings.first.vectorDimension,
+                      ),
+                    ),
                   );
                 default:
               }
@@ -378,7 +392,6 @@ class RagProcessor {
         } catch (eo) {
           var e = eo as Exception;
           result.isFullyFinished = false;
-          result.onError = Exception(e);
           exceptions ??= [];
           exceptions.add(e);
           port.send(result);
@@ -391,9 +404,7 @@ class RagProcessor {
       port.send(
         ContentProcessResult(
           isFullyFinished: true,
-          onError: Exception(
-            "$e,${(exceptions != null) ? exceptions.toString() : ""}",
-          ),
+          onError: (exceptions != null) ? exceptions.toString() : null,
         ),
       );
       return;
@@ -401,15 +412,41 @@ class RagProcessor {
     port.send(
       ContentProcessResult(
         isFullyFinished: true,
-        onError: (exceptions != null) ? Exception(exceptions.toString()) : null,
+        onError: (exceptions != null) ? exceptions.toString() : null,
       ),
+    );
+  }
+
+  /// 匹配输入的维度
+  /// 维度超出目标时截断
+  /// 维度低于目标时补0
+  static List<double> matchDimensions(
+    List<double> dimensions,
+    int targetDimensions,
+  ) {
+    if (dimensions.length == targetDimensions) {
+      return dimensions;
+    }
+    if (dimensions.length > targetDimensions) {
+      return dimensions.sublist(0, targetDimensions);
+    }
+    return List.generate(
+      targetDimensions,
+      (index) => dimensions.length > index ? dimensions[index] : 0,
     );
   }
 }
 
+class IsolateProcessResult<T extends Object?> {
+  final T? result;
+  final bool isFinished;
+  final String? error;
+  IsolateProcessResult({this.result, required this.isFinished, this.error});
+}
+
 class ContentProcessResult {
   bool isFullyFinished = false;
-  Exception? onError;
+  String? onError;
   late List<VectorQueryObject> writeToVectorDB;
   late List<Map<String, dynamic>> writeToContentChunkRaw;
   late List<Map<String, dynamic>> updateToOriginalContent;

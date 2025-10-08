@@ -9,46 +9,62 @@ import 'package:uni_chat/RAG/rag_entity.dart';
 import 'package:uni_chat/RAG/rag_process.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/llm_provider/api_service_provider.dart';
-import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uuid/uuid.dart';
 
-import '../top_banner.dart';
+import '../utils/back_ground_task_manager.dart';
+
+class PortBindingRequest {
+  final String fromIsolate;
+  final SendPort sendPort;
+
+  PortBindingRequest({required this.fromIsolate, required this.sendPort});
+}
 
 class RagProvider {
-  RagProvider(this.ref);
+  RagProvider(this.ref) {
+    //需要这么做主要是dart不允许创建一个receive port然后传过去
+    //必须要这样才能建立双向通讯，语法糖都这么多了，再加点怎么就不行了，非要我写这么丑的代码
+    bindingPort.listen((m) {
+      var r = m as PortBindingRequest;
+      ports[r.fromIsolate] = r.sendPort;
+    });
+  }
   Ref ref;
+
+  ///至少在现在，不要随随便便的就clear这个map，因为里面的object box实例如果直接销毁了就完蛋了
+  ///他不允许重复开链接。而这里销毁了貌似不会自动调用那边的close。dart 也没有西沟函数。然后这个弱智玩意一个box一个表，所以不好给他写成单例模式。（这才是重点）
   Map<String, VectorSearchManager> vectorDbInstances = {};
   bool requireEmbedding = false;
-
-  SendPort? autoIndexRequestSend;
+  //这个port只用于建立双向通讯
+  ReceivePort bindingPort = ReceivePort();
   ReceivePort? autoIndexRequestReceive;
+  Map<String, SendPort> ports = {};
   Map<RegExp, String> ocRegex = {};
   List<KnowledgeBase> loadedKBs = [];
   List<Embedding> kbRequireVecSearch = [];
   List<KnowledgeBase> kbsRequireKeyWordSearch = [];
   String? loadedAgentId;
   String? sessionId;
-  SendPort? embeddingRequestSend;
-  Future<void> loadKnowledgeBases(
-    AgentData agentdata,
-    ChatSession session,
-  ) async {
+
+  ///dart的闭包机制会导致如果实例化的时候spawn isolate他会导致引用this然后就会导致不可被传递的对象 vectorDbInstances 传过去然后就报错了，必须单独封装static 函数
+  static void _embeddingWrapper(dynamic m) {
+    embeddingService(m.$1, m.$2, m.$3);
+  }
+
+  Future<void> loadKnowledgeBases(List<String> kbs, ChatSession session) async {
     sessionId = session.id;
-    if (autoIndexRequestSend != null) {
-      autoIndexRequestReceive?.close();
-      autoIndexRequestSend?.send(null);
-      autoIndexRequestSend = null;
+    if (ports['autoIndex'] != null) {
+      ports['autoIndex']?.send(null);
       autoIndexRequestReceive = null;
     }
-    if (embeddingRequestSend != null) {
-      embeddingRequestSend?.send(null);
-      embeddingRequestSend = null;
+    if (ports['embedding'] != null) {
+      ports['embedding']?.send(null);
     }
     loadedKBs.clear();
     messagesCached.clear();
     Map<String, LLMApiService> embeddingInstances = {};
-    for (var k in agentdata.knowledgeBases ?? []) {
+    for (var k in kbs) {
       var kb = await RAGDatabaseManager().getKnowledgeBaseById(k);
       if (kb == null) {
         print("Knowledge base $kb not found");
@@ -76,11 +92,12 @@ class RagProvider {
           }
           embeddingInstances[kb.embeddings.first.modelConfigId] = ei;
         }
-        var rp = ReceivePort();
-        embeddingRequestSend = rp.sendPort;
-        Isolate.spawn((m) {
-          embeddingService(m.$1, m.$2, m.$3);
-        }, (embeddingInstances, kbRequireVecSearch, rp));
+        //注意一下，这里是两个括号，因为传入的实际上是一个record对象
+        Isolate.spawn(_embeddingWrapper, ((
+          embeddingInstances,
+          kbRequireVecSearch,
+          bindingPort.sendPort,
+        )));
       }
       if (requireIndexM.contains(RAGIndexMethod.keyword)) {
         kbsRequireKeyWordSearch.add(kb);
@@ -97,15 +114,21 @@ class RagProvider {
       session.agentId,
     );
     if (airs.isNotEmpty) {
-      var rp = ReceivePort();
-      autoIndexRequestSend = rp.sendPort;
       autoIndexRequestReceive = ReceivePort();
-      Isolate.spawn((m) {
-        autoIndex(m.$1, m.$2, m.$3, m.$4);
-      }, (rp, autoIndexRequestReceive!.sendPort, airs, session));
+      //注意一下，这里是两个括号，因为传入的实际上是一个record对象
+      Isolate.spawn(_autoIndexWrapper, (
+        bindingPort.sendPort,
+        autoIndexRequestReceive!.sendPort,
+        airs,
+        session,
+      ));
       loadedAgentId = session.agentId;
       autoIndexRequestReceive?.listen((data) {});
     }
+  }
+
+  static void _autoIndexWrapper(dynamic m) {
+    autoIndex(m.$1, m.$2, m.$3, m.$4);
   }
 
   List<FormattedChatMessage> messagesCached = [];
@@ -116,7 +139,15 @@ class RagProvider {
     var rp = ReceivePort();
     //获取嵌入
     if (kbRequireVecSearch.isNotEmpty) {
-      embeddingRequestSend!.send((newContent.content, rp.sendPort));
+      if (!ports.containsKey('embedding')) {
+        //如果没初始化，那就等一秒钟，如果还没有那就肯定出问题了
+        await Future.delayed(const Duration(seconds: 1));
+        if (!ports.containsKey('embedding')) {
+          print("error");
+          return [];
+        }
+      }
+      ports['embedding']!.send((newContent.content, rp.sendPort));
     }
     //正则匹配
     var rg = regexIndex(newContent.content);
@@ -136,18 +167,27 @@ class RagProvider {
       c.originalContent.values.map((m) => buildMessages(m)),
     );
     if (kbRequireVecSearch.isNotEmpty) {
-      var embR = await rp.first as Map<String, List<double>>;
+      var r = await rp.first as IsolateProcessResult<Map<String, List<double>>>;
+      if (r.error != null && !r.isFinished) {
+        throw r.error ?? "A Embedding Error";
+      }
+      var embR = r.result!;
       rp.close();
+      var cid = <String>[];
       for (var v in kbRequireVecSearch) {
-        var q = embR["${v.id}+${v.vectorDimension}"];
+        var q = embR["${v.modelConfigId}+${v.vectorDimension}"];
         if (q == null) continue;
         //TODO:this should be manually set
-        var cids = await vectorDbInstances[v.id]?.vecQuery(q, 5);
-        if (cids == null) continue;
+        var vecs = await vectorDbInstances[v.id]?.vecQuery(q, 5);
+        if (vecs == null) continue;
+        for (var vec in vecs) {
+          var cs = vec.getCosineSimilarityByVector(q);
+          if (cs > COSINE_THRESHOLD) {
+            cid.add(vec.getChunkId());
+          }
+        }
         c.addContentChunkNoRepeat(
-          await RAGDatabaseManager().getManySimpleContentOfContentChunk(
-            cids.map((m) => m.getChunkId()).toList(),
-          ),
+          await RAGDatabaseManager().getManySimpleContentOfContentChunk(cid),
         );
       }
     }
@@ -155,11 +195,15 @@ class RagProvider {
       ...messagesCached,
       ...c.contentChunk.values.map((m) => buildMessages(m)),
     ];
-    if (autoIndexRequestSend != null) {
-      autoIndexRequestSend?.send(newContent);
+    print(m);
+    if (ports.containsKey('autoIndex')) {
+      ports['autoIndex']?.send(newContent);
     }
     return m;
   }
+
+  /// 两个向量的语义差距小于39度
+  static const double COSINE_THRESHOLD = 0.78;
 
   FormattedChatMessage buildMessages(SimpleContent c) {
     var metadata =
@@ -185,16 +229,21 @@ class RagProvider {
     return RAGDatabaseManager().getManySimpleContents(match.toList());
   }
 
-  void embeddingService(
+  static void embeddingService(
     Map<String, LLMApiService> embeddingInstances,
     List<Embedding> embeddings,
-    ReceivePort rp,
+    SendPort binding,
   ) {
+    var rp = ReceivePort();
+    binding.send(
+      PortBindingRequest(fromIsolate: "embedding", sendPort: rp.sendPort),
+    );
     rp.listen((m) async {
       if (m == null) {
         rp.close();
         Isolate.current.kill(priority: Isolate.immediate);
       }
+      var p = m.$2 as SendPort;
       var message = (m.$1) as String;
       var embResult = <String, List<double>>{};
       for (var e in embeddings) {
@@ -204,20 +253,22 @@ class RagProvider {
             throw "Embedding ${e.modelConfigId} not found";
             //这应该不可能发生
           }
-          try {
-            var er = await ei.embedding([message], e.vectorDimension);
-            if (er.isEmpty) {
-              throw "Embedding ${e.modelConfigId} failed";
-            }
-            embResult["${e.modelConfigId}+${e.vectorDimension}"] =
-                er.first; //在消息的时候我们只会获取第一个向量（因为也只输入了一个）
-          } catch (e) {
-            throw "Embedding failed";
+          var er = await ei.embedding([message], e.vectorDimension);
+          if (er.isEmpty) {
+            throw "Embedding ${e.modelConfigId} failed";
           }
+          if (er.first.length > e.vectorDimension) {
+            er.first = er.first.sublist(0, e.vectorDimension);
+          }
+          embResult["${e.modelConfigId}+${e.vectorDimension}"] =
+              er.first; //在消息的时候我们只会获取第一个向量（因为也只输入了一个）
         }
       }
-      var p = m.$2 as SendPort;
-      p.send(embResult);
+      var r = IsolateProcessResult<Map<String, List<double>>>(
+        result: embResult,
+        isFinished: true,
+      );
+      p.send(r);
     });
   }
 
@@ -225,16 +276,20 @@ class RagProvider {
     if (loadedAgentId == null) {
       throw "Not loaded";
     }
-    autoIndexRequestSend?.send(msg);
+    ports['autoIndex']?.send(msg);
   }
 
-  void autoIndex(
-    ReceivePort receive,
+  static void autoIndex(
+    SendPort binding,
     SendPort send,
     List<AutoIndexRule> rules,
     ChatSession session,
     //TODO: 在现在这没问题，因为我们只允许一个Regex，但是后面如果要改回允许多个regex的话，这里就要改了
   ) {
+    var receive = ReceivePort();
+    binding.send(
+      PortBindingRequest(fromIsolate: "autoIndex", sendPort: receive.sendPort),
+    );
     receive.listen((m) {
       if (m == null) {
         //发送null的时候杀掉这个isolate
@@ -276,20 +331,16 @@ class RagProvider {
     });
   }
 
-  Future<void> processKnowledgeBase(KnowledgeBase kb) async {
+  Future<void> processKnowledgeBase(KnowledgeBase kb, String activityId) async {
     if (kb.status == KnowledgeBaseStat.OK) {
       return;
     }
     var kbs = await RAGDatabaseManager().getRawOriginalContentOfBase(kb.id);
-    ref.read(activityProvider.notifier).state = ActivityState(
-      name: "正在处理记忆库...${kb.name}",
-      hint: "正在处理记忆库...",
-    );
     final processResult = ReceivePort();
     var api = await ApiServiceProvider.instance.createApiService(
       kb.embeddings.first.modelConfigId,
     );
-    await Isolate.spawn((param) async {
+    var iso = await Isolate.spawn((param) async {
       await RagProcessor.processContent(param.$1, param.$2, param.$3, param.$4);
     }, (kb, kbs, api, processResult.sendPort));
     processResult.listen((data) async {
@@ -302,7 +353,7 @@ class RagProvider {
           var vdb = vectorDbInstances[kb.embeddings.first.id] ??=
               VectorSearchManager(
                 await PathProvider.getPath(
-                  "RAG/VectorSearch/${kb.embeddings.first.id}.mdb",
+                  "RAG/VectorSearch/${kb.embeddings.first.id}",
                 ),
                 kb.embeddings.first.vectorDimension,
               );
@@ -310,21 +361,17 @@ class RagProvider {
         }
       });
       if (result.onError != null) {
-        ref.read(activityProvider.notifier).state = ActivityState(
-          name: kb.name,
-          hint: "发生错误",
-          error: result.onError!.toString(),
-        );
+        ref
+            .read(activityProvider.notifier)
+            .onActivityError(activityId, result.onError ?? "Error");
       }
-      if (result.isFullyFinished && result.onError != null) {
-        ref.read(activityProvider.notifier).state = null;
-        kb.status = KnowledgeBaseStat.OK;
-        await RAGDatabaseManager().insertOrUpdateKnowledgeBase(kb);
+      if (result.isFullyFinished && result.onError == null) {
+        await RAGDatabaseManager().setBaseOk(kb.id);
+        ref.read(activityProvider.notifier).onActivityComplete(activityId);
+        processResult.close();
+        iso.kill();
       }
     });
-    ref.read(activityProvider.notifier).state = null;
-    await RAGDatabaseManager().setBaseOk(kb.id);
-    vectorDbInstances.clear();
   }
 }
 

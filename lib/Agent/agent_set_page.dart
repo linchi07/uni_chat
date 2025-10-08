@@ -1645,6 +1645,9 @@ class _MemoryBaseState extends ConsumerState<MemoryBase> {
             StdButton(
               text: "创建一个新记忆库",
               onPressed: () {
+                ref.read(ragEditState.notifier).state = RagEditState(
+                  id: Uuid().v7(),
+                );
                 showMemoryBaseCreation();
               },
             ),

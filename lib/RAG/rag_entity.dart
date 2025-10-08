@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_final_fields
 
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/widgets.dart';
 import 'package:objectbox/objectbox.dart';
@@ -135,6 +136,73 @@ abstract class VectorQueryObject {
   List<double> getEmbedding();
   void setEmbedding(List<double> embedding);
   int dimensions();
+
+  ///获取余弦相似度
+  double getCosineSimilarity(VectorQueryObject other) {
+    //当gemini给我提到这个公式的时候我居然问他这是不是数量投影！
+    //要是我亲爱的数学老师看到我做了这么多的立体几何能够问出这么蠢的问题
+    //我估计她得哭死
+    var vecThis = getEmbedding();
+    var vecO = other.getEmbedding();
+    if (vecThis.length != vecO.length || vecThis.isEmpty) {
+      // 向量长度必须相同且非空
+      return 0.0;
+    }
+    double dotProduct = 0.0;
+    double magnitudeA = 0.0;
+    double magnitudeB = 0.0;
+
+    // 1. 计算点积 (Dot Product) 和各自的模 (Magnitude)
+    for (int i = 0; i < vecThis.length; i++) {
+      dotProduct += vecThis[i] * vecO[i];
+      magnitudeA += vecThis[i] * vecThis[i]; // A的平方和
+      magnitudeB += vecO[i] * vecO[i]; // B的平方和
+    }
+
+    // 2. 计算模的开方 (L2 Norm / Magnitude)
+    final double magA = sqrt(magnitudeA);
+    final double magB = sqrt(magnitudeB);
+
+    if (magA == 0.0 || magB == 0.0) {
+      // 避免除以零
+      return 0.0;
+    }
+    // 3. 计算余弦相似度
+    return dotProduct / (magA * magB);
+  }
+
+  ///获取余弦相似度
+  double getCosineSimilarityByVector(List<double> vecOther) {
+    //当gemini给我提到这个公式的时候我居然问他这是不是数量投影！
+    //要是我亲爱的数学老师看到我做了这么多的立体几何能够问出这么蠢的问题
+    //我估计她得哭死
+    var vecThis = getEmbedding();
+    if (vecThis.length != vecOther.length || vecThis.isEmpty) {
+      // 向量长度必须相同且非空
+      return 0.0;
+    }
+    double dotProduct = 0.0;
+    double magnitudeA = 0.0;
+    double magnitudeB = 0.0;
+
+    // 1. 计算点积 (Dot Product) 和各自的模 (Magnitude)
+    for (int i = 0; i < vecThis.length; i++) {
+      dotProduct += vecThis[i] * vecOther[i];
+      magnitudeA += vecThis[i] * vecThis[i]; // A的平方和
+      magnitudeB += vecOther[i] * vecOther[i]; // B的平方和
+    }
+
+    // 2. 计算模的开方 (L2 Norm / Magnitude)
+    final double magA = sqrt(magnitudeA);
+    final double magB = sqrt(magnitudeB);
+
+    if (magA == 0.0 || magB == 0.0) {
+      // 避免除以零
+      return 0.0;
+    }
+    // 3. 计算余弦相似度
+    return dotProduct / (magA * magB);
+  }
 
   VectorQueryObject();
 }

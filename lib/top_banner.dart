@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/back_ground_task_manager.dart';
 
 import 'generated/l10n.dart';
 import 'main.dart';
@@ -61,15 +62,6 @@ class MainBanner extends ConsumerWidget {
   }
 }
 
-class ActivityState {
-  String name;
-  String hint;
-  String? error;
-  ActivityState({required this.name, required this.hint, this.error});
-}
-
-final activityProvider = StateProvider<ActivityState?>((ref) => null);
-
 class ActivityMonitor extends ConsumerWidget {
   const ActivityMonitor({super.key, required this.maxWidth});
   final double maxWidth;
@@ -77,35 +69,46 @@ class ActivityMonitor extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activity = ref.watch(activityProvider);
     var theme = ref.watch(themeProvider);
-    if (activity != null) {
+    if (activity.activities.isNotEmpty) {
+      bool hasError = false;
+      for (var activity in activity.activities.values) {
+        if (activity.stateType == ActivityStateType.error) {
+          hasError = true;
+          break;
+        }
+      }
       Widget child;
       if (maxWidth >= 100) {
         child = Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              width: 15,
-              height: 15,
-              child: CircularProgressIndicator(
-                color: theme.primaryColor,
-                strokeWidth: 3,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(activity.name),
+            (hasError)
+                ? Center(child: Icon(Icons.error_outline, color: Colors.red))
+                : SizedBox(
+                    width: 15,
+                    height: 15,
+                    child: CircularProgressIndicator(
+                      color: theme.primaryColor,
+                      strokeWidth: 3,
+                    ),
+                  ),
+            const SizedBox(width: 3),
+            Text((hasError) ? "处理失败" : "处理中"),
           ],
         );
       } else {
         child = Center(
-          child: SizedBox(
-            width: 15,
-            height: 15,
-            child: CircularProgressIndicator(
-              color: theme.primaryColor,
-              strokeWidth: 3,
-            ),
-          ),
+          child: (hasError)
+              ? Icon(Icons.error_outline, color: Colors.red)
+              : SizedBox(
+                  width: 15,
+                  height: 15,
+                  child: CircularProgressIndicator(
+                    color: theme.primaryColor,
+                    strokeWidth: 3,
+                  ),
+                ),
         );
       }
       return child;

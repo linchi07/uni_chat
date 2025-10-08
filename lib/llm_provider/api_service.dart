@@ -84,6 +84,7 @@ class OpenAiApiService implements LLMApiService {
     toContent(modelRequestContent.chatHistory, contents);
     toContent(modelRequestContent.dynamicSystemMessages, contents);
     toContent(modelRequestContent.uiMessages, contents);
+    toContent(modelRequestContent.ragMessages, contents);
     toContent(modelRequestContent.usrMessage, contents);
 
     final requestBody = {
@@ -427,6 +428,7 @@ class OpenAiCompletionService implements LLMApiService {
     toContent(modelRequestContent.chatHistory, contents);
     toContent(modelRequestContent.dynamicSystemMessages, contents);
     toContent(modelRequestContent.uiMessages, contents);
+    toContent(modelRequestContent.ragMessages, contents);
     toContent(modelRequestContent.usrMessage, contents);
 
     final requestBody = {
@@ -784,6 +786,13 @@ class GeminiApiService implements LLMApiService {
       FormattedChatMessage.overrideIdentity(
         MessageSender.user,
         modelRequestContent.uiMessages,
+      ),
+      contents,
+    );
+    buildRequestBody(
+      FormattedChatMessage.overrideIdentity(
+        MessageSender.user,
+        modelRequestContent.ragMessages,
       ),
       contents,
     );

@@ -7,9 +7,9 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/RAG/rag_databases.dart';
 import 'package:uni_chat/RAG/rag_entity.dart';
 import 'package:uni_chat/RAG/rag_process.dart';
-import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/pre_built_models.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
+import 'package:uni_chat/utils/back_ground_task_manager.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uuid/uuid.dart';
@@ -31,8 +31,6 @@ class RagEditState {
   final bool isValidateMode;
   late final Set<RAGIndexMethod> defaultIndexMethods;
   final int requireEmbedding;
-  //待确认的内容，如果用户直接取消添加的话，这些内容会被在取消按钮按下的时候从数据库移除
-  late final List<String> contentAddRequireConfirmed;
   //这些内容只会被在整个编辑模式的确定按钮按下的时候从数据库移除
   late final Set<String> contentRemoveRequireConfirmed;
   //为什么有memory和content两个呢？主要是上面那个是已经存入数据库了，在取消的时候会被remove。(文档比较大，所以先放进数据库中)
@@ -52,7 +50,6 @@ class RagEditState {
     this.maxTokens,
     this.isValidateMode = false,
     Set<RAGIndexMethod>? indexMethods,
-    List<String>? contentAddRequireConfirmed,
     Set<String>? contentRemoveRequireConfirmed,
     Map<String, OriginalContent>? memoriesAddRequireConfirmed,
     Map<String, OriginalContent>? contentModifiedRequireConfirmed,
@@ -61,18 +58,11 @@ class RagEditState {
   }) {
     this.id = id ?? Uuid().v4();
     this.defaultIndexMethods = indexMethods ?? {RAGIndexMethod.vector};
-    this.contentAddRequireConfirmed = contentAddRequireConfirmed ?? [];
     this.contentRemoveRequireConfirmed = contentRemoveRequireConfirmed ?? {};
     this.memoriesAddRequireConfirmed = memoriesAddRequireConfirmed ?? {};
     this.contentModifiedRequireConfirmed =
         contentModifiedRequireConfirmed ?? {};
     this.indexRules = indexRules ?? {};
-  }
-
-  Future<void> roleBackChanges() async {
-    for (var c in contentAddRequireConfirmed) {
-      await RAGDatabaseManager().deleteOriginalContent(c);
-    }
   }
 
   bool validate() {
@@ -161,8 +151,6 @@ class RagEditState {
       isValidateMode: isValidateMode ?? this.isValidateMode,
       requireEmbedding: requireEmbedding ?? this.requireEmbedding,
       indexMethods: indexMethods ?? this.defaultIndexMethods,
-      contentAddRequireConfirmed:
-          contentAddRequireConfirmed ?? this.contentAddRequireConfirmed,
       contentRemoveRequireConfirmed:
           contentRemoveRequireConfirmed ?? this.contentRemoveRequireConfirmed,
       memoriesAddRequireConfirmed:
@@ -272,7 +260,6 @@ class _RagSettingPageState extends ConsumerState<RagSettingPage>
                   color: theme.thirdGradeColor,
                   onLongPress: () async {
                     var n = ref.read(ragEditState.notifier);
-                    await n.state.roleBackChanges();
                     n.state = RagEditState();
                     widget.onBack();
                   },
@@ -499,7 +486,13 @@ class _RagSettingPageState extends ConsumerState<RagSettingPage>
           );
           if (ragState.validate()) {
             var kb = await ragState.save();
-            ref.read(ragProvider).processKnowledgeBase(kb);
+            var ac = Activity(
+              name: kb.name,
+              referTo: kb.id,
+              type: ActivityType.ragEmbedding,
+              stateType: ActivityStateType.loading,
+            );
+            ref.read(activityProvider.notifier).startActivity(ac);
             widget.onBack();
           } else {
             _controller.forward(from: 0);
@@ -982,7 +975,12 @@ class _RagFileManagementState extends ConsumerState<RagFileManagement> {
           fetchedDocuments.removeAt(i);
           --i;
         }
+        if (ragState.contentModifiedRequireConfirmed.containsKey(o.id)) {
+          fetchedDocuments.removeAt(i);
+          --i;
+        }
       }
+      fetchedDocuments.addAll(ragState.contentModifiedRequireConfirmed.values);
       if (mounted) {
         setState(() {
           documents = fetchedDocuments;
@@ -1114,8 +1112,7 @@ class _RagFileManagementState extends ConsumerState<RagFileManagement> {
       );
       var n = ref.read(ragEditState.notifier);
       //所有和SQLite有关的操作都在前台进行，防止多线程冲突，或者哪天有空了给他加一个mutex。
-      await RAGDatabaseManager().insertOriginalContent(oc);
-      n.state.contentAddRequireConfirmed.add(oc.id);
+      n.state.contentModifiedRequireConfirmed[oc.id] = oc;
       n.state = n.state.copyWith();
       await _loadDocuments();
       await File(path).delete();
