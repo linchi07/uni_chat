@@ -4,6 +4,7 @@ import 'package:uni_chat/RAG/rag_databases.dart';
 import 'package:uni_chat/RAG/rag_entity.dart';
 import 'package:uni_chat/RAG/rag_settings.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
+import 'package:uni_chat/utils/back_ground_task_manager.dart';
 import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
@@ -56,9 +57,9 @@ class _RagPageState extends State<RagPage> {
                   return StdButton(
                     text: "新建知识库",
                     onPressed: () {
-                      ref.read(ragEditState.notifier).state = RagEditState(
-                        id: Uuid().v7(),
-                      );
+                      ref
+                          .read(ragEditState.notifier)
+                          .changeState(id: Uuid().v7());
                       setState(() {
                         _isEditing = true;
                       });
@@ -93,6 +94,8 @@ class _RAGSelectorState extends ConsumerState<RAGSelector> {
   @override
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
+    ref.watch(activityProvider); //监听这个provider，是因为所有的rag任务都会经过这个provider。
+    //这样的话只要这里的state改变了，那么就刷新一下数据
     return FutureBuilder(
       future: RAGDatabaseManager().getAllKnowledgeBases(),
       builder: (context, snapshot) {
@@ -154,16 +157,18 @@ class _RAGSelectorState extends ConsumerState<RAGSelector> {
                           .getProviderAndModelByModelConfig(em.id);
                       var r = await RAGDatabaseManager()
                           .getAutoIndexRulesByKnowledgeBaseId(kb.id);
-                      ref.read(ragEditState.notifier).state = RagEditState(
-                        id: kb.id,
-                        name: kb.name,
-                        description: kb.description,
-                        embedding: em2.$2,
-                        provider: em2.$1,
-                        dimensions: kb.embeddings.first.vectorDimension,
-                        indexMethods: kb.defaultIndexMethod,
-                        indexRules: {for (var r in r) r.id: r},
-                      );
+                      ref
+                          .read(ragEditState.notifier)
+                          .changeState(
+                            id: kb.id,
+                            name: kb.name,
+                            description: kb.description,
+                            embedding: em2.$2,
+                            provider: em2.$1,
+                            dimensions: kb.embeddings.first.vectorDimension,
+                            indexMethods: kb.defaultIndexMethod,
+                            indexRules: {for (var r in r) r.id: r},
+                          );
                       widget.onEdit();
                     },
                     icon: Icon(Icons.edit),

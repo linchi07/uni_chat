@@ -339,6 +339,39 @@ class VectorQueryObject1536 extends VectorQueryObject {
   int dimensions() => 1536;
 }
 
+@Entity()
+class VectorQueryObject2048 extends VectorQueryObject {
+  @Id(assignable: false)
+  int? id;
+  String chunkId;
+  @HnswIndex(dimensions: 2048, distanceType: VectorDistanceType.cosine)
+  @Property(type: PropertyType.floatVector)
+  List<double> embedding;
+
+  VectorQueryObject2048({
+    this.id,
+    required this.chunkId,
+    required this.embedding,
+  });
+
+  @override
+  int? getId() => id;
+
+  @override
+  String getChunkId() => chunkId;
+
+  @override
+  List<double> getEmbedding() => embedding;
+
+  @override
+  void setEmbedding(List<double> embedding) {
+    this.embedding = embedding;
+  }
+
+  @override
+  int dimensions() => 2048;
+}
+
 //虽然叫做content chunk但是基本上只为了向量搜索服务
 class ContentChunk {
   final String id;
@@ -597,7 +630,7 @@ class AutoIndexRule {
   final Set<RAGIndexMethod> ragIndexMethod;
   AutoIndexMethod autoIndexMethod;
   String? keyword;
-  Issuer? issuer;
+  //Issuer? issuer;
   List<String>? regex;
   AutoIndexRule({
     required this.id,
@@ -606,7 +639,7 @@ class AutoIndexRule {
     required this.autoIndexMethod,
     required this.ragIndexMethod,
     this.keyword,
-    this.issuer,
+    //this.issuer,
     this.regex,
   });
   factory AutoIndexRule.fromMap(Map<String, dynamic> map) {
@@ -625,11 +658,11 @@ class AutoIndexRule {
         (element) => element.toString() == map['auto_index_method'],
       ),
       keyword: map['keyword'],
-      issuer: map['issuer'] != null
+      /* issuer: map['issuer'] != null
           ? Issuer.values.firstWhere(
               (element) => element.toString() == map['issuer'],
             )
-          : null,
+          : null,*/
       regex: map['regex'] != null
           ? (jsonDecode(map['regex']) as List<dynamic>).cast<String>()
           : null,
@@ -646,7 +679,7 @@ class AutoIndexRule {
       ),
       'auto_index_method': autoIndexMethod.toString(),
       'keyword': keyword,
-      'issuer': issuer?.toString(),
+      //'issuer': issuer?.toString(),
       'regex': regex != null ? jsonEncode(regex) : null,
     };
   }

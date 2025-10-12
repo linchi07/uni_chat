@@ -106,10 +106,36 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "5:6371234536569859954",
+      "lastPropertyId": "3:8291467730015738692",
+      "name": "VectorQueryObject2048",
+      "properties": [
+        {
+          "id": "1:3419524602525758765",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:2726857873391151927",
+          "name": "chunkId",
+          "type": 9
+        },
+        {
+          "id": "3:8291467730015738692",
+          "name": "embedding",
+          "indexId": "9:3482308875665680661",
+          "type": 28,
+          "flags": 8
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "4:1644127769993034001",
-  "lastIndexId": "8:2092130301566339729",
+  "lastEntityId": "5:6371234536569859954",
+  "lastIndexId": "9:3482308875665680661",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

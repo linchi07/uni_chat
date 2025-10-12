@@ -7,6 +7,7 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/RAG/rag_databases.dart';
 import 'package:uni_chat/RAG/rag_entity.dart';
 import 'package:uni_chat/RAG/rag_process.dart';
+import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/pre_built_models.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/back_ground_task_manager.dart';
@@ -30,7 +31,6 @@ class RagEditState {
   final int? maxTokens;
   final bool isValidateMode;
   late final Set<RAGIndexMethod> defaultIndexMethods;
-  final int requireEmbedding;
   //这些内容只会被在整个编辑模式的确定按钮按下的时候从数据库移除
   late final Set<String> contentRemoveRequireConfirmed;
   //为什么有memory和content两个呢？主要是上面那个是已经存入数据库了，在取消的时候会被remove。(文档比较大，所以先放进数据库中)
@@ -40,7 +40,9 @@ class RagEditState {
   late final Map<String, OriginalContent> memoriesAddRequireConfirmed;
   late final Map<String, OriginalContent> contentModifiedRequireConfirmed;
   late final Map<String, AutoIndexRule> indexRules;
+  Ref ref;
   RagEditState({
+    required this.ref,
     String? id,
     this.name,
     this.description,
@@ -54,7 +56,6 @@ class RagEditState {
     Map<String, OriginalContent>? memoriesAddRequireConfirmed,
     Map<String, OriginalContent>? contentModifiedRequireConfirmed,
     Map<String, AutoIndexRule>? indexRules,
-    this.requireEmbedding = 0,
   }) {
     this.id = id ?? Uuid().v4();
     this.defaultIndexMethods = indexMethods ?? {RAGIndexMethod.vector};
@@ -78,27 +79,6 @@ class RagEditState {
   //这么多循环，或许需要放到后台线程执行
   //TODO: throw this into a background thread
   Future<KnowledgeBase> save() async {
-    for (var cr in contentRemoveRequireConfirmed) {
-      await RAGDatabaseManager().deleteOriginalContent(cr);
-    }
-    for (var o in memoriesAddRequireConfirmed.values) {
-      if (o.content.isNotEmpty &&
-          (o.metadata.originalName?.isNotEmpty ?? false)) {
-        o.content.trim();
-        o.metadata.originalName = o.metadata.originalName!.trim();
-        await RAGDatabaseManager().insertOriginalContent(o);
-      }
-    }
-    for (var c in contentModifiedRequireConfirmed.values) {
-      if (c.content.isNotEmpty &&
-          (c.metadata.originalName?.isNotEmpty ?? false)) {
-        c.hash = await RagProcessor.xxH3(c.content);
-        await RAGDatabaseManager().updateOriginalContent(c);
-      }
-    }
-    for (var c in indexRules.values) {
-      await RAGDatabaseManager().insertOrUpdateAutoIndexRule(c);
-    }
     var mfid = await ApiDatabaseService.instance
         .getProviderModelConfigsForModelWithProvider(
           embedding!.id,
@@ -119,7 +99,12 @@ class RagEditState {
       embeddings: [em],
       createdAt: DateTime.now(),
     );
-    await RAGDatabaseManager().insertOrUpdateKnowledgeBase(kb);
+    await RAGDatabaseManager().insertOrUpdateKnowledgeBaseWithRAGConfig(
+      this,
+      kb,
+    );
+    //需要清理一下缓存
+    ref.read(ragProvider).clearLoadedAgent();
     return kb;
   }
 
@@ -141,6 +126,7 @@ class RagEditState {
     Map<String, AutoIndexRule>? indexRules,
   }) {
     return RagEditState(
+      ref: ref,
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
@@ -149,7 +135,6 @@ class RagEditState {
       dimensions: dimension ?? this.dimensions,
       maxTokens: maxTokens ?? this.maxTokens,
       isValidateMode: isValidateMode ?? this.isValidateMode,
-      requireEmbedding: requireEmbedding ?? this.requireEmbedding,
       indexMethods: indexMethods ?? this.defaultIndexMethods,
       contentRemoveRequireConfirmed:
           contentRemoveRequireConfirmed ?? this.contentRemoveRequireConfirmed,
@@ -163,7 +148,53 @@ class RagEditState {
   }
 }
 
-final ragEditState = StateProvider((ref) => RagEditState());
+class RagStateNotifier extends StateNotifier<RagEditState> {
+  RagStateNotifier(super.state, this.ref);
+  Ref ref;
+
+  void newState() {
+    state = RagEditState(ref: ref);
+  }
+
+  void changeState({
+    String? id,
+    String? name,
+    String? description,
+    Model? embedding,
+    ApiProvider? provider,
+    int? dimensions,
+    int? maxTokens,
+    bool? isValidateMode,
+    int? requireEmbedding,
+    Set<RAGIndexMethod>? indexMethods,
+    List<String>? contentAddRequireConfirmed,
+    Set<String>? contentRemoveRequireConfirmed,
+    Map<String, OriginalContent>? memoriesAddRequireConfirmed,
+    Map<String, OriginalContent>? contentModifiedRequireConfirmed,
+    Map<String, AutoIndexRule>? indexRules,
+  }) {
+    state = RagEditState(
+      ref: ref,
+      id: id,
+      name: name,
+      description: description,
+      embedding: embedding,
+      provider: provider,
+      dimensions: dimensions,
+      maxTokens: maxTokens,
+      isValidateMode: isValidateMode ?? false,
+      indexMethods: indexMethods,
+      contentRemoveRequireConfirmed: contentRemoveRequireConfirmed,
+      memoriesAddRequireConfirmed: memoriesAddRequireConfirmed,
+      contentModifiedRequireConfirmed: contentModifiedRequireConfirmed,
+      indexRules: indexRules,
+    );
+  }
+}
+
+final ragEditState = StateNotifierProvider<RagStateNotifier, RagEditState>(
+  (ref) => RagStateNotifier(RagEditState(ref: ref), ref),
+);
 
 enum SelectedRAGSection {
   fileManagement,
@@ -259,8 +290,7 @@ class _RagSettingPageState extends ConsumerState<RagSettingPage>
                   text: S.of(context).cancel_long_press,
                   color: theme.thirdGradeColor,
                   onLongPress: () async {
-                    var n = ref.read(ragEditState.notifier);
-                    n.state = RagEditState();
+                    ref.read(ragEditState.notifier).newState();
                     widget.onBack();
                   },
                 ),
@@ -402,7 +432,7 @@ class _RagSettingPageState extends ConsumerState<RagSettingPage>
     );
   }
 
-  static List<int> dimensions = const [512, 768, 1024, 1536];
+  static List<int> dimensions = const [512, 768, 1024, 1536, 2048];
   Widget _dimensionDropDown() {
     return StdDropDown(
       initialIndex: (ragState.dimensions == null)
@@ -2209,8 +2239,11 @@ class _RagAutoIndexManagementState
                       S.of(context).auto_index_rules_2,
                       style: TextStyle(fontSize: 16),
                     ),
+                    /*
                     const SizedBox(width: 10),
                     issuerDropdown(rule),
+                    */
+                    //issuer 在现在已经没有意义了，现在的每一条content会同时记录agent和user的话
                     const SizedBox(width: 10),
                     methodDropdown(rule),
                     const SizedBox(width: 10),
@@ -2415,6 +2448,7 @@ class _RagAutoIndexManagementState
       S.of(context).any,
     ];
     int? init;
+    /*
     switch (rule.issuer) {
       case Issuer.any:
         init = 2;
@@ -2427,15 +2461,19 @@ class _RagAutoIndexManagementState
         break;
       case null:
     }
+     */
     return StdDropDown(
       initialIndex: init,
       color: theme.thirdGradeColor,
       width: 150,
       height: 45,
       onChanged: (index) {
+        /*
         rule.issuer = issuerEnum[index];
         validate(rule);
         setState(() {});
+        
+         */
       },
       itemBuilder: (context, index, onTap) {
         return StdListTile(

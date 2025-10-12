@@ -52,6 +52,14 @@ class RagProvider {
     embeddingService(m.$1, m.$2, m.$3);
   }
 
+  void clearLoadedAgent() {
+    loadedAgentId = null;
+    loadedKBs.clear();
+    kbRequireVecSearch.clear();
+    kbsRequireKeyWordSearch.clear();
+    sessionId = null;
+  }
+
   Future<void> loadKnowledgeBases(List<String> kbs, ChatSession session) async {
     sessionId = session.id;
     if (ports['autoIndex'] != null) {
@@ -64,6 +72,7 @@ class RagProvider {
     loadedKBs.clear();
     messagesCached.clear();
     Map<String, LLMApiService> embeddingInstances = {};
+    Map<String, KnowledgeBase> knowledgeBase = {};
     for (var k in kbs) {
       var kb = await RAGDatabaseManager().getKnowledgeBaseById(k);
       if (kb == null) {
@@ -80,7 +89,7 @@ class RagProvider {
           ),
           kb.embeddings.first.vectorDimension,
         );
-        loadedKBs.add(kb);
+        knowledgeBase[kb.id] = kb;
         if (!embeddingInstances.containsKey(
           kb.embeddings.first.modelConfigId,
         )) {
@@ -93,7 +102,7 @@ class RagProvider {
           embeddingInstances[kb.embeddings.first.modelConfigId] = ei;
         }
         //注意一下，这里是两个括号，因为传入的实际上是一个record对象
-        Isolate.spawn(_embeddingWrapper, ((
+        await Isolate.spawn(_embeddingWrapper, ((
           embeddingInstances,
           kbRequireVecSearch,
           bindingPort.sendPort,
@@ -110,25 +119,92 @@ class RagProvider {
         ocRegex.addAll(rmap);
       }
     }
+    loadedKBs = knowledgeBase.values.toList();
     var airs = await RAGDatabaseManager().getAutoIndexRulesByAgentId(
       session.agentId,
     );
     if (airs.isNotEmpty) {
+      var embMap = <String, Embedding>{};
+      var embSMap = <String, LLMApiService>{};
+      for (var air in airs) {
+        if (knowledgeBase.containsKey(air.knowledgeBaseId)) {
+          var emb = knowledgeBase[air.knowledgeBaseId]!.embeddings.first;
+          if (embSMap.containsKey(emb.modelConfigId)) {
+            embMap[air.id] = emb;
+            continue;
+          }
+          var ems =
+              (embeddingInstances[emb.modelConfigId] ??
+              await ApiServiceProvider.instance.createApiService(
+                emb.modelConfigId,
+              ));
+          if (ems == null) {
+            continue;
+          }
+          embMap[air.id] = emb;
+          embSMap[emb.modelConfigId] = ems;
+        } else {
+          var kb = await RAGDatabaseManager().getKnowledgeBaseById(
+            air.knowledgeBaseId,
+          );
+          var emb = kb?.embeddings.first;
+          if (emb == null) {
+            continue;
+          }
+          if (embSMap.containsKey(emb.modelConfigId)) {
+            embMap[air.id] = emb;
+            continue;
+          }
+          var ls = await ApiServiceProvider.instance.createApiService(
+            emb.modelConfigId,
+          );
+          if (ls != null) {
+            embMap[air.id] = emb;
+            embSMap[emb.modelConfigId] = ls;
+          }
+        }
+      }
       autoIndexRequestReceive = ReceivePort();
       //注意一下，这里是两个括号，因为传入的实际上是一个record对象
-      Isolate.spawn(_autoIndexWrapper, (
+      await Isolate.spawn(_autoIndexWrapper, (
         bindingPort.sendPort,
         autoIndexRequestReceive!.sendPort,
         airs,
+        embMap,
+        embSMap,
         session,
       ));
-      loadedAgentId = session.agentId;
-      autoIndexRequestReceive?.listen((data) {});
+      autoIndexRequestReceive?.listen((data) async {
+        var d = data as IsolateProcessResult<AutoIndexResult>;
+        var autoIndexResult = d.result;
+        if (autoIndexResult == null) {
+          return;
+        }
+        if (autoIndexResult.embeddingConfig == null) {
+          return;
+        }
+        var emb = autoIndexResult.embeddingConfig!;
+        var result = autoIndexResult.result;
+        //整个都用事务包裹，保证统一
+        await PathProvider.getPath("RAG/VectorSearch/${emb.id}");
+
+        await RAGDatabaseManager().updateDBsWithTransaction(result, () async {
+          if (result.writeToVectorDb.isNotEmpty) {
+            var vdb = vectorDbInstances[emb.id] ??= VectorSearchManager(
+              await PathProvider.getPath("RAG/VectorSearch/${emb.id}"),
+              emb.vectorDimension,
+            );
+            await vdb.putMany(result.writeToVectorDb);
+          }
+        });
+        ref.read(activityProvider.notifier).onActivityComplete("Auto Index");
+      });
     }
+    loadedAgentId = session.agentId;
   }
 
   static void _autoIndexWrapper(dynamic m) {
-    autoIndex(m.$1, m.$2, m.$3, m.$4);
+    autoIndex(m.$1, m.$2, m.$3, m.$4, m.$5, m.$6);
   }
 
   List<FormattedChatMessage> messagesCached = [];
@@ -195,10 +271,6 @@ class RagProvider {
       ...messagesCached,
       ...c.contentChunk.values.map((m) => buildMessages(m)),
     ];
-    print(m);
-    if (ports.containsKey('autoIndex')) {
-      ports['autoIndex']?.send(newContent);
-    }
     return m;
   }
 
@@ -272,17 +344,34 @@ class RagProvider {
     });
   }
 
-  void onAgentNewMessage(ChatMessage msg) {
+  void onAgentRespondCompleteCallback({
+    required ChatMessage user,
+    required ChatMessage agent,
+  }) {
     if (loadedAgentId == null) {
       throw "Not loaded";
     }
-    ports['autoIndex']?.send(msg);
+    if (ports.containsKey('autoIndex')) {
+      ports['autoIndex']!.send((user, agent));
+      ref
+          .read(activityProvider.notifier)
+          .registerActivity(
+            Activity(
+              name: "Auto Index",
+              referTo: "Current Session",
+              type: ActivityType.autoIndexTask,
+              stateType: ActivityStateType.loading,
+            ),
+          );
+    }
   }
 
   static void autoIndex(
     SendPort binding,
     SendPort send,
     List<AutoIndexRule> rules,
+    Map<String, Embedding> embeddings,
+    Map<String, LLMApiService> embeddingServices,
     ChatSession session,
     //TODO: 在现在这没问题，因为我们只允许一个Regex，但是后面如果要改回允许多个regex的话，这里就要改了
   ) {
@@ -290,66 +379,140 @@ class RagProvider {
     binding.send(
       PortBindingRequest(fromIsolate: "autoIndex", sendPort: receive.sendPort),
     );
-    receive.listen((m) {
+    receive.listen((m) async {
       if (m == null) {
         //发送null的时候杀掉这个isolate
         receive.close();
         Isolate.current.kill(priority: Isolate.immediate);
       }
-      var message = m as ChatMessage;
-      List<Map<String, dynamic>> result = [];
+      var mR = m as (ChatMessage, ChatMessage);
+      //暂时拿记录顶上去，不过这样真的容易让人看不懂这一堆¥1 ¥2
+      var userMessage = mR.$1;
+      var agentMessage = mR.$2;
       Uuid uuid = Uuid();
       // ignore system messages
-      if (message.sender == MessageSender.system) return;
+      if (agentMessage.sender == MessageSender.system) return;
       for (var rule in rules) {
-        if (rule.issuer == Issuer.any ||
-            (rule.issuer == Issuer.assistant &&
-                message.sender == MessageSender.ai) ||
-            (rule.issuer == Issuer.user &&
-                message.sender == MessageSender.user)) {
-          if (rule.match(message.content)) {
-            var oc = OriginalContent(
-              id: uuid.v7(),
-              knowledgeBaseId: rule.knowledgeBaseId,
-              content: message.content,
-              insertedAt: message.timestamp,
-              indexMethod: rule.ragIndexMethod,
+        if (rule.match(agentMessage.content) ||
+            rule.match(userMessage.content)) {
+          var oc = OriginalContent(
+            id: uuid.v7(),
+            knowledgeBaseId: rule.knowledgeBaseId,
+            content:
+                '''{"user": ${userMessage.content}, "agent": ${agentMessage.content}''',
+            insertedAt: agentMessage.timestamp,
+            indexMethod: rule.ragIndexMethod,
+            contentType: RagContentType.chatHistory,
+            metadata: MetaData(
+              originalName: session.name,
               contentType: RagContentType.chatHistory,
-              metadata: MetaData(
-                originalName: session.name,
-                contentType: RagContentType.chatHistory,
-                author: message.sender == MessageSender.user
-                    ? 'user'
-                    : session.agentId,
-                createdAt: message.timestamp,
-              ),
-            );
-            print(oc.toMap());
+              createdAt: agentMessage.timestamp,
+            ),
+          );
+          var emb = embeddings[rule.id];
+          if (emb == null) {
+            print("Embedding ${rule.knowledgeBaseId} not found");
+            continue;
           }
+          var embS = embeddingServices[emb.modelConfigId];
+          if (embS == null) {
+            print("Embedding service ${emb.modelConfigId} not found");
+            continue;
+          }
+          var ocRaw = oc.toMap();
+          var result = await RagProcessor.processSingleContent(
+            rule.knowledgeBaseId,
+            emb.vectorDimension,
+            ocRaw,
+            embS,
+          );
+          //解释一下，当process single content本身检测到original content没有需要改变或者更新的时候这一栏是null的
+          //因为他默认original content 已经写到数据库中了（这个函数原来不是用来做auto index的）
+          //所以这里要判断一下并且加入。啊，这就是我创造的辉煌屎山中的一坨很小的
+          result.writeOrUpdateToOriginalContent ??= ocRaw;
+          AutoIndexResult r = AutoIndexResult(
+            true,
+            rule.knowledgeBaseId,
+            emb,
+            result,
+          );
+          send.send(
+            IsolateProcessResult<AutoIndexResult>(isFinished: false, result: r),
+          );
         }
       }
     });
   }
 
-  Future<void> processKnowledgeBase(KnowledgeBase kb, String activityId) async {
+  Future<void> processKnowledgeBase(KnowledgeBase kb, Activity activity) async {
     if (kb.status == KnowledgeBaseStat.OK) {
       return;
     }
+    ref.read(activityProvider.notifier).registerActivity(activity);
     var kbs = await RAGDatabaseManager().getRawOriginalContentOfBase(kb.id);
     final processResult = ReceivePort();
     var api = await ApiServiceProvider.instance.createApiService(
       kb.embeddings.first.modelConfigId,
     );
-    var iso = await Isolate.spawn((param) async {
-      await RagProcessor.processContent(param.$1, param.$2, param.$3, param.$4);
-    }, (kb, kbs, api, processResult.sendPort));
-    processResult.listen((data) async {
-      var result = data as ContentProcessResult;
+    var iso = await Isolate.spawn(
+      (param) async {
+        var port = param.$5;
+        for (var item in param.$3) {
+          try {
+            var r = await RagProcessor.processSingleContent(
+              param.$1,
+              param.$2,
+              item,
+              param.$4,
+            );
+            port.send(
+              IsolateProcessResult<ContentProcessResult>(
+                isFinished: false,
+                result: r,
+              ),
+            );
+          } catch (e) {
+            port.send(
+              IsolateProcessResult<ContentProcessResult>(
+                isFinished: false,
+                error: e.toString(),
+              ),
+            );
+          }
+        }
+        port.send(IsolateProcessResult<ContentProcessResult>(isFinished: true));
+      },
+      (
+        kb.id,
+        kb.embeddings.first.vectorDimension,
+        kbs,
+        api,
+        processResult.sendPort,
+      ),
+    );
+    processResult.listen((d) async {
+      var data = d as IsolateProcessResult;
+      if (data.error != null) {
+        ref
+            .read(activityProvider.notifier)
+            .onActivityError(activity.name, data.error ?? "Error");
+      }
+      if (data.isFinished) {
+        await RAGDatabaseManager().setBaseOk(kb.id);
+        ref.read(activityProvider.notifier).onActivityComplete(activity.name);
+        processResult.close();
+        iso.kill();
+        return;
+      }
+      if (data.result == null) {
+        return;
+      }
+      var result = data.result as ContentProcessResult;
       //整个都用事务包裹，保证统一
       await PathProvider.getPath("RAG/VectorSearch/${kb.embeddings.first.id}");
 
       await RAGDatabaseManager().updateDBsWithTransaction(result, () async {
-        if (result.writeToVectorDB.isNotEmpty) {
+        if (result.writeToVectorDb.isNotEmpty) {
           var vdb = vectorDbInstances[kb.embeddings.first.id] ??=
               VectorSearchManager(
                 await PathProvider.getPath(
@@ -357,20 +520,9 @@ class RagProvider {
                 ),
                 kb.embeddings.first.vectorDimension,
               );
-          await vdb.putMany(result.writeToVectorDB);
+          await vdb.putMany(result.writeToVectorDb);
         }
       });
-      if (result.onError != null) {
-        ref
-            .read(activityProvider.notifier)
-            .onActivityError(activityId, result.onError ?? "Error");
-      }
-      if (result.isFullyFinished && result.onError == null) {
-        await RAGDatabaseManager().setBaseOk(kb.id);
-        ref.read(activityProvider.notifier).onActivityComplete(activityId);
-        processResult.close();
-        iso.kill();
-      }
     });
   }
 }
@@ -416,6 +568,19 @@ class IndexMessages {
       }
     }
   }
+}
+
+class AutoIndexResult {
+  bool isProcessing; // 规则匹配成功后，会发送一个true，而当主线程接到这个状态时会将indicator给点亮
+  String knowledgeBaseId;
+  Embedding? embeddingConfig;
+  ContentProcessResult result;
+  AutoIndexResult(
+    this.isProcessing,
+    this.knowledgeBaseId,
+    this.embeddingConfig,
+    this.result,
+  );
 }
 
 final ragProvider = StateProvider<RagProvider>((ref) {

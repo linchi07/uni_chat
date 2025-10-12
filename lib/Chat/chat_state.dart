@@ -338,7 +338,12 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         content: state.newContentBuffer.toString(),
         timestamp: DateTime.now(),
       );
-      _ref.read(ragProvider).onAgentNewMessage(finalAiMessage);
+      _ref
+          .read(ragProvider)
+          .onAgentRespondCompleteCallback(
+            user: userMessage,
+            agent: finalAiMessage,
+          );
       state = state.copyWith(
         isResponding: false,
         messages: [...state.messages, finalAiMessage],

@@ -12,6 +12,7 @@ import 'package:flat_buffers/flat_buffers.dart' as fb;
 import 'package:objectbox/internal.dart'
     as obx_int; // generated code can access "internal" functionality
 import 'package:objectbox/objectbox.dart' as obx;
+import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
 import 'RAG/rag_entity.dart';
 
@@ -138,6 +139,36 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(5, 6371234536569859954),
+    name: 'VectorQueryObject2048',
+    lastPropertyId: const obx_int.IdUid(3, 8291467730015738692),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 3419524602525758765),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 2726857873391151927),
+        name: 'chunkId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 8291467730015738692),
+        name: 'embedding',
+        type: 28,
+        flags: 8,
+        indexId: const obx_int.IdUid(9, 3482308875665680661),
+        hnswParams: obx_int.ModelHnswParams(dimensions: 2048, distanceType: 2),
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -151,7 +182,7 @@ final _entities = <obx_int.ModelEntity>[
 /// For Flutter apps, also calls `loadObjectBoxLibraryAndroidCompat()` from
 /// the ObjectBox Flutter library to fix loading the native ObjectBox library
 /// on Android 6 and older.
-obx.Store openStore({
+Future<obx.Store> openStore({
   String? directory,
   int? maxDBSizeInKB,
   int? maxDataSizeInKB,
@@ -159,10 +190,11 @@ obx.Store openStore({
   int? maxReaders,
   bool queriesCaseSensitiveDefault = true,
   String? macosApplicationGroup,
-}) {
+}) async {
+  await loadObjectBoxLibraryAndroidCompat();
   return obx.Store(
     getObjectBoxModel(),
-    directory: directory,
+    directory: directory ?? (await defaultStoreDirectory()).path,
     maxDBSizeInKB: maxDBSizeInKB,
     maxDataSizeInKB: maxDataSizeInKB,
     fileMode: fileMode,
@@ -177,8 +209,8 @@ obx.Store openStore({
 obx_int.ModelDefinition getObjectBoxModel() {
   final model = obx_int.ModelInfo(
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(4, 1644127769993034001),
-    lastIndexId: const obx_int.IdUid(8, 2092130301566339729),
+    lastEntityId: const obx_int.IdUid(5, 6371234536569859954),
+    lastIndexId: const obx_int.IdUid(9, 3482308875665680661),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -369,6 +401,48 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    VectorQueryObject2048: obx_int.EntityDefinition<VectorQueryObject2048>(
+      model: _entities[4],
+      toOneRelations: (VectorQueryObject2048 object) => [],
+      toManyRelations: (VectorQueryObject2048 object) => {},
+      getId: (VectorQueryObject2048 object) => object.id,
+      setId: (VectorQueryObject2048 object, int id) {
+        object.id = id;
+      },
+      objectToFB: (VectorQueryObject2048 object, fb.Builder fbb) {
+        final chunkIdOffset = fbb.writeString(object.chunkId);
+        final embeddingOffset = fbb.writeListFloat32(object.embedding);
+        fbb.startTable(4);
+        fbb.addInt64(0, object.id ?? 0);
+        fbb.addOffset(1, chunkIdOffset);
+        fbb.addOffset(2, embeddingOffset);
+        fbb.finish(fbb.endTable());
+        return object.id ?? 0;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          4,
+        );
+        final chunkIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final embeddingParam = const fb.ListReader<double>(
+          fb.Float32Reader(),
+          lazy: false,
+        ).vTableGet(buffer, rootOffset, 8, []);
+        final object = VectorQueryObject2048(
+          id: idParam,
+          chunkId: chunkIdParam,
+          embedding: embeddingParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -443,5 +517,23 @@ class VectorQueryObject768_ {
   /// See [VectorQueryObject768.embedding].
   static final embedding = obx.QueryHnswProperty<VectorQueryObject768>(
     _entities[3].properties[2],
+  );
+}
+
+/// [VectorQueryObject2048] entity fields to define ObjectBox queries.
+class VectorQueryObject2048_ {
+  /// See [VectorQueryObject2048.id].
+  static final id = obx.QueryIntegerProperty<VectorQueryObject2048>(
+    _entities[4].properties[0],
+  );
+
+  /// See [VectorQueryObject2048.chunkId].
+  static final chunkId = obx.QueryStringProperty<VectorQueryObject2048>(
+    _entities[4].properties[1],
+  );
+
+  /// See [VectorQueryObject2048.embedding].
+  static final embedding = obx.QueryHnswProperty<VectorQueryObject2048>(
+    _entities[4].properties[2],
   );
 }

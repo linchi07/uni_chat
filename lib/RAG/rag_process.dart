@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:docx_to_text/docx_to_text.dart';
 import 'package:flutter/foundation.dart';
@@ -177,108 +176,117 @@ class RagProcessor {
     return doc;
   }
 
-  /*
-  static Future<void> processSingleContent(OriginalContent oc)async{
-      try {
-        var content = oc;
-        content.hash = xxH3Sync(content.content);
-        //如果他需要关键词索引
-        if (content.indexMethod.contains(RAGIndexMethod.keyword) &&
-            !content.isTokenized) {
-          var chn =  RegExp(r'[\u4e00-\u9fa5]');
-          //这里只有中文需要分词，英文的话数据库自己搞定了
-          if (chn.hasMatch(content.content)) {
-            var tk = Tokenizer();
-            await tk.initJieba();
-            var c = tk.zhHansTokenizeSync(content.content);
-            //这里需要注意，fts5用的是row id一个int来关联，original content的主键实际上是一个int，但是对外抽象成string的
-            result.rewriteToFTS5.add((item['row_id'], c));
-          }
-          content.isTokenized = true;
-        }
-        //如果需要向量索引
-        if (content.indexMethod.contains(RAGIndexMethod.vector) &&
-            !content.isEmbedded) {
-          var splitter =
+  static Future<ContentProcessResult> processSingleContent(
+    String knowledgeBaseId,
+    int dimension,
+    Map<String, dynamic> rawContent,
+    LLMApiService? apiService,
+  ) async {
+    var tokenizer = Tokenizer();
+    RegExp? chn;
+    Uuid? uuid;
+    TextSplitter? splitter;
+    List<Exception>? exceptions;
+    //在后台反序列化
+    var result = ContentProcessResult();
+    var content = OriginalContent.fromMap(rawContent);
+    content.hash = xxH3Sync(content.content);
+    //如果他需要关键词索引
+    if (content.indexMethod.contains(RAGIndexMethod.keyword) &&
+        !content.isTokenized) {
+      await tokenizer.initJieba();
+      var tk = tokenizer.zhHansTokenizeSync(content.content);
+      //这里需要注意，fts5用的是row id一个int来关联，original content的主键实际上是一个int，但是对外抽象成string的
+      result.writeToFts5 = (rawContent['row_id'], tk);
+      content.isTokenized = true;
+    }
+    //如果需要向量索引
+    if (content.indexMethod.contains(RAGIndexMethod.vector) &&
+        !content.isEmbedded) {
+      splitter ??=
           //TODO:add manual adjustment to this
-          RecursiveCharacterTextSplitter(
-            chunkSize: 1000,
-            chunkOverlap: 100,
-          );
-          var chunks = splitter.splitText(content.content);
-          var uuid = Uuid();
-          var cc = <ContentChunk>[];
-          for (var chunk in chunks) {
-            //用v7对数据库更加友好一点
-            var id = uuid.v7();
-            cc.add(
-              ContentChunk(
-                id: id,
-                knowledgeBaseId: kb.id,
-                originalContentId: content.id,
-                hash: xxH3Sync(chunk),
-                content: chunk,
-                //TODO: implement page based metadata
-                chunkMetadata: {},
+          RecursiveCharacterTextSplitter(chunkSize: 1000, chunkOverlap: 100);
+      var chunks = splitter.splitText(content.content);
+      uuid ??= Uuid();
+      var cc = <ContentChunk>[];
+      for (var chunk in chunks) {
+        //用v7对数据库更加友好一点
+        var id = uuid.v7();
+        cc.add(
+          ContentChunk(
+            id: id,
+            knowledgeBaseId: knowledgeBaseId,
+            originalContentId: content.id,
+            hash: xxH3Sync(chunk),
+            content: chunk,
+            //TODO: implement page based metadata
+            chunkMetadata: {},
+          ),
+        );
+      }
+      result.writeToContentChunkRaw = cc.map((e) => e.toMap()).toList();
+      if (apiService == null) {
+        throw Exception("apiService is null");
+      }
+      var er = await apiService.embedding(chunks, dimension);
+      var vectors = <VectorQueryObject>[];
+      for (int i = 0; i < er.length; i++) {
+        switch (dimension) {
+          case 384:
+            vectors.add(
+              VectorQueryObject384(
+                chunkId: cc[i].id,
+                embedding: matchDimensions(er[i], dimension),
               ),
             );
-          }
-          if (apiService == null) {
-            throw Exception("apiService is null");
-          }
-          var er = await apiService.embedding(
-            chunks,
-            kb.embeddings.first.vectorDimension,
-          );
-          var vectors = <VectorQueryObject>[];
-          for (int i = 0; i < er.length; i++) {
-            switch (kb.embeddings.first.vectorDimension) {
-              case 384:
-                vectors.add(
-                  VectorQueryObject384(chunkId: cc[i].id, embedding: er[i]),
-                );
-                break;
-              case 768:
-                vectors.add(
-                  VectorQueryObject768(chunkId: cc[i].id, embedding: er[i]),
-                );
-                break;
-              case 1024:
-                vectors.add(
-                  VectorQueryObject1024(chunkId: cc[i].id, embedding: er[i]),
-                );
-                break;
-              case 1536:
-                vectors.add(
-                  VectorQueryObject1536(chunkId: cc[i].id, embedding: er[i]),
-                );
-              default:
-                throw Exception(
-                  "Vector dimension ${kb.embeddings.first.vectorDimension} is not supported",
-                );
-            }
-          }
-          content.isEmbedded = true;
+            break;
+          case 768:
+            vectors.add(
+              VectorQueryObject768(
+                chunkId: cc[i].id,
+                embedding: matchDimensions(er[i], dimension),
+              ),
+            );
+            break;
+          case 1024:
+            vectors.add(
+              VectorQueryObject1024(
+                chunkId: cc[i].id,
+                embedding: matchDimensions(er[i], dimension),
+              ),
+            );
+            break;
+          case 1536:
+            vectors.add(
+              VectorQueryObject1536(
+                chunkId: cc[i].id,
+                embedding: matchDimensions(er[i], dimension),
+              ),
+            );
+            break;
+          case 2048:
+            vectors.add(
+              VectorQueryObject2048(
+                chunkId: cc[i].id,
+                embedding: matchDimensions(er[i], dimension),
+              ),
+            );
+          default:
         }
-        result.updateToOriginalContent.add(content.toMap());
-      } catch (eo) {
-        var e = eo as Exception;
-        result.isFullyFinished = false;
-        result.onError = Exception(e);
-        exceptions ??= [];
-        exceptions.add(e);
-        port.send(result);
-        continue;
       }
-      result.isFullyFinished = false;
-      port.send(result);
+      content.isEmbedded = true;
+      result.writeToVectorDb.addAll(vectors);
+    }
+    result.writeOrUpdateToOriginalContent = content.toMap();
+    return result;
   }
-*/
-  static Future<void> processContent(
-    KnowledgeBase kb,
+
+  /*
+  static Future<BatchContentProcessResult> processContent(
+    String knowledgeBaseId,
+    int dimension,
     List<Map<String, dynamic>> rawContent,
     LLMApiService? apiService,
-    SendPort port,
   ) async {
     var tokenizer = Tokenizer();
     RegExp? chn;
@@ -288,7 +296,7 @@ class RagProcessor {
     //在后台反序列化
     try {
       for (var item in rawContent) {
-        var result = ContentProcessResult();
+        var result = BatchContentProcessResult();
         try {
           var content = OriginalContent.fromMap(item);
           content.hash = xxH3Sync(content.content);
@@ -319,7 +327,7 @@ class RagProcessor {
               cc.add(
                 ContentChunk(
                   id: id,
-                  knowledgeBaseId: kb.id,
+                  knowledgeBaseId: knowledgeBaseId,
                   originalContentId: content.id,
                   hash: xxH3Sync(chunk),
                   content: chunk,
@@ -332,21 +340,15 @@ class RagProcessor {
             if (apiService == null) {
               throw Exception("apiService is null");
             }
-            var er = await apiService.embedding(
-              chunks,
-              kb.embeddings.first.vectorDimension,
-            );
+            var er = await apiService.embedding(chunks, dimension);
             var vectors = <VectorQueryObject>[];
             for (int i = 0; i < er.length; i++) {
-              switch (kb.embeddings.first.vectorDimension) {
+              switch (dimension) {
                 case 384:
                   vectors.add(
                     VectorQueryObject384(
                       chunkId: cc[i].id,
-                      embedding: matchDimensions(
-                        er[i],
-                        kb.embeddings.first.vectorDimension,
-                      ),
+                      embedding: matchDimensions(er[i], dimension),
                     ),
                   );
                   break;
@@ -354,10 +356,7 @@ class RagProcessor {
                   vectors.add(
                     VectorQueryObject768(
                       chunkId: cc[i].id,
-                      embedding: matchDimensions(
-                        er[i],
-                        kb.embeddings.first.vectorDimension,
-                      ),
+                      embedding: matchDimensions(er[i], dimension),
                     ),
                   );
                   break;
@@ -365,10 +364,7 @@ class RagProcessor {
                   vectors.add(
                     VectorQueryObject1024(
                       chunkId: cc[i].id,
-                      embedding: matchDimensions(
-                        er[i],
-                        kb.embeddings.first.vectorDimension,
-                      ),
+                      embedding: matchDimensions(er[i], dimension),
                     ),
                   );
                   break;
@@ -376,10 +372,7 @@ class RagProcessor {
                   vectors.add(
                     VectorQueryObject1536(
                       chunkId: cc[i].id,
-                      embedding: matchDimensions(
-                        er[i],
-                        kb.embeddings.first.vectorDimension,
-                      ),
+                      embedding: matchDimensions(er[i], dimension),
                     ),
                   );
                 default:
@@ -402,7 +395,7 @@ class RagProcessor {
       }
     } catch (e) {
       port.send(
-        ContentProcessResult(
+        BatchContentProcessResult(
           isFullyFinished: true,
           onError: (exceptions != null) ? exceptions.toString() : null,
         ),
@@ -410,13 +403,13 @@ class RagProcessor {
       return;
     }
     port.send(
-      ContentProcessResult(
+      BatchContentProcessResult(
         isFullyFinished: true,
         onError: (exceptions != null) ? exceptions.toString() : null,
       ),
     );
   }
-
+*/
   /// 匹配输入的维度
   /// 维度超出目标时截断
   /// 维度低于目标时补0
@@ -445,13 +438,29 @@ class IsolateProcessResult<T extends Object?> {
 }
 
 class ContentProcessResult {
+  late List<VectorQueryObject> writeToVectorDb;
+  (int, String)? writeToFts5;
+  late List<Map<String, dynamic>> writeToContentChunkRaw;
+  Map<String, dynamic>? writeOrUpdateToOriginalContent;
+  ContentProcessResult({
+    List<VectorQueryObject>? writeToVectorDb,
+    this.writeToFts5,
+    List<Map<String, dynamic>>? writeToContentChunkRaw,
+    this.writeOrUpdateToOriginalContent,
+  }) {
+    this.writeToContentChunkRaw = writeToContentChunkRaw ?? [];
+    this.writeToVectorDb = writeToVectorDb ?? [];
+  }
+}
+
+class BatchContentProcessResult {
   bool isFullyFinished = false;
   String? onError;
   late List<VectorQueryObject> writeToVectorDB;
   late List<Map<String, dynamic>> writeToContentChunkRaw;
   late List<Map<String, dynamic>> updateToOriginalContent;
   late List<(int, String)> rewriteToFTS5;
-  ContentProcessResult({
+  BatchContentProcessResult({
     this.isFullyFinished = false,
     this.onError,
     List<VectorQueryObject>? writeToVectorDB,
@@ -464,5 +473,20 @@ class ContentProcessResult {
     this.writeToContentChunkRaw = writeToContentChunkRaw ?? [];
     this.updateToOriginalContent = updateToOriginalContent ?? [];
     this.rewriteToFTS5 = rewriteToFTS5 ?? [];
+  }
+
+  void addFromContentProcessResult(ContentProcessResult result) {
+    if (result.writeToVectorDb.isNotEmpty) {
+      writeToVectorDB.addAll(result.writeToVectorDb);
+    }
+    if (result.writeToContentChunkRaw.isNotEmpty) {
+      writeToContentChunkRaw.addAll(result.writeToContentChunkRaw);
+    }
+    if (result.writeOrUpdateToOriginalContent != null) {
+      updateToOriginalContent.add(result.writeOrUpdateToOriginalContent!);
+    }
+    if (result.writeToFts5 != null) {
+      rewriteToFTS5.add(result.writeToFts5!);
+    }
   }
 }

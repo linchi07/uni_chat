@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:jieba_flutter/analysis/jieba_segmenter.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uni_chat/RAG/rag_process.dart';
+import 'package:uni_chat/RAG/rag_settings.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 
 import '../objectbox.g.dart';
@@ -134,7 +135,6 @@ CREATE TABLE auto_index_rules (
   knowledge_base_id TEXT NOT NULL,
   rag_index_method TEXT NOT NULL,
   keyword TEXT,
-  issuer TEXT,
   regex TEXT,
   auto_index_method TEXT NOT NULL,
   FOREIGN KEY (knowledge_base_id) REFERENCES knowledge_bases(id) ON DELETE CASCADE
@@ -262,7 +262,7 @@ ON agent_rule_relations (agent_id)
     return result.first['exists_result'] == 1;
   }
 
-  Future<List<String>?> getNotOkKnowledgeBaseIds() async {
+  Future<List<KnowledgeBase>?> getNotOkKnowledgeBase() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'knowledge_bases',
@@ -272,7 +272,7 @@ ON agent_rule_relations (agent_id)
     if (maps.isEmpty) {
       return null;
     }
-    return maps.map((e) => e['id'] as String).toList();
+    return maps.map((e) => KnowledgeBase.fromMap(e)).toList();
   }
 
   Future<List<Map<String, dynamic>>> getRawOriginalContentOfBase(
@@ -520,14 +520,12 @@ ON agent_rule_relations (agent_id)
   ]) {
     return database.then((db) async {
       await db.transaction((txn) async {
-        for (var oc in cpr.updateToOriginalContent) {
-          var id = oc["id"];
-          oc.remove("id");
-          await txn.update(
+        if (cpr.writeOrUpdateToOriginalContent != null) {
+          var oc = cpr.writeOrUpdateToOriginalContent!;
+          await txn.insert(
             'original_contents',
-            where: "id = ?",
-            whereArgs: [id],
             oc,
+            conflictAlgorithm: ConflictAlgorithm.replace,
           );
         }
         for (var rawChunk in cpr.writeToContentChunkRaw) {
@@ -540,10 +538,10 @@ ON agent_rule_relations (agent_id)
         if (anythingElse != null) {
           await anythingElse();
         }
-        for (var (id, content) in cpr.rewriteToFTS5) {
+        if (cpr.writeToFts5 != null) {
           await txn.insert('original_contents_fts', {
-            'rowid': id,
-            'key_words': content,
+            'rowid': cpr.writeToFts5!.$1,
+            'key_words': cpr.writeToFts5!.$2,
           }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
       });
@@ -590,6 +588,150 @@ ON agent_rule_relations (agent_id)
     } else {
       await updateAutoIndexRule(rule);
     }
+  }
+
+  ///更新知识库的整个内容
+  ///kb需要单独传入
+  Future<void> insertOrUpdateKnowledgeBaseWithRAGConfig(
+    RagEditState config,
+    KnowledgeBase kb,
+  ) async {
+    final db = await database;
+    //此处不能开新的事务或者调用db，否则会造成数据库死锁
+    await db.transaction((trx) async {
+      kb.status = KnowledgeBaseStat.pending;
+      final count = await trx.rawQuery(
+        'SELECT COUNT(*) FROM knowledge_bases WHERE id = ?',
+        [kb.id],
+      );
+      if (count.first['COUNT(*)'] == 0) {
+        await trx.insert('knowledge_bases', kb.toMap());
+      } else {
+        await trx.update(
+          'knowledge_bases',
+          kb.toMap(),
+          where: 'id = ?',
+          whereArgs: [kb.id],
+        );
+      }
+
+      ///删除需要删除的内容
+      final placeholders = List.generate(
+        config.contentRemoveRequireConfirmed.length,
+        (index) => '?',
+      ).join(',');
+      await trx.delete(
+        'original_contents',
+        where: 'id IN ($placeholders)',
+        whereArgs: config.contentRemoveRequireConfirmed.toList(),
+      );
+
+      ///添加新添加的记忆
+      for (var o in config.memoriesAddRequireConfirmed.values) {
+        if (o.content.isNotEmpty &&
+            (o.metadata.originalName?.isNotEmpty ?? false)) {
+          o.content.trim();
+          o.metadata.originalName = o.metadata.originalName!.trim();
+          await trx.insert('original_contents', o.toMap());
+        }
+      }
+
+      ///更新已修改的内容
+      for (var c in config.contentModifiedRequireConfirmed.values) {
+        if (c.content.isNotEmpty &&
+            (c.metadata.originalName?.isNotEmpty ?? false)) {
+          c.hash = await RagProcessor.xxH3(c.content);
+          var old = await trx.query(
+            'original_contents',
+            where: "id = ?",
+            whereArgs: [c.id],
+            limit: 1,
+          );
+          if (old.isEmpty) {
+            await trx.insert('original_contents', c.toMap());
+            return;
+          }
+          var requireReEmbedding =
+              ((c.hash == null || (old.first['hash'] as int != c.hash)) &&
+              c.indexMethod.contains(RAGIndexMethod.vector));
+          var requireReTokenized =
+              (c.indexMethod.contains(RAGIndexMethod.keyword) &&
+              c.keyWords != old.first['key_words']);
+          if (requireReEmbedding) {
+            //当设置为向量索引同时内容改变时，让向量索引失效
+            //由于设置了级联删除，删除c向量索引也会全部删除
+            //也就是这种时候就直接删除再插入了
+            await trx.delete(
+              'original_contents',
+              where: "id = ?",
+              whereArgs: [c.id],
+            );
+            c.isEmbedded = !requireReEmbedding;
+            c.isTokenized = !requireReTokenized;
+            var m = c.toMap();
+            await trx.insert('original_contents', m);
+          } else {
+            //如果只是需要重新分词的话，则只更新分词字段即可
+            c.isTokenized = !requireReTokenized;
+            c.isEmbedded = !requireReEmbedding;
+            var m = c.toMap();
+            m.remove('id');
+            await trx.update(
+              'original_contents',
+              m,
+              where: "id = ?",
+              whereArgs: [c.id],
+            );
+          }
+        }
+      }
+
+      ///添加新的索引规则
+      for (var rule in config.indexRules.values) {
+        var r = await trx.query(
+          'auto_index_rules',
+          where: 'id = ?',
+          whereArgs: [rule.id],
+        );
+        var rm = rule.toMap();
+        if (r.isEmpty) {
+          // 插入规则
+          rm.remove("agents");
+          await trx.insert('auto_index_rules', rm);
+          // 插入agent关联关系
+          for (var agent in rule.agents) {
+            await trx.insert('agent_rule_relations', {
+              'agent_id': agent,
+              'rule_id': rule.id,
+            });
+          }
+        } else {
+          rm.remove("agents");
+          //agents 由关系表处理，只是封装了
+          // 更新规则
+          await trx.update(
+            'auto_index_rules',
+            rm,
+            where: 'id = ?',
+            whereArgs: [rule.id],
+          );
+          // 删除旧的关联关系
+          await trx.delete(
+            'agent_rule_relations',
+            where: 'rule_id = ?',
+            whereArgs: [rule.id],
+          );
+          // 插入新的关联关系
+          for (var agent in rule.agents) {
+            await trx.insert('agent_rule_relations', {
+              'agent_id': agent,
+              'rule_id': rule.id,
+            });
+          }
+        }
+      }
+    });
+    return;
   }
 
   Future<List<AutoIndexRule>> getAutoIndexRulesByBase(String baseId) async {
@@ -782,6 +924,7 @@ class VectorSearchManager {
   late final Box<VectorQueryObject768>? _store768;
   late final Box<VectorQueryObject1024>? _store1024;
   late final Box<VectorQueryObject1536>? _store1536;
+  late final Box<VectorQueryObject2048>? _store2048;
   late final int dimension;
   late Store _store;
   //连接到同一个数据库的实例只能初始化一次，否则要close。
@@ -809,6 +952,9 @@ class VectorSearchManager {
         break;
       case 1536:
         _store1536 = Box<VectorQueryObject1536>((_store));
+        break;
+      case 2048:
+        _store2048 = Box<VectorQueryObject2048>((_store));
         break;
       default:
         throw Exception('Invalid dimension');
@@ -869,6 +1015,17 @@ class VectorSearchManager {
             .build();
         result = await queryObject.findAsync();
         break;
+      case 2048:
+        final queryObject = _store2048!
+            .query(
+              VectorQueryObject2048_.embedding.nearestNeighborsF32(
+                queryVec,
+                maxResultCount,
+              ),
+            )
+            .build();
+        result = await queryObject.findAsync();
+        break;
     }
     return result;
   }
@@ -904,6 +1061,10 @@ class VectorSearchManager {
         List<VectorQueryObject1536> convertedList = objects
             .cast<VectorQueryObject1536>();
         return await _store1536!.putManyAsync(convertedList);
+      case 2048:
+        List<VectorQueryObject2048> convertedList = objects
+            .cast<VectorQueryObject2048>();
+        return await _store2048!.putManyAsync(convertedList);
       default:
         // This case should ideally not be reached if constructor logic is sound
         throw Exception('Invalid dimension for putMany');
@@ -922,6 +1083,8 @@ class VectorSearchManager {
         return await _store1024!.getAsync(id);
       case 1536:
         return await _store1536!.getAsync(id);
+      case 2048:
+        return await _store2048!.getAsync(id);
       default:
         throw Exception('Invalid dimension for getById');
     }
@@ -939,6 +1102,8 @@ class VectorSearchManager {
         return await _store1024!.getAllAsync();
       case 1536:
         return await _store1536!.getAllAsync();
+      case 2048:
+        return await _store2048!.getAllAsync();
       default:
         throw Exception('Invalid dimension for getAll');
     }
@@ -957,6 +1122,8 @@ class VectorSearchManager {
         return await _store1024!.removeManyAsync(ids);
       case 1536:
         return await _store1536!.removeManyAsync(ids);
+      case 2048:
+        return await _store2048!.removeManyAsync(ids);
       default:
         throw Exception('Invalid dimension for deleteMany');
     }
@@ -977,6 +1144,9 @@ class VectorSearchManager {
         break;
       case 1536:
         await _store1536!.removeAllAsync();
+        break;
+      case 2048:
+        await _store2048!.removeAllAsync();
         break;
       default:
         throw Exception('Invalid dimension for clear');

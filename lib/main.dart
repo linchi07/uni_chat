@@ -26,6 +26,7 @@ final Map<String, Locale> languages = const {
 };
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   if (io.Platform.isAndroid) {
     PlatForm().platform = Platform.android;
   } else if (io.Platform.isIOS) {
@@ -37,7 +38,6 @@ Future<void> main() async {
   }
   if (PlatForm._instance.platform == Platform.macos) {
     //要改好多东西啊
-    WidgetsFlutterBinding.ensureInitialized();
     await WindowManipulator.initialize();
     await WindowManipulator.hideTitle();
     await WindowManipulator.makeTitlebarTransparent();

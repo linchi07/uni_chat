@@ -13,7 +13,7 @@ class ActivityState {
       ActivityState(activities: activities ?? this.activities);
 }
 
-enum ActivityType { ragEmbedding }
+enum ActivityType { ragEmbedding, autoIndexTask }
 
 enum ActivityStateType { loading, success, error }
 
@@ -67,6 +67,7 @@ class ActivityManager extends StateNotifier<ActivityState> {
       a.errorMessage = null;
       a.stateType = ActivityStateType.loading;
       await startActivity(a);
+      saveState();
     }
   }
 
@@ -77,7 +78,25 @@ class ActivityManager extends StateNotifier<ActivityState> {
     ]);
   }
 
+  ///启动一个任务
+  ///注意，他只负责启动任务，但是具体任务是否需要被启动，是任务本身自己决定
+  ///当任务确定需要启动之后他会调用[registerActivity]来注册到任务系统中
   Future<void> startActivity(Activity activity) async {
+    if (activity.type == ActivityType.autoIndexTask) {
+      var notOK = await RAGDatabaseManager().getNotOkKnowledgeBase();
+      //TODO: 处理短时间重复提交的问题
+      if (notOK != null && notOK.isNotEmpty) {
+        for (var kb in notOK) {
+          var ac = Activity(
+            name: "AutoIndex : ${kb.name}",
+            referTo: kb.id,
+            type: ActivityType.ragEmbedding,
+            stateType: ActivityStateType.loading,
+          );
+          _ref.read(ragProvider).processKnowledgeBase(kb, ac);
+        }
+      }
+    }
     if (activity.type == ActivityType.ragEmbedding) {
       var kb = await RAGDatabaseManager().getKnowledgeBaseById(
         activity.referTo,
@@ -87,17 +106,23 @@ class ActivityManager extends StateNotifier<ActivityState> {
         return;
       }
       //TODO: 处理短时间重复提交的问题
-      _ref.read(ragProvider).processKnowledgeBase(kb, activity.name);
-      state = state.copyWith(
-        activities: {...state.activities, activity.name: activity},
-      );
+      _ref.read(ragProvider).processKnowledgeBase(kb, activity);
     }
+  }
+
+  void registerActivity(Activity activity) {
+    if (state.activities.containsKey(activity.name)) {
+      return;
+    }
+    state = state.copyWith(
+      activities: {...state.activities, activity.name: activity},
+    );
     saveState();
   }
 
   void onActivityComplete(String activityId) async {
     state.activities.remove(activityId);
-    state = state.copyWith(activities: {...state.activities});
+    state = state.copyWith(activities: state.activities);
     saveState();
   }
 
