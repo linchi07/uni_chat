@@ -13,3 +13,9 @@ class MacOSSpecificsSetting {
     await WindowManipulator.enableFullSizeContentView();
   }
 }
+
+class WindowsSpecificsSetting {
+  static Future<void> setWindowStyle() async {
+
+  }
+}

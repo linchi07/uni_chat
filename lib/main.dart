@@ -6,6 +6,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Chat/session_selector.dart';
@@ -38,6 +40,12 @@ Future<void> main() async {
   }
   if (PlatForm._instance.platform == RunningPlatform.macos) {
     await MacOSSpecificsSetting.setWindowStyle();
+  }
+  if (PlatForm().platform == RunningPlatform.windows) {
+    //windows 下使用 ffi版本
+    //我在考虑把macos 也切换到ffi版本，但是听说好像性能没有提升啥
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
   }
   final prefs = await SharedPreferences.getInstance();
   var l = prefs.getString("language");
