@@ -80,7 +80,7 @@ class FileUtils {
 class PathProvider {
   static Future<String> getPath(String relativePath) async {
     relativePath = "/$relativePath";
-    if (PlatForm().platform == Platform.windows) {
+    if (PlatForm().platform == RunningPlatform.windows) {
       // windows真的烦，还得给他擦屁股
       relativePath = relativePath.replaceAll(RegExp(r'/'), r'\');
     }

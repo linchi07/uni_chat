@@ -5,12 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Chat/session_selector.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
+import 'package:uni_chat/platform_specifics/platform_specifics.dart';
 import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/top_banner.dart';
@@ -28,26 +28,16 @@ final Map<String, Locale> languages = const {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (io.Platform.isAndroid) {
-    PlatForm().platform = Platform.android;
+    PlatForm().platform = RunningPlatform.android;
   } else if (io.Platform.isIOS) {
-    PlatForm().platform = Platform.ios;
+    PlatForm().platform = RunningPlatform.ios;
   } else if (io.Platform.isMacOS) {
-    PlatForm().platform = Platform.macos;
+    PlatForm().platform = RunningPlatform.macos;
   } else if (io.Platform.isWindows) {
-    PlatForm().platform = Platform.windows;
+    PlatForm().platform = RunningPlatform.windows;
   }
-  if (PlatForm._instance.platform == Platform.macos) {
-    //要改好多东西啊
-    await WindowManipulator.initialize();
-    await WindowManipulator.hideTitle();
-    await WindowManipulator.makeTitlebarTransparent();
-    await WindowManipulator.addToolbar();
-    await WindowManipulator.setToolbarStyle(
-      toolbarStyle: NSWindowToolbarStyle.unified,
-    );
-    await WindowManipulator.enableFullSizeContentView();
-    var d = await getApplicationDocumentsDirectory();
-    print(d);
+  if (PlatForm._instance.platform == RunningPlatform.macos) {
+    await MacOSSpecificsSetting.setWindowStyle();
   }
   final prefs = await SharedPreferences.getInstance();
   var l = prefs.getString("language");
@@ -57,12 +47,12 @@ Future<void> main() async {
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-enum Platform { web, android, ios, macos, windows }
+enum RunningPlatform { web, android, ios, macos, windows }
 
 class PlatForm {
   static final PlatForm _instance = PlatForm._internal();
 
-  Platform platform = Platform.web;
+  RunningPlatform platform = RunningPlatform.web;
   String platformInfo = '';
   String location = '';
   factory PlatForm() => _instance;
@@ -98,7 +88,7 @@ class UNIChat extends StatelessWidget {
               if (locale != null) {
                 S.load(locale!);
               }
-              if (PlatForm().platform == Platform.macos) {
+              if (PlatForm().platform == RunningPlatform.macos) {
                 return MacOSMenuBar(mainContent: mainContent);
               }
               return mainContent;

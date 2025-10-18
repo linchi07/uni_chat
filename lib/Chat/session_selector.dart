@@ -4,8 +4,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
+import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/dialog.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
@@ -69,7 +71,7 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
     var agent = ref.watch(agentProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Row(
+        var child = Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -165,6 +167,11 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
             ),
           ],
         );
+        if (PlatForm().platform == RunningPlatform.macos) {
+          //macos 的菜单栏需要处理一下,见top banner里面的注释
+          return MacosToolbarPassthrough(child: child);
+        }
+        return child;
       },
     );
   }

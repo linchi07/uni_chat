@@ -1,5 +1,7 @@
+import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/back_ground_task_manager.dart';
 
@@ -9,17 +11,18 @@ import 'main.dart';
 class MainBanner extends ConsumerWidget {
   const MainBanner({super.key, this.bannerWidget});
   final Widget? bannerWidget;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
     var scWidth = MediaQuery.of(context).size.width;
-    var startLength = (scWidth >= 800) ? 230 : 100;
-    var maxBannerWidgetWidth = (scWidth / 2 - startLength) * 2;
-    var endLength = (scWidth >= 800) ? 100 : 30;
-    return Container(
-      height: 50,
-      color: theme.zeroGradeColor,
-      child: Stack(
+    Widget stack;
+    if (PlatForm().platform == RunningPlatform.macos) {
+      var startLength = (scWidth >= 800) ? 230 : 100;
+      var maxBannerWidgetWidth = (scWidth / 2 - startLength) * 2;
+      var endLength = (scWidth >= 800) ? 100 : 30;
+      //macOS 下，首先红绿灯在左边，ui布局需要特殊处理
+      stack = Stack(
         alignment: Alignment.center,
         children: [
           Positioned(
@@ -30,11 +33,8 @@ class MainBanner extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(width: 21),
-                if (PlatForm().platform == Platform.macos)
-                  //这里解释一下，因为macOS的标题栏有3个点，所以这里要绘制3个点，我们的那个包默认下是在窗口失去焦点的时候直接不显示红绿灯，所以这里直接画一个上去
-                  CustomPaint(size: Size(50, 50), painter: ThreeDotsPainter()),
-                if (PlatForm().platform != Platform.macos)
-                  const SizedBox(width: 50),
+                //这里解释一下，因为macOS的标题栏有3个点，所以这里要绘制3个点，我们的那个包默认下是在窗口失去焦点的时候直接不显示红绿灯，所以这里直接画一个上去
+                CustomPaint(size: Size(50, 50), painter: ThreeDotsPainter()),
                 const SizedBox(width: 21),
                 if (scWidth >= 800)
                   Text(
@@ -57,8 +57,104 @@ class MainBanner extends ConsumerWidget {
             child: ActivityMonitor(maxWidth: endLength.toDouble()),
           ),
         ],
-      ),
-    );
+      );
+      //需要特殊处理防止macOS的窗口缩放手势和widget的触控冲突，不过看起来好像不处理和处理了我反正没有测出区别。。
+      //这里有一个scope 然后在每个独立的组件那边需要有一个 MacosToolbarPass through
+      //不能放在positioned里面处理，因为positioned他的大小不是widget真实的大小而是可以最大的大小
+      return MacosToolbarPassthroughScope(
+        child: Container(height: 50, color: theme.zeroGradeColor, child: stack),
+      );
+    } else if (PlatForm().platform == RunningPlatform.windows) {
+      var startLength = (scWidth >= 800) ? 230 : 100;
+      var maxBannerWidgetWidth = (scWidth / 2 - startLength) * 2;
+      var endLength = (scWidth >= 800) ? 100 : 30;
+      stack = Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            left: 0,
+            top: 0,
+            height: 50,
+            width: startLength.toDouble(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(width: 21),
+                if (scWidth >= 800)
+                  Text(
+                    S.of(context).title,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+              ],
+            ),
+          ),
+          Positioned(
+            height: 50,
+            left: startLength.toDouble(),
+            width: maxBannerWidgetWidth,
+            child: Center(child: bannerWidget ?? SizedBox()),
+          ),
+          /*
+          Positioned(
+            right: 0,
+            height: 50,
+            width: endLength.toDouble(),
+            child: ActivityMonitor(maxWidth: endLength.toDouble()),
+          ),*/
+          Positioned(
+            right: 0,
+            height: 50,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                MinimizeWindowButton(),
+                MaximizeWindowButton(),
+                CloseWindowButton(),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else {
+      var startLength = (scWidth >= 800) ? 230 : 100;
+      var maxBannerWidgetWidth = (scWidth / 2 - startLength) * 2;
+      var endLength = (scWidth >= 800) ? 100 : 30;
+      stack = Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            left: 0,
+            top: 0,
+            width: startLength.toDouble(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(width: 21),
+                if (scWidth >= 800)
+                  Text(
+                    S.of(context).title,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+              ],
+            ),
+          ),
+          Positioned(
+            height: 50,
+            left: startLength.toDouble(),
+            width: maxBannerWidgetWidth,
+            child: Center(child: bannerWidget ?? SizedBox()),
+          ),
+          Positioned(
+            right: 0,
+            height: 50,
+            width: endLength.toDouble(),
+            child: ActivityMonitor(maxWidth: endLength.toDouble()),
+          ),
+        ],
+      );
+    }
+    return Container(height: 50, color: theme.zeroGradeColor, child: stack);
   }
 }
 
@@ -110,6 +206,10 @@ class ActivityMonitor extends ConsumerWidget {
                   ),
                 ),
         );
+      }
+      //所有的 top bar 都需要这样处理一下，而且由于大小和布局的问题，我们不能在上面的stack部分统一处理，必须单独在这里弄
+      if (PlatForm().platform == RunningPlatform.macos) {
+        return MacosToolbarPassthrough(child: child);
       }
       return child;
     }
