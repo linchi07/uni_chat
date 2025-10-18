@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,52 +68,89 @@ class MainBanner extends ConsumerWidget {
       );
     } else if (PlatForm().platform == RunningPlatform.windows) {
       var startLength = (scWidth >= 800) ? 230 : 100;
-      var maxBannerWidgetWidth = (scWidth / 2 - startLength) * 2;
-      var endLength = (scWidth >= 800) ? 100 : 30;
+      var activityLength = (scWidth >= 800) ? 100 : 30;
+      var endLength = activityLength + 200;
+      var maxBannerWidgetWidth = (scWidth / 2 - max(startLength, endLength)) * 2;
+      var btnColor = WindowButtonColors(
+        iconNormal: theme.primaryColor,
+        iconMouseOver: theme.primaryColor,
+        iconMouseDown: theme.primaryColor,
+      );
       stack = Stack(
         alignment: Alignment.center,
         children: [
+          //这个widget放在最下面，允许通过拖动顶部栏来移动窗口
+          MoveWindow(),
+          //为了允许文字也能被拖动，这里使用ignore pointer
           Positioned(
             left: 0,
             top: 0,
             height: 50,
             width: startLength.toDouble(),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(width: 21),
-                if (scWidth >= 800)
-                  Text(
-                    S.of(context).title,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-              ],
+            child: IgnorePointer(
+              ignoring:  true,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(width: 21),
+                  if (scWidth >= 800)
+                    Text(
+                      S.of(context).title,
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                ],
+              ),
             ),
           ),
           Positioned(
             height: 50,
-            left: startLength.toDouble(),
+            right: endLength.toDouble(),
             width: maxBannerWidgetWidth,
             child: Center(child: bannerWidget ?? SizedBox()),
           ),
-          /*
           Positioned(
             right: 0,
-            height: 50,
-            width: endLength.toDouble(),
-            child: ActivityMonitor(maxWidth: endLength.toDouble()),
-          ),*/
-          Positioned(
-            right: 0,
-            height: 50,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                MinimizeWindowButton(),
-                MaximizeWindowButton(),
-                CloseWindowButton(),
-              ],
+            height: 60,
+            child: Material(
+              color: Colors.transparent,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ActivityMonitor(maxWidth: activityLength.toDouble()),
+                  SizedBox(
+                    width: 50,
+                    height: 60,
+                    child: InkWell(
+                      child: MinimizeIcon(color:theme.primaryColor),
+                      onTap: () {
+                        appWindow.minimize();
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50,
+                    height: 60,
+                    child: InkWell(
+                      child: MaximizeIcon(color:theme.primaryColor),
+                      onTap: () {
+                        appWindow.maximize();
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50,
+                    height: 60,
+                    child: InkWell(
+                      hoverColor: Colors.red,
+                      child: CloseIcon(color:theme.primaryColor),
+                      onTap: () {
+                        appWindow.close();
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
