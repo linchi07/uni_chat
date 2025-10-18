@@ -13,9 +13,9 @@ class MainBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
     var scWidth = MediaQuery.of(context).size.width;
-    var startLength = (scWidth >= 700) ? 230 : 100;
+    var startLength = (scWidth >= 800) ? 230 : 100;
     var maxBannerWidgetWidth = (scWidth / 2 - startLength) * 2;
-    var endLength = (scWidth >= 700) ? 100 : 30;
+    var endLength = (scWidth >= 800) ? 100 : 30;
     return Container(
       height: 50,
       color: theme.zeroGradeColor,
@@ -36,7 +36,7 @@ class MainBanner extends ConsumerWidget {
                 if (PlatForm().platform != Platform.macos)
                   const SizedBox(width: 50),
                 const SizedBox(width: 21),
-                if (scWidth >= 700)
+                if (scWidth >= 800)
                   Text(
                     S.of(context).title,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),

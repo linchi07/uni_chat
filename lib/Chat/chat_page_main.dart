@@ -151,11 +151,12 @@ class PanelLayout extends ConsumerWidget {
     final isEditMode = ref.watch(editModeProvider);
     executeFunction(ref);
     var w = config.verticalAxisPixelPerUnit * config.verticalAxisCount;
-    w.isNaN ? w = 0 : w;
     var outW = min(
       w,
       config.maxVerticalAxisCount * config.verticalAxisPixelPerUnit,
     );
+    outW.isNaN ? outW = 0 : null;
+    w.isNaN ? w = 0 : null;
     if (plep.isLayoutInvalid) {
       return Container(
         decoration: BoxDecoration(

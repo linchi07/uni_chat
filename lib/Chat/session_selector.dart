@@ -278,21 +278,24 @@ class _SessionSelectorOverlayState
           child: SizedBox(
             width: _widthAnimation.value,
             height: _heightAnimation.value,
-            child: child,
+            child: Material(
+              elevation: 4.0,
+              color: theme.secondGradeColor,
+              borderRadius: BorderRadius.circular(8),
+              child: Opacity(
+                opacity: _opacityAnimation.value,
+                child: (_widthAnimation.value >= 450) ? child : null,
+              ),
+            ),
           ),
         );
       },
-      child: Material(
-        elevation: 4.0,
-        color: theme.secondGradeColor,
-        borderRadius: BorderRadius.circular(8),
-        child: FadeTransition(
-          opacity: _opacityAnimation,
-          child: Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: OverlayPortalScope(
-              child: SessionSelector(onClose: widget.onClose),
-            ),
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: OverlayPortalScope(
+          child: SessionSelector(
+            onClose: widget.onClose,
+            width: _finalSize.width,
           ),
         ),
       ),
@@ -301,8 +304,13 @@ class _SessionSelectorOverlayState
 }
 
 class SessionSelector extends ConsumerStatefulWidget {
-  const SessionSelector({super.key, required this.onClose});
+  const SessionSelector({
+    super.key,
+    required this.onClose,
+    required this.width,
+  });
   final VoidCallback onClose;
+  final double width;
 
   @override
   ConsumerState<SessionSelector> createState() => _SessionSelectorState();
@@ -315,6 +323,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   (List<ChatMessage>, Map<String, ChatFile>)? _previewedSession;
   bool isSessionScrolled = false;
   late ThemeConfig theme;
+
   void startHoverTimer(String sid) {
     _hoverTimer = Timer(Duration(milliseconds: 250), () {
       // 在这里实现你想要触发的动作
@@ -466,7 +475,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
             child: Row(
               children: [
                 Expanded(
-                  flex: 4,
+                  flex: (widget.width >= 600) ? 4 : 3,
                   //此处是为了防止list tile的背景色溢出
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -518,7 +527,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                   ),
                 ),
                 Expanded(
-                  flex: 15,
+                  flex: (widget.width >= 600) ? 15 : 7,
                   child: StatefulBuilder(
                     builder: (context, setState) {
                       internalSetState = setState;
@@ -592,56 +601,58 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                     ),
                             ),
                           ),
-                          Expanded(
-                            flex: 8,
-                            child: _previewedSession == null
-                                ? Center(
-                                    child: Text(
-                                      S.of(context).hover_to_see_session,
-                                      style: TextStyle(
-                                        color: theme.thirdGradeColor,
+                          if (widget.width >= 600)
+                            Expanded(
+                              flex: 8,
+                              child: _previewedSession == null
+                                  ? Center(
+                                      child: Text(
+                                        S.of(context).hover_to_see_session,
+                                        style: TextStyle(
+                                          color: theme.thirdGradeColor,
+                                        ),
                                       ),
-                                    ),
-                                  )
-                                : Container(
-                                    margin: EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: theme.zeroGradeColor,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    // ignore: prefer_is_empty
-                                    child: (_previewedSession?.$1.length == 0)
-                                        ? Center(
-                                            child: Text(
-                                              S.of(context).no_message,
-                                              style: TextStyle(
-                                                color: theme.thirdGradeColor,
+                                    )
+                                  : Container(
+                                      margin: EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: theme.zeroGradeColor,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      // ignore: prefer_is_empty
+                                      child: (_previewedSession?.$1.length == 0)
+                                          ? Center(
+                                              child: Text(
+                                                S.of(context).no_message,
+                                                style: TextStyle(
+                                                  color: theme.thirdGradeColor,
+                                                ),
+                                              ),
+                                            )
+                                          : SelectionArea(
+                                              selectionControls:
+                                                  MaterialTextSelectionControls(),
+                                              child: ListView.builder(
+                                                reverse: true,
+                                                itemCount: _previewedSession
+                                                    ?.$1
+                                                    .length,
+                                                itemBuilder: (context, index) {
+                                                  final message =
+                                                      _previewedSession!
+                                                          .$1[_previewedSession!
+                                                              .$1
+                                                              .length -
+                                                          1 -
+                                                          index];
+                                                  return PersistChatMessage(
+                                                    message: message,
+                                                  );
+                                                },
                                               ),
                                             ),
-                                          )
-                                        : SelectionArea(
-                                            selectionControls:
-                                                MaterialTextSelectionControls(),
-                                            child: ListView.builder(
-                                              reverse: true,
-                                              itemCount:
-                                                  _previewedSession?.$1.length,
-                                              itemBuilder: (context, index) {
-                                                final message =
-                                                    _previewedSession!
-                                                        .$1[_previewedSession!
-                                                            .$1
-                                                            .length -
-                                                        1 -
-                                                        index];
-                                                return PersistChatMessage(
-                                                  message: message,
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                  ),
-                          ),
+                                    ),
+                            ),
                         ],
                       );
                     },
