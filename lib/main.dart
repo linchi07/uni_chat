@@ -6,7 +6,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
@@ -35,13 +34,10 @@ Future<void> main() async {
     PlatForm().platform = RunningPlatform.ios;
   } else if (io.Platform.isMacOS) {
     PlatForm().platform = RunningPlatform.macos;
+    await MacOSSpecificsSetting.setWindowStyle();
   } else if (io.Platform.isWindows) {
     PlatForm().platform = RunningPlatform.windows;
-  }
-  if (PlatForm._instance.platform == RunningPlatform.macos) {
-    await MacOSSpecificsSetting.setWindowStyle();
-  }
-  if (PlatForm().platform == RunningPlatform.windows) {
+    await WindowsSpecificsSetting.setWindowStyle();
     //windows 下使用 ffi版本
     //我在考虑把macos 也切换到ffi版本，但是听说好像性能没有提升啥
     sqfliteFfiInit();
@@ -68,6 +64,8 @@ class PlatForm {
   PlatForm._internal();
 }
 
+final GlobalKey<MainContState> masterNavigatorKey = GlobalKey<MainContState>();
+
 class UNIChat extends StatelessWidget {
   const UNIChat({super.key, this.locale});
   final Locale? locale;
@@ -75,7 +73,7 @@ class UNIChat extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    var mainContent = MainCont();
+    var mainContent = MainCont(key: masterNavigatorKey);
     return ProviderScope(
       child: MaterialApp(
         localizationsDelegates: [
@@ -196,6 +194,7 @@ class _MacOSMenuBarState extends ConsumerState<MacOSMenuBar> {
                     meta: true,
                   ),
                   onSelected: () {
+                    masterNavigatorKey.currentState?.setPage(Pages.chat);
                     ref.read(chatStateProvider.notifier).clearSession();
                   },
                 ),
@@ -210,7 +209,9 @@ class _MacOSMenuBarState extends ConsumerState<MacOSMenuBar> {
               members: <PlatformMenuItem>[
                 PlatformMenuItem(
                   label: S.of(context).create_new_agent,
-                  onSelected: () {},
+                  onSelected: () {
+                    masterNavigatorKey.currentState?.setPage(Pages.agent);
+                  },
                 ),
               ],
             ),
@@ -239,12 +240,12 @@ class MainCont extends ConsumerStatefulWidget {
   const MainCont({super.key});
 
   @override
-  ConsumerState<MainCont> createState() => _MainContState();
+  ConsumerState<MainCont> createState() => MainContState();
 }
 
 enum Pages { chat, agent, Rag }
 
-class _MainContState extends ConsumerState<MainCont> {
+class MainContState extends ConsumerState<MainCont> {
   Pages page = Pages.chat;
   Widget? _bannerWidget() {
     switch (page) {
@@ -266,6 +267,15 @@ class _MainContState extends ConsumerState<MainCont> {
       case Pages.Rag:
         return RagPage();
     }
+  }
+
+  void setPage(Pages page) {
+    if (this.page == page) {
+      return;
+    }
+    setState(() {
+      this.page = page;
+    });
   }
 
   @override

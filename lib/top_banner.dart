@@ -70,12 +70,8 @@ class MainBanner extends ConsumerWidget {
       var startLength = (scWidth >= 800) ? 230 : 100;
       var activityLength = (scWidth >= 800) ? 100 : 30;
       var endLength = activityLength + 200;
-      var maxBannerWidgetWidth = (scWidth / 2 - max(startLength, endLength)) * 2;
-      var btnColor = WindowButtonColors(
-        iconNormal: theme.primaryColor,
-        iconMouseOver: theme.primaryColor,
-        iconMouseDown: theme.primaryColor,
-      );
+      var maxBannerWidgetWidth =
+          (scWidth / 2 - max(startLength, endLength)) * 2;
       stack = Stack(
         alignment: Alignment.center,
         children: [
@@ -88,7 +84,7 @@ class MainBanner extends ConsumerWidget {
             height: 50,
             width: startLength.toDouble(),
             child: IgnorePointer(
-              ignoring:  true,
+              ignoring: true,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -96,7 +92,10 @@ class MainBanner extends ConsumerWidget {
                   if (scWidth >= 800)
                     Text(
                       S.of(context).title,
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                 ],
               ),
@@ -122,7 +121,7 @@ class MainBanner extends ConsumerWidget {
                     width: 50,
                     height: 60,
                     child: InkWell(
-                      child: MinimizeIcon(color:theme.primaryColor),
+                      child: MinimizeIcon(color: theme.primaryColor),
                       onTap: () {
                         appWindow.minimize();
                       },
@@ -132,7 +131,7 @@ class MainBanner extends ConsumerWidget {
                     width: 50,
                     height: 60,
                     child: InkWell(
-                      child: MaximizeIcon(color:theme.primaryColor),
+                      child: MaximizeIcon(color: theme.primaryColor),
                       onTap: () {
                         appWindow.maximize();
                       },
@@ -143,7 +142,7 @@ class MainBanner extends ConsumerWidget {
                     height: 60,
                     child: InkWell(
                       hoverColor: Colors.red,
-                      child: CloseIcon(color:theme.primaryColor),
+                      child: CloseIcon(color: theme.primaryColor),
                       onTap: () {
                         appWindow.close();
                       },
