@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
+import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
@@ -150,9 +151,18 @@ class AgentProvider extends StateNotifier<Agent?> {
       );
       if (modelService != null) {
         state = Agent.fromAgentData(agentData, modelService);
+      } else {
+        ref
+            .read(chatStateProvider.notifier)
+            .stateCopyWith(
+              error: 'Failed to find Model Service for the agent.',
+              isReady: false,
+            );
       }
-      //TODO: 这里也需要更好的错误处理，在模型api管理删除模型提供者时，会触发这里
-      //throw Exception('Failed to create API service for the agent.');
+    } else {
+      ref
+          .read(chatStateProvider.notifier)
+          .stateCopyWith(error: 'Failed to find agent.', isReady: false);
     }
   }
 
@@ -167,10 +177,19 @@ class AgentProvider extends StateNotifier<Agent?> {
         agentData.modelProviderConfigureId,
       );
       if (modelService == null) {
-        //TODO: implement better error handling
-        throw Exception('Failed to create API service for the agent.');
+        ref
+            .read(chatStateProvider.notifier)
+            .stateCopyWith(
+              error: 'Failed to find Model Service for the agent.',
+              isReady: false,
+            );
+      } else {
+        state = Agent.fromAgentData(agentData, modelService);
       }
-      state = Agent.fromAgentData(agentData, modelService);
+    } else {
+      ref
+          .read(chatStateProvider.notifier)
+          .stateCopyWith(error: 'Failed to find agent.', isReady: false);
     }
   }
 
@@ -268,7 +287,10 @@ class AgentProvider extends StateNotifier<Agent?> {
         ),
       );
     }
-    rc.staticSystemMessages.add(ref.read(personaProvider).getPersonaMessage());
+    var personaMsg = ref.read(personaProvider).getPersonaMessage();
+    if (personaMsg != null) {
+      rc.staticSystemMessages.add(personaMsg);
+    }
     if (state!.modelSpecifics.enableUsrLanguage) {
       //TODO: 获取用户语言
       rc.staticSystemMessages.add(

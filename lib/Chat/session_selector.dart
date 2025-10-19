@@ -327,15 +327,40 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   final ScrollController _sessionScrollController = ScrollController();
   final ScrollController _agentScrollController = ScrollController();
   Timer? _hoverTimer;
-  (List<ChatMessage>, Map<String, ChatFile>)? _previewedSession;
+  (List<ChatMessageDisplay>, Map<String, ChatFile>)? _previewedSession;
   bool isSessionScrolled = false;
   late ThemeConfig theme;
+  double lastScrollOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedAgentId = ref.read(agentProvider)?.id;
+    // 监听滚动状态变化
+    _sessionScrollController.addListener(() {
+      if (_sessionScrollController.position.isScrollingNotifier.value) {
+        lastScrollOffset = _sessionScrollController.offset;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    cancelHoverTimer();
+    _sessionScrollController.dispose();
+    _agentScrollController.dispose();
+  }
 
   void startHoverTimer(String sid) {
-    _hoverTimer = Timer(Duration(milliseconds: 250), () {
-      // 在这里实现你想要触发的动作
-      _onHoverTimeout(sid);
-    });
+    // 在这里实现你想要触发的动作
+    if (_sessionScrollController.offset == lastScrollOffset) {
+      _hoverTimer = Timer(Duration(milliseconds: 250), () {
+        if (_sessionScrollController.offset == lastScrollOffset) {
+          _setPreviewSession(sid);
+        }
+      });
+    }
   }
 
   void cancelHoverTimer() {
@@ -343,7 +368,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
     _hoverTimer = null;
   }
 
-  void _onHoverTimeout(String sid) async {
+  void _setPreviewSession(String sid) async {
     var ps = await DatabaseService.instance.getMessagesForSession(sid);
     internalSetState(() {
       _previewedSession = ps;
@@ -438,12 +463,6 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
         ),
       ],
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    selectedAgentId = ref.read(agentProvider)?.id;
   }
 
   String? selectedAgentId;
@@ -653,7 +672,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                                           1 -
                                                           index];
                                                   return PersistChatMessage(
-                                                    message: message,
+                                                    message: message.content,
                                                   );
                                                 },
                                               ),

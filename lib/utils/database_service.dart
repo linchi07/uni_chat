@@ -173,20 +173,41 @@ class DatabaseService {
         id TEXT PRIMARY KEY,
         agent_id TEXT,
         title TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        modified_at TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        modified_at INTEGER NOT NULL,
+        agent_override TEXT, -- 可以在会话层面覆盖agents的部分参数类似于 copy with 保留备用
+        branch_info TEXT, -- 存储分支信息
         FOREIGN KEY (agent_id) REFERENCES agents (id) ON DELETE CASCADE
       )
     ''');
+    //创建关联表，以便支持branch 以及同一个message可以有多个版本（他们在UI上不同，但是底层是一样的）
+    //提供两种方式主要是我个人用的时候，修改和比如ai的这个会话对话很好，直接继承然后branch是两种不同的使用情景
+    await db.execute('''
+      CREATE TABLE message_relations(
+      id INTEGER PRIMARY KEY AUTOINCREMENT, -- 这个Pri key实际上没啥用途，就是唯一标识
+      session_id TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      session_order INTEGER NOT NULL,
+      message_order INTEGER NOT NULL, -- 此处的message order是一个消息的不同变体
+      is_enabled INTEGER NOT NULL DEFAULT 1, -- 同时只能存在且必须存在一个
+      UNIQUE (session_id, session_order), 
+      FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE,
+      FOREIGN KEY (message_id) REFERENCES messages (id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_message_relations_session_id ON message_relations (session_id)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_message_relations_message_id ON message_relations (message_id)',
+    );
 
     await db.execute('''
       CREATE TABLE messages (
         id TEXT PRIMARY KEY,
-        session_id TEXT NOT NULL,
         sender TEXT NOT NULL,
         content TEXT NOT NULL,
-        timestamp TEXT NOT NULL,
-        FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE
+        timestamp INTEGER NOT NULL
       )
     ''');
 
@@ -195,7 +216,7 @@ class DatabaseService {
         id TEXT PRIMARY KEY,
         message_id TEXT NOT NULL,
         original_name TEXT NOT NULL,
-        upload_time TEXT NOT NULL,
+        upload_time INTEGER NOT NULL,
         provider_info TEXT,
         FOREIGN KEY (message_id) REFERENCES messages (id) ON DELETE CASCADE
       )
@@ -234,9 +255,6 @@ class DatabaseService {
     );
     await db.execute(
       'CREATE INDEX idx_panelLayout_session_id ON panelLayout (session_id)',
-    );
-    await db.execute(
-      'CREATE INDEX idx_messages_session_id ON messages (session_id)',
     );
     await db.execute(
       'CREATE INDEX idx_attachments_message_id ON attachments (message_id)',
@@ -353,10 +371,9 @@ class DatabaseService {
   }) async {
     final db = await database;
     final now = DateTime.now();
-    // Note: The ChatSession model will need to be updated to include agentId
     final newSession = ChatSession(
       id: _uuid.v4(),
-      agentId: agentId, // This will require a model change
+      agentId: agentId,
       name: title ?? 'New Chat - ${now.toIso8601String()}',
       creationTime: now,
       lastMessageTime: now,
@@ -366,8 +383,8 @@ class DatabaseService {
       'id': newSession.id,
       'agent_id': newSession.agentId,
       'title': newSession.name,
-      'created_at': newSession.creationTime.toIso8601String(),
-      'modified_at': newSession.lastMessageTime.toIso8601String(),
+      'created_at': newSession.creationTime.microsecondsSinceEpoch,
+      'modified_at': newSession.lastMessageTime.microsecondsSinceEpoch,
     });
 
     return newSession;
@@ -389,8 +406,10 @@ class DatabaseService {
         id: map['id'],
         agentId: map['agent_id'],
         name: map['title'],
-        creationTime: DateTime.parse(map['created_at']),
-        lastMessageTime: DateTime.parse(map['modified_at']),
+        creationTime: DateTime.fromMicrosecondsSinceEpoch(map['created_at']),
+        lastMessageTime: DateTime.fromMicrosecondsSinceEpoch(
+          map['modified_at'],
+        ),
       );
     }
 
@@ -411,8 +430,12 @@ class DatabaseService {
         id: map['id'],
         agentId: map['agent_id'],
         name: map['title'],
-        creationTime: DateTime.parse(map['created_at']),
-        lastMessageTime: DateTime.parse(map['modified_at']),
+        creationTime: DateTime.fromMicrosecondsSinceEpoch(
+          map['created_at'] as int,
+        ),
+        lastMessageTime: DateTime.fromMicrosecondsSinceEpoch(
+          map['modified_at'] as int,
+        ),
       );
     }).toList();
   }
@@ -429,8 +452,12 @@ class DatabaseService {
         id: map['id'],
         agentId: map['agent_id'],
         name: map['title'],
-        creationTime: DateTime.parse(map['created_at']),
-        lastMessageTime: DateTime.parse(map['modified_at']),
+        creationTime: DateTime.fromMicrosecondsSinceEpoch(
+          map['created_at'] as int,
+        ),
+        lastMessageTime: DateTime.fromMicrosecondsSinceEpoch(
+          map['modified_at'] as int,
+        ),
       );
     }).toList();
   }
@@ -439,7 +466,7 @@ class DatabaseService {
     final db = await database;
     await db.update(
       'sessions',
-      {'title': newTitle, 'modified_at': DateTime.now().toIso8601String()},
+      {'title': newTitle, 'modified_at': DateTime.now().microsecondsSinceEpoch},
       where: 'id = ?',
       whereArgs: [sessionId],
     );
@@ -454,58 +481,159 @@ class DatabaseService {
 
   Future<void> addMessage(
     String sessionId,
-    ChatMessage message,
+    int sessionOrder,
+    ChatMessageDisplay message,
     Map<String, ChatFile> uploadedFiles,
   ) async {
     final db = await database;
     await db.transaction((txn) async {
-      // 1. Insert the message
       await txn.insert('messages', {
-        'id': message.id,
-        'session_id': sessionId,
-        'sender': message.sender
+        'id': message.content.id,
+        'sender': message.content.sender
             .toString()
             .split('.')
-            .last, // 'MessageSender.user' -> 'user'
-        'content': message.content,
-        'timestamp': message.timestamp.toIso8601String(),
+            .last, // 'message.contentSender.user' -> 'user'
+        'content': message.content.content,
+        'timestamp': message.content.timestamp.microsecondsSinceEpoch,
       });
-
       // 2. Insert or update attachments
-      if (message.attachedFiles != null) {
-        for (final fileId in message.attachedFiles!) {
+      if (message.content.attachedFiles != null) {
+        for (final fileId in message.content.attachedFiles!) {
           final attachmentFile = uploadedFiles[fileId];
           if (attachmentFile != null) {
-            await _addOrUpdateAttachment(txn, message.id, attachmentFile);
+            await _addOrUpdateAttachment(
+              txn,
+              message.content.id,
+              attachmentFile,
+            );
           }
         }
       }
+      var messageOrder = message.currentMessageNo;
+      //当这不是第一条消息时，我们可以断定先前有消息是原来的默认消息，需要修改当前消息为默认
+      if (messageOrder != 0) {
+        await txn.update(
+          'message_relations',
+          {'is_enabled': 0},
+          where: 'session_id = ? AND is_enabled = 1',
+          whereArgs: [sessionId],
+        );
+      }
+      // 现在插入新的relation，由于数据库默认插入的时候is enabled = 1 所以不用额外修改
+      await txn.insert('message_relations', {
+        'session_id': sessionId,
+        'message_id': message.content.id,
+        'session_order': sessionOrder,
+        'message_order': messageOrder,
+      });
+      await txn.update(
+        'sessions',
+        {'modified_at': DateTime.now().microsecondsSinceEpoch},
+        where: 'id = ?',
+        whereArgs: [sessionId],
+      );
     });
-    // Update session's modified_at timestamp
-    await db.update(
-      'sessions',
-      {'modified_at': DateTime.now().toIso8601String()},
-      where: 'id = ?',
-      whereArgs: [sessionId],
+  }
+
+  Future<ChatMessageDisplay> selectAndUpdateMessage(
+    String sessionId,
+    int order,
+    int messageOrder,
+  ) async {
+    final db = await database;
+    final List<Map<String, dynamic>> messageMaps = await db.rawQuery(
+      '''SELECT
+    T1.id AS message_id,
+    T1.sender,
+    T1.content,
+    T1.timestamp,
+    T2.id as relation_id
+FROM
+    messages T1
+JOIN
+    message_relations T2 ON T1.id = T2.message_id
+WHERE
+    T2.session_id = ? AND T2.session_order = ? AND T2.message_order = ?;''',
+      [sessionId, order, messageOrder],
+    );
+    final messageMap = messageMaps.first;
+    var id = messageMap['message_id'] as String;
+    final attachments = await _getAttachmentsForMessage(db, id);
+    final Map<String, ChatFile> files = {};
+    final attachmentIds = <String>[];
+
+    for (final attachment in attachments) {
+      files[attachment.name] = attachment;
+      attachmentIds.add(attachment.name);
+    }
+    //将新的消息设置为默认
+    await db.transaction((trx) async {
+      await trx.update(
+        'sessions',
+        {'is_enabled': 0},
+        where: 'session_id = ? AND is_enabled = 1',
+        whereArgs: [sessionId],
+      );
+      await trx.update(
+        'message_relations',
+        {'is_enabled': 1},
+        where: 'id = ?',
+        whereArgs: [messageMap['relation_id'] as int],
+      );
+    });
+
+    return ChatMessageDisplay(
+      content: ChatMessage(
+        id: id,
+        sender: MessageSender.values.firstWhere(
+          (e) => e.toString().split('.').last == messageMap['sender'],
+        ),
+        content: messageMap['content'],
+        timestamp: DateTime.fromMicrosecondsSinceEpoch(
+          messageMap['timestamp'] as int,
+        ),
+        attachedFiles: attachmentIds.isNotEmpty ? attachmentIds : null,
+      ),
     );
   }
 
-  Future<(List<ChatMessage>, Map<String, ChatFile>)> getMessagesForSession(
-    String sessionId,
-  ) async {
+  Future<(List<ChatMessageDisplay>, Map<String, ChatFile>)>
+  getMessagesForSession(String sessionId, {bool onlyEnabled = false}) async {
     final db = await database;
-    final List<Map<String, dynamic>> messageMaps = await db.query(
-      'messages',
-      where: 'session_id = ?',
-      whereArgs: [sessionId],
-      orderBy: 'timestamp ASC',
+    final List<Map<String, dynamic>> messageMaps = await db.rawQuery(
+      '''SELECT
+    T1.id AS message_id,
+    T1.sender,
+    T1.content,
+    T1.timestamp,
+    T2.message_order,
+    T3.total_message_count
+FROM
+    messages T1
+JOIN
+    message_relations T2 ON T1.id = T2.message_id
+JOIN 
+    (
+        SELECT 
+            message_id, 
+            COUNT(*) AS total_message_count 
+        FROM 
+            message_relations 
+        GROUP BY 
+            message_id
+    ) T3 ON T1.id = T3.message_id
+WHERE
+    T2.session_id = ? AND T2.is_enabled = 1
+ORDER BY
+    T2.session_order ASC;''',
+      [sessionId],
     );
 
-    final List<ChatMessage> messages = [];
+    final List<ChatMessageDisplay> messages = [];
     final Map<String, ChatFile> files = {};
 
     for (final messageMap in messageMaps) {
-      final messageId = messageMap['id'] as String;
+      final messageId = messageMap['message_id'] as String;
       final attachments = await _getAttachmentsForMessage(db, messageId);
       final attachmentIds = <String>[];
 
@@ -515,14 +643,20 @@ class DatabaseService {
       }
 
       messages.add(
-        ChatMessage(
-          id: messageId,
-          sender: MessageSender.values.firstWhere(
-            (e) => e.toString().split('.').last == messageMap['sender'],
+        ChatMessageDisplay(
+          currentMessageNo: messageMap['message_order'] as int,
+          totalMessageCount: messageMap['total_message_count'] as int,
+          content: ChatMessage(
+            id: messageId,
+            sender: MessageSender.values.firstWhere(
+              (e) => e.toString().split('.').last == messageMap['sender'],
+            ),
+            content: messageMap['content'],
+            timestamp: DateTime.fromMicrosecondsSinceEpoch(
+              messageMap['timestamp'] as int,
+            ),
+            attachedFiles: attachmentIds.isNotEmpty ? attachmentIds : null,
           ),
-          content: messageMap['content'],
-          timestamp: DateTime.parse(messageMap['timestamp']),
-          attachedFiles: attachmentIds.isNotEmpty ? attachmentIds : null,
         ),
       );
     }
@@ -584,7 +718,7 @@ class DatabaseService {
       return ChatFile(
         name: map['id'],
         original_name: map['original_name'],
-        uploadTime: DateTime.parse(map['upload_time']),
+        uploadTime: DateTime.fromMicrosecondsSinceEpoch(map['upload_time']),
         providerInfo: providerInfo,
       );
     }).toList();

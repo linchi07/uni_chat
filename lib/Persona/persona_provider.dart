@@ -63,7 +63,11 @@ class Persona {
     return null;
   }
 
-  FormattedChatMessage getPersonaMessage() {
+  FormattedChatMessage? getPersonaMessage() {
+    if (id.isEmpty) {
+      // 如果id为空，则说明这是系统创建的默认人格，不需要创建消息
+      return null;
+    }
     String dataToString = "关于$name的一些数据：\n";
     for (var entry in data.values) {
       dataToString = '$dataToString${entry.name}:${entry.content}.\n';
@@ -136,7 +140,8 @@ class Persona {
 }
 
 class PersonaProvider extends StateNotifier<Persona> {
-  PersonaProvider() : super(Persona(id: '', name: '', content: '', data: {})) {
+  PersonaProvider()
+    : super(Persona(id: '', name: '默认人格', content: '', data: {})) {
     //这里先创建一个初始值，然后后台异步获取数据，并更新state，不等待不阻塞
     loadDefaultPersona();
   }
@@ -144,6 +149,7 @@ class PersonaProvider extends StateNotifier<Persona> {
     await DatabaseService.instance.getDefaultPersona().then((persona) {
       if (persona == null) {
         return;
+        //如果persona为空，则直接用默认的空人格
       }
       state = persona;
     });

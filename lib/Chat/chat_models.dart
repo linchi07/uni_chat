@@ -21,6 +21,18 @@ class ChatSession {
   });
 }
 
+class ChatMessageDisplay {
+  final ChatMessage content;
+  final int? currentMessageNo;
+  final int? totalMessageCount;
+
+  ChatMessageDisplay({
+    required this.content,
+    this.currentMessageNo,
+    this.totalMessageCount,
+  });
+}
+
 enum MessageSender { system, user, ai }
 
 class ChatMessage {

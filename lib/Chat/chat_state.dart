@@ -17,21 +17,20 @@ import 'chat_models.dart';
 
 const _uuid = Uuid();
 
-// Enum to select the provider
-enum ApiProvider { openai, gemini }
-
 // --- State Definitions ---
 class ChatState {
+  bool isReady;
+  String? error;
   ChatSession? session;
-  final List<ChatMessage> messages;
+  final List<ChatMessageDisplay> messages;
   final Map<String, ChatFile> uploadedFiles;
   late final ChunkedStringBuffer newContentBuffer;
   late final ValueNotifier<bool> refreshFlag;
   final bool isLoading;
   final bool isResponding;
-  final String? error;
 
   ChatState({
+    this.isReady = false,
     ChatSession? session,
     this.uploadedFiles = const {},
     this.messages = const [],
@@ -49,8 +48,9 @@ class ChatState {
   }
 
   ChatState copyWith({
+    bool? isReady,
     ChatSession? session,
-    List<ChatMessage>? messages,
+    List<ChatMessageDisplay>? messages,
     Map<String, ChatFile>? uploadedFiles,
     ChunkedStringBuffer? newContentBuffer,
     ValueNotifier<bool>? refreshFlag,
@@ -59,6 +59,7 @@ class ChatState {
     String? error,
   }) {
     return ChatState(
+      isReady: isReady ?? this.isReady,
       session: session ?? this.session,
       messages: messages ?? this.messages,
       newContentBuffer: newContentBuffer ?? this.newContentBuffer,
@@ -72,6 +73,7 @@ class ChatState {
 
   ChatState clearSessionCopy() {
     return ChatState(
+      isReady: isReady,
       session: null,
       messages: [],
       uploadedFiles: {},
@@ -97,13 +99,15 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   }
 
   void stateCopyWith({
+    bool? isReady,
     ChatSession? session,
-    List<ChatMessage>? messages,
+    List<ChatMessageDisplay>? messages,
     Map<String, ChatFile>? uploadedFiles,
     bool? isLoading,
     String? error,
   }) {
     state = ChatState(
+      isReady: isReady ?? state.isReady,
       session: session ?? state.session,
       messages: messages ?? state.messages,
       uploadedFiles: uploadedFiles ?? state.uploadedFiles,
@@ -152,9 +156,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         throw Exception('Session not found');
       }
       //TODO: 最好让这里的逻辑都放到agent_provider里面
-      var agd = await _ref
-          .read(agentProvider.notifier)
-          .loadAgentById(session.agentId);
+      await _ref.read(agentProvider.notifier).loadAgentById(session.agentId);
       // 6. Load messages and layout (existing logic)
       final (messages, files) = await _dbService.getMessagesForSession(
         sessionId,
@@ -162,9 +164,14 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       if (fromNewSession) {
         //解释一下，由于我们现在的懒加载机制，在创建new session的时候此时state里面的数据不能清空并重加载，
         // 因为比如用户可能上传了一个文件（被保存在session中，此时清空session的话就导致文件没了）
-        state = state.copyWith(session: session, isLoading: false);
+        state = state.copyWith(
+          isReady: agent != null,
+          session: session,
+          isLoading: false,
+        );
       } else {
         state = state.copyWith(
+          isReady: agent != null,
           session: session,
           messages: messages,
           uploadedFiles: files,
@@ -178,7 +185,11 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         _ref.read(panelManager).clear();
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        isReady: false,
+        error: e.toString(),
+      );
     }
   }
 
@@ -274,10 +285,15 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       timestamp: DateTime.now(),
     );
     // 3. Add placeholder for AI response
+    var usrMessageDisplay = ChatMessageDisplay(
+      content: userMessage,
+      currentMessageNo: 0,
+      totalMessageCount: 1,
+    );
     state = state.copyWith(
       isLoading: true,
       error: null,
-      messages: [...state.messages, userMessage],
+      messages: [...state.messages, usrMessageDisplay],
     );
     //接下来构造发送的后端消息
     // --- Database Integration ---
@@ -287,7 +303,8 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       }
       await _dbService.addMessage(
         currentSessionId!,
-        userMessage,
+        state.messages.length - 1,
+        usrMessageDisplay,
         state.uploadedFiles,
       );
       var l = _ref.read(panelManager).saveToJson();
@@ -299,10 +316,13 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       // Decide if we want to stop or continue if DB save fails. For now, continue.
     }
     // --- End Database Integration ---
-    sendRequest(history, userMessage);
+    sendRequest(history, usrMessageDisplay);
   }
 
-  void sendRequest(List<ChatMessage> history, ChatMessage userMessage) async {
+  void sendRequest(
+    List<ChatMessageDisplay> history,
+    ChatMessageDisplay userMessage,
+  ) async {
     // 4. Call the API and handle the stream
     try {
       var pm = _ref.read(panelManager);
@@ -314,10 +334,11 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         clear: pm.clear,
         select: pm.select,
       );
+      var historyContent = history.map((e) => e.content).toList();
       final stream = agentNotifier.getStreamingResponse(
         state.session!,
-        history,
-        userMessage,
+        historyContent,
+        userMessage.content,
         state.uploadedFiles,
       );
       ChatMessage? finalAiMessage;
@@ -338,15 +359,20 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         content: state.newContentBuffer.toString(),
         timestamp: DateTime.now(),
       );
+      var aiMsgDisp = ChatMessageDisplay(
+        content: finalAiMessage,
+        currentMessageNo: userMessage.currentMessageNo,
+        totalMessageCount: userMessage.totalMessageCount,
+      );
       _ref
           .read(ragProvider)
           .onAgentRespondCompleteCallback(
-            user: userMessage,
+            user: userMessage.content,
             agent: finalAiMessage,
           );
       state = state.copyWith(
         isResponding: false,
-        messages: [...state.messages, finalAiMessage],
+        messages: [...state.messages, aiMsgDisp],
       );
       state.newContentBuffer.clear();
       // --- Database Integration ---
@@ -355,7 +381,8 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       }
       await _dbService.addMessage(
         currentSessionId!,
-        finalAiMessage,
+        state.messages.length - 1,
+        aiMsgDisp,
         state.uploadedFiles,
       );
       var l = _ref.read(panelManager).saveToJson();
@@ -372,9 +399,19 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         content: state.newContentBuffer.toString(),
         timestamp: DateTime.now(),
       );
-      state = state.copyWith(messages: [...state.messages, msg]);
+      var msgD = ChatMessageDisplay(
+        content: msg,
+        currentMessageNo: userMessage.currentMessageNo,
+        totalMessageCount: userMessage.totalMessageCount,
+      );
+      state = state.copyWith(messages: [...state.messages, msgD]);
       state.refreshFlag.value = !state.refreshFlag.value;
-      await _dbService.addMessage(currentSessionId!, msg, state.uploadedFiles);
+      await _dbService.addMessage(
+        currentSessionId!,
+        state.messages.length - 1,
+        msgD,
+        state.uploadedFiles,
+      );
       var l = _ref.read(panelManager).saveToJson();
       if (l != null) {
         await _dbService.writeLayout(state.session!.id, l);
