@@ -36,7 +36,7 @@ class _RagPageState extends State<RagPage> {
   @override
   Widget build(BuildContext context) {
     if (_isEditing) {
-      return RagSettingPage(onBack: onBack);
+      return RagSettingPage(onSaveReturn: onBack, onBack: onBack);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

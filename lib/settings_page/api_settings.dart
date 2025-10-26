@@ -177,7 +177,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
     return Builder(
       builder: (context) {
         if (isAddingProvider) {
-          return _AddProvider(onBack: back);
+          return AddProvider(exit: back);
         }
         if (isEditingProvider) {
           return EditProvider(onBack: back, save: saveEditResult);
@@ -469,15 +469,15 @@ class AddApiState {
 
 final addApiState = StateProvider((ref) => AddApiState());
 
-class _AddProvider extends ConsumerStatefulWidget {
-  final VoidCallback onBack;
-  const _AddProvider({required this.onBack});
+class AddProvider extends ConsumerStatefulWidget {
+  final VoidCallback exit;
+  const AddProvider({super.key, required this.exit});
 
   @override
-  ConsumerState<_AddProvider> createState() => _AddProviderState();
+  ConsumerState<AddProvider> createState() => _AddProviderState();
 }
 
-class _AddProviderState extends ConsumerState<_AddProvider> {
+class _AddProviderState extends ConsumerState<AddProvider> {
   final _nameController = TextEditingController();
   final _endpointController = TextEditingController();
 
@@ -946,7 +946,7 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
         modelConfigData: model,
       );
     }
-    widget.onBack();
+    widget.exit();
   }
 }
 

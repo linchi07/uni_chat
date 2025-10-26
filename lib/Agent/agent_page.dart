@@ -35,7 +35,7 @@ class _AgentPageState extends State<AgentPage> {
   @override
   Widget build(BuildContext context) {
     if (_isEditing) {
-      return AgentSetPage(onBack: onBack);
+      return AgentSetPage(onSaveReturn: onBack, onBack: onBack);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

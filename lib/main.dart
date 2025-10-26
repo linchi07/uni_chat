@@ -13,9 +13,10 @@ import 'package:uni_chat/Chat/session_selector.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
 import 'package:uni_chat/platform_specifics/platform_specifics.dart';
 import 'package:uni_chat/settings_page/settings.dart';
+import 'package:uni_chat/setup_agent.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/top_banner.dart';
-import 'package:uni_chat/utils/dialog.dart';
+import 'package:uni_chat/utils/overlays.dart';
 
 import 'Agent/agent_page.dart';
 import 'RAG/RAG_main_page.dart';
@@ -46,7 +47,8 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   var l = prefs.getString("language");
   var local = languages[l];
-  runApp(UNIChat(locale: local));
+  var isSu = prefs.getBool("isSetUp") ?? false;
+  runApp(UNIChat(locale: local, isSetUp: isSu));
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -67,13 +69,15 @@ class PlatForm {
 final GlobalKey<MainContState> masterNavigatorKey = GlobalKey<MainContState>();
 
 class UNIChat extends StatelessWidget {
-  const UNIChat({super.key, this.locale});
+  const UNIChat({super.key, this.locale, required this.isSetUp});
   final Locale? locale;
+  final bool isSetUp;
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    var mainContent = MainCont(key: masterNavigatorKey);
+    Widget mainContent = MainCont(key: masterNavigatorKey);
+
     return ProviderScope(
       child: MaterialApp(
         localizationsDelegates: [
@@ -88,17 +92,36 @@ class UNIChat extends StatelessWidget {
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
-        home: OverlayPortalScope(
-          child: Builder(
-            builder: (context) {
-              if (locale != null) {
-                S.load(locale!);
-              }
-              if (PlatForm().platform == RunningPlatform.macos) {
-                return MacOSMenuBar(mainContent: mainContent);
-              }
-              return mainContent;
-            },
+        home: OverlayWrapper(
+          child: OverlayPortalScope(
+            child: Builder(
+              builder: (context) {
+                if (locale != null) {
+                  S.load(locale!);
+                }
+                if (PlatForm().platform == RunningPlatform.macos) {
+                  mainContent = MacOSMenuBar(mainContent: mainContent);
+                }
+                if (!isSetUp) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    var s = MediaQuery.of(context).size;
+                    OverlayWrapper.showOverlay(
+                      context,
+                      overlayContent: SizedBox(
+                        height: s.height,
+                        width: s.width,
+                        child: Padding(
+                          padding: const EdgeInsets.all(50.0),
+                          child: SetupAgent(),
+                        ),
+                      ),
+                      barrierDismissible: false,
+                    );
+                  });
+                }
+                return mainContent;
+              },
+            ),
           ),
         ),
       ),
@@ -109,7 +132,7 @@ class UNIChat extends StatelessWidget {
 class MacOSMenuBar extends ConsumerStatefulWidget {
   const MacOSMenuBar({super.key, required this.mainContent});
 
-  final MainCont mainContent;
+  final Widget mainContent;
 
   @override
   ConsumerState<MacOSMenuBar> createState() => _MacOSMenuBarState();

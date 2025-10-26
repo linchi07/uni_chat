@@ -19,9 +19,12 @@ import '../utils/file_utils.dart';
 import '../utils/overlays.dart';
 import 'agentProvider.dart';
 
+/// @param onSaveReturn 这个是在保存的时候调用的
+/// @param onBack 这个在取消的时候调用，如果保留空的话就不会有取消按钮（也就是给初始页面用的）
 class AgentSetPage extends StatelessWidget {
-  const AgentSetPage({super.key, required this.onBack});
-  final dynamic onBack;
+  const AgentSetPage({super.key, required this.onSaveReturn, this.onBack});
+  final dynamic onSaveReturn;
+  final void Function()? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -37,16 +40,11 @@ class AgentSetPage extends StatelessWidget {
         ),
         Expanded(
           flex: 3,
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              Text(
-                S.of(context).agent_sets,
-                style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Expanded(child: AgentEditConfigure(onBack: onBack)),
-            ],
+          child: Expanded(
+            child: AgentEditConfigure(
+              onSaveReturn: onSaveReturn,
+              onBack: onBack,
+            ),
           ),
         ),
       ],
@@ -183,8 +181,13 @@ class AgentEditState {
 final agentEditState = StateProvider((ref) => AgentEditState());
 
 class AgentEditConfigure extends ConsumerStatefulWidget {
-  const AgentEditConfigure({super.key, required this.onBack});
-  final dynamic onBack;
+  const AgentEditConfigure({
+    super.key,
+    required this.onSaveReturn,
+    this.onBack,
+  });
+  final dynamic onSaveReturn;
+  final void Function()? onBack;
   @override
   ConsumerState<AgentEditConfigure> createState() => _AgentEditConfigureState();
 }
@@ -492,19 +495,20 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Row(
               children: [
-                Expanded(
-                  child: StdButton(
-                    text: S.of(context).cancel_long_press,
-                    color: theme.thirdGradeColor,
-                    onPressed: () {},
-                    onLongPress: () {
-                      ref.read(agentEditState.notifier).state =
-                          AgentEditState();
-                      widget.onBack();
-                    },
+                if (widget.onBack != null)
+                  Expanded(
+                    child: StdButton(
+                      text: S.of(context).cancel_long_press,
+                      color: theme.thirdGradeColor,
+                      onPressed: () {},
+                      onLongPress: () {
+                        ref.read(agentEditState.notifier).state =
+                            AgentEditState();
+                        widget.onBack!();
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(width: 20),
+                if (widget.onBack != null) const SizedBox(width: 20),
                 Expanded(child: _buildSaveButton()),
               ],
             ),
@@ -578,7 +582,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
             await ref
                 .read(agentProvider.notifier)
                 .loadAgentById(agentState.id, forceReload: true);
-            widget.onBack();
+            widget.onSaveReturn();
           } else {
             _controller.forward(from: 0);
           }
@@ -1572,7 +1576,10 @@ class _MemoryBaseState extends ConsumerState<MemoryBase> {
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: OverlayPortalScope(
-                  child: RagSettingPage(onBack: _dismiss),
+                  child: RagSettingPage(
+                    onSaveReturn: _dismiss,
+                    onBack: _dismiss,
+                  ),
                 ),
               ),
             ),

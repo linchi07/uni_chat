@@ -69,6 +69,23 @@ class OverlayPortalService {
     portal.controller.show();
   }
 
+  static void showDialog(
+    BuildContext context, {
+    required Widget child,
+    required Color backGroundColor,
+  }) {
+    child = SizedBox(
+      width: 300,
+      height: 200,
+      child: Material(
+        color: backGroundColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: Padding(padding: const EdgeInsets.all(16), child: child),
+      ),
+    );
+    OverlayPortalService.show(context, child: child);
+  }
+
   /// 隐藏指定 context 下的对话框。
   static void hide(BuildContext context) {
     final scopeState = context

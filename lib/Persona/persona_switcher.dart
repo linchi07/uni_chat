@@ -13,7 +13,7 @@ import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
-import '../utils/dialog.dart';
+import '../utils/overlays.dart';
 
 class PersonaIndicator extends StatefulWidget {
   const PersonaIndicator({super.key});
@@ -243,8 +243,8 @@ class PersonaSwitcher extends ConsumerStatefulWidget {
 
 class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
   OverlayEntry? _overlayEntry;
-  final GlobalKey<_PersonaEditorState> _personaSwitcherKey =
-      GlobalKey<_PersonaEditorState>();
+  final GlobalKey<_PersonaEditorAnimationState> _personaSwitcherKey =
+      GlobalKey<_PersonaEditorAnimationState>();
   void _showEditor(BuildContext context, {Persona? persona}) {
     final overlay = Overlay.of(context);
 
@@ -259,10 +259,10 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
             },
           ),
           OverlayPortalScope(
-            child: PersonaEditor(
+            child: PersonaEditorAnimation(
               persona: persona,
               key: _personaSwitcherKey,
-              onClose: handleClose,
+              goBack: handleClose,
             ),
           ),
         ],
@@ -540,15 +540,15 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
   }
 }
 
-class PersonaEditor extends StatefulWidget {
-  const PersonaEditor({super.key, required this.onClose, this.persona});
-  final dynamic onClose;
+class PersonaEditorAnimation extends StatefulWidget {
+  const PersonaEditorAnimation({super.key, required this.goBack, this.persona});
+  final dynamic goBack;
   final Persona? persona;
   @override
-  State<PersonaEditor> createState() => _PersonaEditorState();
+  State<PersonaEditorAnimation> createState() => _PersonaEditorAnimationState();
 }
 
-class _PersonaEditorState extends State<PersonaEditor>
+class _PersonaEditorAnimationState extends State<PersonaEditorAnimation>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animationController;
   late final Animation<double> _scaleAnimation;
@@ -657,7 +657,7 @@ class _PersonaEditorState extends State<PersonaEditor>
 
   void close() {
     _animationController.reverse().then((_) {
-      widget.onClose();
+      widget.goBack.call();
     });
   }
 
@@ -683,7 +683,19 @@ class _PersonaEditorState extends State<PersonaEditor>
                 theme = ref.watch(themeProvider);
                 return child!;
               },
-              child: PersonaEditorContent(onClose: close, persona: persona),
+              child: SizedBox(
+                width: 400,
+                height: 400,
+                child: Material(
+                  color: theme.zeroGradeColor,
+                  borderRadius: BorderRadius.circular(8),
+                  child: PersonaEditorContent(
+                    onSaveReturn: close,
+                    persona: persona,
+                    onBack: close,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -695,10 +707,12 @@ class _PersonaEditorState extends State<PersonaEditor>
 class PersonaEditorContent extends ConsumerStatefulWidget {
   const PersonaEditorContent({
     super.key,
-    required this.onClose,
+    required this.onSaveReturn,
+    this.onBack,
     required this.persona,
   });
-  final dynamic onClose;
+  final dynamic onSaveReturn;
+  final void Function()? onBack;
   final Persona persona;
 
   @override
@@ -767,79 +781,71 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
     _entryNameController.text = entry.name;
     _entryContentController.text = entry.content;
     final formKey = GlobalKey<FormState>();
-    return SizedBox(
-      width: 400,
-      height: 400,
-      child: Material(
-        color: theme.zeroGradeColor,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              S.of(context).edit_entries,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Text(S.of(context).name, style: TextStyle(fontSize: 16)),
+            StdTextFormField(
+              controller: _entryNameController,
+              hintText: S.of(context).plz_enter_name,
+              validateFailureText: S.of(context).plz_enter_name,
+            ),
+            const SizedBox(height: 16),
+            Text(S.of(context).content, style: TextStyle(fontSize: 16)),
+            Expanded(
+              child: StdTextFormField(
+                isExpanded: true,
+                controller: _entryContentController,
+                hintText: S.of(context).plz_enter_content,
+                validateFailureText: S.of(context).plz_enter_content,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text(
-                  S.of(context).edit_entries,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                StdButton(
+                  color: theme.secondGradeColor,
+                  text: S.of(context).cancel,
+                  onPressed: () {
+                    // 清除控制器文本
+                    _entryNameController.clear();
+                    _entryContentController.clear();
+                    OverlayPortalService.hide(context);
+                  },
                 ),
-                const SizedBox(height: 16),
-                Text(S.of(context).name, style: TextStyle(fontSize: 16)),
-                StdTextFormField(
-                  controller: _entryNameController,
-                  hintText: S.of(context).plz_enter_name,
-                  validateFailureText: S.of(context).plz_enter_name,
-                ),
-                const SizedBox(height: 16),
-                Text(S.of(context).content, style: TextStyle(fontSize: 16)),
-                Expanded(
-                  child: StdTextFormField(
-                    isExpanded: true,
-                    controller: _entryContentController,
-                    hintText: S.of(context).plz_enter_content,
-                    validateFailureText: S.of(context).plz_enter_content,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    StdButton(
-                      color: theme.secondGradeColor,
-                      text: S.of(context).cancel,
-                      onPressed: () {
-                        // 清除控制器文本
-                        _entryNameController.clear();
-                        _entryContentController.clear();
-                        OverlayPortalService.hide(context);
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    StdButton(
-                      text: S.of(context).save,
-                      onPressed: () {
-                        if (!formKey.currentState!.validate()) {
-                          return;
-                        }
-                        // 更新条目数据
-                        setState(() {
-                          entry.name = _entryNameController.text;
-                          entry.content = _entryContentController.text;
-                        });
-                        // 清除控制器文本
-                        _entryNameController.clear();
-                        _entryContentController.clear();
-                        // 关闭弹窗
-                        OverlayPortalService.hide(context);
-                        _writeIn();
-                      },
-                    ),
-                  ],
+                const SizedBox(width: 8),
+                StdButton(
+                  text: S.of(context).save,
+                  onPressed: () {
+                    if (!formKey.currentState!.validate()) {
+                      return;
+                    }
+                    // 更新条目数据
+                    setState(() {
+                      entry.name = _entryNameController.text;
+                      entry.content = _entryContentController.text;
+                    });
+                    // 清除控制器文本
+                    _entryNameController.clear();
+                    _entryContentController.clear();
+                    // 关闭弹窗
+                    OverlayPortalService.hide(context);
+                    _writeIn();
+                  },
                 ),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -1086,20 +1092,21 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                   },
                 ),
                 const SizedBox(width: 16),
-                StdButton(
-                  color: theme.secondGradeColor,
-                  text: S.of(context).cancel,
-                  onPressed: () {
-                    widget.onClose();
-                  },
-                ),
-                const SizedBox(width: 8),
+                if (widget.onBack != null)
+                  StdButton(
+                    color: theme.secondGradeColor,
+                    text: S.of(context).cancel,
+                    onPressed: () {
+                      widget.onBack!();
+                    },
+                  ),
+                if (widget.onBack != null) const SizedBox(width: 8),
                 StdButton(
                   text: S.of(context).save,
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
                       _save();
-                      widget.onClose();
+                      widget.onSaveReturn();
                     }
                   },
                 ),

@@ -51,6 +51,7 @@ dependencies:
   objectbox_flutter_libs: any
   bitsdojo_window: ^0.1.6
   sqflite_common_ffi: ^2.3.6
+  url_launcher: ^6.3.2
   
 
 dev_dependencies:

@@ -204,8 +204,9 @@ enum SelectedRAGSection {
 }
 
 class RagSettingPage extends ConsumerStatefulWidget {
-  const RagSettingPage({super.key, required this.onBack});
-  final dynamic onBack;
+  const RagSettingPage({super.key, required this.onSaveReturn, this.onBack});
+  final dynamic onSaveReturn;
+  final void Function()? onBack;
   @override
   ConsumerState<RagSettingPage> createState() => _RagSettingPageState();
 }
@@ -285,17 +286,18 @@ class _RagSettingPageState extends ConsumerState<RagSettingPage>
           Expanded(child: _knowledgeBaseSections()),
           Row(
             children: [
-              Expanded(
-                child: StdButton(
-                  text: S.of(context).cancel_long_press,
-                  color: theme.thirdGradeColor,
-                  onLongPress: () async {
-                    ref.read(ragEditState.notifier).newState();
-                    widget.onBack();
-                  },
+              if (widget.onBack != null)
+                Expanded(
+                  child: StdButton(
+                    text: S.of(context).cancel_long_press,
+                    color: theme.thirdGradeColor,
+                    onLongPress: () async {
+                      ref.read(ragEditState.notifier).newState();
+                      widget.onBack!();
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
+              if (widget.onBack != null) SizedBox(width: 10),
               Expanded(child: _buildSaveButton()),
             ],
           ),
@@ -523,7 +525,7 @@ class _RagSettingPageState extends ConsumerState<RagSettingPage>
               stateType: ActivityStateType.loading,
             );
             ref.read(activityProvider.notifier).startActivity(ac);
-            widget.onBack();
+            widget.onSaveReturn();
           } else {
             _controller.forward(from: 0);
           }

@@ -237,6 +237,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "google_compatible_api": MessageLookupByLibrary.simpleMessage(
       "Google compatible API",
     ),
+    "got_it": MessageLookupByLibrary.simpleMessage("Got it"),
     "help": MessageLookupByLibrary.simpleMessage("Help"),
     "hide_cot": MessageLookupByLibrary.simpleMessage("Hide  thoughts"),
     "hide_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
@@ -273,6 +274,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Some changes may require a restart to take effect.",
     ),
     "loading_error": m6,
+    "long_press": MessageLookupByLibrary.simpleMessage("Long press"),
     "longest_opening": m7,
     "memory_content": MessageLookupByLibrary.simpleMessage("Memory content"),
     "memory_content_waring": MessageLookupByLibrary.simpleMessage(
@@ -453,6 +455,24 @@ class MessageLookup extends MessageLookupByLibrary {
       "Send a message",
     ),
     "set_as_default": MessageLookupByLibrary.simpleMessage("Set as default"),
+    "setup_agent_hint": MessageLookupByLibrary.simpleMessage("Create a agent"),
+    "setup_finished": MessageLookupByLibrary.simpleMessage(
+      "Now we\'re ready to go!",
+    ),
+    "setup_finished_btn": MessageLookupByLibrary.simpleMessage(
+      "Unlock the brand new Ai chat experience ->",
+    ),
+    "setup_knowledgeBase": MessageLookupByLibrary.simpleMessage(
+      "Create a knowledge base",
+    ),
+    "setup_persona": MessageLookupByLibrary.simpleMessage("Create a persona"),
+    "setup_pre_warn_content": MessageLookupByLibrary.simpleMessage(
+      "# UNIChat Development Announcement\n\n**To All UNIChat Users:**\n\nThank you for your interest in and trying out UNIChat!\n\nUNIChat is currently in its **early Alpha version** stage. This means the software is not yet complete, and many features are still under planning and active development. Please keep the following points in mind while using the application:\n\n---\n\n### 1. ⚠️ Version Status and Data Risk\n\n1.  **Incomplete Functionality:** Many core features may not yet be implemented, or they might be incomplete, unstable, or provide a sub-optimal user experience.\n2.  **Risk of Data Structure Changes:** As the software is undergoing rapid iteration, we **cannot guarantee** that the data structure will not undergo significant changes in the future. Consequently, **user data (such as chat history, settings, etc.) in the current version might not be inheritable or compatible with subsequent updates.** Please be aware of this and exercise caution with storing important data.\n\n### 2. 🐛 Bug and Issue Reporting\n\nIf you encounter any bugs or problems during use, we strongly encourage you to report them to us via the following channels:\n\n* Submit an **Issue** on our **GitHub Repository**.\n* Send an email to **[Please insert your Email address here]**.\n\n### 3. 📖 Documentation and The Art of Asking Questions\n\nWe are committed to clear documentation and encourage high-quality communication:\n\n* **Check Documentation First:** Before asking a question or submitting feedback, please prioritize checking the project\'s **official documentation**: [Please insert Documentation Link here]. Many basic queries might already be answered there.\n* **The Art of Asking Questions:** If you decide to ask a question or file an Issue, to ensure we can resolve it efficiently, please follow these principles:\n    1.  **Be Clear and Specific:** Clearly describe the problem you are facing, the expected behavior, and what actually occurred.\n    2.  **Provide Steps to Reproduce:** Include **detailed steps** on how to reproduce the issue (\"How to operate to cause this error\").\n    3.  **Include Environment Info:** Provide relevant environment information, such as your operating system and software version number.\n\n### 4. 🌐 Open Source and Contributions\n\nUNIChat is an open-source project **licensed under the Apache License 2.0**.\n\nWe warmly welcome all developers to review, study, and utilize our code. If you are interested in contributing to UNIChat—whether through code improvements, documentation, or feature implementation—we welcome your **Pull Requests**!\n\n---\n\n**Acknowledgement:** Your early usage and feedback are invaluable to us. Thank you for your patience and support as we work towards the official release of UNIChat!",
+    ),
+    "setup_pre_warning": MessageLookupByLibrary.simpleMessage(
+      "Before we go on : ",
+    ),
+    "setup_start": MessageLookupByLibrary.simpleMessage("Start"),
     "show_cot": MessageLookupByLibrary.simpleMessage("Show thoughts"),
     "show_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
       "Show knowledge base search results",
@@ -460,6 +480,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "show_source_code": MessageLookupByLibrary.simpleMessage(
       "Show source code",
     ),
+    "skip": MessageLookupByLibrary.simpleMessage("Skip"),
     "slogan": MessageLookupByLibrary.simpleMessage(
       "A powerful AI agent & Knowledge base integrated ChatApp",
     ),

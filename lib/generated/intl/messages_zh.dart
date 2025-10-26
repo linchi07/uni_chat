@@ -327,6 +327,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "selected_agent": m11,
     "send_a_message_hint": MessageLookupByLibrary.simpleMessage("发送一条消息"),
     "set_as_default": MessageLookupByLibrary.simpleMessage("设为默认"),
+    "setup_agent_hint": MessageLookupByLibrary.simpleMessage("添加一个Agent"),
+    "setup_pre_warn_content": MessageLookupByLibrary.simpleMessage(
+      "# UNIChat 软件开发告示\n\n**致 UNIChat 的所有用户：**\n\n感谢您对 UNIChat 的关注和试用！\n\nUNIChat 目前正处于**早期 Alpha 版本**阶段，这意味着软件尚未完全开发完成，仍有大量功能在规划和实现中。请您在使用过程中注意以下几点：\n\n---\n\n### 1. ⚠️ 版本状态与数据风险\n\n1.  **功能未完善：** 许多核心功能可能尚未实现，或者存在不完整、不稳定、体验不佳的情况。\n2.  **数据结构变动风险：** 由于软件处于快速迭代期，我们**不保证**未来数据结构不会发生重大变化。因此，**当前版本中的用户数据（例如聊天记录、设置等）可能在后续更新中无法继承或兼容。** 请您知悉并谨慎对待重要数据的存储。\n\n### 2. 🐛 问题反馈与支持\n\n如果您在使用中遇到任何 Bug 或问题，我们非常欢迎您通过以下方式向我们反馈：\n\n* 在我们的 **GitHub 仓库**上提交 **Issue**。\n* 发送电子邮件至 **[请在此处插入您的 Email 地址]**。\n\n### 3. 📖 查阅文档与提问的艺术\n\n我们致力于提供清晰的文档，并鼓励高质量的交流：\n\n* **先查文档：** 在提问或反馈之前，请优先查阅项目的**官方文档**： [请在此处插入文档链接]，许多基础问题可能已有解答。\n* **提问的艺术：** 如果您决定提问或提交 Issue，为了能让我们更高效地解决问题，请遵循以下原则：\n    1.  **描述清晰：** 明确说明您遇到的问题、期望的行为、以及实际发生的情况。\n    2.  **提供步骤：** 给出重现问题的**详细步骤**（“如何操作会导致这个错误”）。\n    3.  **附带环境信息：** 提供您的操作系统、软件版本号等相关环境信息。\n\n### 4. 🌐 开源与贡献\n\nUNIChat 是一个**遵守 Apache License 2.0 开源协议**的项目。\n\n我们热烈欢迎所有开发者查看、学习和使用我们的代码。如果您有兴趣为 UNIChat 做出贡献，无论是代码改进、文档翻译还是功能实现，我们都欢迎您提交 **Pull Request**！\n\n---\n\n**致谢：** 您的早期使用和反馈对我们至关重要。感谢您的耐心和支持，期待 UNIChat 正式发布！",
+    ),
+    "setup_pre_warning": MessageLookupByLibrary.simpleMessage("在开始之前，请先注意："),
+    "setup_start": MessageLookupByLibrary.simpleMessage("开始设置"),
     "show_cot": MessageLookupByLibrary.simpleMessage("显示思维链"),
     "show_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
       "查看检索结果",
