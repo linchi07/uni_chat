@@ -309,5 +309,6 @@
   "regex_match": "正则匹配",
   "base_stat_OK": "可用",
   "base_stat_processing": "处理中",
-  "base_stat_PENDING": "检查中"
+  "base_stat_PENDING": "检查中",
+  "slogan": "开源的AI Agent和知识库集成聊天软件"
 }

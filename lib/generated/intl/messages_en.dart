@@ -460,6 +460,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "show_source_code": MessageLookupByLibrary.simpleMessage(
       "Show source code",
     ),
+    "slogan": MessageLookupByLibrary.simpleMessage(
+      "A powerful AI agent & Knowledge base integrated ChatApp",
+    ),
     "start_conversation_with_selected_agent":
         MessageLookupByLibrary.simpleMessage(
           "Start conversation with selected agent",

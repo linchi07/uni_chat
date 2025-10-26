@@ -332,6 +332,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "查看检索结果",
     ),
     "show_source_code": MessageLookupByLibrary.simpleMessage("显示源码"),
+    "slogan": MessageLookupByLibrary.simpleMessage("开源的AI Agent和知识库集成聊天软件"),
     "start_conversation_with_selected_agent":
         MessageLookupByLibrary.simpleMessage("与所选Agent开始新对话"),
     "support_formats": MessageLookupByLibrary.simpleMessage(

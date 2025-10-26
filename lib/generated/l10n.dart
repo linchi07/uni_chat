@@ -2034,6 +2034,16 @@ class S {
       args: [],
     );
   }
+
+  /// `A powerful AI agent & Knowledge base integrated ChatApp`
+  String get slogan {
+    return Intl.message(
+      'A powerful AI agent & Knowledge base integrated ChatApp',
+      name: 'slogan',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

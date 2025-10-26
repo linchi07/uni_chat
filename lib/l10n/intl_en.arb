@@ -309,5 +309,6 @@
   "regex_match": "Regex match",
   "base_stat_OK": "OK",
   "base_stat_processing": "Processing",
-  "base_stat_PENDING": "Pending"
+  "base_stat_PENDING": "Pending",
+  "slogan": "A powerful AI agent & Knowledge base integrated ChatApp"
 }
