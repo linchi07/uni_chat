@@ -52,13 +52,14 @@ class OverlayPortalService {
     bool barrierVisible = true,
     Offset? offset,
   }) {
-    final scopeState = context.findAncestorStateOfType<_OverlayPortalScopeState>();
+    final scopeState = context
+        .findAncestorStateOfType<_OverlayPortalScopeState>();
     if (scopeState == null) {
       throw Exception('No OverlayPortalScope found in context');
     }
 
     final portal = scopeState._portalData;
-    
+
     // 更新要显示的内容和相关参数
     portal.childNotifier.value = child;
     portal.barrierVisibleNotifier.value = barrierVisible;
@@ -70,16 +71,17 @@ class OverlayPortalService {
 
   /// 隐藏指定 context 下的对话框。
   static void hide(BuildContext context) {
-    final scopeState = context.findAncestorStateOfType<_OverlayPortalScopeState>();
+    final scopeState = context
+        .findAncestorStateOfType<_OverlayPortalScopeState>();
     if (scopeState == null) {
       throw Exception('No OverlayPortalScope found in context');
     }
 
     final portal = scopeState._portalData;
-    
+
     // 隐藏 OverlayPortal
     portal.controller.hide();
-    
+
     // 动画结束后清空内容，避免内存占用
     Future.delayed(const Duration(milliseconds: 200), () {
       portal.childNotifier.value = null;
@@ -90,11 +92,8 @@ class OverlayPortalService {
 /// 应用的根级 OverlayPortal，用于显示由 DialogService 管理的全局对话框。
 /// 实际上这里是有问题的，我们必须在某个overlay下(以及root)都要放置scope并且通过key区分，否则的话层级还是存在问题
 class OverlayPortalScope extends StatefulWidget {
-  const OverlayPortalScope({
-    super.key,
-    required this.child,
-  });
-  
+  const OverlayPortalScope({super.key, required this.child});
+
   final Widget child;
 
   @override
@@ -146,7 +145,7 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
             }
             //这里出现了一个bug或者奇葩的问题，反正就是在apikey设置页面的时候每次的焦点更改都会导致build然后就会放一次动画
             //解决方案是把动画注释掉··
-/*
+            /*
             // 当portal显示时启动动画
             if (_portalData.controller.isShowing) {
               _portalData.animationController.forward(from: 0.6);
@@ -169,7 +168,7 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
                   builder: (context, offset, _) {
                     // 监听大小变化
                     Widget content = child;
-/*
+                    /*
                     // 应用动画效果
                     content = FadeTransition(
                       opacity: fadeAnimation,
@@ -191,7 +190,9 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
                       children: [
                         // 背景遮罩，点击时可以关闭对话框
                         ModalBarrier(
-                          color: (barrierVisible)?Colors.black.withAlpha(90):Colors.transparent,
+                          color: (barrierVisible)
+                              ? Colors.black.withAlpha(90)
+                              : Colors.transparent,
                           dismissible: true,
                           onDismiss: () {
                             // 反向播放动画后再隐藏
@@ -212,5 +213,102 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
       // 这是你的主应用内容
       child: widget.child,
     );
+  }
+}
+
+class OverlayWrapper extends StatefulWidget {
+  static void removeOverlay(BuildContext context) {
+    final scopeState = context.findAncestorStateOfType<_OverlayWrapperState>();
+    if (scopeState == null) {
+      throw Exception('No OverlayWrapper found in context');
+    }
+    scopeState.removeOverlay();
+  }
+
+  static void showOverlay(
+    BuildContext context, {
+    required Widget overlayContent,
+    bool barrierDismissible = true,
+    bool Function()? onClose,
+  }) {
+    final scopeState = context.findAncestorStateOfType<_OverlayWrapperState>();
+    if (scopeState == null) {
+      throw Exception('No OverlayWrapper found in context');
+    }
+    scopeState.insertOverlay(
+      overlayContent: overlayContent,
+      barrierDismissible: barrierDismissible,
+      onClose: onClose,
+    );
+  }
+
+  final Widget child;
+  const OverlayWrapper({super.key, required this.child});
+
+  @override
+  State<OverlayWrapper> createState() => _OverlayWrapperState();
+}
+
+class _OverlayWrapperState extends State<OverlayWrapper> {
+  OverlayEntry? _overlayEntry;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    removeOverlay();
+    super.dispose();
+  }
+
+  bool Function()? _onClose;
+
+  /// 插入 OverlayEntry 到 OverlayState
+  void insertOverlay({
+    required Widget overlayContent,
+    bool Function()? onClose,
+    bool barrierDismissible = true,
+  }) {
+    if (_overlayEntry != null) return; // 避免重复插入
+    _onClose = onClose;
+    _overlayEntry = OverlayEntry(
+      builder: (context) {
+        // 这里的浮层内容通常需要定位 (如 Positioned, Align 或 Center)
+        // 这是一个简单的居中定位示例
+        return Stack(
+          children: [
+            ModalBarrier(
+              color: Colors.black.withAlpha(90),
+              dismissible: barrierDismissible,
+              onDismiss: () {
+                removeOverlay();
+              },
+            ),
+            Center(child: OverlayPortalScope(child: overlayContent)),
+          ],
+        );
+      },
+    );
+
+    // 确保当前 Widget 有一个 Overlay 的祖先
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  /// 移除 OverlayEntry
+  void removeOverlay() {
+    if (_overlayEntry == null) return;
+    if (!(_onClose?.call() ?? true)) {
+      return;
+    }
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 始终返回子 Widget
+    return widget.child;
   }
 }

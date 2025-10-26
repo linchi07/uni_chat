@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
-import 'package:uni_chat/utils/dialog.dart';
+import 'package:uni_chat/utils/overlays.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';

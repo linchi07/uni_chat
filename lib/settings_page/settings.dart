@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uni_chat/settings_page/about.dart';
 import 'package:uni_chat/settings_page/model_settings.dart';
-import 'package:uni_chat/utils/dialog.dart';
+import 'package:uni_chat/utils/overlays.dart';
 
 import '../generated/l10n.dart';
 import '../main.dart';
@@ -12,20 +13,8 @@ import 'api_settings.dart';
 
 /// “账户”设置页面的占位符
 class _GeneralSettings extends StatelessWidget {
-  Future<int?> selectedIndex() async {
-    final prefs = await SharedPreferences.getInstance();
-    final language = prefs.getString('language');
-    if (language == null) {
-      return null;
-    }
-    var l = languages.keys.toList();
-    return l.indexOf(language);
-  }
-
   @override
   Widget build(BuildContext context) {
-    var languageCount = languages.keys.toList();
-    var languageLocale = languages.values.toList();
     return ListView(
       padding: const EdgeInsets.all(24.0),
       children: [
@@ -36,44 +25,7 @@ class _GeneralSettings extends StatelessWidget {
         const SizedBox(height: 20),
         Text(S.of(context).language_settings, style: TextStyle(fontSize: 18)),
         const SizedBox(height: 20),
-        Consumer(
-          builder: (context, ref, child) {
-            return FutureBuilder(
-              future: selectedIndex(),
-              builder: (context, asyncSnapshot) {
-                if (asyncSnapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                return StdDropDown(
-                  initialWidget: Center(
-                    child: Text(
-                      S.of(context).language_select,
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
-                  initialIndex: asyncSnapshot.data,
-                  height: 55.0,
-                  onChanged: (index) async {
-                    await S.load(languageLocale[index]);
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setString('language', languageCount[index]);
-                    //由于大量组件都是接入theme的所以这样相当于让界面重新构建了
-                    ref.read(themeProvider.notifier).updateTheme();
-                  },
-                  itemBuilder: (context, index, onTap) {
-                    return StdListTile(
-                      title: Text(languageCount[index]),
-                      onTap: () {
-                        onTap(index);
-                      },
-                    );
-                  },
-                  itemCount: languageCount.length,
-                );
-              },
-            );
-          },
-        ),
+        LanguageSwitcher(),
         const SizedBox(height: 20),
         Text(
           S.of(context).language_switch_restart_note,
@@ -84,12 +36,61 @@ class _GeneralSettings extends StatelessWidget {
   }
 }
 
-class AboutPage extends StatelessWidget {
-  const AboutPage({super.key});
+class LanguageSwitcher extends StatelessWidget {
+  const LanguageSwitcher({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    Future<int?> selectedIndex() async {
+      final prefs = await SharedPreferences.getInstance();
+      final language = prefs.getString('language');
+      if (language == null) {
+        return null;
+      }
+      var l = languages.keys.toList();
+      return l.indexOf(language);
+    }
+
+    var languageCount = languages.keys.toList();
+    var languageLocale = languages.values.toList();
+    return FutureBuilder(
+      future: selectedIndex(),
+      builder: (context, asyncSnapshot) {
+        if (asyncSnapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        return Consumer(
+          builder: (context, ref, child) {
+            return StdDropDown(
+              initialWidget: Center(
+                child: Text(
+                  S.of(context).language_select,
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+              initialIndex: asyncSnapshot.data,
+              height: 55.0,
+              onChanged: (index) async {
+                await S.load(languageLocale[index]);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('language', languageCount[index]);
+                //由于大量组件都是接入theme的所以这样相当于让界面重新构建了
+                ref.read(themeProvider.notifier).updateTheme();
+              },
+              itemBuilder: (context, index, onTap) {
+                return StdListTile(
+                  title: Text(languageCount[index]),
+                  onTap: () {
+                    onTap(index);
+                  },
+                );
+              },
+              itemCount: languageCount.length,
+            );
+          },
+        );
+      },
+    );
   }
 }
 
@@ -210,7 +211,7 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
       _SettingItem(
         icon: Icons.info_outline,
         title: S.of(context).about,
-        contentWidget: AboutPage(),
+        contentWidget: UNIChatAbout(),
       ),
     ];
     final screenSize = MediaQuery.of(context).size;
@@ -248,7 +249,7 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
             ),
             // 使用ClipRRect来确保子内容不会溢出圆角
             clipBehavior: Clip.hardEdge,
-            //创建的overlay缺少了很多的属性，所以这里创建了一个新的MaterialApp来提供这些属性
+            //创建的overlay缺少了很多的属性，所以这里创建了一个新的Material
             child: OverlayPortalScope(
               child: Material(
                 color: theme.secondGradeColor,

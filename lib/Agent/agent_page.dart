@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
-import 'package:uni_chat/utils/dialog.dart';
+import 'package:uni_chat/utils/overlays.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';

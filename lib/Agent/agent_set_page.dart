@@ -15,8 +15,8 @@ import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
-import '../utils/dialog.dart';
 import '../utils/file_utils.dart';
+import '../utils/overlays.dart';
 import 'agentProvider.dart';
 
 class AgentSetPage extends StatelessWidget {

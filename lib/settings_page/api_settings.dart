@@ -4,8 +4,8 @@ import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/llm_provider/pre_build_providers.dart';
 import 'package:uni_chat/llm_provider/pre_built_models.dart';
 import 'package:uni_chat/theme_manager.dart';
-import 'package:uni_chat/utils/dialog.dart';
 import 'package:uni_chat/utils/llm_image_indexer.dart';
+import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 

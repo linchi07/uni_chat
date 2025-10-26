@@ -17,8 +17,8 @@ import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
-import '../utils/dialog.dart';
 import '../utils/llm_image_indexer.dart';
+import '../utils/overlays.dart';
 import '../utils/prebuilt_widgets.dart';
 
 class RagEditState {
