@@ -7,29 +7,52 @@ class ThemeConfig {
   final Color zeroGradeColor;
   final Color secondGradeColor;
   final Color thirdGradeColor;
-  final Color textColor;
+  late final Color brightTextColor;
+  late final Color darkTextColor;
 
   ThemeConfig({
     required this.primaryColor,
     required this.zeroGradeColor,
     required this.secondGradeColor,
     required this.thirdGradeColor,
-    required this.textColor,
-  });
+    required Color brightTextColor,
+    required Color darkTextColor,
+  }) {
+    this.brightTextColor = brightTextColor ?? Colors.black;
+    this.darkTextColor = darkTextColor ?? Colors.white;
+  }
+
+  Color get textColor {
+    if (secondGradeColor.computeLuminance() > 0.5) {
+      return darkTextColor;
+    } else {
+      return brightTextColor;
+    }
+  }
+
+  Color getTextColor(Color backgroundColor) {
+    if (backgroundColor.computeLuminance() > 0.5) {
+      return darkTextColor;
+    } else {
+      return brightTextColor;
+    }
+  }
 
   ThemeConfig copyWith({
     Color? primaryColor,
     Color? zeroGradeColor,
     Color? secondGradeColor,
     Color? thirdGradeColor,
-    Color? textColor,
+    Color? brightTextColor,
+    Color? darkTextColor,
   }) {
     return ThemeConfig(
       primaryColor: primaryColor ?? this.primaryColor,
       zeroGradeColor: zeroGradeColor ?? this.zeroGradeColor,
       secondGradeColor: secondGradeColor ?? this.secondGradeColor,
       thirdGradeColor: thirdGradeColor ?? this.thirdGradeColor,
-      textColor: textColor ?? this.textColor,
+      brightTextColor: brightTextColor ?? this.brightTextColor,
+      darkTextColor: darkTextColor ?? this.darkTextColor,
     );
   }
 }
@@ -43,7 +66,8 @@ class ThemeManager extends StateNotifier<ThemeConfig> {
           zeroGradeColor: const Color(0xFFFFFFFF),
           secondGradeColor: const Color(0xFFF2F2F2),
           thirdGradeColor: const Color(0xFFD7D7D7),
-          textColor: const Color(0xFF000000),
+          darkTextColor: const Color(0xFF000000),
+          brightTextColor: const Color(0xFFFFFFFF),
         ),
       );
 
@@ -53,35 +77,16 @@ class ThemeManager extends StateNotifier<ThemeConfig> {
     Color? surfaceColor,
     Color? backgroundColor,
     Color? boxColor,
-    Color? textColor,
+    Color? darkTextColor,
+    Color? brightTextColor,
   }) {
-    state = ThemeConfig(
-      primaryColor: primaryColor ?? state.primaryColor,
-      zeroGradeColor: surfaceColor ?? state.zeroGradeColor,
-      secondGradeColor: backgroundColor ?? state.secondGradeColor,
-      thirdGradeColor: boxColor ?? state.thirdGradeColor,
-      textColor: textColor ?? state.textColor,
-    );
-  }
-
-  // 设置预定义的主题
-  void setLightTheme() {
-    state = ThemeConfig(
-      primaryColor: const Color(0xFF000000),
-      zeroGradeColor: const Color(0xFFFFFFFF),
-      secondGradeColor: const Color(0xFFF2F2F2),
-      thirdGradeColor: const Color(0xFFD7D7D7),
-      textColor: const Color(0xFF000000),
-    );
-  }
-
-  void setDarkTheme() {
-    state = ThemeConfig(
-      primaryColor: const Color(0xFFBB86FC),
-      zeroGradeColor: const Color(0xFF121212),
-      secondGradeColor: const Color(0xFF1E1E1E),
-      thirdGradeColor: const Color(0xFF2D2D2D),
-      textColor: const Color(0xFFFFFFFF),
+    state = state.copyWith(
+      primaryColor: primaryColor,
+      zeroGradeColor: surfaceColor,
+      secondGradeColor: backgroundColor,
+      thirdGradeColor: boxColor,
+      darkTextColor: darkTextColor,
+      brightTextColor: brightTextColor,
     );
   }
 }

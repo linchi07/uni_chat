@@ -6,7 +6,7 @@ class PreBuiltModels {
     'gemini-2.5-flash': ModelsConfigData(
       callName: "gemini-2.5-flash",
       friendlyName: "Gemini 2.5 Flash",
-      family: "gemini",
+      family: "gemini 2.5",
       abilities: {
         ModelAbility.textGenerate,
         ModelAbility.visualUnderStanding,
@@ -16,7 +16,7 @@ class PreBuiltModels {
     'gemini-2.5-pro': ModelsConfigData(
       callName: "gemini-2.5-pro",
       friendlyName: "Gemini 2.5 Pro",
-      family: "gemini",
+      family: "gemini 2.5",
       abilities: {
         ModelAbility.textGenerate,
         ModelAbility.visualUnderStanding,
@@ -87,13 +87,37 @@ class PreBuiltModels {
       callName: "qwen/qwen3-32b",
       friendlyName: "Qwen3 32B",
       family: "qwen3",
-      abilities: {ModelAbility.textGenerate, ModelAbility.visualUnderStanding},
+      abilities: {ModelAbility.textGenerate},
     ),
     'qwen/qwen3-14b': ModelsConfigData(
       callName: "qwen/qwen3-14b",
       friendlyName: "Qwen3 14B",
       family: "qwen3",
-      abilities: {ModelAbility.textGenerate, ModelAbility.visualUnderStanding},
+      abilities: {ModelAbility.textGenerate},
+    ),
+    'qwen/qwen3-7b': ModelsConfigData(
+      callName: "qwen/qwen3-7b",
+      friendlyName: "Qwen3 7B",
+      family: "qwen3",
+      abilities: {ModelAbility.textGenerate},
+    ),
+    'text-embedding-qwen3-embedding-4b': ModelsConfigData(
+      callName: "text-embedding-qwen3-embedding-4b",
+      friendlyName: "Qwen3 4B Embedding",
+      family: "qwen3",
+      abilities: {ModelAbility.embedding},
+    ),
+    'gemini-embedding-001': ModelsConfigData(
+      callName: "gemini-embedding-001",
+      friendlyName: "Gemini Embedding 001",
+      family: "gemini",
+      abilities: {ModelAbility.embedding},
+    ),
+    'text-embedding-ada-002': ModelsConfigData(
+      callName: "text-embedding-ada-002",
+      friendlyName: "OpenAI Text Embedding Ada 002",
+      family: "ada",
+      abilities: {ModelAbility.embedding},
     ),
   };
 }

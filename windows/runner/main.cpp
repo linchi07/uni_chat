@@ -1,10 +1,12 @@
-#include <flutter/dart_project.h>
+﻿#include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
-
+#include <bitsdojo_window_windows/bitsdojo_window_plugin.h>
 #include "flutter_window.h"
 #include "utils.h"
-
+//隐藏Windows的窗口边框
+//Windows上居然时用cpp写的然后msvc编译,最奇怪的还是隐藏窗口居然在这边。
+auto bdw = bitsdojo_window_configure(BDW_CUSTOM_FRAME);
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
   // Attach to console when present (e.g., 'flutter run') or create a
@@ -27,7 +29,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.Create(L"chat_engine", origin, size)) {
+  if (!window.Create(L"uni_chat", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

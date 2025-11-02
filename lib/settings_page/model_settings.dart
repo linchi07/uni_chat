@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
-import 'package:uni_chat/utils/dialog.dart';
 import 'package:uni_chat/utils/llm_image_indexer.dart';
+import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
 import '../generated/l10n.dart';

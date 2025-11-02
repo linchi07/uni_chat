@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
-import 'package:uni_chat/utils/dialog.dart';
+import 'package:uni_chat/utils/overlays.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
@@ -35,7 +35,7 @@ class _AgentPageState extends State<AgentPage> {
   @override
   Widget build(BuildContext context) {
     if (_isEditing) {
-      return AgentSetPage(onBack: onBack);
+      return AgentSetPage(onSaveReturn: onBack, onBack: onBack);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

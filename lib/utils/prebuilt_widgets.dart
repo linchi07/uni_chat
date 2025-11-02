@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
-import 'package:uni_chat/utils/dialog.dart';
+import 'package:uni_chat/utils/overlays.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
@@ -31,7 +31,8 @@ class StdButton extends ConsumerWidget {
   final String? text;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var c = color ?? ref.watch(themeProvider).primaryColor;
+    var theme = ref.watch(themeProvider);
+    var c = color ?? theme.primaryColor;
     return Material(
       color: c,
       clipBehavior: Clip.hardEdge,
@@ -47,7 +48,7 @@ class StdButton extends ConsumerWidget {
               Text(
                 text ?? "",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: ColorParser.textColor(c)),
+                style: TextStyle(color: theme.getTextColor(c)),
               ),
         ),
       ),
@@ -263,6 +264,56 @@ class StdTextField extends ConsumerWidget {
   }
 }
 
+class StdTextFieldOutlined extends ConsumerWidget {
+  StdTextFieldOutlined({
+    super.key,
+    TextEditingController? controller,
+    this.hintText,
+    this.maxLines,
+    this.minLines,
+    this.validateFailureText,
+    this.onChanged,
+    this.onSubmitted,
+    this.isExpanded,
+  }) {
+    this.controller = controller ?? TextEditingController();
+  }
+  late final TextEditingController controller;
+  final String? validateFailureText;
+  final String? hintText;
+  final int? maxLines;
+  final int? minLines;
+  final bool? isExpanded;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var theme = ref.watch(themeProvider);
+    return TextField(
+      controller: controller,
+      maxLines: (isExpanded ?? false) ? null : maxLines ?? 1,
+      expands: isExpanded ?? false,
+      onChanged: onChanged,
+      onEditingComplete: () {
+        onSubmitted?.call(controller.text);
+      },
+      textAlignVertical: TextAlignVertical.top,
+      decoration: InputDecoration(
+        fillColor: theme.primaryColor,
+        focusColor: theme.primaryColor,
+        hintText: hintText,
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: theme.primaryColor, width: 2),
+        ),
+        border: const OutlineInputBorder(),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: theme.primaryColor, width: 1.0),
+        ),
+      ),
+    );
+  }
+}
+
 /// 一个通用的 Widget，用于在点击 [child] 时，在其旁边显示一个 [overlayChild]。
 ///
 /// 它封装了 OverlayPortal 的所有逻辑，包括定位、显示/隐藏控制和背景遮罩。
@@ -468,9 +519,11 @@ class StdDropDown extends ConsumerStatefulWidget {
     this.nullHint,
     required this.itemCount,
     this.onChanged,
+    this.color,
   });
   final int? initialIndex;
   final Widget? initialWidget;
+  final Color? color;
   final double height;
   final double width;
   final Widget Function(Widget child)? asyncWrapper;
@@ -570,7 +623,7 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
           height: rb.size.height * 6 + 3,
           child: Material(
             elevation: 4,
-            color: theme.zeroGradeColor,
+            color: widget.color ?? theme.zeroGradeColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -591,7 +644,7 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
       width: widget.width,
       child: Material(
         clipBehavior: Clip.hardEdge,
-        color: theme.zeroGradeColor,
+        color: widget.color ?? theme.zeroGradeColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: InkWell(
           onTap: () {

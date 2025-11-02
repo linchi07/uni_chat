@@ -1,19 +1,25 @@
 import 'dart:io' as io show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
-import 'package:macos_window_utils/toolbars/toolbars.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
+import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Chat/session_selector.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
+import 'package:uni_chat/platform_specifics/platform_specifics.dart';
 import 'package:uni_chat/settings_page/settings.dart';
+import 'package:uni_chat/setup_agent.dart';
 import 'package:uni_chat/theme_manager.dart';
-import 'package:uni_chat/utils/dialog.dart';
+import 'package:uni_chat/top_banner.dart';
+import 'package:uni_chat/utils/overlays.dart';
 
 import 'Agent/agent_page.dart';
+import 'RAG/RAG_main_page.dart';
 import 'generated/l10n.dart';
 
 final Map<String, Locale> languages = const {
@@ -22,42 +28,37 @@ final Map<String, Locale> languages = const {
 };
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   if (io.Platform.isAndroid) {
-    PlatForm().platform = Platform.android;
+    PlatForm().platform = RunningPlatform.android;
   } else if (io.Platform.isIOS) {
-    PlatForm().platform = Platform.ios;
+    PlatForm().platform = RunningPlatform.ios;
   } else if (io.Platform.isMacOS) {
-    PlatForm().platform = Platform.macos;
+    PlatForm().platform = RunningPlatform.macos;
+    await MacOSSpecificsSetting.setWindowStyle();
   } else if (io.Platform.isWindows) {
-    PlatForm().platform = Platform.windows;
-  }
-  if (PlatForm._instance.platform == Platform.macos) {
-    //要改好多东西啊
-    WidgetsFlutterBinding.ensureInitialized();
-    await WindowManipulator.initialize();
-    await WindowManipulator.hideTitle();
-    await WindowManipulator.makeTitlebarTransparent();
-    //这里我们将系统双击resize给覆盖掉，因为他会影响我们的顶栏的触控，在下面我们自己实现resize
-    await WindowManipulator.addToolbar(toolbar: BlockingToolbar());
-    await WindowManipulator.setToolbarStyle(
-      toolbarStyle: NSWindowToolbarStyle.unified,
-    );
-    await WindowManipulator.enableFullSizeContentView();
+    PlatForm().platform = RunningPlatform.windows;
+    await WindowsSpecificsSetting.setWindowStyle();
+    //windows 下使用 ffi版本
+    //我在考虑把macos 也切换到ffi版本，但是听说好像性能没有提升啥
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
   }
   final prefs = await SharedPreferences.getInstance();
   var l = prefs.getString("language");
   var local = languages[l];
-  runApp(UNIChat(locale: local));
+  var isSu = prefs.getBool("isSetUp") ?? false;
+  runApp(UNIChat(locale: local, isSetUp: isSu));
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-enum Platform { web, android, ios, macos, windows }
+enum RunningPlatform { web, android, ios, macos, windows }
 
 class PlatForm {
   static final PlatForm _instance = PlatForm._internal();
 
-  Platform platform = Platform.web;
+  RunningPlatform platform = RunningPlatform.web;
   String platformInfo = '';
   String location = '';
   factory PlatForm() => _instance;
@@ -65,13 +66,18 @@ class PlatForm {
   PlatForm._internal();
 }
 
+final GlobalKey<MainContState> masterNavigatorKey = GlobalKey<MainContState>();
+
 class UNIChat extends StatelessWidget {
-  const UNIChat({super.key, this.locale});
+  const UNIChat({super.key, this.locale, required this.isSetUp});
   final Locale? locale;
+  final bool isSetUp;
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    Widget mainContent = MainCont(key: masterNavigatorKey);
+
     return ProviderScope(
       child: MaterialApp(
         localizationsDelegates: [
@@ -86,17 +92,169 @@ class UNIChat extends StatelessWidget {
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
-        home: OverlayPortalScope(
-          child: Builder(
-            builder: (context) {
-              if (locale != null) {
-                S.load(locale!);
-              }
-              return MainCont();
-            },
+        home: OverlayWrapper(
+          child: OverlayPortalScope(
+            child: Builder(
+              builder: (context) {
+                if (locale != null) {
+                  S.load(locale!);
+                }
+                if (PlatForm().platform == RunningPlatform.macos) {
+                  mainContent = MacOSMenuBar(mainContent: mainContent);
+                }
+                if (!isSetUp) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    var s = MediaQuery.of(context).size;
+                    OverlayWrapper.showOverlay(
+                      context,
+                      overlayContent: SizedBox(
+                        height: s.height,
+                        width: s.width,
+                        child: Padding(
+                          padding: const EdgeInsets.all(50.0),
+                          child: SetupAgent(),
+                        ),
+                      ),
+                      barrierDismissible: false,
+                    );
+                  });
+                }
+                return mainContent;
+              },
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class MacOSMenuBar extends ConsumerStatefulWidget {
+  const MacOSMenuBar({super.key, required this.mainContent});
+
+  final Widget mainContent;
+
+  @override
+  ConsumerState<MacOSMenuBar> createState() => _MacOSMenuBarState();
+}
+
+class _MacOSMenuBarState extends ConsumerState<MacOSMenuBar> {
+  OverlayEntry? _overlayEntry;
+  void _showSettingsMenu(BuildContext context) {
+    if (_overlayEntry != null) {
+      return;
+    }
+    final overlay = Overlay.of(context);
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          // 背景变暗和点击外部关闭
+          ModalBarrier(
+            color: Colors.black.withAlpha(80),
+            onDismiss: _hideSettingsMenu,
+          ),
+          SettingsMenu(onClose: _hideSettingsMenu),
+        ],
+      ),
+    );
+
+    overlay.insert(_overlayEntry!);
+  }
+
+  void _hideSettingsMenu() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PlatformMenuBar(
+      menus: [
+        PlatformMenu(
+          label: S.of(context).title,
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: S.of(context).preferences,
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.comma,
+                    meta: true,
+                  ),
+                  onSelected: () {
+                    _showSettingsMenu(context);
+                  },
+                ),
+                PlatformMenuItem(label: S.of(context).about, onSelected: () {}),
+              ],
+            ),
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: S.of(context).quit,
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyQ,
+                    meta: true,
+                  ),
+                  onSelected: () async {
+                    await WindowManipulator.closeWindow();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: S.of(context).chat,
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: S.of(context).new_chat_session,
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyN,
+                    meta: true,
+                  ),
+                  onSelected: () {
+                    masterNavigatorKey.currentState?.setPage(Pages.chat);
+                    ref.read(chatStateProvider.notifier).clearSession();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: "Agent",
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: S.of(context).create_new_agent,
+                  onSelected: () {
+                    masterNavigatorKey.currentState?.setPage(Pages.agent);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: S.of(context).help,
+          menus: <PlatformMenuItem>[
+            PlatformMenuItemGroup(
+              members: <PlatformMenuItem>[
+                PlatformMenuItem(
+                  label: S.of(context).check_manual,
+                  onSelected: () {},
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+      child: widget.mainContent,
     );
   }
 }
@@ -105,18 +263,20 @@ class MainCont extends ConsumerStatefulWidget {
   const MainCont({super.key});
 
   @override
-  ConsumerState<MainCont> createState() => _MainContState();
+  ConsumerState<MainCont> createState() => MainContState();
 }
 
-enum Pages { chat, agent }
+enum Pages { chat, agent, Rag }
 
-class _MainContState extends ConsumerState<MainCont> {
+class MainContState extends ConsumerState<MainCont> {
   Pages page = Pages.chat;
   Widget? _bannerWidget() {
     switch (page) {
       case Pages.chat:
         return ChatBannerWidget();
       case Pages.agent:
+        return null;
+      case Pages.Rag:
         return null;
     }
   }
@@ -127,7 +287,18 @@ class _MainContState extends ConsumerState<MainCont> {
         return ChatPageMain();
       case Pages.agent:
         return AgentPage();
+      case Pages.Rag:
+        return RagPage();
     }
+  }
+
+  void setPage(Pages page) {
+    if (this.page == page) {
+      return;
+    }
+    setState(() {
+      this.page = page;
+    });
   }
 
   @override
@@ -148,6 +319,9 @@ class _MainContState extends ConsumerState<MainCont> {
                     children: [
                       IconButton(
                         onPressed: () {
+                          if (page == Pages.chat) {
+                            return;
+                          }
                           setState(() {
                             page = Pages.chat;
                           });
@@ -156,11 +330,25 @@ class _MainContState extends ConsumerState<MainCont> {
                       ),
                       IconButton(
                         onPressed: () {
+                          if (page == Pages.agent) {
+                            return;
+                          }
                           setState(() {
                             page = Pages.agent;
                           });
                         },
                         icon: Icon(Icons.groups_outlined),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          if (page == Pages.Rag) {
+                            return;
+                          }
+                          setState(() {
+                            page = Pages.Rag;
+                          });
+                        },
+                        icon: Icon(Icons.book_outlined),
                       ),
                       IconButton(
                         onPressed: () {},
@@ -180,68 +368,6 @@ class _MainContState extends ConsumerState<MainCont> {
       ),
     );
   }
-}
-
-class MainBanner extends ConsumerWidget {
-  const MainBanner({super.key, this.bannerWidget});
-  final Widget? bannerWidget;
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeProvider);
-    return Container(
-      height: 50,
-      color: theme.zeroGradeColor,
-      child: Stack(
-        children: [
-          Row(
-            children: [
-              const SizedBox(width: 21),
-              if (PlatForm._instance.platform == Platform.macos)
-                //这里解释一下，因为macOS的标题栏有3个点，所以这里要绘制3个点，我们的那个包默认下是在窗口失去焦点的时候直接不显示红绿灯，所以这里直接画一个上去
-                CustomPaint(size: Size(50, 50), painter: ThreeDotsPainter()),
-              if (PlatForm._instance.platform != Platform.macos)
-                const SizedBox(width: 50),
-              const SizedBox(width: 21),
-              Text(
-                "uniChat",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          Center(child: bannerWidget),
-        ],
-      ),
-    );
-  }
-}
-
-class ThreeDotsPainter extends CustomPainter {
-  final Color dotColor;
-  final double dotRadius;
-
-  ThreeDotsPainter({this.dotColor = Colors.grey, this.dotRadius = 5.7});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = dotColor.withAlpha(200)
-      ..style = PaintingStyle.fill;
-
-    // 计算三个点的位置（水平居中排列）
-    final centerX = size.width / 2;
-    final centerY = size.height / 2 + 1;
-    const dotSpacing = 20;
-
-    // 绘制三个点
-    canvas.drawCircle(Offset(centerX - dotSpacing, centerY), dotRadius, paint);
-
-    canvas.drawCircle(Offset(centerX, centerY), dotRadius, paint);
-
-    canvas.drawCircle(Offset(centerX + dotSpacing, centerY), dotRadius, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class SettingsMenuButton extends StatefulWidget {

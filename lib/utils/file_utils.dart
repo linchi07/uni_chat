@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uni_chat/main.dart';
 
@@ -79,10 +80,16 @@ class FileUtils {
 class PathProvider {
   static Future<String> getPath(String relativePath) async {
     relativePath = "/$relativePath";
-    if (PlatForm().platform == Platform.windows) {
+    if (PlatForm().platform == RunningPlatform.windows) {
       // windows真的烦，还得给他擦屁股
       relativePath = relativePath.replaceAll(RegExp(r'/'), r'\');
     }
-    return "${(await getApplicationDocumentsDirectory()).path}$relativePath";
+    var finalPath =
+        "${(await getApplicationDocumentsDirectory()).path}$relativePath";
+    var dir = Directory(p.dirname(finalPath));
+    if (!(await dir.exists())) {
+      await dir.create(recursive: true);
+    }
+    return finalPath;
   }
 }

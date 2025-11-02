@@ -4,8 +4,8 @@ import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/llm_provider/pre_build_providers.dart';
 import 'package:uni_chat/llm_provider/pre_built_models.dart';
 import 'package:uni_chat/theme_manager.dart';
-import 'package:uni_chat/utils/dialog.dart';
 import 'package:uni_chat/utils/llm_image_indexer.dart';
+import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
@@ -99,10 +99,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
       }
     }
     for (var m in as.models) {
-      var model = await ApiDatabaseService.instance.findOrCreateModel(
-        m.friendlyName,
-        m.family ?? "",
-      );
+      var model = await ApiDatabaseService.instance.findOrCreateModel(m);
       await ApiDatabaseService.instance.createOrUpdateProviderModelConfig(
         modelConfigData: m,
         modelId: model.id,
@@ -180,7 +177,7 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
     return Builder(
       builder: (context) {
         if (isAddingProvider) {
-          return _AddProvider(onBack: back);
+          return AddProvider(exit: back);
         }
         if (isEditingProvider) {
           return EditProvider(onBack: back, save: saveEditResult);
@@ -472,15 +469,15 @@ class AddApiState {
 
 final addApiState = StateProvider((ref) => AddApiState());
 
-class _AddProvider extends ConsumerStatefulWidget {
-  final VoidCallback onBack;
-  const _AddProvider({required this.onBack});
+class AddProvider extends ConsumerStatefulWidget {
+  final VoidCallback exit;
+  const AddProvider({super.key, required this.exit});
 
   @override
-  ConsumerState<_AddProvider> createState() => _AddProviderState();
+  ConsumerState<AddProvider> createState() => _AddProviderState();
 }
 
-class _AddProviderState extends ConsumerState<_AddProvider> {
+class _AddProviderState extends ConsumerState<AddProvider> {
   final _nameController = TextEditingController();
   final _endpointController = TextEditingController();
 
@@ -942,17 +939,14 @@ class _AddProviderState extends ConsumerState<_AddProvider> {
       await ApiDatabaseService.instance.createOrUpdateApiKey(apiKey: key);
     }
     for (var model in as.models) {
-      var m = await ApiDatabaseService.instance.findOrCreateModel(
-        model.friendlyName,
-        model.family ?? "",
-      );
+      var m = await ApiDatabaseService.instance.findOrCreateModel(model);
       await ApiDatabaseService.instance.createOrUpdateProviderModelConfig(
         providerId: pv.id,
         modelId: m.id,
         modelConfigData: model,
       );
     }
-    widget.onBack();
+    widget.exit();
   }
 }
 
@@ -1441,6 +1435,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
     String friendlyName,
     String callName,
     Set<ModelAbility> abilities,
+    String family,
   ) {
     var as = ref.read(addApiState.notifier);
     final newModels = List<ModelsConfigData>.from(as.state.models)
@@ -1449,6 +1444,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
           callName: callName,
           friendlyName: friendlyName,
           abilities: abilities,
+          family: family,
         ),
       );
     as.state = as.state.copyWith(models: newModels);
@@ -1512,6 +1508,7 @@ class _ModelSelectState extends ConsumerState<ModelSelect> {
                       _selectedModel!.friendlyName,
                       _callNameController.text.trim(),
                       selectedAbilities,
+                      _selectedModel!.family ?? '',
                     );
                     OverlayPortalService.hide(context);
                   }

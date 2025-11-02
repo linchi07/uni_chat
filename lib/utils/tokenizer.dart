@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:jieba_flutter/analysis/jieba_segmenter.dart';
+
 class LLMTokenEstimator {
   // LLM Token 估算比例常量 (基于经验法则)
   // ----------------------------------------------------
@@ -13,7 +16,7 @@ class LLMTokenEstimator {
   static final RegExp _chineseRegExp = RegExp(r'[\u4E00-\u9FFF]');
 
   /// 估算给定文本的 Token 数量。
-  /// 
+  ///
   /// 算法：
   /// 1. 将文本分成中文部分和非中文部分（主要为英文和标点）。
   /// 2. 分别应用不同的 Token 估算比例。
@@ -50,5 +53,37 @@ class LLMTokenEstimator {
 
     // 使用 ceil() 确保结果是向上取整的最小整数
     return totalTokens.ceil();
+  }
+}
+
+class Tokenizer {
+  /// 中文分词，实际上也能处理英文的
+  /// 使用 jieba
+  static Future<String> zhHansTokenize(String text) async {
+    return await compute((String text) async {
+      await JiebaSegmenter.init();
+      final seg = JiebaSegmenter();
+      var segToken = seg.process(text, SegMode.SEARCH);
+      var token = segToken.map((t) => t.word);
+      return token.join(",");
+    }, text);
+  }
+
+  bool isInit = false;
+  JiebaSegmenter? _jieba;
+  Future<void> initJieba() async {
+    if (isInit) return;
+    await JiebaSegmenter.init();
+    _jieba = JiebaSegmenter();
+    isInit = true;
+  }
+
+  String zhHansTokenizeSync(String text) {
+    if (!isInit || _jieba == null) {
+      throw Exception("JiebaSegmenter not init");
+    }
+    var segToken = _jieba!.process(text, SegMode.SEARCH);
+    var token = segToken.map((t) => t.word);
+    return token.join(",");
   }
 }

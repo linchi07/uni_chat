@@ -47,6 +47,7 @@ class PresetProvider {
       models: [
         ?PreBuiltModels.models["gpt-4o"],
         ?PreBuiltModels.models["gpt-5"],
+        ?PreBuiltModels.models["text-embedding-ada-002"],
       ],
     ),
     "Google": PresetProvider(
@@ -61,6 +62,7 @@ class PresetProvider {
       models: [
         ?PreBuiltModels.models["gemini-2.5-flash"],
         ?PreBuiltModels.models["gemini-2.5-pro"],
+        ?PreBuiltModels.models["gemini-embedding-001"],
       ],
     ),
     "LmStudio": PresetProvider(

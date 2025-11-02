@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
+import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
+import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
@@ -75,6 +77,7 @@ class Agent {
     required this.model,
     this.systemPrompt,
     required this.modelSpecifics,
+    required this.memoryBaseIds,
   });
   final String id;
   final String name;
@@ -82,6 +85,7 @@ class Agent {
   final String? systemPrompt;
   final ModelSpecifics modelSpecifics;
   Set<ApiAbility> get abilities => model.abilities;
+  final List<String> memoryBaseIds;
   LLMApiService model;
 
   factory Agent.fromAgentData(AgentData agentData, LLMApiService model) {
@@ -91,6 +95,7 @@ class Agent {
       model: model,
       modelSpecifics: agentData.modelSpecifics,
       systemPrompt: agentData.systemPrompt,
+      memoryBaseIds: agentData.knowledgeBases,
     );
   }
 
@@ -101,6 +106,7 @@ class Agent {
     LLMApiService? model,
     ModelSpecifics? modelSpecifics,
     String? systemPrompt,
+    List<String>? memoryBaseIds,
   }) {
     return Agent(
       id: id ?? this.id,
@@ -108,6 +114,7 @@ class Agent {
       model: model ?? this.model,
       modelSpecifics: modelSpecifics ?? this.modelSpecifics,
       systemPrompt: systemPrompt ?? this.systemPrompt,
+      memoryBaseIds: memoryBaseIds ?? this.memoryBaseIds,
     );
   }
 
@@ -144,9 +151,18 @@ class AgentProvider extends StateNotifier<Agent?> {
       );
       if (modelService != null) {
         state = Agent.fromAgentData(agentData, modelService);
+      } else {
+        ref
+            .read(chatStateProvider.notifier)
+            .stateCopyWith(
+              error: 'Failed to find Model Service for the agent.',
+              isReady: false,
+            );
       }
-      //TODO: 这里也需要更好的错误处理，在模型api管理删除模型提供者时，会触发这里
-      //throw Exception('Failed to create API service for the agent.');
+    } else {
+      ref
+          .read(chatStateProvider.notifier)
+          .stateCopyWith(error: 'Failed to find agent.', isReady: false);
     }
   }
 
@@ -161,10 +177,19 @@ class AgentProvider extends StateNotifier<Agent?> {
         agentData.modelProviderConfigureId,
       );
       if (modelService == null) {
-        //TODO: implement better error handling
-        throw Exception('Failed to create API service for the agent.');
+        ref
+            .read(chatStateProvider.notifier)
+            .stateCopyWith(
+              error: 'Failed to find Model Service for the agent.',
+              isReady: false,
+            );
+      } else {
+        state = Agent.fromAgentData(agentData, modelService);
       }
-      state = Agent.fromAgentData(agentData, modelService);
+    } else {
+      ref
+          .read(chatStateProvider.notifier)
+          .stateCopyWith(error: 'Failed to find agent.', isReady: false);
     }
   }
 
@@ -195,12 +220,20 @@ class AgentProvider extends StateNotifier<Agent?> {
   }
 
   Stream<ChatResponse> getStreamingResponse(
+    ChatSession session,
     List<ChatMessage> history,
     ChatMessage usrMessage,
     Map<String, ChatFile> uploadedFiles,
   ) async* {
     if (state != null) {
       var fm = await formatMessage(history, usrMessage, uploadedFiles);
+      if (state!.memoryBaseIds.isNotEmpty) {
+        var rgp = ref.read(ragProvider);
+        if (rgp.loadedAgentId != state!.id) {
+          await rgp.loadKnowledgeBases(state!.memoryBaseIds, session);
+        }
+        fm.ragMessages = await rgp.onUserNewMessageCall(usrMessage);
+      }
       yield* state!.model.getStreamingResponse(fm);
     } else {
       throw Exception("Agent not initialized");
@@ -234,6 +267,7 @@ class AgentProvider extends StateNotifier<Agent?> {
       chatHistory: [],
       usrMessage: [],
       modelSpecifics: state!.modelSpecifics,
+      ragMessages: [],
     );
     rc.staticSystemMessages.add(
       FormattedChatMessage(
@@ -253,7 +287,10 @@ class AgentProvider extends StateNotifier<Agent?> {
         ),
       );
     }
-    rc.staticSystemMessages.add(ref.read(personaProvider).getPersonaMessage());
+    var personaMsg = ref.read(personaProvider).getPersonaMessage();
+    if (personaMsg != null) {
+      rc.staticSystemMessages.add(personaMsg);
+    }
     if (state!.modelSpecifics.enableUsrLanguage) {
       //TODO: 获取用户语言
       rc.staticSystemMessages.add(

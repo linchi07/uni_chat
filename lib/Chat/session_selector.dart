@@ -4,9 +4,11 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
-import 'package:uni_chat/utils/dialog.dart';
+import 'package:uni_chat/main.dart';
+import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
 import '../Agent/agentProvider.dart';
@@ -29,7 +31,7 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
 
   void showSessionSelector() {
     final overlay = Overlay.of(context);
-    final rb = context.findRenderObject() as RenderBox;
+    var rb = context.findRenderObject() as RenderBox;
     final pos = rb.localToGlobal(Offset.zero);
     final size = rb.size;
     final screenSize = MediaQuery.of(context).size;
@@ -67,90 +69,110 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
     var theme = ref.watch(themeProvider);
     var state = ref.watch(chatStateProvider);
     var agent = ref.watch(agentProvider);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        StdButton(
-          onPressed: () {
-            if (_overlayEntry == null) {
-              showSessionSelector();
-            } else {
-              _hide();
-            }
-          },
-          padding: const EdgeInsets.all(6),
-          color: theme.secondGradeColor,
-          child: Icon(Icons.search, size: 20),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 500,
-          child: Material(
-            color: theme.secondGradeColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            clipBehavior: Clip.hardEdge,
-            child: InkWell(
-              onTap: () {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var child = Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            StdButton(
+              onPressed: () {
                 if (_overlayEntry == null) {
                   showSessionSelector();
                 } else {
                   _hide();
                 }
               },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Row(
-                  children: [
-                    FutureBuilder(
-                      future: agent?.getAvatar(),
-                      builder: (context, snapshot) {
-                        return StdAvatar(file: snapshot.data, length: 23);
-                      },
+              padding: const EdgeInsets.all(6),
+              color: theme.secondGradeColor,
+              child: Icon(Icons.search, size: 20),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: min(
+                500,
+                constraints.maxWidth - 80,
+              ), //这里的80是两个按钮各32 + 16的spacing
+              child: Material(
+                color: theme.secondGradeColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                clipBehavior: Clip.hardEdge,
+                child: InkWell(
+                  onTap: () {
+                    if (_overlayEntry == null) {
+                      showSessionSelector();
+                    } else {
+                      _hide();
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 1,
-                      child: Text(
-                        overflow: TextOverflow.ellipsis,
-                        agent?.name ?? "Agent",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                    child: Row(
+                      children: [
+                        FutureBuilder(
+                          future: agent?.getAvatar(),
+                          builder: (context, snapshot) {
+                            return StdAvatar(file: snapshot.data, length: 23);
+                          },
                         ),
-                      ),
-                    ),
-                    Container(width: 1.5, color: Colors.grey[300], height: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        overflow: TextOverflow.ellipsis,
-                        state.session?.name ?? "UNIChat",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            overflow: TextOverflow.ellipsis,
+                            agent?.name ?? "Agent",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
+                        Container(
+                          width: 1.5,
+                          color: Colors.grey[300],
+                          height: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            overflow: TextOverflow.ellipsis,
+                            state.session?.name ?? "UNIChat",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.expand_more),
+                      ],
                     ),
-                    Icon(Icons.expand_more),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        StdButton(
-          onPressed: () {
-            ref.read(chatStateProvider.notifier).clearSession();
-          },
-          padding: const EdgeInsets.all(6),
-          color: theme.secondGradeColor,
-          child: Icon(Icons.add_comment_outlined, size: 20),
-        ),
-      ],
+            const SizedBox(width: 8),
+            StdButton(
+              onPressed: () {
+                ref.read(chatStateProvider.notifier).clearSession();
+              },
+              padding: const EdgeInsets.all(6),
+              color: theme.secondGradeColor,
+              child: Icon(Icons.add_comment_outlined, size: 20),
+            ),
+          ],
+        );
+        if (PlatForm().platform == RunningPlatform.macos) {
+          //macos 的菜单栏需要处理一下,见top banner里面的注释
+          return MacosToolbarPassthrough(child: child);
+        }
+        return child;
+      },
     );
   }
 }
@@ -263,21 +285,24 @@ class _SessionSelectorOverlayState
           child: SizedBox(
             width: _widthAnimation.value,
             height: _heightAnimation.value,
-            child: child,
+            child: Material(
+              elevation: 4.0,
+              color: theme.secondGradeColor,
+              borderRadius: BorderRadius.circular(8),
+              child: Opacity(
+                opacity: _opacityAnimation.value,
+                child: (_widthAnimation.value >= 450) ? child : null,
+              ),
+            ),
           ),
         );
       },
-      child: Material(
-        elevation: 4.0,
-        color: theme.secondGradeColor,
-        borderRadius: BorderRadius.circular(8),
-        child: FadeTransition(
-          opacity: _opacityAnimation,
-          child: Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: OverlayPortalScope(
-              child: SessionSelector(onClose: widget.onClose),
-            ),
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: OverlayPortalScope(
+          child: SessionSelector(
+            onClose: widget.onClose,
+            width: _finalSize.width,
           ),
         ),
       ),
@@ -286,8 +311,13 @@ class _SessionSelectorOverlayState
 }
 
 class SessionSelector extends ConsumerStatefulWidget {
-  const SessionSelector({super.key, required this.onClose});
+  const SessionSelector({
+    super.key,
+    required this.onClose,
+    required this.width,
+  });
   final VoidCallback onClose;
+  final double width;
 
   @override
   ConsumerState<SessionSelector> createState() => _SessionSelectorState();
@@ -297,14 +327,40 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   final ScrollController _sessionScrollController = ScrollController();
   final ScrollController _agentScrollController = ScrollController();
   Timer? _hoverTimer;
-  (List<ChatMessage>, Map<String, ChatFile>)? _previewedSession;
+  (List<ChatMessageDisplay>, Map<String, ChatFile>)? _previewedSession;
   bool isSessionScrolled = false;
   late ThemeConfig theme;
-  void startHoverTimer(String sid) {
-    _hoverTimer = Timer(Duration(milliseconds: 250), () {
-      // 在这里实现你想要触发的动作
-      _onHoverTimeout(sid);
+  double lastScrollOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedAgentId = ref.read(agentProvider)?.id;
+    // 监听滚动状态变化
+    _sessionScrollController.addListener(() {
+      if (_sessionScrollController.position.isScrollingNotifier.value) {
+        lastScrollOffset = _sessionScrollController.offset;
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    cancelHoverTimer();
+    _sessionScrollController.dispose();
+    _agentScrollController.dispose();
+  }
+
+  void startHoverTimer(String sid) {
+    // 在这里实现你想要触发的动作
+    if (_sessionScrollController.offset == lastScrollOffset) {
+      _hoverTimer = Timer(Duration(milliseconds: 250), () {
+        if (_sessionScrollController.offset == lastScrollOffset) {
+          _setPreviewSession(sid);
+        }
+      });
+    }
   }
 
   void cancelHoverTimer() {
@@ -312,7 +368,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
     _hoverTimer = null;
   }
 
-  void _onHoverTimeout(String sid) async {
+  void _setPreviewSession(String sid) async {
     var ps = await DatabaseService.instance.getMessagesForSession(sid);
     internalSetState(() {
       _previewedSession = ps;
@@ -409,12 +465,6 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
-    selectedAgentId = ref.read(agentProvider)?.id;
-  }
-
   String? selectedAgentId;
 
   Future<(List<AgentData>, List<File?>)> getAgentAndAvatars() async {
@@ -451,7 +501,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
             child: Row(
               children: [
                 Expanded(
-                  flex: 4,
+                  flex: (widget.width >= 600) ? 4 : 3,
                   //此处是为了防止list tile的背景色溢出
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -503,7 +553,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                   ),
                 ),
                 Expanded(
-                  flex: 15,
+                  flex: (widget.width >= 600) ? 15 : 7,
                   child: StatefulBuilder(
                     builder: (context, setState) {
                       internalSetState = setState;
@@ -577,56 +627,58 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                     ),
                             ),
                           ),
-                          Expanded(
-                            flex: 8,
-                            child: _previewedSession == null
-                                ? Center(
-                                    child: Text(
-                                      S.of(context).hover_to_see_session,
-                                      style: TextStyle(
-                                        color: theme.thirdGradeColor,
+                          if (widget.width >= 600)
+                            Expanded(
+                              flex: 8,
+                              child: _previewedSession == null
+                                  ? Center(
+                                      child: Text(
+                                        S.of(context).hover_to_see_session,
+                                        style: TextStyle(
+                                          color: theme.thirdGradeColor,
+                                        ),
                                       ),
-                                    ),
-                                  )
-                                : Container(
-                                    margin: EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: theme.zeroGradeColor,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    // ignore: prefer_is_empty
-                                    child: (_previewedSession?.$1.length == 0)
-                                        ? Center(
-                                            child: Text(
-                                              S.of(context).no_message,
-                                              style: TextStyle(
-                                                color: theme.thirdGradeColor,
+                                    )
+                                  : Container(
+                                      margin: EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: theme.zeroGradeColor,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      // ignore: prefer_is_empty
+                                      child: (_previewedSession?.$1.length == 0)
+                                          ? Center(
+                                              child: Text(
+                                                S.of(context).no_message,
+                                                style: TextStyle(
+                                                  color: theme.thirdGradeColor,
+                                                ),
+                                              ),
+                                            )
+                                          : SelectionArea(
+                                              selectionControls:
+                                                  MaterialTextSelectionControls(),
+                                              child: ListView.builder(
+                                                reverse: true,
+                                                itemCount: _previewedSession
+                                                    ?.$1
+                                                    .length,
+                                                itemBuilder: (context, index) {
+                                                  final message =
+                                                      _previewedSession!
+                                                          .$1[_previewedSession!
+                                                              .$1
+                                                              .length -
+                                                          1 -
+                                                          index];
+                                                  return PersistChatMessage(
+                                                    message: message.content,
+                                                  );
+                                                },
                                               ),
                                             ),
-                                          )
-                                        : SelectionArea(
-                                            selectionControls:
-                                                MaterialTextSelectionControls(),
-                                            child: ListView.builder(
-                                              reverse: true,
-                                              itemCount:
-                                                  _previewedSession?.$1.length,
-                                              itemBuilder: (context, index) {
-                                                final message =
-                                                    _previewedSession!
-                                                        .$1[_previewedSession!
-                                                            .$1
-                                                            .length -
-                                                        1 -
-                                                        index];
-                                                return PersistChatMessage(
-                                                  message: message,
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                  ),
-                          ),
+                                    ),
+                            ),
                         ],
                       );
                     },

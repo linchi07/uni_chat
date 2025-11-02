@@ -10,12 +10,13 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
-import '../utils/dialog.dart';
+import '../utils/overlays.dart';
 import 'chat_message_bubble.dart';
 import 'chat_models.dart';
 import 'chat_state.dart';
@@ -581,7 +582,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                             messages[chatState.messages.length -
                                 1 -
                                 messageIndex];
-                        return PersistChatMessage(message: message);
+                        return PersistChatMessage(message: message.content);
                       }
 
                       // 理论上不会执行到这里，但为了安全可以返回一个空的 Widget
@@ -615,7 +616,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   @override
   initState() {
     super.initState();
+    chatState = ref.read(chatStateProvider);
   }
+
+  late ChatState chatState;
 
   // Use a list to support multiple attachments in the future
   final List<(String, UploadStatus)> _attachments = []; // 改为存储文件ID
@@ -720,12 +724,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       _isUploading = true;
       _attachments.add((previewId, UploadStatus.uploading));
     });
-    final appDocDir = await getApplicationDocumentsDirectory();
-    final sessionFilesDir = Directory('${appDocDir.path}/chat/session_files');
-    if (!await sessionFilesDir.exists()) {
-      await sessionFilesDir.create(recursive: true);
-    }
-    final file = File("${sessionFilesDir.path}/$previewId$fileExtension");
+    var path = await PathProvider.getPath(
+      "chat/session_files/$previewId$fileExtension",
+    );
+    final file = File(path);
     final sink = file.openWrite();
     await f.getStream().forEach(sink.add);
     await sink.close();
@@ -760,11 +762,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
 
   @override
   Widget build(BuildContext context) {
-    final globalLoading = ref.watch(
-      chatStateProvider.select((s) => s.isLoading),
-    );
+    chatState = ref.watch(chatStateProvider);
+    final globalLoading = chatState.isLoading;
     theme = ref.watch(themeProvider);
-    final isSendButtonDisabled =
+    final isSendButtonLoading =
         _isUploading || (globalLoading && _attachments.isEmpty);
     late Widget childPanel;
     if (isDroppingFiles) {
@@ -774,7 +775,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            AbsorbPointer(child: _buildChatPanel(isSendButtonDisabled)),
+            AbsorbPointer(child: _buildChatPanel(isSendButtonLoading)),
             Text(
               S.of(context).drop_files_hint,
               style: TextStyle(
@@ -789,7 +790,32 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     } else {
       childPanel = Padding(
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-        child: _buildChatPanel(isSendButtonDisabled),
+        child: _buildChatPanel(isSendButtonLoading),
+      );
+    }
+    if (chatState.error?.isNotEmpty ?? false) {
+      childPanel = Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.all(8),
+            width: double.infinity,
+            height: 35,
+            decoration: BoxDecoration(
+              color: Colors.red[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                chatState.error!,
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          childPanel,
+        ],
       );
     }
     return DropRegion(
@@ -937,20 +963,20 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
 
   late final _focusNode = FocusNode(
     onKeyEvent: (FocusNode node, KeyEvent evt) {
-      if (!HardwareKeyboard.instance.isShiftPressed &&
+      if (HardwareKeyboard.instance.isShiftPressed &&
           evt.logicalKey == LogicalKeyboardKey.enter) {
         if (evt is KeyDownEvent) {
-          _sendMessage();
+          //换行
+          _textController.text += '\n';
         }
         return KeyEventResult.handled;
       } else {
-        //这里的机制是，text field对于shift+enter他依然会换行，所以我们只需要单独拦截一个enter键让他直接发送就可以完全符合要求
         return KeyEventResult.ignored;
       }
     },
   );
 
-  Widget _buildChatPanel(bool isSendButtonDisabled) {
+  Widget _buildChatPanel(bool isSendButtonLoading) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -960,12 +986,19 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2),
           child: TextField(
             focusNode: _focusNode,
+            textInputAction: TextInputAction.send,
             maxLines: 7,
             minLines: 2,
             controller: _textController,
             decoration: InputDecoration.collapsed(
               hintText: S.of(context).send_a_message_hint,
             ),
+            onSubmitted: (text) {
+              if (text.isEmpty || isSendButtonLoading || !chatState.isReady) {
+                return;
+              }
+              _sendMessage();
+            },
             textCapitalization: TextCapitalization.sentences,
           ),
         ),
@@ -985,13 +1018,15 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
-                color: isSendButtonDisabled
+                color: (isSendButtonLoading || !chatState.isReady)
                     ? Colors.grey[600]
                     : theme.primaryColor,
                 child: InkWell(
                   splashColor: Colors.grey,
-                  onTap: isSendButtonDisabled ? null : _sendMessage,
-                  child: isSendButtonDisabled
+                  onTap: (isSendButtonLoading || !chatState.isReady)
+                      ? null
+                      : _sendMessage,
+                  child: isSendButtonLoading
                       ? const SizedBox(
                           width: 20,
                           height: 20,
@@ -1003,8 +1038,14 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                             ),
                           ),
                         )
-                      : const Icon(
+                      : (chatState.isReady)
+                      ? const Icon(
                           Icons.arrow_forward_sharp,
+                          color: Colors.white,
+                          size: 20,
+                        )
+                      : const Icon(
+                          Icons.do_not_disturb_alt_sharp,
                           color: Colors.white,
                           size: 20,
                         ),

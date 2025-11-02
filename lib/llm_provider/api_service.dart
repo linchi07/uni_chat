@@ -21,6 +21,7 @@ abstract class LLMApiService {
   Stream<ChatResponse> getStreamingResponse(
     ModelRequestContent modelRequestContent,
   );
+  Future<List<List<double>>> embedding(List<String> input, int dims);
   Future<String> imageCreation(String prompt, (int, int)? size);
   Future<String> image2imageGeneration(String prompt, String base64Image);
   abstract final String providerName;
@@ -83,6 +84,7 @@ class OpenAiApiService implements LLMApiService {
     toContent(modelRequestContent.chatHistory, contents);
     toContent(modelRequestContent.dynamicSystemMessages, contents);
     toContent(modelRequestContent.uiMessages, contents);
+    toContent(modelRequestContent.ragMessages, contents);
     toContent(modelRequestContent.usrMessage, contents);
 
     final requestBody = {
@@ -280,6 +282,54 @@ class OpenAiApiService implements LLMApiService {
 
   @override
   Set<ModelAbility> modelAbilities;
+
+  @override
+  Future<List<List<double>>> embedding(List<String> input, int dims) async {
+    final client = http.Client();
+    try {
+      final uri = Uri.parse('$endPoint/v1/embeddings');
+      final request = http.Request('POST', uri);
+
+      request.headers.addAll({
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+      });
+
+      final requestBody = {
+        'model': modelName,
+        'input': input,
+        'encoding_format': 'float',
+        'dimensions': dims,
+      };
+
+      request.body = jsonEncode(requestBody);
+
+      final response = await client.send(request);
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        final jsonResponse = jsonDecode(responseBody);
+
+        final List<List<double>> embeddings = [];
+        final dataList = jsonResponse['data'] as List;
+
+        for (var item in dataList) {
+          final embedding = (item['embedding'] as List)
+              .map((e) => (e as num).toDouble())
+              .toList();
+          embeddings.add(embedding);
+        }
+
+        return embeddings;
+      } else {
+        final errorBody = await response.stream.bytesToString();
+        throw Exception(
+          'Embedding API Error: ${response.statusCode} - $errorBody',
+        );
+      }
+    } finally {
+      client.close();
+    }
+  }
 }
 
 ///适用于一些老的例如LMStudio这样的服务
@@ -378,6 +428,7 @@ class OpenAiCompletionService implements LLMApiService {
     toContent(modelRequestContent.chatHistory, contents);
     toContent(modelRequestContent.dynamicSystemMessages, contents);
     toContent(modelRequestContent.uiMessages, contents);
+    toContent(modelRequestContent.ragMessages, contents);
     toContent(modelRequestContent.usrMessage, contents);
 
     final requestBody = {
@@ -518,6 +569,54 @@ class OpenAiCompletionService implements LLMApiService {
       return b64Json; // 返回 base64 图片字符串（调用方可 decode 保存为文件）
     } else {
       throw Exception("Failed: ${response.statusCode}, body: $responseBody");
+    }
+  }
+
+  @override
+  Future<List<List<double>>> embedding(List<String> input, int dim) async {
+    final client = http.Client();
+    try {
+      final uri = Uri.parse('$endPoint/v1/embeddings');
+      final request = http.Request('POST', uri);
+
+      request.headers.addAll({
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+      });
+
+      final requestBody = {
+        'model': modelName,
+        'input': input,
+        'encoding_format': 'float',
+        "dimensions": dim,
+      };
+
+      request.body = jsonEncode(requestBody);
+
+      final response = await client.send(request);
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        final jsonResponse = jsonDecode(responseBody);
+
+        final List<List<double>> embeddings = [];
+        final dataList = jsonResponse['data'] as List;
+
+        for (var item in dataList) {
+          final embedding = (item['embedding'] as List)
+              .map((e) => (e as num).toDouble())
+              .toList();
+          embeddings.add(embedding);
+        }
+
+        return embeddings;
+      } else {
+        final errorBody = await response.stream.bytesToString();
+        throw Exception(
+          'Embedding API Error: ${response.statusCode} - $errorBody',
+        );
+      }
+    } finally {
+      client.close();
     }
   }
 }
@@ -690,6 +789,13 @@ class GeminiApiService implements LLMApiService {
       ),
       contents,
     );
+    buildRequestBody(
+      FormattedChatMessage.overrideIdentity(
+        MessageSender.user,
+        modelRequestContent.ragMessages,
+      ),
+      contents,
+    );
     buildRequestBody(modelRequestContent.usrMessage, contents);
 
     final List<Map<String, dynamic>> sysMsg = [];
@@ -849,6 +955,94 @@ class GeminiApiService implements LLMApiService {
 
   @override
   Set<ModelAbility> modelAbilities;
+
+  @override
+  Future<List<List<double>>> embedding(List<String> input, int dims) async {
+    final client = http.Client();
+    try {
+      // 如果只有一个输入，使用 embedContent 端点；如果有多个输入，使用 batchEmbedContents 端点
+      final uri = input.length == 1
+          ? Uri.parse('$_generateEndpoint:embedContent?key=$apiKey')
+          : Uri.parse(
+              '$endPoint/v1beta/models/$modelName:batchEmbedContents?key=$apiKey',
+            );
+
+      final request = http.Request('POST', uri);
+
+      request.headers.addAll({
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      });
+
+      late final Map<String, dynamic> requestBody;
+
+      if (input.length == 1) {
+        // 单个文本嵌入
+        requestBody = {
+          'model': 'models/$modelName',
+          "output_dimensionality": dims,
+          'content': {
+            'parts': [
+              {'text': input[0]},
+            ],
+          },
+        };
+      } else {
+        // 批量文本嵌入
+        final requests = input.map((text) {
+          return {
+            'model': 'models/$modelName',
+            "output_dimensionality": dims,
+            'content': {
+              'parts': [
+                {'text': text},
+              ],
+            },
+          };
+        }).toList();
+
+        requestBody = {'requests': requests};
+      }
+
+      request.body = jsonEncode(requestBody);
+
+      final response = await client.send(request);
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        final jsonResponse = jsonDecode(responseBody);
+
+        final List<List<double>> embeddings = [];
+
+        if (input.length == 1) {
+          // 处理单个嵌入响应
+          final embeddingValues = jsonResponse['embedding']['values'] as List;
+          final embedding = embeddingValues
+              .map((e) => (e as num).toDouble())
+              .toList();
+          embeddings.add(embedding);
+        } else {
+          // 处理批量嵌入响应
+          final embeddingsData = jsonResponse['embeddings'] as List;
+          for (var embeddingData in embeddingsData) {
+            final embeddingValues = embeddingData['values'] as List;
+            final embedding = embeddingValues
+                .map((e) => (e as num).toDouble())
+                .toList();
+            embeddings.add(embedding);
+          }
+        }
+
+        return embeddings;
+      } else {
+        final errorBody = await response.stream.bytesToString();
+        throw Exception(
+          'Gemini Embedding API Error: ${response.statusCode} - $errorBody',
+        );
+      }
+    } finally {
+      client.close();
+    }
+  }
 }
 
 class StableDiffusion implements LLMApiService {
@@ -985,4 +1179,9 @@ class StableDiffusion implements LLMApiService {
 
   @override
   Set<ModelAbility> modelAbilities;
+
+  @override
+  Future<List<List<double>>> embedding(List<String> input, int dims) {
+    throw UnimplementedError("Not supported by this Provider");
+  }
 }

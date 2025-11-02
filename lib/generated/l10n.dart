@@ -55,6 +55,11 @@ class S {
     return Localizations.of<S>(context, S);
   }
 
+  /// `UNIChat`
+  String get title {
+    return Intl.message('UNIChat', name: 'title', desc: '', args: []);
+  }
+
   /// `No agent , please add one`
   String get no_agent {
     return Intl.message(
@@ -1180,6 +1185,16 @@ class S {
     return Intl.message('No model yet', name: 'no_model', desc: '', args: []);
   }
 
+  /// `No embedding model \n Embedding models are different from chat models,check whether you really got one.`
+  String get no_embedding_model {
+    return Intl.message(
+      'No embedding model \n Embedding models are different from chat models,check whether you really got one.',
+      name: 'no_embedding_model',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Please select a provider`
   String get plz_select_provider {
     return Intl.message(
@@ -1538,6 +1553,666 @@ class S {
   /// `About`
   String get about {
     return Intl.message('About', name: 'about', desc: '', args: []);
+  }
+
+  /// `Chat`
+  String get chat {
+    return Intl.message('Chat', name: 'chat', desc: '', args: []);
+  }
+
+  /// `Quit`
+  String get quit {
+    return Intl.message('Quit', name: 'quit', desc: '', args: []);
+  }
+
+  /// `New chat session`
+  String get new_chat_session {
+    return Intl.message(
+      'New chat session',
+      name: 'new_chat_session',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Help`
+  String get help {
+    return Intl.message('Help', name: 'help', desc: '', args: []);
+  }
+
+  /// `Check manual`
+  String get check_manual {
+    return Intl.message(
+      'Check manual',
+      name: 'check_manual',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Some changes may require a restart to take effect.`
+  String get language_switch_restart_note {
+    return Intl.message(
+      'Some changes may require a restart to take effect.',
+      name: 'language_switch_restart_note',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit knowledge base`
+  String get edit_knowledge_base {
+    return Intl.message(
+      'Edit knowledge base',
+      name: 'edit_knowledge_base',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter knowledge base name`
+  String get enter_knowledge_base_name {
+    return Intl.message(
+      'Enter knowledge base name',
+      name: 'enter_knowledge_base_name',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter knowledge base description`
+  String get enter_knowledge_base_description {
+    return Intl.message(
+      'Enter knowledge base description',
+      name: 'enter_knowledge_base_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Embedding model`
+  String get embedding_model {
+    return Intl.message(
+      'Embedding model',
+      name: 'embedding_model',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Embedding dimension`
+  String get embedding_dimension {
+    return Intl.message(
+      'Embedding dimension',
+      name: 'embedding_dimension',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please select embedding dimension`
+  String get plz_select_embedding_dimension {
+    return Intl.message(
+      'Please select embedding dimension',
+      name: 'plz_select_embedding_dimension',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Default index method`
+  String get default_index_method {
+    return Intl.message(
+      'Default index method',
+      name: 'default_index_method',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File manage`
+  String get file_manage {
+    return Intl.message('File manage', name: 'file_manage', desc: '', args: []);
+  }
+
+  /// `Website manage`
+  String get website_manage {
+    return Intl.message(
+      'Website manage',
+      name: 'website_manage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Memory manage`
+  String get memory_manage {
+    return Intl.message(
+      'Memory manage',
+      name: 'memory_manage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Auto index rules setting`
+  String get auto_index_rules_set {
+    return Intl.message(
+      'Auto index rules setting',
+      name: 'auto_index_rules_set',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Vector index`
+  String get vector_index {
+    return Intl.message(
+      'Vector index',
+      name: 'vector_index',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Keyword index`
+  String get keyword_index {
+    return Intl.message(
+      'Keyword index',
+      name: 'keyword_index',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Regex index`
+  String get regex_index {
+    return Intl.message('Regex index', name: 'regex_index', desc: '', args: []);
+  }
+
+  /// `Model or dimension not set`
+  String get model_or_dimension_not_set {
+    return Intl.message(
+      'Model or dimension not set',
+      name: 'model_or_dimension_not_set',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Click to select or drop files here`
+  String get click_or_drop_files_here {
+    return Intl.message(
+      'Click to select or drop files here',
+      name: 'click_or_drop_files_here',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `md,docx,csv,txt,json,html`
+  String get support_formats {
+    return Intl.message(
+      'md,docx,csv,txt,json,html',
+      name: 'support_formats',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No file`
+  String get no_file {
+    return Intl.message('No file', name: 'no_file', desc: '', args: []);
+  }
+
+  /// `No file selected`
+  String get no_file_selected {
+    return Intl.message(
+      'No file selected',
+      name: 'no_file_selected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unsupported format`
+  String get unsupported_format {
+    return Intl.message(
+      'Unsupported format',
+      name: 'unsupported_format',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Index settings`
+  String get index_settings {
+    return Intl.message(
+      'Index settings',
+      name: 'index_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No index method selected, this content will never be inserted into conversation`
+  String get no_index_method_warning {
+    return Intl.message(
+      'No index method selected, this content will never be inserted into conversation',
+      name: 'no_index_method_warning',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Match the chunks of content which are similar to the query`
+  String get vec_index_hint {
+    return Intl.message(
+      'Match the chunks of content which are similar to the query',
+      name: 'vec_index_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `When message contains any keywords, the whole content will be sent`
+  String get keyword_index_hint {
+    return Intl.message(
+      'When message contains any keywords, the whole content will be sent',
+      name: 'keyword_index_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `When message matches any regex, the whole content will be sent`
+  String get regex_index_hint {
+    return Intl.message(
+      'When message matches any regex, the whole content will be sent',
+      name: 'regex_index_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No preview available`
+  String get no_preview {
+    return Intl.message(
+      'No preview available',
+      name: 'no_preview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter keywords separated by comma`
+  String get enter_key_word_hint {
+    return Intl.message(
+      'Enter keywords separated by comma',
+      name: 'enter_key_word_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter regex`
+  String get enter_regex_hint {
+    return Intl.message(
+      'Enter regex',
+      name: 'enter_regex_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No memory`
+  String get no_memory {
+    return Intl.message('No memory', name: 'no_memory', desc: '', args: []);
+  }
+
+  /// `Select or add a memory`
+  String get select_or_add_memory {
+    return Intl.message(
+      'Select or add a memory',
+      name: 'select_or_add_memory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Memory name`
+  String get memory_name {
+    return Intl.message('Memory name', name: 'memory_name', desc: '', args: []);
+  }
+
+  /// `Memory name cannot be empty`
+  String get memory_name_waring {
+    return Intl.message(
+      'Memory name cannot be empty',
+      name: 'memory_name_waring',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Memory content`
+  String get memory_content {
+    return Intl.message(
+      'Memory content',
+      name: 'memory_content',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Memory content cannot be empty`
+  String get memory_content_waring {
+    return Intl.message(
+      'Memory content cannot be empty',
+      name: 'memory_content_waring',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Create a new rule`
+  String get create_new_rule {
+    return Intl.message(
+      'Create a new rule',
+      name: 'create_new_rule',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No rules`
+  String get no_rules {
+    return Intl.message('No rules', name: 'no_rules', desc: '', args: []);
+  }
+
+  /// `When chat with`
+  String get auto_index_rules_1 {
+    return Intl.message(
+      'When chat with',
+      name: 'auto_index_rules_1',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select agent`
+  String get select_agent {
+    return Intl.message(
+      'Select agent',
+      name: 'select_agent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{num} selected`
+  String selected_agent(Object num) {
+    return Intl.message(
+      '$num selected',
+      name: 'selected_agent',
+      desc: '',
+      args: [num],
+    );
+  }
+
+  /// `and`
+  String get auto_index_rules_2 {
+    return Intl.message('and', name: 'auto_index_rules_2', desc: '', args: []);
+  }
+
+  /// `will be indexed`
+  String get auto_index_rules_3 {
+    return Intl.message(
+      'will be indexed',
+      name: 'auto_index_rules_3',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `AI`
+  String get ai {
+    return Intl.message('AI', name: 'ai', desc: '', args: []);
+  }
+
+  /// `User`
+  String get user {
+    return Intl.message('User', name: 'user', desc: '', args: []);
+  }
+
+  /// `Any`
+  String get any {
+    return Intl.message('Any', name: 'any', desc: '', args: []);
+  }
+
+  /// `Index all`
+  String get index_all {
+    return Intl.message('Index all', name: 'index_all', desc: '', args: []);
+  }
+
+  /// `Keyword match`
+  String get keyword_match {
+    return Intl.message(
+      'Keyword match',
+      name: 'keyword_match',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Regex match`
+  String get regex_match {
+    return Intl.message('Regex match', name: 'regex_match', desc: '', args: []);
+  }
+
+  /// `OK`
+  String get base_stat_OK {
+    return Intl.message('OK', name: 'base_stat_OK', desc: '', args: []);
+  }
+
+  /// `Processing`
+  String get base_stat_processing {
+    return Intl.message(
+      'Processing',
+      name: 'base_stat_processing',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pending`
+  String get base_stat_PENDING {
+    return Intl.message(
+      'Pending',
+      name: 'base_stat_PENDING',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A powerful AI agent & Knowledge base integrated ChatApp`
+  String get slogan {
+    return Intl.message(
+      'A powerful AI agent & Knowledge base integrated ChatApp',
+      name: 'slogan',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Start`
+  String get setup_start {
+    return Intl.message('Start', name: 'setup_start', desc: '', args: []);
+  }
+
+  /// `Before we go on : `
+  String get setup_pre_warning {
+    return Intl.message(
+      'Before we go on : ',
+      name: 'setup_pre_warning',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `# UNIChat Development Announcement\n\n**To All UNIChat Users:**\n\nThank you for your interest in and trying out UNIChat!\n\nUNIChat is currently in its **early Alpha version** stage. This means the software is not yet complete, and many features are still under planning and active development. Please keep the following points in mind while using the application:\n\n---\n\n### 1. ⚠️ Version Status and Data Risk\n\n1.  **Incomplete Functionality:** Many core features may not yet be implemented, or they might be incomplete, unstable, or provide a sub-optimal user experience.\n2.  **Risk of Data Structure Changes:** As the software is undergoing rapid iteration, we **cannot guarantee** that the data structure will not undergo significant changes in the future. Consequently, **user data (such as chat history, settings, etc.) in the current version might not be inheritable or compatible with subsequent updates.** Please be aware of this and exercise caution with storing important data.\n\n### 2. 🐛 Bug and Issue Reporting\n\nIf you encounter any bugs or problems during use, we strongly encourage you to report them to us via the following channels:\n\n* Submit an **Issue** on our **GitHub Repository**.\n* Send an email to **[Please insert your Email address here]**.\n\n### 3. 📖 Documentation and The Art of Asking Questions\n\nWe are committed to clear documentation and encourage high-quality communication:\n\n* **Check Documentation First:** Before asking a question or submitting feedback, please prioritize checking the project's **official documentation**: [Please insert Documentation Link here]. Many basic queries might already be answered there.\n* **The Art of Asking Questions:** If you decide to ask a question or file an Issue, to ensure we can resolve it efficiently, please follow these principles:\n    1.  **Be Clear and Specific:** Clearly describe the problem you are facing, the expected behavior, and what actually occurred.\n    2.  **Provide Steps to Reproduce:** Include **detailed steps** on how to reproduce the issue ("How to operate to cause this error").\n    3.  **Include Environment Info:** Provide relevant environment information, such as your operating system and software version number.\n\n### 4. 🌐 Open Source and Contributions\n\nUNIChat is an open-source project **licensed under the Apache License 2.0**.\n\nWe warmly welcome all developers to review, study, and utilize our code. If you are interested in contributing to UNIChat—whether through code improvements, documentation, or feature implementation—we welcome your **Pull Requests**!\n\n---\n\n**Acknowledgement:** Your early usage and feedback are invaluable to us. Thank you for your patience and support as we work towards the official release of UNIChat!`
+  String get setup_pre_warn_content {
+    return Intl.message(
+      '# UNIChat Development Announcement\n\n**To All UNIChat Users:**\n\nThank you for your interest in and trying out UNIChat!\n\nUNIChat is currently in its **early Alpha version** stage. This means the software is not yet complete, and many features are still under planning and active development. Please keep the following points in mind while using the application:\n\n---\n\n### 1. ⚠️ Version Status and Data Risk\n\n1.  **Incomplete Functionality:** Many core features may not yet be implemented, or they might be incomplete, unstable, or provide a sub-optimal user experience.\n2.  **Risk of Data Structure Changes:** As the software is undergoing rapid iteration, we **cannot guarantee** that the data structure will not undergo significant changes in the future. Consequently, **user data (such as chat history, settings, etc.) in the current version might not be inheritable or compatible with subsequent updates.** Please be aware of this and exercise caution with storing important data.\n\n### 2. 🐛 Bug and Issue Reporting\n\nIf you encounter any bugs or problems during use, we strongly encourage you to report them to us via the following channels:\n\n* Submit an **Issue** on our **GitHub Repository**.\n* Send an email to **[Please insert your Email address here]**.\n\n### 3. 📖 Documentation and The Art of Asking Questions\n\nWe are committed to clear documentation and encourage high-quality communication:\n\n* **Check Documentation First:** Before asking a question or submitting feedback, please prioritize checking the project\'s **official documentation**: [Please insert Documentation Link here]. Many basic queries might already be answered there.\n* **The Art of Asking Questions:** If you decide to ask a question or file an Issue, to ensure we can resolve it efficiently, please follow these principles:\n    1.  **Be Clear and Specific:** Clearly describe the problem you are facing, the expected behavior, and what actually occurred.\n    2.  **Provide Steps to Reproduce:** Include **detailed steps** on how to reproduce the issue ("How to operate to cause this error").\n    3.  **Include Environment Info:** Provide relevant environment information, such as your operating system and software version number.\n\n### 4. 🌐 Open Source and Contributions\n\nUNIChat is an open-source project **licensed under the Apache License 2.0**.\n\nWe warmly welcome all developers to review, study, and utilize our code. If you are interested in contributing to UNIChat—whether through code improvements, documentation, or feature implementation—we welcome your **Pull Requests**!\n\n---\n\n**Acknowledgement:** Your early usage and feedback are invaluable to us. Thank you for your patience and support as we work towards the official release of UNIChat!',
+      name: 'setup_pre_warn_content',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Got it`
+  String get got_it {
+    return Intl.message('Got it', name: 'got_it', desc: '', args: []);
+  }
+
+  /// `Long press`
+  String get long_press {
+    return Intl.message('Long press', name: 'long_press', desc: '', args: []);
+  }
+
+  /// `Create a agent`
+  String get setup_agent_hint {
+    return Intl.message(
+      'Create a agent',
+      name: 'setup_agent_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Create a knowledge base`
+  String get setup_knowledgeBase {
+    return Intl.message(
+      'Create a knowledge base',
+      name: 'setup_knowledgeBase',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Skip`
+  String get skip {
+    return Intl.message('Skip', name: 'skip', desc: '', args: []);
+  }
+
+  /// `Create a persona`
+  String get setup_persona {
+    return Intl.message(
+      'Create a persona',
+      name: 'setup_persona',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Now we're ready to go!`
+  String get setup_finished {
+    return Intl.message(
+      'Now we\'re ready to go!',
+      name: 'setup_finished',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unlock the brand new Ai chat experience ->`
+  String get setup_finished_btn {
+    return Intl.message(
+      'Unlock the brand new Ai chat experience ->',
+      name: 'setup_finished_btn',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Let's add a Api Provider first`
+  String get setup_provider_add {
+    return Intl.message(
+      'Let\'s add a Api Provider first',
+      name: 'setup_provider_add',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You can check the document on the right to lear about it.`
+  String get setup_provider_add_hint {
+    return Intl.message(
+      'You can check the document on the right to lear about it.',
+      name: 'setup_provider_add_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `I've got my apiKeys`
+  String get setup_api_prepared {
+    return Intl.message(
+      'I\'ve got my apiKeys',
+      name: 'setup_api_prepared',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Next, let's add a Agent`
+  String get setup_add_agent {
+    return Intl.message(
+      'Next, let\'s add a Agent',
+      name: 'setup_add_agent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Agent is a highly customize AI assistant，\n Through UNIChat's powerful agent engine, \n You can create whoever you wish!`
+  String get setup_add_agent_hint {
+    return Intl.message(
+      'Agent is a highly customize AI assistant，\n Through UNIChat\'s powerful agent engine, \n You can create whoever you wish!',
+      name: 'setup_add_agent_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Now, add a persona`
+  String get setup_add_persona {
+    return Intl.message(
+      'Now, add a persona',
+      name: 'setup_add_persona',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `AI learn about you through personas,\n you can be "The true me"or let the AIs calls you "Master" :-D `
+  String get setup_add_persona_hint {
+    return Intl.message(
+      'AI learn about you through personas,\n you can be "The true me"or let the AIs calls you "Master" :-D ',
+      name: 'setup_add_persona_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Star us on GitHub plz(≧∇≦)`
+  String get star_github {
+    return Intl.message(
+      'Star us on GitHub plz(≧∇≦)',
+      name: 'star_github',
+      desc: '',
+      args: [],
+    );
   }
 }
 
