@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
@@ -10,9 +11,11 @@ import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 import 'generated/l10n.dart';
+import 'utils/web_view/webview_all.dart';
 
 class SetupAgent extends ConsumerStatefulWidget {
   const SetupAgent({super.key});
@@ -43,10 +46,12 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
         physics: const NeverScrollableScrollPhysics(),
         children: [
           welcomePage(),
+          providerAddHint(),
           addProvider(),
-          addAgent(),
-          knowledgeBase(),
+          personaHint(),
           persona(),
+          addAgentHint(),
+          addAgent(),
           finish(),
         ],
       ),
@@ -184,6 +189,91 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
     );
   }
 
+  bool _addPvChecked = false;
+
+  Widget providerAddHint() {
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconButton(
+            onPressed: () {
+              prevPage();
+            },
+            icon: Icon(Icons.arrow_back_ios_sharp),
+          ),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                SizedBox(
+                  width: 500,
+                  child: StatefulBuilder(
+                    builder: (context, setState) {
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            S.of(context).setup_provider_add,
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            S.of(context).setup_provider_add_hint,
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 10),
+                          StdCheckbox(
+                            text: S.of(context).setup_api_prepared,
+                            value: _addPvChecked,
+                            onChanged: (value) {
+                              setState(() {
+                                _addPvChecked = !_addPvChecked;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          if (_addPvChecked)
+                            StdButton(
+                              text: S.of(context).next_step,
+                              onPressed: () {
+                                if (_addPvChecked) {
+                                  nextPage();
+                                }
+                              },
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  width: 700,
+                  height: 600,
+                  clipBehavior: Clip.hardEdge,
+                  padding: const EdgeInsets.all(4),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: theme.zeroGradeColor,
+                  ),
+                  child: Webview(url: "http://localhost:3000/"),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget addProvider() {
     return Padding(
       padding: const EdgeInsets.all(10.0),
@@ -201,6 +291,76 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
               exit: () {
                 nextPage();
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget addAgentHint() {
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconButton(
+            onPressed: () {
+              prevPage();
+            },
+            icon: Icon(Icons.arrow_back_ios_sharp),
+          ),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                SizedBox(
+                  width: 500,
+                  child: StatefulBuilder(
+                    builder: (context, setState) {
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            S.of(context).setup_add_agent,
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            S.of(context).setup_add_agent_hint,
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 10),
+                          StdButton(
+                            text: S.of(context).next_step,
+                            onPressed: () {
+                              nextPage();
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  width: 700,
+                  height: 600,
+                  clipBehavior: Clip.hardEdge,
+                  padding: const EdgeInsets.all(4),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: theme.zeroGradeColor,
+                  ),
+                  child: Webview(url: "http://localhost:3000/"),
+                ),
+              ],
             ),
           ),
         ],
@@ -242,7 +402,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
       ),
     );
   }
-
+  /*
   Widget knowledgeBase() {
     return Padding(
       padding: const EdgeInsets.all(10.0),
@@ -281,6 +441,78 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
             ],
           ),
           Expanded(child: RagSettingPage(onSaveReturn: nextPage)),
+        ],
+      ),
+    );
+  }
+  知识库和agent的设置合并
+*/
+
+  Widget personaHint() {
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconButton(
+            onPressed: () {
+              prevPage();
+            },
+            icon: Icon(Icons.arrow_back_ios_sharp),
+          ),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                SizedBox(
+                  width: 500,
+                  child: StatefulBuilder(
+                    builder: (context, setState) {
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            S.of(context).setup_add_persona,
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            S.of(context).setup_add_persona_hint,
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 10),
+                          StdButton(
+                            text: S.of(context).next_step,
+                            onPressed: () {
+                              nextPage();
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  width: 700,
+                  height: 600,
+                  clipBehavior: Clip.hardEdge,
+                  padding: const EdgeInsets.all(4),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: theme.zeroGradeColor,
+                  ),
+                  child: Webview(url: "http://localhost:3000/"),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -351,6 +583,34 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                   const SizedBox(height: 30),
 
                   StdButton(
+                    color: Colors.redAccent,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            "resources/github-mark-white.png",
+                            height: 30,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            S.of(context).star_github,
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                    onPressed: () {
+                      launchUrl(
+                        Uri.parse("https://github.com/linchi07/uni_chat"),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  StdButton(
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
@@ -358,31 +618,13 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                         style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ),
-                  ),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      StdButton(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            S.of(context).setup_finished_btn,
-                            style: TextStyle(fontSize: 16, color: Colors.white),
-                          ),
-                        ),
-                      ),
-
-                      StdButton(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            S.of(context).setup_finished_btn,
-                            style: TextStyle(fontSize: 16, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ],
+                    onPressed: () async {
+                      var i = await SharedPreferences.getInstance();
+                      await i.setBool("isSetUp", true);
+                      if (mounted) {
+                        OverlayWrapper.removeOverlay(context);
+                      }
+                    },
                   ),
                 ],
               ),

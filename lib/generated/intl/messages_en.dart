@@ -455,7 +455,22 @@ class MessageLookup extends MessageLookupByLibrary {
       "Send a message",
     ),
     "set_as_default": MessageLookupByLibrary.simpleMessage("Set as default"),
+    "setup_add_agent": MessageLookupByLibrary.simpleMessage(
+      "Next, let\'s add a Agent",
+    ),
+    "setup_add_agent_hint": MessageLookupByLibrary.simpleMessage(
+      "Agent is a highly customize AI assistant，\n Through UNIChat\'s powerful agent engine, \n You can create whoever you wish!",
+    ),
+    "setup_add_persona": MessageLookupByLibrary.simpleMessage(
+      "Now, add a persona",
+    ),
+    "setup_add_persona_hint": MessageLookupByLibrary.simpleMessage(
+      "AI learn about you through personas,\n you can be \"The true me\"or let the AIs calls you \"Master\" :-D ",
+    ),
     "setup_agent_hint": MessageLookupByLibrary.simpleMessage("Create a agent"),
+    "setup_api_prepared": MessageLookupByLibrary.simpleMessage(
+      "I\'ve got my apiKeys",
+    ),
     "setup_finished": MessageLookupByLibrary.simpleMessage(
       "Now we\'re ready to go!",
     ),
@@ -472,6 +487,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "setup_pre_warning": MessageLookupByLibrary.simpleMessage(
       "Before we go on : ",
     ),
+    "setup_provider_add": MessageLookupByLibrary.simpleMessage(
+      "Let\'s add a Api Provider first",
+    ),
+    "setup_provider_add_hint": MessageLookupByLibrary.simpleMessage(
+      "You can check the document on the right to lear about it.",
+    ),
     "setup_start": MessageLookupByLibrary.simpleMessage("Start"),
     "show_cot": MessageLookupByLibrary.simpleMessage("Show thoughts"),
     "show_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
@@ -483,6 +504,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "skip": MessageLookupByLibrary.simpleMessage("Skip"),
     "slogan": MessageLookupByLibrary.simpleMessage(
       "A powerful AI agent & Knowledge base integrated ChatApp",
+    ),
+    "star_github": MessageLookupByLibrary.simpleMessage(
+      "Star us on GitHub plz(≧∇≦)",
     ),
     "start_conversation_with_selected_agent":
         MessageLookupByLibrary.simpleMessage(

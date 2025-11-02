@@ -107,7 +107,6 @@ class OverlayPortalService {
 }
 
 /// 应用的根级 OverlayPortal，用于显示由 DialogService 管理的全局对话框。
-/// 实际上这里是有问题的，我们必须在某个overlay下(以及root)都要放置scope并且通过key区分，否则的话层级还是存在问题
 class OverlayPortalScope extends StatefulWidget {
   const OverlayPortalScope({super.key, required this.child});
 
@@ -235,11 +234,13 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
 
 class OverlayWrapper extends StatefulWidget {
   static void removeOverlay(BuildContext context) {
-    final scopeState = context.findAncestorStateOfType<_OverlayWrapperState>();
-    if (scopeState == null) {
+    final overlayRef = OverlayReference.of(context);
+    if (overlayRef != null) {
+      overlayRef.overlayState.removeOverlay();
+      return;
+    } else {
       throw Exception('No OverlayWrapper found in context');
     }
-    scopeState.removeOverlay();
   }
 
   static void showOverlay(
@@ -248,7 +249,7 @@ class OverlayWrapper extends StatefulWidget {
     bool barrierDismissible = true,
     bool Function()? onClose,
   }) {
-    final scopeState = context.findAncestorStateOfType<_OverlayWrapperState>();
+    final scopeState = context.findAncestorStateOfType<OverlayWrapperState>();
     if (scopeState == null) {
       throw Exception('No OverlayWrapper found in context');
     }
@@ -263,10 +264,10 @@ class OverlayWrapper extends StatefulWidget {
   const OverlayWrapper({super.key, required this.child});
 
   @override
-  State<OverlayWrapper> createState() => _OverlayWrapperState();
+  State<OverlayWrapper> createState() => OverlayWrapperState();
 }
 
-class _OverlayWrapperState extends State<OverlayWrapper> {
+class OverlayWrapperState extends State<OverlayWrapper> {
   OverlayEntry? _overlayEntry;
 
   @override
@@ -303,7 +304,14 @@ class _OverlayWrapperState extends State<OverlayWrapper> {
                 removeOverlay();
               },
             ),
-            Center(child: OverlayPortalScope(child: overlayContent)),
+            Center(
+              child: OverlayReference(
+                overlayState: this,
+                child: OverlayWrapper(
+                  child: OverlayPortalScope(child: overlayContent),
+                ),
+              ),
+            ),
           ],
         );
       },
@@ -328,4 +336,23 @@ class _OverlayWrapperState extends State<OverlayWrapper> {
     // 始终返回子 Widget
     return widget.child;
   }
+}
+
+/// 由于Overlay在插入之后context内部无法获得对于源OverlayWrapper的引用，所以需要一个中间层
+/// 这个InheritedWidget随着overlay一起被插入新的层，然后通过他来获得overlayState的引用
+class OverlayReference extends InheritedWidget {
+  final OverlayWrapperState overlayState;
+
+  const OverlayReference({
+    super.key,
+    required this.overlayState,
+    required super.child,
+  });
+
+  static OverlayReference? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<OverlayReference>();
+  }
+
+  @override
+  bool updateShouldNotify(covariant OverlayReference oldWidget) => false;
 }

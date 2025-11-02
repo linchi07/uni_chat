@@ -2134,6 +2134,86 @@ class S {
       args: [],
     );
   }
+
+  /// `Let's add a Api Provider first`
+  String get setup_provider_add {
+    return Intl.message(
+      'Let\'s add a Api Provider first',
+      name: 'setup_provider_add',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You can check the document on the right to lear about it.`
+  String get setup_provider_add_hint {
+    return Intl.message(
+      'You can check the document on the right to lear about it.',
+      name: 'setup_provider_add_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `I've got my apiKeys`
+  String get setup_api_prepared {
+    return Intl.message(
+      'I\'ve got my apiKeys',
+      name: 'setup_api_prepared',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Next, let's add a Agent`
+  String get setup_add_agent {
+    return Intl.message(
+      'Next, let\'s add a Agent',
+      name: 'setup_add_agent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Agent is a highly customize AI assistant，\n Through UNIChat's powerful agent engine, \n You can create whoever you wish!`
+  String get setup_add_agent_hint {
+    return Intl.message(
+      'Agent is a highly customize AI assistant，\n Through UNIChat\'s powerful agent engine, \n You can create whoever you wish!',
+      name: 'setup_add_agent_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Now, add a persona`
+  String get setup_add_persona {
+    return Intl.message(
+      'Now, add a persona',
+      name: 'setup_add_persona',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `AI learn about you through personas,\n you can be "The true me"or let the AIs calls you "Master" :-D `
+  String get setup_add_persona_hint {
+    return Intl.message(
+      'AI learn about you through personas,\n you can be "The true me"or let the AIs calls you "Master" :-D ',
+      name: 'setup_add_persona_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Star us on GitHub plz(≧∇≦)`
+  String get star_github {
+    return Intl.message(
+      'Star us on GitHub plz(≧∇≦)',
+      name: 'star_github',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
