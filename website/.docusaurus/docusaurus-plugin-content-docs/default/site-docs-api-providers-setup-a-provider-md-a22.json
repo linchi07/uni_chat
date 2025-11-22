@@ -1,0 +1,25 @@
+{
+  "id": "API Providers/setup-a-provider",
+  "title": "setup-a-provider",
+  "description": "",
+  "source": "@site/docs/API Providers/Setup a provider.md",
+  "sourceDirName": "API Providers",
+  "slug": "/API Providers/setup-a-provider",
+  "permalink": "/zh-Hans/docs/API Providers/setup-a-provider",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "setup-a-provider"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "API Providers",
+    "permalink": "/zh-Hans/docs/category/api-providers"
+  },
+  "next": {
+    "title": "Agents",
+    "permalink": "/zh-Hans/docs/category/agents"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "QuickStart/setup-your-first-agent",
+  "title": "Setup your first Agent",
+  "description": "",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/QuickStart/Setup your first Agent.md",
+  "sourceDirName": "QuickStart",
+  "slug": "/QuickStart/setup-your-first-agent",
+  "permalink": "/zh-Hans/docs/QuickStart/setup-your-first-agent",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "setup-your-first-agent"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Link a Knowledge Base to an Agent",
+    "permalink": "/zh-Hans/docs/QuickStart/link_kb_to_agent"
+  },
+  "next": {
+    "title": "API Providers",
+    "permalink": "/zh-Hans/docs/category/api-providers"
+  }
+}

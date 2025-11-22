@@ -1,0 +1,25 @@
+{
+  "id": "Agents/system_prompts",
+  "title": "系统提示词",
+  "description": "",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/Agents/System prompts.md",
+  "sourceDirName": "Agents",
+  "slug": "/Agents/system_prompts",
+  "permalink": "/zh-Hans/docs/Agents/system_prompts",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "system_prompts"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "模型设置",
+    "permalink": "/zh-Hans/docs/Agents/model_settings"
+  },
+  "next": {
+    "title": "KnowledgeBases",
+    "permalink": "/zh-Hans/docs/category/knowledgebases"
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/zh-Hans/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/zh-Hans/docs",
+          "mainDocId": "intro",
+          "docs": [
+            {
+              "id": "Agents/knowledge_base",
+              "path": "/zh-Hans/docs/Agents/knowledge_base",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "Agents/model_settings",
+              "path": "/zh-Hans/docs/Agents/model_settings",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "Agents/system_prompts",
+              "path": "/zh-Hans/docs/Agents/system_prompts",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "API Providers/setup-a-provider",
+              "path": "/zh-Hans/docs/API Providers/setup-a-provider",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "intro",
+              "path": "/zh-Hans/docs/intro",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "KnowledgeBases/auto_index_rules",
+              "path": "/zh-Hans/docs/KnowledgeBases/auto_index_rules",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "KnowledgeBases/file_manage",
+              "path": "/zh-Hans/docs/KnowledgeBases/file_manage",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "KnowledgeBases/memory_manage",
+              "path": "/zh-Hans/docs/KnowledgeBases/memory_manage",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "KnowledgeBases/website_manage",
+              "path": "/zh-Hans/docs/KnowledgeBases/website_manage",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "Personas/edit_persona",
+              "path": "/zh-Hans/docs/Personas/edit_persona",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "QuickStart/configure_api_settings",
+              "path": "/zh-Hans/docs/QuickStart/configure_api_settings",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "QuickStart/create_a_persona",
+              "path": "/zh-Hans/docs/QuickStart/create_a_persona",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "QuickStart/link_kb_to_agent",
+              "path": "/zh-Hans/docs/QuickStart/link_kb_to_agent",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "QuickStart/setup-your-first-agent",
+              "path": "/zh-Hans/docs/QuickStart/setup-your-first-agent",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/api-providers",
+              "path": "/zh-Hans/docs/category/api-providers",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/agents",
+              "path": "/zh-Hans/docs/category/agents",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/knowledgebases",
+              "path": "/zh-Hans/docs/category/knowledgebases",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/personas",
+              "path": "/zh-Hans/docs/category/personas",
+              "sidebar": "tutorialSidebar"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "tutorialSidebar": {
+              "link": {
+                "path": "/zh-Hans/docs/intro",
+                "label": "intro"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}

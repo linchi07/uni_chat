@@ -1,0 +1,25 @@
+{
+  "id": "Agents/knowledge_base",
+  "title": "知识库",
+  "description": "",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/Agents/Knowledge base.md",
+  "sourceDirName": "Agents",
+  "slug": "/Agents/knowledge_base",
+  "permalink": "/zh-Hans/docs/Agents/knowledge_base",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "knowledge_base"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Agents",
+    "permalink": "/zh-Hans/docs/category/agents"
+  },
+  "next": {
+    "title": "模型设置",
+    "permalink": "/zh-Hans/docs/Agents/model_settings"
+  }
+}

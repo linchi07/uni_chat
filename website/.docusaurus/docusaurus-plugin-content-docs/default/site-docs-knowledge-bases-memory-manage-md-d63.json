@@ -1,0 +1,25 @@
+{
+  "id": "KnowledgeBases/memory_manage",
+  "title": "Memory Manage",
+  "description": "",
+  "source": "@site/docs/KnowledgeBases/Memory Manage.md",
+  "sourceDirName": "KnowledgeBases",
+  "slug": "/KnowledgeBases/memory_manage",
+  "permalink": "/zh-Hans/docs/KnowledgeBases/memory_manage",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "memory_manage"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "File Manage",
+    "permalink": "/zh-Hans/docs/KnowledgeBases/file_manage"
+  },
+  "next": {
+    "title": "Website Manage",
+    "permalink": "/zh-Hans/docs/KnowledgeBases/website_manage"
+  }
+}

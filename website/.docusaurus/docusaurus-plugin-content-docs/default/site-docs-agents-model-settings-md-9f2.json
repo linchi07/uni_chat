@@ -1,0 +1,25 @@
+{
+  "id": "Agents/model_settings",
+  "title": "Model settings",
+  "description": "",
+  "source": "@site/docs/Agents/Model settings.md",
+  "sourceDirName": "Agents",
+  "slug": "/Agents/model_settings",
+  "permalink": "/zh-Hans/docs/Agents/model_settings",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "model_settings"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Knowledge Base",
+    "permalink": "/zh-Hans/docs/Agents/knowledge_base"
+  },
+  "next": {
+    "title": "System Prompts",
+    "permalink": "/zh-Hans/docs/Agents/system_prompts"
+  }
+}

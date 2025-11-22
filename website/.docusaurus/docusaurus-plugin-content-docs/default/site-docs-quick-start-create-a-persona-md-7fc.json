@@ -1,0 +1,25 @@
+{
+  "id": "QuickStart/create_a_persona",
+  "title": "Create a Persona",
+  "description": "",
+  "source": "@site/docs/QuickStart/Create a Persona.md",
+  "sourceDirName": "QuickStart",
+  "slug": "/QuickStart/create_a_persona",
+  "permalink": "/zh-Hans/docs/QuickStart/create_a_persona",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "create_a_persona"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "配置API提供商",
+    "permalink": "/zh-Hans/docs/QuickStart/configure_api_settings"
+  },
+  "next": {
+    "title": "Link a Knowledge Base to an Agent",
+    "permalink": "/zh-Hans/docs/QuickStart/link_kb_to_agent"
+  }
+}

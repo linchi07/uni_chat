@@ -1,0 +1,25 @@
+{
+  "id": "Agents/model_settings",
+  "title": "模型设置",
+  "description": "",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/Agents/Model settings.md",
+  "sourceDirName": "Agents",
+  "slug": "/Agents/model_settings",
+  "permalink": "/zh-Hans/docs/Agents/model_settings",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "model_settings"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "知识库",
+    "permalink": "/zh-Hans/docs/Agents/knowledge_base"
+  },
+  "next": {
+    "title": "系统提示词",
+    "permalink": "/zh-Hans/docs/Agents/system_prompts"
+  }
+}

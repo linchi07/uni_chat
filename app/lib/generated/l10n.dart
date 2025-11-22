@@ -1880,6 +1880,11 @@ class S {
     );
   }
 
+  /// `Add memory`
+  String get add_memory {
+    return Intl.message('Add memory', name: 'add_memory', desc: '', args: []);
+  }
+
   /// `Memory name`
   String get memory_name {
     return Intl.message('Memory name', name: 'memory_name', desc: '', args: []);
@@ -2213,6 +2218,16 @@ class S {
       desc: '',
       args: [],
     );
+  }
+
+  /// `Show Docs`
+  String get show_document {
+    return Intl.message('Show Docs', name: 'show_document', desc: '', args: []);
+  }
+
+  /// `Hide Docs`
+  String get hide_document {
+    return Intl.message('Hide Docs', name: 'hide_document', desc: '', args: []);
   }
 }
 

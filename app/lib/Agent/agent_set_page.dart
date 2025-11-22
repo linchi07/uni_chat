@@ -6,9 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/RAG/rag_databases.dart';
 import 'package:uni_chat/RAG/rag_settings.dart';
 import 'package:uni_chat/llm_provider/pre_built_models.dart';
+import 'package:uni_chat/main.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/utils/document_display.dart';
 import 'package:uni_chat/utils/llm_image_indexer.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
@@ -29,8 +31,10 @@ class AgentSetPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        const SizedBox(width: 30),
+        const SizedBox(width: 15),
+        DocumentDisplay(),
         Expanded(
           flex: 5,
           child: Padding(
@@ -645,30 +649,37 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
     ];
   }
 
+  double width = 465;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     var state = ref.watch(agentEditState);
     calcPercentage(state, ref);
-    return Row(
-      children: [
-        AspectRatio(
-          aspectRatio: 1,
-          child: PieChart(
-            PieChartData(
-              startDegreeOffset: -90,
-              sections: _getSections(context),
-              centerSpaceRadius: 35,
-              sectionsSpace: 2,
-              pieTouchData: PieTouchData(
-                touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                  // 处理触摸事件
-                },
+    return LayoutBuilder(
+      builder: (context, c) {
+        width = c.maxWidth;
+        return Row(
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: PieChart(
+                PieChartData(
+                  startDegreeOffset: -90,
+                  sections: _getSections(context),
+                  centerSpaceRadius: 35,
+                  sectionsSpace: 2,
+                  pieTouchData: PieTouchData(
+                    touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                      // 处理触摸事件
+                    },
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        _buildLegend(context),
-      ],
+            _buildLegend(context),
+          ],
+        );
+      },
     );
   }
 
@@ -751,12 +762,16 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
                 ),
               )
             : Text(
-                S.of(context).token_available_for_chat(percentages[6].$2),
+                (width >= 465)
+                    ? S.of(context).token_available_for_chat(percentages[6].$2)
+                    : "${percentages[6].$2}",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
         const SizedBox(height: 4),
         Text(
-          S.of(context).total_context_lim(percentages[0].$2),
+          (width >= 465)
+              ? S.of(context).total_context_lim(percentages[0].$2)
+              : "${percentages[0].$2}",
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 4),
@@ -790,8 +805,9 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
       child: Row(
         children: [
           Container(width: 12, height: 12, color: color),
-          SizedBox(width: 10),
-          Text(text),
+          //节约空间，否则在文档打开的时候必定溢出
+          if (width >= 465) SizedBox(width: 10),
+          if (width >= 465) Text(text),
         ],
       ),
     );
@@ -805,12 +821,27 @@ class AgentEditDetails extends ConsumerWidget {
     var agentSet = ref.watch(agentEditState);
     switch (agentSet.editing) {
       case PropertyEditing.model:
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref
+              .read(documentDisplayProvider.notifier)
+              .setUrl("$websiteURL/docs/Agents/model_settings");
+        });
         return _AgentModelSettings(modelSpecifics: agentSet.modelSettings);
       case PropertyEditing.sysPrompt:
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref
+              .read(documentDisplayProvider.notifier)
+              .setUrl("$websiteURL/docs/Agents/system_prompts");
+        });
         return _SysPromptEdit();
       case PropertyEditing.opening:
         return Opening();
       case PropertyEditing.knowledgeBase:
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref
+              .read(documentDisplayProvider.notifier)
+              .setUrl("$websiteURL/docs/Agents/knowledge_base");
+        });
         return MemoryBase();
       case PropertyEditing.UIQL:
         return Uiql();
@@ -848,7 +879,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
               style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
-            IconButton(icon: Icon(Icons.info_outline), onPressed: () {}),
+            ShowDocButton(),
           ],
         ),
         const SizedBox(height: 16),
@@ -1474,7 +1505,7 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
               style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
-            IconButton(icon: Icon(Icons.info_outline), onPressed: () {}),
+            ShowDocButton(),
           ],
         ),
         const SizedBox(height: 16),
@@ -1614,7 +1645,7 @@ class _MemoryBaseState extends ConsumerState<MemoryBase> {
               style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
-            IconButton(icon: Icon(Icons.info_outline), onPressed: () {}),
+            ShowDocButton(),
           ],
         ),
         /*

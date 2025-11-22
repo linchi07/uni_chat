@@ -1,30 +1,22 @@
 {
-  "version.label": {
-    "message": "Next",
-    "description": "The label for version current"
+  "sidebar.tutorialSidebar.category.Agents.label": {
+    "message": "Agents",
+    "description": "侧边栏类别标签：Agents"
   },
-  "sidebar.tutorialSidebar.category.Tutorial - Basics": {
-    "message": "Tutorial - Basics",
-    "description": "The label for category 'Tutorial - Basics' in sidebar 'tutorialSidebar'"
+  "sidebar.tutorialSidebar.category.API Providers.label": {
+    "message": "API 服务提供商",
+    "description": "侧边栏类别标签：API 服务提供商"
   },
-  "sidebar.tutorialSidebar.category.Tutorial - Basics.link.generated-index.description": {
-    "message": "5 minutes to learn the most important Docusaurus concepts.",
-    "description": "The generated-index page description for category 'Tutorial - Basics' in sidebar 'tutorialSidebar'"
+  "sidebar.tutorialSidebar.category.KnowledgeBases.label": {
+    "message": "知识库",
+    "description": "侧边栏类别标签：知识库"
   },
-  "sidebar.tutorialSidebar.category.Tutorial - Extras": {
-    "message": "Tutorial - Extras",
-    "description": "The label for category 'Tutorial - Extras' in sidebar 'tutorialSidebar'"
+  "sidebar.tutorialSidebar.category.Personas.label": {
+    "message": "人格",
+    "description": "侧边栏类别标签：人格"
   },
-  "sidebar.tutorialSidebar.category.Features": {
-    "message": "Features",
-    "description": "The label for category 'Features' in sidebar 'tutorialSidebar'"
-  },
-  "sidebar.tutorialSidebar.category.Getting Started": {
-    "message": "Getting Started",
-    "description": "The label for category 'Getting Started' in sidebar 'tutorialSidebar'"
-  },
-  "sidebar.tutorialSidebar.category.Advanced Guides": {
-    "message": "Advanced Guides",
-    "description": "The label for category 'Advanced Guides' in sidebar 'tutorialSidebar'"
+  "sidebar.tutorialSidebar.category.QuickStart.label": {
+    "message": "快速入门",
+    "description": "侧边栏类别标签：快速入门"
   }
 }

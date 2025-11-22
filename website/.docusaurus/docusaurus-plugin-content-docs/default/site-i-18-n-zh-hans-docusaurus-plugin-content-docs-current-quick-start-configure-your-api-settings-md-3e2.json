@@ -1,0 +1,25 @@
+{
+  "id": "QuickStart/configure_api_settings",
+  "title": "配置API提供商",
+  "description": "本文将会教你如何快速配置UNIChat的API提供商。",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/QuickStart/Configure your Api Settings.md",
+  "sourceDirName": "QuickStart",
+  "slug": "/QuickStart/configure_api_settings",
+  "permalink": "/zh-Hans/docs/QuickStart/configure_api_settings",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "configure_api_settings"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "欢迎使用UNIChat",
+    "permalink": "/zh-Hans/docs/intro"
+  },
+  "next": {
+    "title": "Create a Persona",
+    "permalink": "/zh-Hans/docs/QuickStart/create_a_persona"
+  }
+}
