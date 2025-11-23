@@ -1,0 +1,21 @@
+{
+  "id": "intro",
+  "title": "欢迎使用UNIChat",
+  "description": "UniChat是一个强大的开源AI聊天客户端，旨在以最简单的方式让任何人都能创建无比强大的聊天机器人。",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/intro.md",
+  "sourceDirName": ".",
+  "slug": "/intro",
+  "permalink": "/zh-Hans/docs/intro",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "intro"
+  },
+  "sidebar": "tutorialSidebar",
+  "next": {
+    "title": "配置API提供商",
+    "permalink": "/zh-Hans/docs/QuickStart/configure_api_settings"
+  }
+}

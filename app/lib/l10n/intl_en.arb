@@ -285,6 +285,7 @@
   "enter_regex_hint": "Enter regex",
   "no_memory": "No memory",
   "select_or_add_memory": "Select or add a memory",
+  "add_memory": "Add memory",
   "memory_name": "Memory name",
   "memory_name_waring": "Memory name cannot be empty",
   "memory_content": "Memory content",
@@ -329,5 +330,7 @@
   "setup_add_agent_hint": "Agent is a highly customize AI assistant，\n Through UNIChat's powerful agent engine, \n You can create whoever you wish!",
   "setup_add_persona": "Now, add a persona",
   "setup_add_persona_hint": "AI learn about you through personas,\n you can be \"The true me\"or let the AIs calls you \"Master\" :-D ",
-  "star_github": "Star us on GitHub plz(≧∇≦)"
+  "star_github": "Star us on GitHub plz(≧∇≦)",
+  "show_document": "Show Docs",
+  "hide_document": "Hide Docs"
 }

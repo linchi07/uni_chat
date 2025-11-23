@@ -1,0 +1,25 @@
+{
+  "id": "KnowledgeBases/website_manage",
+  "title": "Website Manage",
+  "description": "",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/KnowledgeBases/Website Manage.md",
+  "sourceDirName": "KnowledgeBases",
+  "slug": "/KnowledgeBases/website_manage",
+  "permalink": "/zh-Hans/docs/KnowledgeBases/website_manage",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "website_manage"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Memory Manage",
+    "permalink": "/zh-Hans/docs/KnowledgeBases/memory_manage"
+  },
+  "next": {
+    "title": "Personas",
+    "permalink": "/zh-Hans/docs/category/personas"
+  }
+}

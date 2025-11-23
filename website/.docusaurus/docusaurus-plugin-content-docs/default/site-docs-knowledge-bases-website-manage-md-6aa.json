@@ -1,0 +1,25 @@
+{
+  "id": "KnowledgeBases/website_manage",
+  "title": "Website Manage",
+  "description": "",
+  "source": "@site/docs/KnowledgeBases/Website Manage.md",
+  "sourceDirName": "KnowledgeBases",
+  "slug": "/KnowledgeBases/website_manage",
+  "permalink": "/zh-Hans/docs/KnowledgeBases/website_manage",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "website_manage"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Memory Manage",
+    "permalink": "/zh-Hans/docs/KnowledgeBases/memory_manage"
+  },
+  "next": {
+    "title": "Edit persona",
+    "permalink": "/zh-Hans/docs/Personas/edit_persona"
+  }
+}

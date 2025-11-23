@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
+import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/utils/document_display.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/llm_image_indexer.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
@@ -169,7 +171,6 @@ class _PersonaSwitcherContainerState extends State<PersonaSwitcherContainer>
     _opacityAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
     );
-
     // 3. 在第一帧渲染后立即启动动画
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller.forward();
@@ -268,7 +269,6 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
         ],
       ),
     );
-
     overlay.insert(_overlayEntry!);
   }
 
@@ -665,41 +665,46 @@ class _PersonaEditorAnimationState extends State<PersonaEditorAnimation>
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    final double targetWidth = screenSize.width * 0.65;
-    final double targetHeight = screenSize.height * 0.75;
+    final double targetWidth = screenSize.width * 0.85;
+    final double targetHeight = screenSize.height * 0.8;
 
     // FadeTransition 和 ScaleTransition 组合实现进入和退出动画
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Center(
-          // AnimatedContainer 用于实现尺寸变化的动画
-          child: SizedBox(
-            width: targetWidth,
-            height: targetHeight,
-            child: Consumer(
-              builder: (context, ref, child) {
-                theme = ref.watch(themeProvider);
-                return child!;
-              },
+    return Consumer(
+      builder: (context, ref, child) {
+        theme = ref.watch(themeProvider);
+        return FadeTransition(
+          opacity: _fadeAnimation,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Center(
+              // AnimatedContainer 用于实现尺寸变化的动画
               child: SizedBox(
-                width: 400,
-                height: 400,
-                child: Material(
-                  color: theme.zeroGradeColor,
-                  borderRadius: BorderRadius.circular(8),
-                  child: PersonaEditorContent(
-                    onSaveReturn: close,
-                    persona: persona,
-                    onBack: close,
+                width: targetWidth,
+                height: targetHeight,
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    theme = ref.watch(themeProvider);
+                    return child!;
+                  },
+                  child: SizedBox(
+                    width: 400,
+                    height: 400,
+                    child: Material(
+                      color: theme.zeroGradeColor,
+                      borderRadius: BorderRadius.circular(8),
+                      child: PersonaEditorContent(
+                        onSaveReturn: close,
+                        persona: persona,
+                        onBack: close,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -734,6 +739,14 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
     _nameController.text = widget.persona.name;
     _descriptionController.text = widget.persona.content;
     personaData = widget.persona.data.values.toList();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(documentDisplayProvider.notifier)
+          .setShowWithUrl(
+            false,
+            "$websiteURL/docs/QuickStart/create_a_persona",
+          );
+    });
   }
 
   @override
@@ -781,71 +794,79 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
     _entryNameController.text = entry.name;
     _entryContentController.text = entry.content;
     final formKey = GlobalKey<FormState>();
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              S.of(context).edit_entries,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Text(S.of(context).name, style: TextStyle(fontSize: 16)),
-            StdTextFormField(
-              controller: _entryNameController,
-              hintText: S.of(context).plz_enter_name,
-              validateFailureText: S.of(context).plz_enter_name,
-            ),
-            const SizedBox(height: 16),
-            Text(S.of(context).content, style: TextStyle(fontSize: 16)),
-            Expanded(
-              child: StdTextFormField(
-                isExpanded: true,
-                controller: _entryContentController,
-                hintText: S.of(context).plz_enter_content,
-                validateFailureText: S.of(context).plz_enter_content,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+    return SizedBox(
+      width: 400,
+      height: 400,
+      child: Material(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        color: theme.zeroGradeColor,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                StdButton(
-                  color: theme.secondGradeColor,
-                  text: S.of(context).cancel,
-                  onPressed: () {
-                    // 清除控制器文本
-                    _entryNameController.clear();
-                    _entryContentController.clear();
-                    OverlayPortalService.hide(context);
-                  },
+                Text(
+                  S.of(context).edit_entries,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(width: 8),
-                StdButton(
-                  text: S.of(context).save,
-                  onPressed: () {
-                    if (!formKey.currentState!.validate()) {
-                      return;
-                    }
-                    // 更新条目数据
-                    setState(() {
-                      entry.name = _entryNameController.text;
-                      entry.content = _entryContentController.text;
-                    });
-                    // 清除控制器文本
-                    _entryNameController.clear();
-                    _entryContentController.clear();
-                    // 关闭弹窗
-                    OverlayPortalService.hide(context);
-                    _writeIn();
-                  },
+                const SizedBox(height: 16),
+                Text(S.of(context).name, style: TextStyle(fontSize: 16)),
+                StdTextFormField(
+                  controller: _entryNameController,
+                  hintText: S.of(context).plz_enter_name,
+                  validateFailureText: S.of(context).plz_enter_name,
+                ),
+                const SizedBox(height: 16),
+                Text(S.of(context).content, style: TextStyle(fontSize: 16)),
+                Expanded(
+                  child: StdTextFormField(
+                    isExpanded: true,
+                    controller: _entryContentController,
+                    hintText: S.of(context).plz_enter_content,
+                    validateFailureText: S.of(context).plz_enter_content,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    StdButton(
+                      color: theme.secondGradeColor,
+                      text: S.of(context).cancel,
+                      onPressed: () {
+                        // 清除控制器文本
+                        _entryNameController.clear();
+                        _entryContentController.clear();
+                        OverlayPortalService.hide(context);
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    StdButton(
+                      text: S.of(context).save,
+                      onPressed: () {
+                        if (!formKey.currentState!.validate()) {
+                          return;
+                        }
+                        // 更新条目数据
+                        setState(() {
+                          entry.name = _entryNameController.text;
+                          entry.content = _entryContentController.text;
+                        });
+                        // 清除控制器文本
+                        _entryNameController.clear();
+                        _entryContentController.clear();
+                        // 关闭弹窗
+                        OverlayPortalService.hide(context);
+                        _writeIn();
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -896,9 +917,15 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 10),
-              child: Text(
-                S.of(context).edit_persona,
-                style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+              child: Row(
+                children: [
+                  Text(
+                    S.of(context).edit_persona,
+                    style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                  ),
+                  Spacer(),
+                  ShowDocButton(),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -1062,6 +1089,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                       ],
                     ),
                   ),
+                  DocumentDisplay(),
                 ],
               ),
             ),

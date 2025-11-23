@@ -1,0 +1,25 @@
+{
+  "id": "QuickStart/link_kb_to_agent",
+  "title": "Link a Knowledge Base to an Agent",
+  "description": "",
+  "source": "@site/docs/QuickStart/Create and link a KnowledgeBase to a Agent.md",
+  "sourceDirName": "QuickStart",
+  "slug": "/QuickStart/link_kb_to_agent",
+  "permalink": "/zh-Hans/docs/QuickStart/link_kb_to_agent",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "link_kb_to_agent"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Create a Persona",
+    "permalink": "/zh-Hans/docs/QuickStart/create_a_persona"
+  },
+  "next": {
+    "title": "Setup your first Agent",
+    "permalink": "/zh-Hans/docs/QuickStart/setup-your-first-agent"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "Agents/system_prompts",
+  "title": "System Prompts",
+  "description": "",
+  "source": "@site/docs/Agents/System prompts.md",
+  "sourceDirName": "Agents",
+  "slug": "/Agents/system_prompts",
+  "permalink": "/zh-Hans/docs/Agents/system_prompts",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "system_prompts"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Model settings",
+    "permalink": "/zh-Hans/docs/Agents/model_settings"
+  },
+  "next": {
+    "title": "欢迎使用UNIChat",
+    "permalink": "/zh-Hans/docs/intro"
+  }
+}

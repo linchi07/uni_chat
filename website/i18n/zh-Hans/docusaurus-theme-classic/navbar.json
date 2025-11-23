@@ -1,18 +1,22 @@
 {
   "title": {
-    "message": "UNICHAT",
-    "description": "The title in the navbar"
+    "message": "UNICHAT 通聊",
+    "description": "导航栏中的标题"
   },
   "logo.alt": {
     "message": "UNICHAT Logo",
-    "description": "The alt text of navbar logo"
+    "description": "导航栏logo的替代文本"
   },
   "item.label.Docs": {
-    "message": "Docs",
-    "description": "Navbar item with label Docs"
+    "message": "文档",
+    "description": "标签为 Docs 的导航栏项目"
+  },
+  "item.label.Blog": {
+    "message": "博客",
+    "description": "标签为 blog 的导航栏项目"
   },
   "item.label.GitHub": {
     "message": "GitHub",
-    "description": "Navbar item with label GitHub"
+    "description": "标签为 GitHub 的导航栏项目"
   }
 }

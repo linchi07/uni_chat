@@ -1,0 +1,25 @@
+{
+  "id": "KnowledgeBases/auto_index_rules",
+  "title": "自动索引规则",
+  "description": "",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/KnowledgeBases/Auto index Rules.md",
+  "sourceDirName": "KnowledgeBases",
+  "slug": "/KnowledgeBases/auto_index_rules",
+  "permalink": "/zh-Hans/docs/KnowledgeBases/auto_index_rules",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "auto_index_rules"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "KnowledgeBases",
+    "permalink": "/zh-Hans/docs/category/knowledgebases"
+  },
+  "next": {
+    "title": "File Manage",
+    "permalink": "/zh-Hans/docs/KnowledgeBases/file_manage"
+  }
+}

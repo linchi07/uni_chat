@@ -1,0 +1,21 @@
+{
+  "id": "Personas/edit_persona",
+  "title": "Edit persona",
+  "description": "",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/Personas/Edit persona.md",
+  "sourceDirName": "Personas",
+  "slug": "/Personas/edit_persona",
+  "permalink": "/zh-Hans/docs/Personas/edit_persona",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "edit_persona"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Personas",
+    "permalink": "/zh-Hans/docs/category/personas"
+  }
+}

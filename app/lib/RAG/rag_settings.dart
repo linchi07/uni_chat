@@ -9,9 +9,11 @@ import 'package:uni_chat/RAG/rag_entity.dart';
 import 'package:uni_chat/RAG/rag_process.dart';
 import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/pre_built_models.dart';
+import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/back_ground_task_manager.dart';
 import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/utils/document_display.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uuid/uuid.dart';
 
@@ -316,11 +318,26 @@ class _RagSettingPageState extends ConsumerState<RagSettingPage>
       SelectedRAGSection.entriesManagement => RagMemoryManagement(),
       SelectedRAGSection.autoIndexSettings => RagAutoIndexManagement(),
     };
+    var url = switch (selectedSection) {
+      SelectedRAGSection.fileManagement =>
+        "$websiteURL/docs/KnowledgeBases/file_manage",
+      SelectedRAGSection.websiteManagement =>
+        "$websiteURL/docs/KnowledgeBases/website_manage",
+      SelectedRAGSection.entriesManagement =>
+        "$websiteURL/docs/KnowledgeBases/memory_manage",
+      SelectedRAGSection.autoIndexSettings =>
+        "$websiteURL/docs/KnowledgeBases/auto_index_rules",
+    };
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(documentDisplayProvider.notifier).setUrl(url);
+    });
     return Row(
       children: [
         const SizedBox(width: 16),
         Expanded(child: _sideBar()),
         Expanded(flex: 2, child: mainContent),
+        DocumentDisplay(),
       ],
     );
   }
@@ -1182,7 +1199,9 @@ class _RagFileManagementState extends ConsumerState<RagFileManagement> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Column(
               children: [
-                const SizedBox(height: 16),
+                const SizedBox(height: 5),
+                ShowDocButton(),
+                const SizedBox(height: 5),
                 Text(
                   S.of(context).file_manage,
                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
@@ -1724,7 +1743,9 @@ class _RagMemoryManagementState extends ConsumerState<RagMemoryManagement> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 5),
+          ShowDocButton(),
+          const SizedBox(height: 5),
           Text(
             S.of(context).memory_manage,
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
@@ -1762,7 +1783,7 @@ class _RagMemoryManagementState extends ConsumerState<RagMemoryManagement> {
                 width: double.maxFinite,
                 child: Text(
                   textAlign: TextAlign.center,
-                  S.of(context).no_memory,
+                  S.of(context).add_memory,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -2167,7 +2188,14 @@ class _RagAutoIndexManagementState
             ),
             Expanded(child: SizedBox()),
             StdButton(
-              text: S.of(context).create_new_rule,
+              child: Padding(
+                //此处padding是为了和show doc按钮视觉上对齐
+                padding: const EdgeInsets.symmetric(vertical: 1.2),
+                child: Text(
+                  S.of(context).create_new_rule,
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
               onPressed: () {
                 setState(() {
                   rules.add(
@@ -2182,6 +2210,8 @@ class _RagAutoIndexManagementState
                 });
               },
             ),
+            const SizedBox(width: 8),
+            ShowDocButton(),
             const SizedBox(width: 16),
           ],
         ),

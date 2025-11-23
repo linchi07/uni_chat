@@ -1,0 +1,23 @@
+{
+  "id": "API提供商相关/配置API提供商",
+  "title": "配置API提供商",
+  "description": "本文将会教你如何快速配置UNIChat的API提供商。",
+  "source": "@site/docs/API提供商相关/配置API提供商.md",
+  "sourceDirName": "API提供商相关",
+  "slug": "/API提供商相关/配置API提供商",
+  "permalink": "/zh-Hans/docs/API提供商相关/配置API提供商",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "教程介绍",
+    "permalink": "/zh-Hans/docs/intro"
+  },
+  "next": {
+    "title": "欢迎使用UNIChat",
+    "permalink": "/zh-Hans/docs/介绍"
+  }
+}

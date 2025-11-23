@@ -3,14 +3,14 @@
  * Github: https://github.com/moluopro
  */
 
+import 'package:abutil/abutil.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:abutil/abutil.dart';
 
 import 'webview_flutter.dart';
 import 'webview_linux.dart';
-import 'webview_windows.dart';
 import 'webview_web.dart' if (dart.library.io) "webview_web_vain.dart";
+import 'webview_windows.dart';
 
 class Webview extends StatelessWidget {
   final String url;
@@ -19,18 +19,23 @@ class Webview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (url.isEmpty || url == "") {
+      return const SizedBox();
+    }
     if (isMobile() || isMacOS()) {
       return WebviewFlutter(
-          url: url,
-          backgroundColor: const Color(0x00000000),
-          javaScriptMode: JavaScriptMode.unrestricted);
+        url: url,
+        backgroundColor: const Color(0x00000000),
+        javaScriptMode: JavaScriptMode.unrestricted,
+      );
     } else if (isWeb()) {
       return WebviewWeb(url: url);
     } else if (isWindows()) {
       return WebviewWindows(
-          url: url,
-          backgroundColor: const Color(0x00000000),
-          javaScriptMode: JavaScriptMode.unrestricted);
+        url: url,
+        backgroundColor: const Color(0x00000000),
+        javaScriptMode: JavaScriptMode.unrestricted,
+      );
     } else if (isLinux()) {
       return WebviewLinux(url: url);
     } else {

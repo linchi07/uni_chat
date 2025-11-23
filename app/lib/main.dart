@@ -27,6 +27,8 @@ final Map<String, Locale> languages = const {
   "English": Locale("en"),
 };
 
+const String websiteURL = "http://localhost:3000/zh-Hans";
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (io.Platform.isAndroid) {

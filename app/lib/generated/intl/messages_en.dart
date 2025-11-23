@@ -68,6 +68,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "No API keys yet \n Please press the + button to add one",
     ),
     "add_entries": MessageLookupByLibrary.simpleMessage("Add entries"),
+    "add_memory": MessageLookupByLibrary.simpleMessage("Add memory"),
     "add_model_hint": MessageLookupByLibrary.simpleMessage(
       "No models yet \n Please press the + button to add one",
     ),
@@ -240,6 +241,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "got_it": MessageLookupByLibrary.simpleMessage("Got it"),
     "help": MessageLookupByLibrary.simpleMessage("Help"),
     "hide_cot": MessageLookupByLibrary.simpleMessage("Hide  thoughts"),
+    "hide_document": MessageLookupByLibrary.simpleMessage("Hide Docs"),
     "hide_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
       "Hide knowledge base search results",
     ),
@@ -495,6 +497,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "setup_start": MessageLookupByLibrary.simpleMessage("Start"),
     "show_cot": MessageLookupByLibrary.simpleMessage("Show thoughts"),
+    "show_document": MessageLookupByLibrary.simpleMessage("Show Docs"),
     "show_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
       "Show knowledge base search results",
     ),

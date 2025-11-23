@@ -1,0 +1,23 @@
+{
+  "id": "快速开始/Setup your first Agent",
+  "title": "Setup your first Agent",
+  "description": "",
+  "source": "@site/docs/快速开始/Setup your first Agent.md",
+  "sourceDirName": "快速开始",
+  "slug": "/快速开始/Setup your first Agent",
+  "permalink": "/zh-Hans/docs/快速开始/Setup your first Agent",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "教程介绍",
+    "permalink": "/zh-Hans/docs/Intro"
+  },
+  "next": {
+    "title": "配置API提供商",
+    "permalink": "/zh-Hans/docs/快速开始/配置API提供商"
+  }
+}

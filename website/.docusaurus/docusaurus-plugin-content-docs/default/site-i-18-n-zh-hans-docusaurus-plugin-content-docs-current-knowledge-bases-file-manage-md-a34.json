@@ -1,0 +1,25 @@
+{
+  "id": "KnowledgeBases/file_manage",
+  "title": "File Manage",
+  "description": "",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/KnowledgeBases/File Manage.md",
+  "sourceDirName": "KnowledgeBases",
+  "slug": "/KnowledgeBases/file_manage",
+  "permalink": "/zh-Hans/docs/KnowledgeBases/file_manage",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "file_manage"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "自动索引规则",
+    "permalink": "/zh-Hans/docs/KnowledgeBases/auto_index_rules"
+  },
+  "next": {
+    "title": "Memory Manage",
+    "permalink": "/zh-Hans/docs/KnowledgeBases/memory_manage"
+  }
+}
