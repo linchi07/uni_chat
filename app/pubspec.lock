@@ -33,6 +33,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.4.0"
+  any_call:
+    dependency: transitive
+    description:
+      name: any_call
+      sha256: "8179aaa4319d372be73fb5cfee96ffd1f325456517191ef2383a2f124216ad77"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   archive:
     dependency: transitive
     description:
@@ -345,6 +353,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
+  entao_jsonrpc:
+    dependency: "direct main"
+    description:
+      name: entao_jsonrpc
+      sha256: "1877b228f4a0f5ca09746ada96ee419fad69c396281038908c561a3658e07c21"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4"
+  entao_lint:
+    dependency: transitive
+    description:
+      name: entao_lint
+      sha256: "03dde884903b5c01de14348a4608968f81e68b8612df833ef52c57041e08fa9c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
+  entao_log:
+    dependency: transitive
+    description:
+      name: entao_log
+      sha256: "1d20eb1ab73cb5d1433666fd4a7a588ecf9ab0525a33355b331f22e82f5af653"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.8"
   equatable:
     dependency: transitive
     description:
@@ -1037,6 +1069,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.2"
+  println:
+    dependency: transitive
+    description:
+      name: println
+      sha256: ca88db128c9a6ede624b077bd70a41f08aac14d810d85a3a1f0e613d46e90495
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4"
   provider:
     dependency: transitive
     description:

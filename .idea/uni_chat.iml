@@ -12,6 +12,7 @@
       <excludeFolder url="file://$MODULE_DIR$/app/macos/Flutter/ephemeral" />
       <excludeFolder url="file://$MODULE_DIR$/app/macos/Pods" />
       <excludeFolder url="file://$MODULE_DIR$/app/windows/flutter/ephemeral/.plugin_symlinks" />
+      <excludeFolder url="file://$MODULE_DIR$/app/.pub" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

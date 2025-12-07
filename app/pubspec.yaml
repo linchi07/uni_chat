@@ -53,6 +53,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.6
   url_launcher: ^6.3.2
   webview_all: ^0.5.2
+  entao_jsonrpc: ^1.0.4
   
 
 dev_dependencies:
