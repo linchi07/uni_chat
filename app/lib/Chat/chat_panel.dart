@@ -576,13 +576,15 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
 
                       // 确保索引在有效范围内 (只处理历史消息)
                       if (messageIndex >= 0 &&
-                          messageIndex < chatState.messages.length) {
+                          messageIndex < chatState.messagesList.length) {
                         // messages[N - 1 - messageIndex] 仍然是正确的反转索引
                         final message =
-                            messages[chatState.messages.length -
+                            chatState.messagesList[chatState
+                                    .messagesList
+                                    .length -
                                 1 -
                                 messageIndex];
-                        return PersistChatMessage(message: message.content);
+                        return PersistChatMessage(message: message);
                       }
 
                       // 理论上不会执行到这里，但为了安全可以返回一个空的 Widget
@@ -705,13 +707,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     for (var a in _attachments) {
       attachedFiles.add(a.$1);
     }
-    ref
-        .read(chatStateProvider.notifier)
-        .sendMessage(
-          text,
-          attachedFiles: _attachments.isEmpty ? null : attachedFiles,
-        );
-
+    ref.read(chatStateProvider.notifier).sendMessage(text);
     _textController.clear();
     setState(() {
       _attachments.clear();
@@ -1225,8 +1221,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                   if (chatFile != null) {
                     ref
                         .read(chatStateProvider)
-                        .uploadedFiles
-                        .remove(chatFile.name);
+                        .uploadedFilesStash
+                        .removeWhere(
+                          (element) => element.name == chatFile.name,
+                        );
                   }
                 });
               },
