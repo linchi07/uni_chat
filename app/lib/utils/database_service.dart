@@ -177,10 +177,11 @@ class DatabaseService {
         modified_at INTEGER NOT NULL,
         agent_override TEXT, -- 可以在会话层面覆盖agents的部分参数类似于 copy with 保留备用
         branch_info TEXT, -- 存储分支信息
+        root_info TEXT, -- 存储根信息
         FOREIGN KEY (agent_id) REFERENCES agents (id) ON DELETE CASCADE
       )
     ''');
-    
+
     await db.execute('''
       CREATE TABLE message_relations(
       id TEXT PRIMARY KEY,
@@ -210,22 +211,18 @@ class DatabaseService {
       )
     ''');
 
-    await db.execute(
-      '''
+    await db.execute('''
       CREATE TABLE chat_data
       id TEXT PRIMARY KEY, -- 此处的prikey和message key 是完全相同的。
       data TEXT,
-      persistant_data_props TEXT -- 对话消息级别的持久化储存（只储存指针，数据在persistant_data表中）
-      '''
-    );
+      persistent_data_props TEXT -- 对话消息级别的持久化储存（只储存指针，数据在persistent_data表中）
+      ''');
 
-    await db.execute(
-      '''
-      CREATE TABLE persistant_data
+    await db.execute('''
+      CREATE TABLE persistent_data
       id TEXT PRIMARY KEY,
       data TEXT
-      '''
-    )
+      ''');
 
     await db.execute('''
         CREATE TABLE personas (

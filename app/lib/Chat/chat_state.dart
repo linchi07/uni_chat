@@ -22,8 +22,8 @@ class ChatState {
   bool isReady;
   String? error;
   ChatSession? session;
-  final List<ChatMessageDisplay> messages;
-  final Map<String, ChatFile> uploadedFiles;
+  final Map<String, ChatMessage> messages;
+  final List<ChatMessage> messagesList;
   late final ChunkedStringBuffer newContentBuffer;
   late final ValueNotifier<bool> refreshFlag;
   final bool isLoading;
@@ -32,8 +32,8 @@ class ChatState {
   ChatState({
     this.isReady = false,
     ChatSession? session,
-    this.uploadedFiles = const {},
-    this.messages = const [],
+    this.messages = const {},
+    this.messagesList = const [],
     ChunkedStringBuffer? newContentBuffer,
     ValueNotifier<bool>? refreshFlag,
     this.isLoading = false,
@@ -50,8 +50,9 @@ class ChatState {
   ChatState copyWith({
     bool? isReady,
     ChatSession? session,
-    List<ChatMessageDisplay>? messages,
-    Map<String, ChatFile>? uploadedFiles,
+    Map<String, ChatMessage>? messages,
+    List<ChatMessage>? messagesList,
+    List<ChatMessage>? roots,
     ChunkedStringBuffer? newContentBuffer,
     ValueNotifier<bool>? refreshFlag,
     bool? isLoading,
@@ -62,9 +63,9 @@ class ChatState {
       isReady: isReady ?? this.isReady,
       session: session ?? this.session,
       messages: messages ?? this.messages,
+      messagesList: messagesList ?? this.messagesList,
       newContentBuffer: newContentBuffer ?? this.newContentBuffer,
       refreshFlag: refreshFlag ?? this.refreshFlag,
-      uploadedFiles: uploadedFiles ?? this.uploadedFiles,
       isLoading: isLoading ?? this.isLoading,
       isResponding: isResponding ?? this.isResponding,
       error: error ?? this.error,
@@ -75,8 +76,8 @@ class ChatState {
     return ChatState(
       isReady: isReady,
       session: null,
-      messages: [],
-      uploadedFiles: {},
+      messages: {},
+      messagesList: [],
       isLoading: false,
       error: null,
     );
@@ -101,7 +102,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   void stateCopyWith({
     bool? isReady,
     ChatSession? session,
-    List<ChatMessageDisplay>? messages,
+    Map<String, ChatMessage>? messages,
+    List<ChatMessage>? messagesList,
+    List<ChatMessage>? roots,
     Map<String, ChatFile>? uploadedFiles,
     bool? isLoading,
     String? error,
@@ -110,10 +113,28 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       isReady: isReady ?? state.isReady,
       session: session ?? state.session,
       messages: messages ?? state.messages,
-      uploadedFiles: uploadedFiles ?? state.uploadedFiles,
+      messagesList: messagesList ?? state.messagesList,
       isLoading: isLoading ?? state.isLoading,
       error: error ?? state.error,
     );
+  }
+
+  /// 重新执行树搜索方法来构建聊天树
+  /// 在每次切换对话变体或者加载对话的时候都应该进行
+  /// @param from 从哪里开始，如果是新加载，应该传入root。否则的话从更改节点来。
+  /// 同时，注意，from节点本身**不会被插入到返回的list中，这也避免了插入root这个虚拟的节点**
+  List<ChatMessage> formMessageTree(ChatMessage from) {
+    List<ChatMessage> msg = [];
+    var next = from;
+    do {
+      var child = state.messages[from.children[from.enabledChild]];
+      if (child == null) {
+        break;
+      }
+      msg.add(child);
+      next = child;
+    } while (next.children.isNotEmpty);
+    return msg;
   }
 
   // --- Database Integration ---

@@ -37,6 +37,9 @@ enum MessageSender { system, user, ai }
 
 class ChatMessage {
   final String id;
+  final String? parent;
+  final List<String> children;
+  final int enabledChild; //当前启用的变体。注意：这里的是指的是children list的index
   final MessageSender sender;
   final String content; // a raw string
   final List<String>? attachedFiles; // 改为存储附件文件对象列表
@@ -44,10 +47,13 @@ class ChatMessage {
 
   ChatMessage({
     required this.id,
+    required this.parent,
+    required this.children,
     required this.sender,
     required this.content,
     this.attachedFiles,
     required this.timestamp,
+    required this.enabledChild,
   });
 }
 
