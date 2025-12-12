@@ -180,17 +180,15 @@ class DatabaseService {
         FOREIGN KEY (agent_id) REFERENCES agents (id) ON DELETE CASCADE
       )
     ''');
-    //创建关联表，以便支持branch 以及同一个message可以有多个版本（他们在UI上不同，但是底层是一样的）
-    //提供两种方式主要是我个人用的时候，修改和比如ai的这个会话对话很好，直接继承然后branch是两种不同的使用情景
+    
     await db.execute('''
       CREATE TABLE message_relations(
-      id INTEGER PRIMARY KEY AUTOINCREMENT, -- 这个Pri key实际上没啥用途，就是唯一标识
+      id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL,
       message_id TEXT NOT NULL,
-      session_order INTEGER NOT NULL,
-      message_order INTEGER NOT NULL, -- 此处的message order是一个消息的不同变体
-      is_enabled INTEGER NOT NULL DEFAULT 1, -- 同时只能存在且必须存在一个
-      UNIQUE (session_id, session_order), 
+      parent_id TEXT,
+      child_ids TEXT,
+      is_enabled INTEGER NOT NULL DEFAULT 1, -- 同时只能存在且必须存在一个 
       FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE,
       FOREIGN KEY (message_id) REFERENCES messages (id) ON DELETE CASCADE
       )
@@ -207,29 +205,27 @@ class DatabaseService {
         id TEXT PRIMARY KEY,
         sender TEXT NOT NULL,
         content TEXT NOT NULL,
-        timestamp INTEGER NOT NULL
+        timestamp INTEGER NOT NULL,
+        attachments TEXT NOT NULL
       )
     ''');
 
-    await db.execute('''
-      CREATE TABLE attachments (
-        id TEXT PRIMARY KEY,
-        message_id TEXT NOT NULL,
-        original_name TEXT NOT NULL,
-        upload_time INTEGER NOT NULL,
-        provider_info TEXT,
-        FOREIGN KEY (message_id) REFERENCES messages (id) ON DELETE CASCADE
-      )
-    ''');
+    await db.execute(
+      '''
+      CREATE TABLE chat_data
+      id TEXT PRIMARY KEY, -- 此处的prikey和message key 是完全相同的。
+      data TEXT,
+      persistant_data_props TEXT -- 对话消息级别的持久化储存（只储存指针，数据在persistant_data表中）
+      '''
+    );
 
-    await db.execute('''
-      CREATE TABLE panelLayout (
-        id TEXT PRIMARY KEY,
-        session_id TEXT NOT NULL,
-        layout_info TEXT,
-        FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE
-      )
-    ''');
+    await db.execute(
+      '''
+      CREATE TABLE persistant_data
+      id TEXT PRIMARY KEY,
+      data TEXT
+      '''
+    )
 
     await db.execute('''
         CREATE TABLE personas (

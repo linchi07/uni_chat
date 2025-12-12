@@ -169,6 +169,8 @@ class _MacOSMenuBarState extends ConsumerState<MacOSMenuBar> {
     _overlayEntry = null;
   }
 
+  void 
+  
   @override
   Widget build(BuildContext context) {
     return PlatformMenuBar(
