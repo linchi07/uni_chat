@@ -21,28 +21,16 @@ class ChatSession {
   });
 }
 
-class ChatMessageDisplay {
-  final ChatMessage content;
-  final int? currentMessageNo;
-  final int? totalMessageCount;
-
-  ChatMessageDisplay({
-    required this.content,
-    this.currentMessageNo,
-    this.totalMessageCount,
-  });
-}
-
 enum MessageSender { system, user, ai }
 
 class ChatMessage {
   final String id;
   final String? parent;
   final List<String> children;
-  final int enabledChild; //当前启用的变体。注意：这里的是指的是children list的index
+  int enabledChild; //当前启用的变体。注意：这里的是指的是children list的index
   final MessageSender sender;
   final String content; // a raw string
-  final List<String>? attachedFiles; // 改为存储附件文件对象列表
+  final List<ChatFile>? attachedFiles; // 改为存储附件文件对象列表
   final DateTime timestamp;
 
   ChatMessage({
@@ -55,6 +43,35 @@ class ChatMessage {
     required this.timestamp,
     required this.enabledChild,
   });
+
+  factory ChatMessage.fromMap(Map<String, dynamic> map) {
+    return ChatMessage(
+      id: map['id'],
+      parent: map['parent'],
+      children: (map['children'] as List<dynamic>).cast<String>(),
+      sender: MessageSender.values.firstWhere(
+        (e) => e.toString() == map['sender'] as String,
+      ),
+      content: map['content'],
+      attachedFiles: (map['attachedFiles'] as List<dynamic>?)
+          ?.map((e) => ChatFile.fromMap(e))
+          .toList(),
+      timestamp: DateTime.fromMicrosecondsSinceEpoch(map['timestamp'] as int),
+      enabledChild: map['enabledChild'],
+    );
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'parent': parent,
+      'children': children,
+      'sender': sender.toString(),
+      'content': content,
+      'attachedFiles': attachedFiles?.map((e) => e.toMap()).toList(),
+      'timestamp': timestamp.microsecondsSinceEpoch,
+      'enabledChild': enabledChild,
+    };
+  }
 }
 
 enum ChatMessageType { text, image, pdf, base64Image, base64pdf }
@@ -208,6 +225,34 @@ class ChatFile {
       );
       return _file!;
     }
+  }
+
+  factory ChatFile.fromMap(Map<String, dynamic> map) {
+    return ChatFile(
+      name: map['name'],
+      original_name: map['original_name'],
+      uploadTime: DateTime.parse(map['uploadTime']),
+      providerInfo: {
+        for (var e in map['providerInfo'])
+          e['provider']: (e['fileId'], DateTime.parse(e['uploadTime'])),
+      },
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'original_name': original_name,
+      'uploadTime': uploadTime.microsecondsSinceEpoch,
+      'providerInfo': [
+        for (var e in providerInfo.entries)
+          {
+            'provider': e.key,
+            'fileId': e.value.$1,
+            'uploadTime': e.value.$2.toIso8601String(),
+          },
+      ],
+    };
   }
 
   ChatFile({
