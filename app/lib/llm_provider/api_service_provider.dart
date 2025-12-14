@@ -17,8 +17,8 @@ class ApiServiceProvider {
 
       // 获取提供商-模型配置信息
       final config = await db.getProviderModelConfig(providerModelConfigId);
-      if (config == null || !config.isEnabled) {
-        debugPrint('Config not found or disabled: $providerModelConfigId');
+      if (config == null) {
+        debugPrint('Config not found: $providerModelConfigId');
         return null;
       }
 

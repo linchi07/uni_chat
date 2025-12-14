@@ -39,11 +39,12 @@ class IsolateManager {
     List<ReceivePort> receivePorts = [];
     //这里监听，如果有新的data就代表是一个messenger创建请求，创建一个新的receive port绑定好消息实例之后发送一个sendport。
     // 这两个list是因为我不知道对于一个listen函数，如果只是函数内临时变量，他会不会导致gc销毁？
-    rp.listen((data) {
-      sendPorts.add(data);
+    rp.listen((sendPort) {
+      if (sendPort == null || sendPort is! SendPort) return;
+      sendPorts.add(sendPort);
       receivePorts.add(ReceivePort());
       receivePorts.last.listen((data) {
-        rpcs.onRecvText(data);
+        sendPort.send(rpcs.onRecvText(data));
       });
       sendPorts.last.send(receivePorts.last.sendPort);
     });

@@ -182,15 +182,17 @@ class ProviderModelConfig {
   final String providerId;
   final String modelId;
   final String callName;
-  final bool isEnabled;
+  late final Set<ModelAbility> abilitiesOverride;
 
   ProviderModelConfig({
     required this.id,
     required this.providerId,
     required this.modelId,
     required this.callName,
-    required this.isEnabled,
-  });
+    Set<ModelAbility>? abilitiesOverride,
+  }) {
+    abilitiesOverride = abilitiesOverride ?? {};
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -198,7 +200,9 @@ class ProviderModelConfig {
       'provider_id': providerId,
       'model_id': modelId,
       'call_name': callName,
-      'is_enabled': isEnabled ? 1 : 0,
+      'abilities_override': abilitiesOverride
+          .map((ability) => ability.toString())
+          .toList(),
     };
   }
 
@@ -208,7 +212,11 @@ class ProviderModelConfig {
       providerId: map['provider_id'] as String,
       modelId: map['model_id'] as String,
       callName: map['call_name'] as String,
-      isEnabled: map['is_enabled'] == 1,
+      abilitiesOverride: Set.from(
+        (map['abilities_override'] as List).map(
+          (ability) => ModelAbility.values.byName(ability as String),
+        ),
+      ),
     );
   }
 }
@@ -351,6 +359,7 @@ class ApiDatabaseService {
     return null;
   }
 
+  //decrypt
   Future<(ApiProvider?, Model?)> getProviderAndModelByModelConfig(
     String modelConfigId,
   ) async {
@@ -620,7 +629,6 @@ class ApiDatabaseService {
       providerId: providerId,
       modelId: modelId,
       callName: modelConfigData.callName,
-      isEnabled: true,
     );
     final db = await database;
     final oldConf = (await db.query(
