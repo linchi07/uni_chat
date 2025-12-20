@@ -541,7 +541,11 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
   @override
   Widget build(BuildContext context) {
     var chatState = ref.watch(chatStateProvider);
-    final messages = chatState.messages;
+    if (!chatState.isReady) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(chatStateProvider.notifier).checkIfReady();
+      });
+    }
     return Scaffold(
       backgroundColor: ref.watch(themeProvider).secondGradeColor,
       body: Center(
@@ -639,7 +643,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       for (var file in result.files) {
         if (file.path != null) {
           final actualFile = File(file.path!);
-          final previewId = _uuid.v4();
+          final previewId = _uuid.v7();
           // 添加预览ID到附件列表
           setState(() {
             _isUploading = true;
@@ -982,6 +986,11 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2),
           child: TextField(
             focusNode: _focusNode,
+            onTap: () {
+              if (!chatState.isReady) {
+                ref.read(chatStateProvider.notifier).checkIfReady();
+              }
+            },
             textInputAction: TextInputAction.send,
             maxLines: 7,
             minLines: 2,
@@ -1065,12 +1074,14 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           scrollDirection: Axis.horizontal,
           itemCount: _attachments.length,
           itemBuilder: (context, index) {
-            final attachmentId = _attachments[index];
-            final chatFile = chatState.uploadedFiles[attachmentId.$1];
-
+            final chatFile = chatState.uploadedFilesStash.firstWhere(
+              (e) => e.name == _attachments[index].$1,
+            );
+            // the name of the file is the id (String $1),
+            // the original file name is stored in the original_name var of the object
             return _buildAttachmentPreviewItem(
               chatFile,
-              attachmentId.$2,
+              _attachments[index].$2,
               index,
             );
           },
@@ -1143,7 +1154,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                           child: Padding(
                             padding: const EdgeInsets.all(2.0),
                             child: Text(
-                              chatFile.original_name,
+                              chatFile.originalName,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,

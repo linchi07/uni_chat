@@ -327,7 +327,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   final ScrollController _sessionScrollController = ScrollController();
   final ScrollController _agentScrollController = ScrollController();
   Timer? _hoverTimer;
-  (List<ChatMessageDisplay>, Map<String, ChatFile>)? _previewedSession;
+  List<ChatMessage>? _previewedSession;
   bool isSessionScrolled = false;
   late ThemeConfig theme;
   double lastScrollOffset = 0;
@@ -369,7 +369,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   }
 
   void _setPreviewSession(String sid) async {
-    var ps = await DatabaseService.instance.getMessagesForSession(sid);
+    var ps = await DatabaseService.instance.getMessageListForSession(sid);
     internalSetState(() {
       _previewedSession = ps;
     });
@@ -646,7 +646,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       // ignore: prefer_is_empty
-                                      child: (_previewedSession?.$1.length == 0)
+                                      child: (_previewedSession?.length == 0)
                                           ? Center(
                                               child: Text(
                                                 S.of(context).no_message,
@@ -660,19 +660,13 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                                   MaterialTextSelectionControls(),
                                               child: ListView.builder(
                                                 reverse: true,
-                                                itemCount: _previewedSession
-                                                    ?.$1
-                                                    .length,
+                                                itemCount:
+                                                    _previewedSession?.length,
                                                 itemBuilder: (context, index) {
                                                   final message =
-                                                      _previewedSession!
-                                                          .$1[_previewedSession!
-                                                              .$1
-                                                              .length -
-                                                          1 -
-                                                          index];
+                                                      _previewedSession![index];
                                                   return PersistChatMessage(
-                                                    message: message.content,
+                                                    message: message,
                                                   );
                                                 },
                                               ),

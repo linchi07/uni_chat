@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -21,12 +22,44 @@ class ChatSession {
   });
 }
 
-enum MessageSender { system, user, ai }
+enum MessageSender { internal, system, user, ai }
+
+extension MessageSenderExtension on MessageSender {
+  String get name {
+    switch (this) {
+      case MessageSender.internal:
+        return 'internal';
+      case MessageSender.system:
+        return 'system';
+      case MessageSender.user:
+        return 'user';
+      case MessageSender.ai:
+        return 'ai';
+    }
+  }
+
+  static MessageSender fromString(String name) {
+    switch (name) {
+      case 'internal':
+        return MessageSender.internal;
+      case 'system':
+        return MessageSender.system;
+      case 'user':
+        return MessageSender.user;
+      case 'ai':
+        return MessageSender.ai;
+      default:
+        throw ArgumentError('Invalid MessageSender name: $name');
+    }
+  }
+}
 
 class ChatMessage {
   final String id;
+  final String? messageId;
+  //refers to the messageId of the database table.The ID of the "message"(not the relations)
   final String? parent;
-  final List<String> children;
+  final List<String> childIds;
   int enabledChild; //当前启用的变体。注意：这里的是指的是children list的index
   final MessageSender sender;
   final String content; // a raw string
@@ -35,8 +68,9 @@ class ChatMessage {
 
   ChatMessage({
     required this.id,
+    this.messageId,
     required this.parent,
-    required this.children,
+    required this.childIds,
     required this.sender,
     required this.content,
     this.attachedFiles,
@@ -47,24 +81,30 @@ class ChatMessage {
   factory ChatMessage.fromMap(Map<String, dynamic> map) {
     return ChatMessage(
       id: map['id'],
+      messageId: map['message_id'],
       parent: map['parent'],
-      children: (map['children'] as List<dynamic>).cast<String>(),
-      sender: MessageSender.values.firstWhere(
-        (e) => e.toString() == map['sender'] as String,
+      childIds:
+          (jsonDecode(map['child_ids']) as List<dynamic>?)?.cast<String>() ??
+          [],
+      sender: MessageSenderExtension.fromString(
+        (map['sender'] as String?) ?? 'internal',
       ),
-      content: map['content'],
+      content: map['content'] ?? '',
       attachedFiles: (map['attachedFiles'] as List<dynamic>?)
           ?.map((e) => ChatFile.fromMap(e))
           .toList(),
-      timestamp: DateTime.fromMicrosecondsSinceEpoch(map['timestamp'] as int),
-      enabledChild: map['enabledChild'],
+      timestamp: DateTime.fromMicrosecondsSinceEpoch(
+        (map['timestamp'] as int?) ?? 0,
+      ),
+      enabledChild: map['enabled_child_index'],
     );
   }
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'message_id': messageId,
       'parent': parent,
-      'children': children,
+      'child_ids': jsonEncode(childIds),
       'sender': sender.toString(),
       'content': content,
       'attachedFiles': attachedFiles?.map((e) => e.toMap()).toList(),
@@ -207,8 +247,8 @@ enum FileTypeDefine { image, text, pdf, unknown }
 
 class ChatFile {
   final String name;
-  final String original_name;
-  String get extension => p.extension(original_name);
+  final String originalName;
+  String get extension => p.extension(originalName);
   late final FileTypeDefine type;
   late final String mimeType;
   final DateTime uploadTime;
@@ -230,7 +270,7 @@ class ChatFile {
   factory ChatFile.fromMap(Map<String, dynamic> map) {
     return ChatFile(
       name: map['name'],
-      original_name: map['original_name'],
+      originalName: map['original_name'],
       uploadTime: DateTime.parse(map['uploadTime']),
       providerInfo: {
         for (var e in map['providerInfo'])
@@ -242,7 +282,7 @@ class ChatFile {
   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'original_name': original_name,
+      'original_name': originalName,
       'uploadTime': uploadTime.microsecondsSinceEpoch,
       'providerInfo': [
         for (var e in providerInfo.entries)
@@ -257,7 +297,7 @@ class ChatFile {
 
   ChatFile({
     required this.name,
-    required this.original_name,
+    required this.originalName,
     required this.uploadTime,
     Map<String, (String, DateTime)>? providerInfo,
   }) {
@@ -276,10 +316,26 @@ class ChatFile {
   }) {
     return ChatFile(
       name: name ?? this.name,
-      original_name: originalName ?? this.original_name,
+      originalName: originalName ?? this.originalName,
       uploadTime: uploadTime ?? this.uploadTime,
       providerInfo: providerInfo ?? this.providerInfo,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'originalName': originalName,
+      'uploadTime': uploadTime.toIso8601String(),
+      'providerInfo': [
+        for (var e in providerInfo.entries)
+          {
+            'provider': e.key,
+            'fileId': e.value.$1,
+            'uploadTime': e.value.$2.toIso8601String(),
+          },
+      ],
+    };
   }
 
   // 图片类型扩展名

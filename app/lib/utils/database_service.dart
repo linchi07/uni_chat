@@ -186,7 +186,7 @@ class DatabaseService {
       CREATE TABLE message_relations(
       id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL,
-      message_id TEXT NOT NULL,
+      message_id TEXT,
       parent_id TEXT,
       child_ids TEXT,
       enabled_child_index INTEGER DEFAULT 0,
@@ -215,7 +215,8 @@ class DatabaseService {
       CREATE TABLE chat_data(
       id TEXT PRIMARY KEY, -- 此处的prikey和message key 是完全相同的。
       data TEXT,
-      persistent_data_props TEXT -- 对话消息级别的持久化储存（只储存指针，数据在persistent_data表中）)
+      persistent_data_props TEXT -- 对话消息级别的持久化储存（只储存指针，数据在persistent_data表中）
+      )
       ''');
 
     await db.execute('''
@@ -245,12 +246,6 @@ class DatabaseService {
     // 为外键创建索引以提高查询性能
     await db.execute(
       'CREATE INDEX idx_sessions_agent_id ON sessions (agent_id)',
-    );
-    await db.execute(
-      'CREATE INDEX idx_panelLayout_session_id ON panelLayout (session_id)',
-    );
-    await db.execute(
-      'CREATE INDEX idx_attachments_message_id ON attachments (message_id)',
     );
   }
 
@@ -357,7 +352,6 @@ class DatabaseService {
   }
 
   // --- Session CRUD Methods ---
-
   Future<ChatSession> createSession({
     String? title,
     required String agentId,
@@ -365,21 +359,30 @@ class DatabaseService {
     final db = await database;
     final now = DateTime.now();
     final newSession = ChatSession(
-      id: _uuid.v4(),
+      id: _uuid.v7(),
       agentId: agentId,
       name: title ?? 'New Chat - ${now.toIso8601String()}',
       creationTime: now,
       lastMessageTime: now,
     );
 
-    await db.insert('sessions', {
-      'id': newSession.id,
-      'agent_id': newSession.agentId,
-      'title': newSession.name,
-      'created_at': newSession.creationTime.microsecondsSinceEpoch,
-      'modified_at': newSession.lastMessageTime.microsecondsSinceEpoch,
+    await db.transaction((trx) async {
+      await trx.insert('sessions', {
+        'id': newSession.id,
+        'agent_id': newSession.agentId,
+        'title': newSession.name,
+        'created_at': newSession.creationTime.microsecondsSinceEpoch,
+        'modified_at': newSession.lastMessageTime.microsecondsSinceEpoch,
+      });
+      // insert the root message
+      // root message is always the first message (and will not be rendered)
+      await trx.insert('message_relations', {
+        'id': newSession.id,
+        'session_id': newSession.id,
+        // this is useless for a root message (since it doesn't have content)
+        // however , it is required for the from map method (since the Chat message object requires a non null message_id)
+      });
     });
-
     return newSession;
   }
 
@@ -485,33 +488,33 @@ class DatabaseService {
     final db = await database;
     await db.transaction((txn) async {
       await txn.insert('messages', {
-        'id': message.id,
-        'sender': message.sender
-            .toString(), // 'message.contentSender.user' -> 'user'
+        //the id and the message id is two different things
+        //here(messageTable), the id(column) is the message id(object)
+        //however in the relations table , the id(column) is the id(object),the messageId is the messageID (object)
+        'id': message.messageId,
+        'sender': message.sender.name, // 'message.contentSender.user' -> 'user'
         'content': message.content,
         'timestamp': message.timestamp.microsecondsSinceEpoch,
+        'attachments': jsonEncode(
+          message.attachedFiles?.map((file) => file.toJson()).toList(),
+        ),
       });
-      // 2. Insert or update attachments
-      if (message.attachedFiles != null) {
-        for (final file in message.attachedFiles!) {
-          await _addOrUpdateAttachment(txn, message.id, file);
-        }
-      }
       await txn.insert('message_relations', {
+        'id': message.id,
         'session_id': sessionId,
-        'message_id': message.id,
+        'message_id': message.messageId,
         'parent_id': message.parent,
-        'child_ids': message.children,
+        'child_ids': jsonEncode(message.childIds),
         'enabled_child_index': message.enabledChild,
       });
       if (modifiedParent != null) {
         await txn.update(
           'message_relations',
           {
-            'child_ids': modifiedParent.children,
+            'child_ids': jsonEncode(modifiedParent.childIds),
             'enabled_child_index': modifiedParent.enabledChild,
           },
-          where: 'message_id = ?',
+          where: 'id = ?',
           whereArgs: [modifiedParent.id],
         );
       }
@@ -591,13 +594,20 @@ WHERE
     );
   }
 */
+  /// Get messages for a session
+  ///
+  /// [returns]: a tuple of (ChatMessage root message,Map all messages)
+  ///
+  /// you should run a tree traversal on the root message to order all the messages
+  ///
+  /// to only get the enabled message list use [getMessageListForSession]  instead
   Future<(ChatMessage?, Map<String, ChatMessage>)> getMessagesForSession(
-    String sessionId, {
-    bool onlyEnabled = false,
-  }) async {
+    String sessionId,
+  ) async {
     final db = await database;
     final List<Map<String, dynamic>> messageMaps = await db.rawQuery(
       '''SELECT
+    T2.id,
     T1.id AS message_id,
     T1.sender,
     T1.content,
@@ -605,13 +615,14 @@ WHERE
     T1.attachments,
     T2.parent_id,
     T2.child_ids,
-    T2.enabled_child_index,
+    T2.enabled_child_index
 FROM
     messages T1
-JOIN
+RIGHT JOIN 
     message_relations T2 ON T1.id = T2.message_id
 WHERE
     T2.session_id = ?;''',
+      //since root messages don't have an id,so left join is used to make sure that all messages are returned
       [sessionId],
     );
     if (messageMaps.isEmpty) {
@@ -632,64 +643,55 @@ WHERE
     return (root, result);
   }
 
-  // --- Private helper methods for attachments ---
+  /// Get the enabled branch of messages for a session
+  ///
+  /// [returns]: a list of messages which are enabled **root message not included**
+  Future<List<ChatMessage>> getMessageListForSession(String sessionId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> messageMaps = await db.rawQuery(
+      '''
+ WITH RECURSIVE chat_tree AS (
+    -- 1. 仅定位关系表的根节点（不包含 message 信息）
+    SELECT 
+        id, 
+		message_id,
+        child_ids, 
+        enabled_child_index,
+        0 AS depth
+    FROM message_relations
+    WHERE session_id = ? AND parent_id IS NULL
 
-  Future<void> _addOrUpdateAttachment(
-    Transaction txn,
-    String messageId,
-    ChatFile attachment,
-  ) async {
-    final serializableProviderInfo = attachment.providerInfo.map(
-      (key, value) =>
-          MapEntry(key, {'id': value.$1, 'expiry': value.$2.toIso8601String()}),
+    UNION ALL
+
+    -- 2. 从第二层开始连接 messages 表
+    SELECT 
+        r.id,
+		r.message_id,
+        r.child_ids,
+        r.enabled_child_index,
+        ct.depth + 1
+    FROM message_relations r -- use "->>" to extract json without quotes
+    JOIN chat_tree ct ON r.id = (ct.child_ids ->> ('\$[' || ct.enabled_child_index || ']'))
+    WHERE r.session_id = ?
+)
+-- 3. 最终结果连接 messages 表并过滤掉 depth = 0 的根节点
+SELECT 
+    m.id AS message_id,
+    m.sender,
+    m.content,
+    m.timestamp,
+    m.attachments,
+    t.id AS id,
+    t.child_ids,
+    t.enabled_child_index
+FROM chat_tree t
+JOIN messages m ON t.message_id = m.id
+WHERE t.depth > 0
+ORDER BY t.depth DESC;
+''',
+      [sessionId, sessionId],
     );
-
-    await txn.insert('attachments', {
-      'id': attachment.name, // The 'name' field is the UUID
-      'message_id': messageId,
-      'original_name': attachment.original_name,
-      'upload_time': attachment.uploadTime.toIso8601String(),
-      'provider_info': jsonEncode(serializableProviderInfo),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  Future<List<ChatFile>> _getAttachmentsForMessage(
-    Database db,
-    String messageId,
-  ) async {
-    final List<Map<String, dynamic>> attachmentMaps = await db.query(
-      'attachments',
-      where: 'message_id = ?',
-      whereArgs: [messageId],
-    );
-
-    if (attachmentMaps.isEmpty) {
-      return [];
-    }
-
-    return attachmentMaps.map((map) {
-      final providerInfoString = map['provider_info'] as String?;
-      Map<String, (String, DateTime)> providerInfo = {};
-
-      if (providerInfoString != null && providerInfoString.isNotEmpty) {
-        final decodedInfo =
-            jsonDecode(providerInfoString) as Map<String, dynamic>;
-        providerInfo = decodedInfo.map((key, value) {
-          final infoMap = value as Map<String, dynamic>;
-          return MapEntry(key, (
-            infoMap['id'] as String,
-            DateTime.parse(infoMap['expiry'] as String),
-          ));
-        });
-      }
-
-      return ChatFile(
-        name: map['id'],
-        original_name: map['original_name'],
-        uploadTime: DateTime.fromMicrosecondsSinceEpoch(map['upload_time']),
-        providerInfo: providerInfo,
-      );
-    }).toList();
+    return messageMaps.map((e) => ChatMessage.fromMap(e)).toList();
   }
 
   Future<void> writeLayout(String sessionId, String layoutInfo) async {
