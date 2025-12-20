@@ -307,7 +307,7 @@ class MainContState extends ConsumerState<MainCont> {
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     return Scaffold(
-      backgroundColor: theme.secondGradeColor,
+      backgroundColor: theme.zeroGradeColor,
       body: Column(
         children: [
           MainBanner(bannerWidget: _bannerWidget()),
@@ -362,7 +362,17 @@ class MainContState extends ConsumerState<MainCont> {
                     ],
                   ),
                 ),
-                Expanded(child: _bodyWidget()),
+                Expanded(
+                  child: Container(
+                    margin: EdgeInsets.only(right: 4, bottom: 4),
+                    clipBehavior: Clip.hardEdge,
+                    decoration: BoxDecoration(
+                      color: theme.secondGradeColor,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: _bodyWidget(),
+                  ),
+                ),
               ],
             ),
           ),
