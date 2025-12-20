@@ -349,7 +349,9 @@ class RagProvider {
     required ChatMessage agent,
   }) {
     if (loadedAgentId == null) {
-      throw "Not loaded";
+      //throw "Not loaded";
+      // just return will be better,(since we are going to replace this in the future)
+      return;
     }
     if (ports.containsKey('autoIndex')) {
       ports['autoIndex']!.send((user, agent));

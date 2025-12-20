@@ -362,6 +362,8 @@ class OpenAiCompletionService implements LLMApiService {
 
   String getSender(MessageSender sender) {
     switch (sender) {
+      case MessageSender.internal:
+        return 'internal';
       case MessageSender.user:
         return 'user';
       case MessageSender.ai:
@@ -705,6 +707,8 @@ class GeminiApiService implements LLMApiService {
 
   String getRole(MessageSender sender) {
     switch (sender) {
+      case MessageSender.internal:
+        return 'internal';
       case MessageSender.user:
         return 'user';
       case MessageSender.ai:

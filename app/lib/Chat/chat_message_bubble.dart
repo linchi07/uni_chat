@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
-import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
 
 import '../generated/l10n.dart';
@@ -24,17 +23,7 @@ class PersistChatMessage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     var theme = ref.watch(themeProvider);
     final isUserMessage = message.sender == MessageSender.user;
-    List<ChatFile> files = [];
-
-    // 获取所有附件文件
-    if (message.attachedFiles != null) {
-      for (var fileId in message.attachedFiles!) {
-        final file = ref.read(chatStateProvider).uploadedFiles[fileId];
-        if (file != null) {
-          files.add(file);
-        }
-      }
-    }
+    List<ChatFile> files = message.attachedFiles ?? [];
 
     return Align(
       alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
@@ -114,7 +103,7 @@ class PersistChatMessage extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        file.original_name,
+                        file.originalName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
