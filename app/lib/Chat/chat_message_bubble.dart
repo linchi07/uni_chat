@@ -1,11 +1,16 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
+import 'package:super_clipboard/super_clipboard.dart';
+import 'package:uni_chat/Chat/chat_panel.dart';
+import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
 
 import '../generated/l10n.dart';
@@ -15,44 +20,300 @@ import 'chat_models.dart';
 // A fixed speed for the typewriter animation.
 const int CHARACTERS_PER_SECOND = 400;
 
-class PersistChatMessage extends ConsumerWidget {
-  const PersistChatMessage({super.key, required this.message});
+/// A widget that displays a chat message.
+/// [prevMessage] is the previous message, used to show variants. **When null,the toolbar will be automatically hidden**
+class PersistChatMessage extends ConsumerStatefulWidget {
+  const PersistChatMessage({
+    super.key,
+    required this.message,
+    this.prevMessage,
+    required this.theme,
+    required this.index,
+  });
+  final int index; //the index in the message list
+  final ChatMessage? prevMessage; //the previous message ,used to show variants
   final ChatMessage message;
+  final ThemeConfig theme;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  ConsumerState<PersistChatMessage> createState() => _PersistChatMessageState();
+}
+
+class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
+  ChatMessage get message => widget.message;
+  ChatMessage? get prevMessage => widget.prevMessage;
+  int get index => widget.index;
+  ThemeConfig get theme => widget.theme;
+
+  bool isEditMode = false;
+  bool get isUserMessage => message.sender == MessageSender.user;
+
+  @override
+  Widget build(BuildContext context) {
     final isUserMessage = message.sender == MessageSender.user;
     List<ChatFile> files = message.attachedFiles ?? [];
-
-    return Align(
+    Widget content;
+    if (isUserMessage) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (files.isNotEmpty) ...[
+            Wrap(
+              children: [
+                for (var file in files)
+                  _buildAttachmentView(context, file, widget.theme),
+              ],
+            ),
+          ],
+          GptMarkdown(
+            message.content,
+            useDollarSignsForLatex: true,
+            style: const TextStyle(color: Colors.black, fontSize: 16),
+          ),
+        ],
+      );
+      if (isEditMode) {
+        /*
+        var inputBox = ChatPanelInputBox(
+          textInject: (con) {
+            con.text = message.content;
+          },
+          beforeSubmit: () {
+            ref.read(chatStateProvider.notifier).addBranch(index);
+          },
+          afterSubmit: () {
+            setState(() {
+              isEditMode = false;
+            });
+          },
+          cancelCallback: () {
+            setState(() {
+              isEditMode = false;
+            });
+          },
+        );
+        */
+        //and this must be the stupidest thing i've ever done
+        //the binding λ functions requires some objs in this widget to work
+        //however, the animation controller's reverse method should be called on cancel callback
+        //and it's too inefficient to inject a provider
+        //so I just pack them into a obj and pass it to the animation widget
+        var functionPT = (
+          (con) {
+            con.text = message.content;
+          },
+          () {
+            ref.read(chatStateProvider.notifier).addBranch(index);
+          },
+          () {
+            setState(() {
+              isEditMode = false;
+            });
+          },
+          () {
+            setState(() {
+              isEditMode = false;
+            });
+          },
+        );
+        var box = Align(
+          alignment: Alignment.centerRight,
+          child: _InputExpandAnimation(
+            registeredFunctions: functionPT,
+            theme: theme,
+            originContent: content,
+          ),
+        );
+        return box;
+      }
+    } else {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.prevMessage != null) _toolbar(),
+          if (files.isNotEmpty) ...[
+            Wrap(
+              children: [
+                for (var file in files)
+                  _buildAttachmentView(context, file, widget.theme),
+              ],
+            ),
+          ],
+          ...BlockParser.parseStaticBlock(widget.message.content),
+        ],
+      );
+    }
+    var box = Align(
       alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: isUserMessage
-            ? BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75)
+            ? BoxConstraints(
+                maxWidth: min(
+                  MediaQuery.of(context).size.width * 0.8,
+                  1000 * 0.9,
+                ),
+              )
             : null,
         margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isUserMessage ? theme.thirdGradeColor : null,
+          color: isUserMessage ? widget.theme.thirdGradeColor : null,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: content,
+      ),
+    );
+    if (isUserMessage && widget.prevMessage != null) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          box,
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: _toolbar(),
+          ),
+        ],
+      );
+    }
+    return box;
+  }
+
+  bool isCopied = false;
+  Widget _toolbar() {
+    return SizedBox(
+      height: 30,
+      child: Material(
+        color: Colors.transparent,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (files.isNotEmpty) ...[
-              Wrap(
-                children: [
-                  for (var file in files)
-                    _buildAttachmentView(context, file, theme),
-                ],
+            if (isUserMessage)
+              SizedBox(
+                height: 30,
+                width: 24,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () {
+                    setState(() {
+                      isEditMode = true;
+                    });
+                  },
+                  child: Icon(Icons.edit_outlined, size: 20),
+                ),
               ),
-            ],
-            Column(children: BlockParser.parseStaticBlock(message.content)),
+            SizedBox(
+              height: 30,
+              width: 24,
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  if (isCopied) {
+                    Timer(Duration(seconds: 1), () {
+                      setState(() {
+                        isCopied = false;
+                      });
+                    });
+                  }
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () async {
+                      final clipboard = SystemClipboard.instance;
+                      if (clipboard == null) {
+                        return; // Clipboard API is not supported on this platform.
+                      }
+                      final item = DataWriterItem();
+                      item.add(Formats.plainText(message.content));
+                      await clipboard.write([item]);
+                      setState(() {
+                        isCopied = true;
+                      });
+                    },
+                    child: isCopied
+                        ? Icon(Icons.check, size: 20)
+                        : Icon(Icons.copy_rounded, size: 20),
+                  );
+                },
+              ),
+            ),
+            if (message.sender ==
+                MessageSender.ai) //we can only regenerate ai message
+              SizedBox(
+                height: 30,
+                width: 24,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () {
+                    ref
+                        .read(chatStateProvider.notifier)
+                        .regenerateMessage(index);
+                  },
+                  child: Icon(Icons.refresh, size: 20),
+                ),
+              ),
+            if (prevMessage!.childIds.length > 1) ...variantSelector(),
           ],
         ),
       ),
     );
+  }
+
+  List<Widget> variantSelector() {
+    var prevMessage = this.prevMessage!;
+    return [
+      SizedBox(
+        height: 30,
+        width: 24,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: (prevMessage.enabledChild != 0)
+              ? () {
+                  ref
+                      .read(chatStateProvider.notifier)
+                      .switchBranch(index, prevMessage.enabledChild - 1);
+                }
+              : null,
+          //the arrows are smaller than the other buttons
+          // however only when they're smaller that they visually align with the buttons:(
+          child: Icon(
+            Icons.arrow_back_ios_new,
+            size: 16,
+            color: (prevMessage.enabledChild != 0)
+                ? theme.primaryColor
+                : theme.thirdGradeColor,
+          ),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
+        child: Text(
+          ///actually , since this is actually a tree.
+          ///we switch the child of child ids list in the prev message,not the current message.
+          '${prevMessage.enabledChild + 1} / ${prevMessage.childIds.length}',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      SizedBox(
+        height: 30,
+        width: 24,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: (prevMessage.enabledChild != prevMessage.childIds.length - 1)
+              ? () {
+                  ref
+                      .read(chatStateProvider.notifier)
+                      .switchBranch(index, prevMessage.enabledChild + 1);
+                }
+              : null,
+          child: Icon(
+            Icons.arrow_forward_ios,
+            size: 16,
+            color: (prevMessage.enabledChild != prevMessage.childIds.length - 1)
+                ? theme.primaryColor
+                : theme.thirdGradeColor,
+          ),
+        ),
+      ),
+    ];
   }
 
   Widget _buildAttachmentView(
@@ -112,6 +373,143 @@ class PersistChatMessage extends ConsumerWidget {
                 ),
               ),
             ),
+    );
+  }
+}
+
+class _InputExpandAnimation extends StatefulWidget {
+  const _InputExpandAnimation({
+    super.key,
+    required this.registeredFunctions,
+    required this.theme,
+    required this.originContent,
+  });
+  final dynamic registeredFunctions;
+  final ThemeConfig theme;
+  final Widget originContent;
+
+  @override
+  State<_InputExpandAnimation> createState() => _InputExpandAnimationState();
+}
+
+class _InputExpandAnimationState extends State<_InputExpandAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> shadowTween;
+  late Animation<double> sizeTween;
+  late Animation<double> colorTween;
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      reverseDuration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    shadowTween = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0, 1.0, curve: Curves.linear),
+      ),
+    );
+    colorTween = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0, 0.7, curve: Curves.easeIn),
+      ),
+    );
+    sizeTween = Tween<double>(begin: 0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.8, curve: Curves.easeOutBack),
+        reverseCurve: const Interval(0.0, 0.8, curve: Curves.linear),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  static const double INPUT_BOX_EXPANDED_HEIGHT = 283;
+  static const double INPUT_BOX_COLLAPSED_HEIGHT = 120;
+  (double?, double?) lerpSize(double t) {
+    if (_startSize != null) {
+      return (
+        lerpDouble(_startSize!.width, targetW, t),
+        lerpDouble(_startSize!.height, INPUT_BOX_COLLAPSED_HEIGHT, t),
+      );
+    }
+    return (null, null);
+  }
+
+  late double targetW;
+  Size? _startSize;
+  @override
+  Widget build(BuildContext context) {
+    targetW = min(MediaQuery.of(context).size.width * 0.8, 1000 * 0.9);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_startSize == null) {
+        final renderBox = context.findRenderObject() as RenderBox?;
+        _startSize = renderBox?.size;
+        _controller.forward();
+      }
+    });
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        double t = _controller.value; // 0.0 -> 1.0
+
+        // 1. 阴影插值 (从无到有，实现浮起感)
+        final shadow = BoxShadow.lerp(
+          const BoxShadow(
+            color: Colors.transparent,
+            blurRadius: 0,
+            offset: Offset(0, 0),
+          ),
+          BoxShadow(
+            color: Colors.black.withAlpha(80),
+            spreadRadius: 5,
+            blurRadius: 8,
+            offset: const Offset(3, 6),
+          ),
+          shadowTween.value,
+        );
+        var s = lerpSize(sizeTween.value);
+        return Container(
+          width: s.$1,
+          height: s.$2,
+          margin: EdgeInsets.only(right: sizeTween.value * 14),
+          padding: EdgeInsets.all(
+            4 + ((sizeTween.value == 1) ? 0 : sizeTween.value * 12),
+          ),
+          constraints: (t >= 0.8)
+              ? BoxConstraints.loose(Size(targetW, INPUT_BOX_EXPANDED_HEIGHT))
+              : null,
+          decoration: BoxDecoration(
+            color: Color.lerp(
+              widget.theme.thirdGradeColor,
+              Colors.white,
+              colorTween.value,
+            ),
+            boxShadow: [?shadow],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: (t >= 0.8)
+              ? ChatPanelInputBox(
+                  textInject: widget.registeredFunctions.$1,
+                  beforeSubmit: widget.registeredFunctions.$2,
+                  afterSubmit: widget.registeredFunctions.$3,
+                  cancelCallback: () async {
+                    await _controller.reverse();
+                    widget.registeredFunctions.$4.call();
+                  },
+                )
+              : widget.originContent,
+        );
+      },
     );
   }
 }

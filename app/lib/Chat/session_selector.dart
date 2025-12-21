@@ -666,7 +666,10 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                                   final message =
                                                       _previewedSession![index];
                                                   return PersistChatMessage(
+                                                    key: ValueKey(message.id),
                                                     message: message,
+                                                    theme: theme,
+                                                    index: index,
                                                   );
                                                 },
                                               ),
