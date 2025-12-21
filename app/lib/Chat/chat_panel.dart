@@ -541,13 +541,14 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
   @override
   Widget build(BuildContext context) {
     var chatState = ref.watch(chatStateProvider);
+    var theme = ref.watch(themeProvider);
     if (!chatState.isReady) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(chatStateProvider.notifier).checkIfReady();
       });
     }
     return Scaffold(
-      backgroundColor: ref.watch(themeProvider).secondGradeColor,
+      backgroundColor: theme.secondGradeColor,
       body: Center(
         child: SizedBox(
           width: MediaQuery.of(context).size.width.clamp(0, 1000),
@@ -557,6 +558,7 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                 child: SelectionArea(
                   selectionControls: MaterialTextSelectionControls(),
                   child: ListView.builder(
+                    cacheExtent: 5000,
                     controller: _scrollController,
                     reverse: true, // 最新消息在底部
                     itemCount: chatState.isResponding
@@ -580,24 +582,29 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
 
                       // 确保索引在有效范围内 (只处理历史消息)
                       if (messageIndex >= 0 &&
-                          messageIndex < chatState.messagesList.length) {
+                          messageIndex < chatState.messagesList.length - 1) {
                         // messages[N - 1 - messageIndex] 仍然是正确的反转索引
-                        final message =
-                            chatState.messagesList[chatState
-                                    .messagesList
-                                    .length -
-                                1 -
-                                messageIndex];
-                        return PersistChatMessage(message: message);
+                        var idx =
+                            chatState.messagesList.length - 1 - messageIndex;
+                        final message = chatState.messagesList[idx];
+                        return PersistChatMessage(
+                          key: ValueKey(message.id),
+                          index: idx,
+                          prevMessage: chatState.messagesList[idx - 1],
+                          message: message,
+                          theme: theme,
+                        );
                       }
-
-                      // 理论上不会执行到这里，但为了安全可以返回一个空的 Widget
+                      // 第0个消息是root消息，不应该被展示或者使用
                       return const SizedBox.shrink();
                     },
                   ),
                 ),
               ),
-              const ChatPanelInputBox(),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: const ChatPanelInputBox(),
+              ),
             ],
           ),
         ),
@@ -606,8 +613,27 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
   }
 }
 
+///[textInject]: inject text to the input box before it is build
+///
+/// [beforeSubmit]:called before submitting to chatState,which enables you to do some things before start the text generation (eg. switch branch)
+///
+/// [afterSubmit]:called after submitting to chatState,which enables you to do some things after the request is send (eg. close the box)
+///
+/// [cancelCallback]:when provided,a cancel button will be shown eg. use it to close the window
+///
+/// *yet all these stupid functions are simple added to reuse this box in message bubble's modified input*
 class ChatPanelInputBox extends ConsumerStatefulWidget {
-  const ChatPanelInputBox({super.key});
+  const ChatPanelInputBox({
+    super.key,
+    this.textInject,
+    this.beforeSubmit,
+    this.afterSubmit,
+    this.cancelCallback,
+  });
+  final void Function(TextEditingController)? textInject;
+  final void Function()? beforeSubmit;
+  final void Function()? afterSubmit;
+  final void Function()? cancelCallback;
 
   @override
   ConsumerState<ChatPanelInputBox> createState() => _ChatPanelInputBoxState();
@@ -623,6 +649,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   initState() {
     super.initState();
     chatState = ref.read(chatStateProvider);
+    widget.textInject?.call(_textController);
   }
 
   late ChatState chatState;
@@ -711,6 +738,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     for (var a in _attachments) {
       attachedFiles.add(a.$1);
     }
+    widget.beforeSubmit?.call();
     ref.read(chatStateProvider.notifier).sendMessage(text);
     _textController.clear();
     setState(() {
@@ -770,7 +798,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     late Widget childPanel;
     if (isDroppingFiles) {
       childPanel = Container(
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
         color: Colors.white.withAlpha(180),
         child: Stack(
           alignment: Alignment.center,
@@ -950,7 +978,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         });
       },
       child: Container(
-        margin: const EdgeInsets.all(16),
         clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
           color: theme.zeroGradeColor,
@@ -992,7 +1019,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               }
             },
             textInputAction: TextInputAction.send,
-            maxLines: 7,
+            maxLines: 8,
             minLines: 2,
             controller: _textController,
             decoration: InputDecoration.collapsed(
@@ -1015,6 +1042,28 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               tooltip: 'Attach File',
             ),
             const Spacer(),
+            if (widget.cancelCallback != null)
+              Container(
+                height: 35,
+                width: 35,
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                child: Material(
+                  clipBehavior: Clip.hardEdge,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  color: theme.thirdGradeColor,
+                  child: InkWell(
+                    splashColor: Colors.grey,
+                    onTap: widget.cancelCallback,
+                    child: Icon(
+                      Icons.close,
+                      color: theme.primaryColor,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
             SizedBox(
               height: 35,
               width: 35,

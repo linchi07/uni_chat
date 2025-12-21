@@ -222,7 +222,7 @@ class AgentProvider extends StateNotifier<Agent?> {
   Stream<ChatResponse> getStreamingResponse(
     ChatSession session,
     List<ChatMessage> history,
-    ChatMessage usrMessage,
+    ChatMessage? usrMessage,
   ) async* {
     if (state != null) {
       var fm = await formatMessage(history, usrMessage);
@@ -231,7 +231,9 @@ class AgentProvider extends StateNotifier<Agent?> {
         if (rgp.loadedAgentId != state!.id) {
           await rgp.loadKnowledgeBases(state!.memoryBaseIds, session);
         }
-        fm.ragMessages = await rgp.onUserNewMessageCall(usrMessage);
+        if (usrMessage != null) {
+          fm.ragMessages = await rgp.onUserNewMessageCall(usrMessage);
+        }
       }
       yield* state!.model.getStreamingResponse(fm);
     } else {
@@ -253,7 +255,7 @@ class AgentProvider extends StateNotifier<Agent?> {
 
   Future<ModelRequestContent> formatMessage(
     List<ChatMessage> history,
-    ChatMessage usrMessage,
+    ChatMessage? lastMessage,
   ) async {
     if (state == null) {
       throw Exception("Agent not initialized");
@@ -335,7 +337,10 @@ class AgentProvider extends StateNotifier<Agent?> {
       }
     }
     var t1 = await processChatMessage(history, rc.chatHistory);
-    var t2 = await processChatMessage([usrMessage], rc.usrMessage);
+    int t2 = 0;
+    if (lastMessage != null) {
+      t2 = await processChatMessage([lastMessage], rc.usrMessage);
+    }
     rc.modelSpecifics = state!.modelSpecifics;
     var t3 = 0;
     for (var i in rc.uiMessages) {
@@ -369,6 +374,8 @@ class AgentProvider extends StateNotifier<Agent?> {
     int totalTokens = 0;
     for (var i in message) {
       switch (i.sender) {
+        case MessageSender.internal:
+          continue; //skip the internal messages ,mostly message root
         case MessageSender.user:
           // 处理多个附件文件
           if (i.attachedFiles != null && i.attachedFiles!.isNotEmpty) {

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -133,12 +134,11 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   /// 重新执行树搜索方法来构建聊天树
   /// 在每次切换对话变体或者加载对话的时候都应该进行
   /// @param from 从哪里开始，如果是新加载，应该传入root。否则的话从更改节点来。
-  /// 同时，注意，from节点本身**不会被插入到返回的list中，这也避免了插入root这个虚拟的节点**
   List<ChatMessage> formMessageTree(
     ChatMessage from,
     Map<String, ChatMessage> messages,
   ) {
-    List<ChatMessage> msg = [];
+    List<ChatMessage> msg = [from];
     var current = from;
     do {
       var child = messages[current.childIds[current.enabledChild]];
@@ -149,6 +149,24 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       current = child;
     } while (current.childIds.isNotEmpty);
     return msg;
+  }
+
+  void switchBranch(int startingPointIndex, int branchIndex) {
+    if (startingPointIndex >= state.messagesList.length) {
+      return;
+    }
+    var sl = state.messagesList.sublist(0, startingPointIndex);
+    var current = sl.last;
+    current.enabledChild = branchIndex;
+    do {
+      var child = state.messages[current.childIds[current.enabledChild]];
+      if (child == null) {
+        break;
+      }
+      sl.add(child);
+      current = child;
+    } while (current.childIds.isNotEmpty);
+    state = state.copyWith(messagesList: sl);
   }
 
   // --- Public Session Management API ---
@@ -312,6 +330,38 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     return id;
   }
 
+  /// add a branch to the chat
+  ///
+  /// actually this only **creates** one branch.
+  /// messages have to be added using [sendRequest] etc ,or the branch won't be saved
+  void addBranch(int indexInHistory) {
+    var msgList = state.messagesList;
+    if (!state.isReady ||
+        state.session == null ||
+        msgList.isEmpty ||
+        indexInHistory >= msgList.length) {
+      return;
+    }
+    //the first message is the 1 not 0 (zero is the root message)
+    var sl = msgList.sublist(0, indexInHistory);
+    state = state.copyWith(messagesList: sl);
+  }
+
+  void regenerateMessage(int indexInHistory) {
+    var msgList = state.messagesList;
+    if (!state.isReady ||
+        state.session == null ||
+        msgList.isEmpty ||
+        indexInHistory >= msgList.length) {
+      return;
+    }
+    //the first message is the 1 not 0 (zero is the root message)
+    var input = msgList[max(1, indexInHistory - 1)];
+    var sl = msgList.sublist(0, indexInHistory);
+    state = state.copyWith(messagesList: sl, isLoading: true);
+    sendRequest(sl, input);
+  }
+
   Future<void> sendMessage(String text) async {
     if (text.isEmpty && state.uploadedFilesStash.isEmpty) {
       return;
@@ -370,8 +420,13 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     sendRequest(history, userMessage);
   }
 
-  void sendRequest(List<ChatMessage> history, ChatMessage userMessage) async {
-    // 4. Call the API and handle the stream
+  /// request the llm to generate a response
+  ///
+  /// [history] is the history of messages
+  ///
+  /// [lastMessage] is the last (and latest) message (not in the history),on most occasions
+  /// it is the user's input.Yet, it can also be a message that needs to be regenerated (eg. branch new variant)
+  void sendRequest(List<ChatMessage> history, ChatMessage lastMessage) async {
     try {
       var pm = _ref.read(panelManager);
       var dynamicUIQLParser = InlineDynamicParser(
@@ -386,7 +441,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       final stream = agentNotifier.getStreamingResponse(
         state.session!,
         historyContent,
-        userMessage,
+        lastMessage,
       );
       ChatMessage? finalAiMessage;
       state = state.copyWith(isResponding: true);
@@ -407,16 +462,16 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         sender: MessageSender.ai,
         content: state.newContentBuffer.toString(),
         timestamp: DateTime.now(),
-        parent: userMessage.id,
+        parent: lastMessage.id,
         childIds: [],
         enabledChild: 0,
       );
-      userMessage.childIds.add(finalAiMessage.id);
-      userMessage.enabledChild = (userMessage.childIds.length - 1);
+      lastMessage.childIds.add(finalAiMessage.id);
+      lastMessage.enabledChild = (lastMessage.childIds.length - 1);
       _ref
           .read(ragProvider)
           .onAgentRespondCompleteCallback(
-            user: userMessage,
+            user: lastMessage,
             agent: finalAiMessage,
           );
       state.messages[finalAiMessage.id] = finalAiMessage;
@@ -430,7 +485,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       await _dbService.addMessage(
         currentSessionId!,
         finalAiMessage,
-        modifiedParent: userMessage,
+        modifiedParent: lastMessage,
       );
       var l = _ref.read(panelManager).saveToJson();
       if (l != null) {
@@ -440,6 +495,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     } catch (e) {
       state.newContentBuffer.clear();
       state.newContentBuffer.write("<error>${e.toString()}</error>");
+      print(e);
       // well I think it's ugly to leave an error message in the chat history
       // so let's not save it to the base
       /*
