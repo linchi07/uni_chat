@@ -81,11 +81,6 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
           beforeSubmit: () {
             ref.read(chatStateProvider.notifier).addBranch(index);
           },
-          afterSubmit: () {
-            setState(() {
-              isEditMode = false;
-            });
-          },
           cancelCallback: () {
             setState(() {
               isEditMode = false;
@@ -104,11 +99,6 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
           },
           () {
             ref.read(chatStateProvider.notifier).addBranch(index);
-          },
-          () {
-            setState(() {
-              isEditMode = false;
-            });
           },
           () {
             setState(() {
@@ -504,10 +494,9 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
               ? ChatPanelInputBox(
                   textInject: widget.registeredFunctions.$1,
                   beforeSubmit: widget.registeredFunctions.$2,
-                  afterSubmit: widget.registeredFunctions.$3,
                   cancelCallback: () async {
                     await _controller.reverse();
-                    widget.registeredFunctions.$4.call();
+                    widget.registeredFunctions.$3.call();
                   },
                 )
               : widget.originContent,
