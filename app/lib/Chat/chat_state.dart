@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
+import 'package:uni_chat/Chat/chat_panel.dart';
 import 'package:uni_chat/Chat/inline_dynamic_fc_parser.dart';
 import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
@@ -25,7 +26,7 @@ class ChatState {
   ChatSession? session;
   final Map<String, ChatMessage> messages;
   final List<ChatMessage> messagesList;
-  List<ChatFile> uploadedFilesStash;
+  late Map<String, ({UploadStatus status, ChatFile file})> uploadedFilesStash;
   // 临时存储上传的文件，当用户点击发送按钮的时候会被合并到messages里面
   late final ChunkedStringBuffer newContentBuffer;
   late final ValueNotifier<bool> refreshFlag;
@@ -37,13 +38,14 @@ class ChatState {
     ChatSession? session,
     this.messages = const {},
     this.messagesList = const [],
-    this.uploadedFilesStash = const [],
+    Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     ChunkedStringBuffer? newContentBuffer,
     ValueNotifier<bool>? refreshFlag,
     this.isLoading = false,
     this.isResponding = false,
     this.error,
   }) {
+    this.uploadedFilesStash = uploadedFilesStash ?? {};
     this.newContentBuffer = newContentBuffer ?? ChunkedStringBuffer();
     this.refreshFlag = refreshFlag ?? ValueNotifier(false);
     if (session != null) {
@@ -57,7 +59,7 @@ class ChatState {
     Map<String, ChatMessage>? messages,
     List<ChatMessage>? messagesList,
     List<ChatMessage>? roots,
-    List<ChatFile>? uploadedFilesStash,
+    Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     ChunkedStringBuffer? newContentBuffer,
     ValueNotifier<bool>? refreshFlag,
     bool? isLoading,
@@ -84,7 +86,7 @@ class ChatState {
       session: null,
       messages: {},
       messagesList: [],
-      uploadedFilesStash: [],
+      uploadedFilesStash: {},
       isLoading: false,
       error: null,
     );
@@ -115,7 +117,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     Map<String, ChatMessage>? messages,
     List<ChatMessage>? messagesList,
     List<ChatMessage>? roots,
-    List<ChatFile>? uploadedFilesStash,
+    Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     Map<String, ChatFile>? uploadedFiles,
     bool? isLoading,
     String? error,
@@ -274,20 +276,28 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   }
   // --- End Public Session Management API ---
 
-  Future<String?> triggerUploadFile(File file, String id, String name) async {
+  Future<void> triggerUploadFile(File file, String id, String name) async {
     if (agentNotifier.state == null) {
-      return null;
+      return;
     }
     if (ChatFile.textExtensions.contains(p.extension(file.path))) {
-      state = state.copyWith(
-        uploadedFilesStash: [
-          ...state.uploadedFilesStash,
-          ChatFile(name: id, originalName: name, uploadTime: DateTime.now()),
-        ],
+      state.uploadedFilesStash[id] = (
+        file: ChatFile(
+          name: id,
+          originalName: name,
+          uploadTime: DateTime.now(),
+        ),
+        status: UploadStatus.uploaded,
       );
-      return id;
+      state = state.copyWith();
+      return;
     }
     String? r;
+    state.uploadedFilesStash[id] = (
+      file: ChatFile(name: id, originalName: name, uploadTime: DateTime.now()),
+      status: UploadStatus.uploading,
+    );
+    state = state.copyWith(isLoading: true);
     if (ChatFile.imageExtensions.contains(p.extension(file.path)) &&
         agentNotifier.state!.model.modelAbilities.contains(
           ModelAbility.visualUnderStanding,
@@ -300,34 +310,51 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           ChatFile.getMimeType(p.extension(file.path)),
         );
         if (r == null) {
-          return null;
-        }
-        state = state.copyWith(
-          uploadedFilesStash: [
-            ...state.uploadedFilesStash,
-            ChatFile(
+          state.uploadedFilesStash[id] = (
+            file: ChatFile(
               name: id,
-              providerInfo: {
-                agentNotifier.state!.model.providerName: (
-                  r,
-                  DateTime.now().add(const Duration(hours: 47, minutes: 58)),
-                ),
-              },
               originalName: name,
-              uploadTime: DateTime.now(), //其实是两天，但是我怕文件上传有延迟，所以缩短一点
+              uploadTime: DateTime.now(),
             ),
-          ],
+            status: UploadStatus.failed,
+          );
+          state = state.copyWith();
+          return;
+        }
+        state.uploadedFilesStash[id] = (
+          file: ChatFile(
+            name: id,
+            providerInfo: {
+              agentNotifier.state!.model.providerName: (
+                r,
+                DateTime.now().add(const Duration(hours: 47, minutes: 58)),
+              ),
+            },
+            originalName: name,
+            uploadTime: DateTime.now(), //其实是两天，但是我怕文件上传有延迟，所以缩短一点
+          ),
+          status: UploadStatus.uploaded,
         );
+        state = state.copyWith(isLoading: false);
       } else {
-        state = state.copyWith(
-          uploadedFilesStash: [
-            ...state.uploadedFilesStash,
-            ChatFile(name: id, originalName: name, uploadTime: DateTime.now()),
-          ],
+        state.uploadedFilesStash[id] = (
+          file: ChatFile(
+            name: id,
+            originalName: name,
+            uploadTime: DateTime.now(),
+          ),
+          status: UploadStatus.uploaded,
         );
+        state = state.copyWith(isLoading: false);
+        return;
       }
     }
-    return id;
+    state.uploadedFilesStash[id] = (
+      file: ChatFile(name: id, originalName: name, uploadTime: DateTime.now()),
+      status: UploadStatus.failed,
+    );
+    state = state.copyWith(isLoading: false);
+    return;
   }
 
   /// add a branch to the chat
@@ -370,13 +397,26 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       await createNewSession();
     }
     var history = state.messagesList;
+    var attach = <ChatFile>[];
+    for (var v in state.uploadedFilesStash.values) {
+      if (v.status == UploadStatus.uploaded) {
+        attach.add(
+          ChatFile(
+            name: v.file.name,
+            originalName: v.file.originalName,
+            uploadTime: v.file.uploadTime,
+            providerInfo: v.file.providerInfo,
+          ),
+        );
+      }
+    }
     // 2. Add user message to list
     final userMessage = ChatMessage(
       id: _uuid.v7(),
       messageId: _uuid.v7(),
       sender: MessageSender.user,
       content: text,
-      attachedFiles: state.uploadedFilesStash, // 转换为附件文件对象列表
+      attachedFiles: attach, // 转换为附件文件对象列表
       timestamp: DateTime.now(),
       parent: history.lastOrNull?.id,
       childIds: [],
@@ -391,7 +431,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     state.messages[userMessage.id] = userMessage;
     state = state.copyWith(
       isLoading: true,
-      uploadedFilesStash: [],
+      uploadedFilesStash: {},
       error: null,
       messagesList: [...history, userMessage],
     );

@@ -1178,6 +1178,13 @@
             </list>
           </value>
         </entry>
+        <entry key="super_sliver_list">
+          <value>
+            <list>
+              <option value="$USER_HOME$/.pub-cache/hosted/pub.dev/super_sliver_list-0.4.1/lib" />
+            </list>
+          </value>
+        </entry>
         <entry key="synchronized">
           <value>
             <list>
@@ -1631,6 +1638,7 @@
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/super_clipboard-0.9.1/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/super_drag_and_drop-0.9.1/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/super_native_extensions-0.9.1/lib" />
+      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/super_sliver_list-0.4.1/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/synchronized-3.4.0/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/term_glyph-1.2.2/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/test_api-0.7.6/lib" />

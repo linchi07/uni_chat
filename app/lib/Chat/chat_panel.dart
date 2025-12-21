@@ -6,7 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/utils/database_service.dart';
@@ -556,9 +558,12 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
             children: [
               Expanded(
                 child: SelectionArea(
-                  selectionControls: MaterialTextSelectionControls(),
-                  child: ListView.builder(
-                    cacheExtent: 5000,
+                  //this listview is said to can reduce jitter and improve large lists
+                  //let's just hope it works
+                  // or I might have to write my own scroll logic
+                  //that's a lot of work
+                  // unfortunately after testing it seems that it doesn't work aswell...
+                  child: SuperListView.builder(
                     controller: _scrollController,
                     reverse: true, // 最新消息在底部
                     itemCount: chatState.isResponding
@@ -653,12 +658,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   }
 
   late ChatState chatState;
-
-  // Use a list to support multiple attachments in the future
-  final List<(String, UploadStatus)> _attachments = []; // 改为存储文件ID
   final Uuid _uuid = const Uuid();
-
-  bool _isUploading = false;
 
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
@@ -672,10 +672,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           final actualFile = File(file.path!);
           final previewId = _uuid.v7();
           // 添加预览ID到附件列表
-          setState(() {
-            _isUploading = true;
-            _attachments.add((previewId, UploadStatus.uploading));
-          });
           final appDocDir = await getApplicationDocumentsDirectory();
           final sessionFilesDir = Directory(
             '${appDocDir.path}/chat/session_files',
@@ -687,43 +683,16 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           // 使用UUID生成新的文件名
           final newFileName = previewId + p.extension(actualFile.path);
           final newFilePath = '${sessionFilesDir.path}/$newFileName';
-
           // 拷贝文件到新位置
           final copiedFile = await actualFile.copy(newFilePath);
-
           // Trigger the upload via the notifier
-          final uploadedFileId = await ref
+          await ref
               .read(chatStateProvider.notifier)
               .triggerUploadFile(
                 copiedFile,
                 previewId,
                 p.basename(actualFile.path),
               );
-
-          // 注意：这里不再更新附件状态，因为文件信息现在存储在ChatState中
-          if (uploadedFileId == null) {
-            // 上传失败，从附件列表中移除
-            setState(() {
-              _isUploading = false;
-              _attachments[_attachments.indexWhere(
-                (id) => id.$1 == previewId,
-              )] = (
-                previewId,
-                UploadStatus.failed,
-              );
-            });
-          } else {
-            // 更新附件状态为上传成功
-            setState(() {
-              _isUploading = false;
-              _attachments[_attachments.indexWhere(
-                (id) => id.$1 == previewId,
-              )] = (
-                previewId,
-                UploadStatus.uploaded,
-              );
-            });
-          }
         }
       }
     }
@@ -731,27 +700,15 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
 
   void _sendMessage() {
     final text = _textController.text.trim();
-
-    if (text.isEmpty && _attachments.isEmpty) return;
-    if (_isUploading) return; // Prevent sending while an upload is in progress
-    List<String> attachedFiles = [];
-    for (var a in _attachments) {
-      attachedFiles.add(a.$1);
-    }
+    if (text.isEmpty) return;
     widget.beforeSubmit?.call();
     ref.read(chatStateProvider.notifier).sendMessage(text);
     _textController.clear();
-    setState(() {
-      _attachments.clear();
-    });
   }
 
   Future<void> _readAndAttachFile(dynamic f, String fileExtension) async {
-    var previewId = _uuid.v4();
-    setState(() {
-      _isUploading = true;
-      _attachments.add((previewId, UploadStatus.uploading));
-    });
+    var previewId = _uuid.v7();
+    var fname = f.fileName ?? DateTime.now().toIso8601String() + fileExtension;
     var path = await PathProvider.getPath(
       "chat/session_files/$previewId$fileExtension",
     );
@@ -759,42 +716,28 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     final sink = file.openWrite();
     await f.getStream().forEach(sink.add);
     await sink.close();
-    final uploadedFileId = await ref
+    await ref
         .read(chatStateProvider.notifier)
-        .triggerUploadFile(
-          file,
-          previewId,
-          f.fileName ?? DateTime.now().toIso8601String() + fileExtension,
-        );
-    // 注意：这里不再更新附件状态，因为文件信息现在存储在ChatState中
-    if (uploadedFileId == null) {
-      // 上传失败，从附件列表中移除
-      setState(() {
-        _isUploading = false;
-        var id = _attachments.indexWhere((id) => id.$1 == previewId);
-        if (id != -1) {
-          _attachments[id] = (previewId, UploadStatus.failed);
-        }
-      });
-    } else {
-      // 更新附件状态为上传成功
-      setState(() {
-        _isUploading = false;
-        var id = _attachments.indexWhere((id) => id.$1 == previewId);
-        if (id != -1) {
-          _attachments[id] = (previewId, UploadStatus.uploaded);
-        }
-      });
-    }
+        .triggerUploadFile(file, previewId, fname);
   }
 
+  int _checkedTimes = 0;
   @override
   Widget build(BuildContext context) {
     chatState = ref.watch(chatStateProvider);
     final globalLoading = chatState.isLoading;
+    if (!chatState.isReady && _checkedTimes < 5) {
+      // wait some time before checking if ready (give the state sometime to prepare etc. load model), only check once
+      // after testing , 70ms seems to be enough (M4 MBP)
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await Future.delayed(const Duration(milliseconds: 70), () async {
+          ref.read(chatStateProvider.notifier).checkIfReady();
+          _checkedTimes++;
+        });
+      });
+    }
     theme = ref.watch(themeProvider);
-    final isSendButtonLoading =
-        _isUploading || (globalLoading && _attachments.isEmpty);
+    final isSendButtonLoading = (globalLoading);
     late Widget childPanel;
     if (isDroppingFiles) {
       childPanel = Container(
@@ -947,17 +890,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               return;
             },
           );
-        } else if (item.canProvide(Formats.plainTextFile)) {
-          item.dataReader?.getFile(
-            Formats.plainTextFile,
-            (f) async {
-              await _readAndAttachFile(f, p.extension(f.fileName ?? ".txt"));
-            },
-            onError: (error) {
-              return;
-            },
-          );
-          //plaintext必须放在最后，不然markdown的格式可能会变成text，很奇葩的问题
         } else if (item.canProvide(Formats.plainText)) {
           item.dataReader?.getValue<String>(
             Formats.plainText,
@@ -965,6 +897,16 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               if (value != null) {
                 _textController.text += value;
               }
+            },
+            onError: (error) {
+              return;
+            },
+          );
+        } else if (item.canProvide(Formats.plainTextFile)) {
+          item.dataReader?.getFile(
+            Formats.plainTextFile,
+            (f) async {
+              await _readAndAttachFile(f, p.extension(f.fileName ?? ".txt"));
             },
             onError: (error) {
               return;
@@ -988,8 +930,153 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     );
   }
 
+  Future<void> readClipboard(SystemClipboard clipboard) async {
+    final reader = await clipboard.read();
+    //TMD 这个包真的逆天了，他的drop reader和clipboard reader 明明底层是一个东西，但是我需要写两遍愚蠢的代码！
+    //啊没错，这个包就不能提供一个获取拓展名的方法，非要这样搞
+    //而且他就不能提供一个file的类型的返回值，非要我一个个去读取。。。。
+    //TODO：把这个傻逼包给换掉->这玩意tm无法区分纯文本文件（txt）和文本，不论如何设置，要不然会把txt粘贴成纯文本，要不然就会把纯文本粘贴成文件。**垃圾！**
+    if (reader.canProvide(Formats.jpeg)) {
+      reader.getFile(
+        Formats.jpeg,
+        (f) async {
+          await _readAndAttachFile(f, ".jpeg");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.png)) {
+      reader.getFile(
+        Formats.png,
+        (f) async {
+          await _readAndAttachFile(f, ".png");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.pdf)) {
+      reader.getFile(
+        Formats.pdf,
+        (f) async {
+          await _readAndAttachFile(f, ".pdf");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.json)) {
+      reader.getFile(
+        Formats.json,
+        (f) async {
+          await _readAndAttachFile(f, ".json");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.csv)) {
+      reader.getFile(
+        Formats.csv,
+        (f) async {
+          await _readAndAttachFile(f, ".csv");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.htmlFile)) {
+      reader.getFile(
+        Formats.htmlFile,
+        (f) async {
+          await _readAndAttachFile(f, ".html");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.md)) {
+      reader.getFile(
+        Formats.md,
+        (f) async {
+          await _readAndAttachFile(f, ".md");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else
+    //但愿他的意思是typescript，不是什么奇葩
+    if (reader.canProvide(Formats.ts)) {
+      reader.getFile(
+        Formats.ts,
+        (f) async {
+          await _readAndAttachFile(f, ".ts");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.plainText)) {
+      reader.getValue<String>(
+        Formats.plainText,
+        (value) {
+          if (value != null) {
+            _textController.text += value;
+          }
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.plainTextFile)) {
+      reader.getFile(
+        Formats.plainTextFile,
+        (f) async {
+          await _readAndAttachFile(f, p.extension(f.fileName ?? ".txt"));
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    }
+  }
+
   late final _focusNode = FocusNode(
     onKeyEvent: (FocusNode node, KeyEvent evt) {
+      if (HardwareKeyboard.instance.isMetaPressed && evt.character == 'v') {
+        if (evt is KeyDownEvent) {
+          final clipboard = SystemClipboard.instance;
+          if (clipboard == null) {
+            return KeyEventResult
+                .ignored; // Clipboard API is not supported on this platform.
+          }
+          readClipboard(clipboard);
+          // this is a synchronous operation, no await future
+          return KeyEventResult.handled;
+        }
+      }
       if (HardwareKeyboard.instance.isShiftPressed &&
           evt.logicalKey == LogicalKeyboardKey.enter) {
         if (evt is KeyDownEvent) {
@@ -1008,7 +1095,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_attachments.isNotEmpty) _buildAttachmentPreview(),
+        if (chatState.uploadedFilesStash.isNotEmpty) _buildAttachmentPreview(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2),
           child: TextField(
@@ -1113,24 +1200,18 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   }
 
   Widget _buildAttachmentPreview() {
-    final chatState = ref.watch(chatStateProvider);
-
+    var val = chatState.uploadedFilesStash.values.toList();
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0, left: 10, right: 10),
       child: SizedBox(
         height: 60,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          itemCount: _attachments.length,
+          itemCount: val.length,
           itemBuilder: (context, index) {
-            final chatFile = chatState.uploadedFilesStash.firstWhere(
-              (e) => e.name == _attachments[index].$1,
-            );
-            // the name of the file is the id (String $1),
-            // the original file name is stored in the original_name var of the object
             return _buildAttachmentPreviewItem(
-              chatFile,
-              _attachments[index].$2,
+              val[index].file,
+              val[index].status,
               index,
             );
           },
@@ -1277,14 +1358,11 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               child: const Icon(Icons.cancel, color: Colors.black54, size: 16),
               onTap: () {
                 setState(() {
-                  _attachments.removeAt(index);
                   if (chatFile != null) {
                     ref
                         .read(chatStateProvider)
                         .uploadedFilesStash
-                        .removeWhere(
-                          (element) => element.name == chatFile.name,
-                        );
+                        .remove(chatFile.name);
                   }
                 });
               },
