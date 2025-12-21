@@ -285,11 +285,14 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
       ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
-        child: Text(
-          ///actually , since this is actually a tree.
-          ///we switch the child of child ids list in the prev message,not the current message.
-          '${prevMessage.enabledChild + 1} / ${prevMessage.childIds.length}',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        child: SelectionContainer.disabled(
+          // this is to prevent the text from being selectable
+          child: Text(
+            ///actually , since this is actually a tree.
+            ///we switch the child of child ids list in the prev message,not the current message.
+            '${prevMessage.enabledChild + 1} / ${prevMessage.childIds.length}',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
       ),
       SizedBox(
