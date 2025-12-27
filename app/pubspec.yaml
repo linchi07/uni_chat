@@ -55,6 +55,7 @@ dependencies:
   webview_all: ^0.5.2
   super_clipboard: ^0.9.1
   super_sliver_list: ^0.4.1
+  scrollview_observer: ^1.26.2
   
 
 dev_dependencies:

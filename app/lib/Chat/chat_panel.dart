@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -6,10 +7,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:scrollview_observer/scrollview_observer.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
-import 'package:super_sliver_list/super_sliver_list.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
+import 'package:uni_chat/Agent/chat_sidebar.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
@@ -527,6 +529,8 @@ class ChatPanel extends ConsumerStatefulWidget {
 
 class _ChatPanelState extends ConsumerState<ChatPanel> {
   late ScrollController _scrollController;
+  late final ListObserverController _listObserverController =
+      ListObserverController();
   bool _isAutoScroll = true;
   @override
   void initState() {
@@ -541,8 +545,30 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
         _isAutoScroll = true;
       }
     });
+    chatState = ref.read(chatStateProvider);
+    _listObserverController.controller = _scrollController;
+    indexChangeEvent.addListener(() {
+      if (indexChangeEvent.value != null) {
+        if (indexChangeEvent.value == chatState.messagesList.length - 1) {
+          // the indexed based scroll is faulty when scrolling to the bottom , so we manually handle this
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInCubic,
+          );
+          return;
+        }
+        _listObserverController.animateTo(
+          index: indexChangeEvent.value!,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInCubic,
+        );
+        indexChangeEvent.value = null;
+      }
+    });
   }
 
+  late ChatState chatState;
   @override
   void dispose() {
     _scrollController.dispose();
@@ -558,9 +584,16 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
   }
 
   ChatSession? session;
+
+  ValueNotifier<int> currentActiveIndex = ValueNotifier(0);
+  ValueNotifier<({ChatMessage? message, Offset? pointerLoc})> messageInfo =
+      ValueNotifier((message: null, pointerLoc: null));
+  // acts as a bridge to connect sidebar and bar display to display previews
+  ValueNotifier<int?> indexChangeEvent = ValueNotifier(null);
   @override
   Widget build(BuildContext context) {
-    var chatState = ref.watch(chatStateProvider);
+    chatState = ref.watch(chatStateProvider);
+    var screenSize = MediaQuery.of(context).size;
     chatState.refreshFlag.addListener(() {
       if (_isAutoScroll) {
         _scrollController.position.moveTo(
@@ -584,63 +617,102 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
         : chatState.messages.length;
     return Scaffold(
       backgroundColor: theme.secondGradeColor,
-      body: Center(
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width.clamp(0, 1000),
-          child: Column(
+      //add the scrollbar outside the container
+      body: Scrollbar(
+        controller: _scrollController,
+        child: ScrollConfiguration(
+          //and disable the default scrollbar
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: Stack(
+            alignment: Alignment.center,
+            fit: StackFit.expand,
             children: [
-              Expanded(
-                child: SelectionArea(
-                  //this listview is said to can reduce jitter and improve large lists
-                  //let's just hope it works
-                  // or I might have to write my own scroll logic
-                  //that's a lot of work
-                  // unfortunately after testing it seems that it makes little difference ...
-                  child: SuperListView.builder(
-                    controller: _scrollController,
-                    itemCount: itemCount,
-                    itemBuilder: (context, index) {
-                      if (index >= 1 &&
-                          index <= chatState.messagesList.length - 1) {
-                        var message = chatState.messagesList[index];
-                        return PersistChatMessage(
-                          key: ValueKey(message.id),
-                          index: index,
-                          prevMessage: chatState.messagesList[index - 1],
-                          message: message,
-                          theme: theme,
-                        );
-                      }
-                      if (index == 0) {
-                        // 第0个消息是root消息，不应该被展示或者使用
-                        return const SizedBox.shrink();
-                      }
-                      if (chatState.isResponding && index == itemCount - 1) {
-                        return ChatMessageDynamicStream(
-                          contentBuffer: chatState.newContentBuffer,
-                          refreshFlag: chatState.refreshFlag,
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
+              Positioned(
+                height: min(
+                  min(
+                        ChatSidebar.getHeight(chatState.messagesList.length),
+                        800,
+                      ) +
+                      50,
+                  screenSize.height * 0.8,
+                ),
+                right: 10,
+                width: 100,
+                child: ChatSidebar(
+                  selectedIndex: indexChangeEvent,
+                  currentActiveIndex: currentActiveIndex,
+                  msgListener: messageInfo,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: ChatPanelInputBox(
-                  afterSubmit: () {
-                    if (_scrollController.offset <
-                        _scrollController.position.maxScrollExtent) {
-                      _scrollController.animateTo(
-                        _scrollController.position.maxScrollExtent,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInSine,
-                      );
-                    }
-                  },
+              Positioned(
+                top: 0,
+                bottom: 0,
+                width: screenSize.width.clamp(0, 1000),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SelectionArea(
+                        //还是国人做的包好用。。
+                        child: ListViewObserver(
+                          controller: _listObserverController,
+                          // watch the index changes and update the value listener (watched by the sidebar to update the active index)
+                          onObserve: (result) {
+                            currentActiveIndex.value =
+                                result.firstChild?.index ?? 0;
+                          },
+                          child: ListView.builder(
+                            cacheExtent: 5000,
+                            controller: _scrollController,
+                            itemCount: itemCount,
+                            itemBuilder: (context, index) {
+                              if (index >= 1 &&
+                                  index <= chatState.messagesList.length - 1) {
+                                var message = chatState.messagesList[index];
+                                return PersistChatMessage(
+                                  key: ValueKey(message.id),
+                                  index: index,
+                                  prevMessage:
+                                      chatState.messagesList[index - 1],
+                                  message: message,
+                                  theme: theme,
+                                );
+                              }
+                              if (index == 0) {
+                                // 第0个消息是root消息，不应该被展示或者使用
+                                return const SizedBox.shrink();
+                              }
+                              if (chatState.isResponding &&
+                                  index == itemCount - 1) {
+                                return ChatMessageDynamicStream(
+                                  contentBuffer: chatState.newContentBuffer,
+                                  refreshFlag: chatState.refreshFlag,
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: ChatPanelInputBox(
+                        afterSubmit: () {
+                          if (_scrollController.offset <
+                              _scrollController.position.maxScrollExtent) {
+                            _scrollController.animateTo(
+                              _scrollController.position.maxScrollExtent,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInSine,
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              BarChatMessagePreview(theme: theme, messageInfo: messageInfo),
             ],
           ),
         ),
