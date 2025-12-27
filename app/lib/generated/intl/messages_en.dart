@@ -527,6 +527,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "system_prompt_tokens": m13,
     "temperature": MessageLookupByLibrary.simpleMessage("Temperature"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat"),
+    "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
+      "Toggle session selector",
+    ),
     "token_available_for_chat": m14,
     "top_p": MessageLookupByLibrary.simpleMessage("Top P"),
     "total_context_lim": m15,

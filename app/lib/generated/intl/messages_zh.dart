@@ -379,6 +379,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "system_prompt_tokens": m13,
     "temperature": MessageLookupByLibrary.simpleMessage("温度"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat 通聊"),
+    "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
+      "打开会话选择器菜单",
+    ),
     "token_available_for_chat": m14,
     "top_p": MessageLookupByLibrary.simpleMessage("Top P"),
     "total_context_lim": m15,

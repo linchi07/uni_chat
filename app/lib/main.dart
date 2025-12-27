@@ -223,6 +223,20 @@ class _MacOSMenuBarState extends ConsumerState<MacOSMenuBar> {
                     ref.read(chatStateProvider.notifier).clearSession();
                   },
                 ),
+                PlatformMenuItem(
+                  label: S.of(context).toggle_session_selector,
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyF,
+                    meta: true,
+                  ),
+                  onSelected: () {
+                    if (chatBannerKey.currentState?.overlayEntry == null) {
+                      chatBannerKey.currentState?.showSessionSelector();
+                    } else {
+                      chatBannerKey.currentState?.hide();
+                    }
+                  },
+                ),
               ],
             ),
           ],
@@ -275,7 +289,7 @@ class MainContState extends ConsumerState<MainCont> {
   Widget? _bannerWidget() {
     switch (page) {
       case Pages.chat:
-        return ChatBannerWidget();
+        return ChatBannerWidget(key: chatBannerKey);
       case Pages.agent:
         return null;
       case Pages.Rag:

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
@@ -22,11 +23,14 @@ class ChatBannerWidget extends ConsumerStatefulWidget {
   const ChatBannerWidget({super.key});
 
   @override
-  ConsumerState<ChatBannerWidget> createState() => _ChatBannerWidgetState();
+  ConsumerState<ChatBannerWidget> createState() => ChatBannerWidgetState();
 }
 
-class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
-  OverlayEntry? _overlayEntry;
+final GlobalKey<ChatBannerWidgetState> chatBannerKey = GlobalKey();
+//to toggle the overlay at any times
+
+class ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
+  OverlayEntry? overlayEntry;
   final GlobalKey<_SessionSelectorOverlayState> _overlayKey = GlobalKey();
 
   void showSessionSelector() {
@@ -36,10 +40,10 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
     final size = rb.size;
     final screenSize = MediaQuery.of(context).size;
 
-    _overlayEntry = OverlayEntry(
+    overlayEntry = OverlayEntry(
       builder: (context) => Stack(
         children: [
-          ModalBarrier(color: Colors.transparent, onDismiss: _hide),
+          ModalBarrier(color: Colors.transparent, onDismiss: hide),
           // **修改点**: 不再使用 Positioned 包装，直接放置 Overlay 组件
           // 它将自己负责自己的定位
           SessionSelectorOverlayContainer(
@@ -47,19 +51,19 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
             initialSize: size,
             initialPosition: pos,
             initialScreenSize: screenSize,
-            onClose: _hide,
+            onClose: hide,
           ),
         ],
       ),
     );
-    overlay.insert(_overlayEntry!);
+    overlay.insert(overlayEntry!);
   }
 
-  void _hide() {
+  void hide() {
     _overlayKey.currentState?.reverseAnimation().then((_) {
-      if (_overlayEntry != null) {
-        _overlayEntry?.remove();
-        _overlayEntry = null;
+      if (overlayEntry != null) {
+        overlayEntry?.remove();
+        overlayEntry = null;
       }
     });
   }
@@ -77,10 +81,10 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
           children: [
             StdButton(
               onPressed: () {
-                if (_overlayEntry == null) {
+                if (overlayEntry == null) {
                   showSessionSelector();
                 } else {
-                  _hide();
+                  hide();
                 }
               },
               padding: const EdgeInsets.all(6),
@@ -101,10 +105,10 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
                 clipBehavior: Clip.hardEdge,
                 child: InkWell(
                   onTap: () {
-                    if (_overlayEntry == null) {
+                    if (overlayEntry == null) {
                       showSessionSelector();
                     } else {
-                      _hide();
+                      hide();
                     }
                   },
                   child: Padding(
@@ -332,6 +336,8 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   late ThemeConfig theme;
   double lastScrollOffset = 0;
 
+  late final FocusNode
+  _inputboxFoucusNode; // for auto dismiss on escape key pressed
   @override
   void initState() {
     super.initState();
@@ -341,6 +347,20 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
       if (_sessionScrollController.position.isScrollingNotifier.value) {
         lastScrollOffset = _sessionScrollController.offset;
       }
+    });
+    _inputboxFoucusNode = FocusNode(
+      onKeyEvent: (node, event) {
+        if (event.logicalKey == LogicalKeyboardKey.escape) {
+          node.unfocus();
+          widget.onClose();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _inputboxFoucusNode.requestFocus();
+      //auto  focus on menu open
     });
   }
 
@@ -418,6 +438,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
       children: [
         Expanded(
           child: TextField(
+            focusNode: _inputboxFoucusNode,
             controller: _searchController,
             decoration: InputDecoration(
               hintText: S.of(context).search_any_chat_message,

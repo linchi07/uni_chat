@@ -252,6 +252,7 @@
   "chat": "Chat",
   "quit": "Quit",
   "new_chat_session": "New chat session",
+  "toggle_session_selector": "Toggle session selector",
   "help": "Help",
   "check_manual": "Check manual",
   "language_switch_restart_note": "Some changes may require a restart to take effect.",

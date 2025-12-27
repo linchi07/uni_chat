@@ -1575,6 +1575,16 @@ class S {
     );
   }
 
+  /// `Toggle session selector`
+  String get toggle_session_selector {
+    return Intl.message(
+      'Toggle session selector',
+      name: 'toggle_session_selector',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Help`
   String get help {
     return Intl.message('Help', name: 'help', desc: '', args: []);
