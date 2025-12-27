@@ -186,7 +186,10 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
     ref.listen(chatStateProvider, (prev, next) {
       if (next.messagesList.length != targetLineLength.length) {
         targetLineLength = List.generate(
-          next.messagesList.length - 1,
+          max(
+            0,
+            next.messagesList.length - 1,
+          ), // sometimes the list will give a -1 ,so we need to avoid it
           (index) => LENGTH,
         );
         calcTargetLineLength(activeIndex);

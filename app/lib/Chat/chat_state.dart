@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -10,6 +11,7 @@ import 'package:uni_chat/Chat/chat_panel.dart';
 import 'package:uni_chat/Chat/inline_dynamic_fc_parser.dart';
 import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
+import 'package:uni_chat/promps.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uuid/uuid.dart';
@@ -394,7 +396,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       return;
     }
     if (state.session == null) {
-      await createNewSession();
+      await createNewSession(title: 'New Chat');
     }
     var history = state.messagesList;
     var attach = <ChatFile>[];
@@ -531,6 +533,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       if (l != null) {
         await _dbService.writeLayout(state.session!.id, l);
       }
+      if (state.session!.name == "New Chat") {
+        generateTitle();
+      }
       // --- End Database Integration ---
     } catch (e) {
       state.newContentBuffer.clear();
@@ -558,6 +563,50 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         await _dbService.writeLayout(state.session!.id, l);
       }
       */
+    } finally {
+      state = state.copyWith(isLoading: false, isResponding: false);
+    }
+  }
+
+  Future<void> generateTitle() async {
+    if (state.session == null) {
+      return;
+    }
+    try {
+      state = state.copyWith(isLoading: true, isResponding: true);
+      StringBuffer sb = StringBuffer();
+      // use the to string method in the chat message class to generate simple text
+      for (var m in state.messagesList) {
+        var s = m.toString();
+        if (s.isNotEmpty && s != "") {
+          sb.write(s);
+          sb.write("\n");
+        }
+      }
+      // 构造一个空的message 来临时使用即可
+      ChatMessage cm = ChatMessage(
+        id: "",
+        messageId: "",
+        sender: MessageSender.user,
+        content: Prompts.generateTitle(sb.toString()),
+        timestamp: DateTime.now(),
+        parent: null,
+        childIds: [],
+        enabledChild: 0,
+      );
+      final stream = agentNotifier.getStreamingResponse(state.session!, [], cm);
+      sb.clear();
+      await for (final chunk in stream) {
+        sb.write(chunk.content);
+      }
+      var title = jsonDecode(sb.toString())["title"];
+      if (title == null) {
+        return;
+      }
+      state.session!.name = title;
+      await _dbService.updateSessionTitle(state.session!.id, title);
+    } catch (e) {
+      print(e);
     } finally {
       state = state.copyWith(isLoading: false, isResponding: false);
     }

@@ -174,6 +174,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "front_page_hintLine_char2": MessageLookupByLibrary.simpleMessage(" 和 "),
     "front_page_hintLine_char3": MessageLookupByLibrary.simpleMessage(" 开始聊天"),
     "general_settings": MessageLookupByLibrary.simpleMessage("通用设置"),
+    "generate_title": MessageLookupByLibrary.simpleMessage("生成标题"),
+    "generate_title_hint": MessageLookupByLibrary.simpleMessage("重新生成会覆盖旧标题"),
     "give_up_edit_confirm": MessageLookupByLibrary.simpleMessage("确定放弃编辑吗？"),
     "go_back": MessageLookupByLibrary.simpleMessage("返回"),
     "google_compatible_api": MessageLookupByLibrary.simpleMessage("谷歌兼容"),

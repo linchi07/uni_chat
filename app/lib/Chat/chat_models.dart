@@ -112,6 +112,18 @@ class ChatMessage {
       'enabledChild': enabledChild,
     };
   }
+
+  /// returns a string that only presents the chat message's [sender] and [content]
+  ///
+  /// note that attachments will **not** be included in the string
+  ///
+  /// for a chat message with sender 'user' and content 'hello', the string will be
+  /// ```
+  /// 'user: hello'
+  @override
+  String toString() {
+    return '$sender: $content';
+  }
 }
 
 enum ChatMessageType { text, image, pdf, base64Image, base64pdf }

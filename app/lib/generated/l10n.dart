@@ -95,6 +95,26 @@ class S {
     return Intl.message('no message', name: 'no_message', desc: '', args: []);
   }
 
+  /// `Generate title`
+  String get generate_title {
+    return Intl.message(
+      'Generate title',
+      name: 'generate_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Generate a title for this chat will overwrite the previous one`
+  String get generate_title_hint {
+    return Intl.message(
+      'Generate a title for this chat will overwrite the previous one',
+      name: 'generate_title_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Rename`
   String get rename {
     return Intl.message('Rename', name: 'rename', desc: '', args: []);

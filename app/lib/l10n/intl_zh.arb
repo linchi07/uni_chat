@@ -4,6 +4,8 @@
   "no_history": "暂无对话历史",
   "hover_to_see_session": "鼠标悬停来预览会话",
   "no_message": "没有消息",
+  "generate_title": "生成标题",
+  "generate_title_hint":"重新生成会覆盖旧标题",
   "rename": "重命名",
   "delete": "删除",
   "confirm_delete_session": "确定要删除此对话记录吗？",
