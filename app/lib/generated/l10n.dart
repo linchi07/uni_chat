@@ -28,10 +28,9 @@ class S {
   static const AppLocalizationDelegate delegate = AppLocalizationDelegate();
 
   static Future<S> load(Locale locale) {
-    final name =
-        (locale.countryCode?.isEmpty ?? false)
-            ? locale.languageCode
-            : locale.toString();
+    final name = (locale.countryCode?.isEmpty ?? false)
+        ? locale.languageCode
+        : locale.toString();
     final localeName = Intl.canonicalizedLocale(name);
     return initializeMessages(localeName).then((_) {
       Intl.defaultLocale = localeName;
@@ -93,6 +92,26 @@ class S {
   /// `no message`
   String get no_message {
     return Intl.message('no message', name: 'no_message', desc: '', args: []);
+  }
+
+  /// `Generate title`
+  String get generate_title {
+    return Intl.message(
+      'Generate title',
+      name: 'generate_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Generate a title for this chat will overwrite the previous one`
+  String get generate_title_hint {
+    return Intl.message(
+      'Generate a title for this chat will overwrite the previous one',
+      name: 'generate_title_hint',
+      desc: '',
+      args: [],
+    );
   }
 
   /// `Rename`
@@ -1570,6 +1589,16 @@ class S {
     return Intl.message(
       'New chat session',
       name: 'new_chat_session',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Toggle session selector`
+  String get toggle_session_selector {
+    return Intl.message(
+      'Toggle session selector',
+      name: 'toggle_session_selector',
       desc: '',
       args: [],
     );

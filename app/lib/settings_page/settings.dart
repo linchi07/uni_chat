@@ -128,12 +128,12 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
 
   // 标记当前是否为最大化状态
   bool _isMaximized = false;
+  bool _forceMaximize = false;
   int _selectedIndex = 0; // 新增：追踪当前选中的索引，默认为0
 
   @override
   void initState() {
     super.initState();
-
     // 初始化动画控制器和动画
     _animationController = AnimationController(
       vsync: this,
@@ -215,6 +215,13 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
       ),
     ];
     final screenSize = MediaQuery.of(context).size;
+    // 判断屏幕尺寸，如果是小屏幕，则强制为最大化
+    if (screenSize.height <= 800 || screenSize.width <= 600) {
+      _isMaximized = true;
+      _forceMaximize = true;
+    } else {
+      _forceMaximize = false;
+    }
     theme = ref.watch(themeProvider);
     // 根据是否最大化，计算菜单的目标尺寸
     final double targetWidth = _isMaximized
@@ -259,15 +266,16 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        IconButton(
-                          tooltip: _isMaximized ? '还原' : '最大化',
-                          icon: Icon(
-                            _isMaximized
-                                ? Icons.close_fullscreen
-                                : Icons.open_in_full_sharp,
+                        if (!_forceMaximize)
+                          IconButton(
+                            tooltip: _isMaximized ? '还原' : '最大化',
+                            icon: Icon(
+                              _isMaximized
+                                  ? Icons.close_fullscreen
+                                  : Icons.open_in_full_sharp,
+                            ),
+                            onPressed: _toggleMaximize,
                           ),
-                          onPressed: _toggleMaximize,
-                        ),
                         IconButton(
                           tooltip: '关闭',
                           icon: const Icon(Icons.close),

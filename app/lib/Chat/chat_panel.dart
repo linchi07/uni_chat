@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -6,8 +7,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:scrollview_observer/scrollview_observer.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
+import 'package:uni_chat/Agent/chat_sidebar.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
@@ -507,7 +511,10 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
             const SizedBox(height: 8),
             SizedBox(
               width: MediaQuery.of(context).size.width.clamp(0, 800),
-              child: ChatPanelInputBox(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ChatPanelInputBox(),
+              ),
             ),
           ],
         ),
@@ -524,75 +531,206 @@ class ChatPanel extends ConsumerStatefulWidget {
 }
 
 class _ChatPanelState extends ConsumerState<ChatPanel> {
-  late final ScrollController _scrollController;
-
+  late ScrollController _scrollController;
+  late final ListObserverController _listObserverController =
+      ListObserverController();
+  bool _isAutoScroll = true;
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _scrollController.addListener(() {
+      // 如果滚回到底部，重新开启自动吸底
+      if ((_scrollController.offset -
+                  _scrollController.position.maxScrollExtent)
+              .abs() <
+          10) {
+        _isAutoScroll = true;
+      }
+    });
+    chatState = ref.read(chatStateProvider);
+    chatState.refreshFlag.addListener(() {
+      if (_isAutoScroll) {
+        _scrollController.position.moveTo(
+          (_scrollController.position.maxScrollExtent),
+        );
+      }
+    });
+    _listObserverController.controller = _scrollController;
+    indexChangeEvent.addListener(() {
+      if (indexChangeEvent.value != null) {
+        if (indexChangeEvent.value == chatState.messagesList.length - 1) {
+          // the indexed based scroll is faulty when scrolling to the bottom , so we manually handle this
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInCubic,
+          );
+          return;
+        }
+        _listObserverController.animateTo(
+          index: indexChangeEvent.value!,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInCubic,
+        );
+        indexChangeEvent.value = null;
+      }
+    });
   }
 
+  late ChatState chatState;
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
 
+  void jumpToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.position.moveTo(
+        (_scrollController.position.maxScrollExtent),
+      );
+    });
+  }
+
+  ChatSession? session;
+
+  ValueNotifier<int> currentActiveIndex = ValueNotifier(0);
+  ValueNotifier<({ChatMessage? message, Offset? pointerLoc})> messageInfo =
+      ValueNotifier((message: null, pointerLoc: null));
+  // acts as a bridge to connect sidebar and bar display to display previews
+  ValueNotifier<int?> indexChangeEvent = ValueNotifier(null);
   @override
   Widget build(BuildContext context) {
-    var chatState = ref.watch(chatStateProvider);
-    final messages = chatState.messages;
+    chatState = ref.watch(chatStateProvider);
+    // jump to bottom when session changes
+    if (session != chatState.session) {
+      jumpToBottom();
+      session = chatState.session;
+    }
+    var theme = ref.watch(themeProvider);
+    if (!chatState.isReady) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(chatStateProvider.notifier).checkIfReady();
+      });
+    }
+    var itemCount = chatState.isResponding
+        ? chatState.messages.length + 1
+        : chatState.messages.length;
     return Scaffold(
-      backgroundColor: ref.watch(themeProvider).secondGradeColor,
-      body: Center(
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width.clamp(0, 1000),
-          child: Column(
-            children: [
-              Expanded(
-                child: SelectionArea(
-                  selectionControls: MaterialTextSelectionControls(),
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    reverse: true, // 最新消息在底部
-                    itemCount: chatState.isResponding
-                        ? chatState.messages.length + 1
-                        : chatState.messages.length,
-                    itemBuilder: (context, index) {
-                      // 1. **最新消息的位置 (index == 0) 用于显示流式组件**
-                      if (chatState.isResponding && index == 0) {
-                        return ChatMessageDynamicStream(
-                          contentBuffer: chatState.newContentBuffer,
-                          refreshFlag: chatState.refreshFlag,
-                        );
-                      }
-
-                      // 2. **历史消息的索引计算更直观**
-                      // 历史消息的索引从 0 (最新) 变为 N-1 (最旧)
-                      // 由于流式组件占用了 index=0 的位置，历史消息的索引需要 +1
-                      final messageIndex = chatState.isResponding
-                          ? index - 1
-                          : index;
-
-                      // 确保索引在有效范围内 (只处理历史消息)
-                      if (messageIndex >= 0 &&
-                          messageIndex < chatState.messages.length) {
-                        // messages[N - 1 - messageIndex] 仍然是正确的反转索引
-                        final message =
-                            messages[chatState.messages.length -
-                                1 -
-                                messageIndex];
-                        return PersistChatMessage(message: message.content);
-                      }
-
-                      // 理论上不会执行到这里，但为了安全可以返回一个空的 Widget
-                      return const SizedBox.shrink();
-                    },
+      backgroundColor: theme.secondGradeColor,
+      //add the scrollbar outside the container
+      body: Scrollbar(
+        controller: _scrollController,
+        child: ScrollConfiguration(
+          //and disable the default scrollbar
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              var height = constraints.maxHeight;
+              var width = constraints.maxWidth;
+              var isDense = width < 1000;
+              return Stack(
+                alignment: Alignment.center,
+                fit: StackFit.expand,
+                children: [
+                  Positioned(
+                    width: (!isDense) ? 1000 : null,
+                    left: (isDense) ? 0 : null,
+                    right: (isDense) ? 20 : null,
+                    top: 0,
+                    bottom: 0,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: SelectionArea(
+                            //还是国人做的包好用。。
+                            child: ListViewObserver(
+                              controller: _listObserverController,
+                              // watch the index changes and update the value listener (watched by the sidebar to update the active index)
+                              onObserve: (result) {
+                                currentActiveIndex.value =
+                                    result.firstChild?.index ?? 0;
+                              },
+                              child: ListView.builder(
+                                cacheExtent: 5000,
+                                controller: _scrollController,
+                                itemCount: itemCount,
+                                itemBuilder: (context, index) {
+                                  if (index >= 1 &&
+                                      index <=
+                                          chatState.messagesList.length - 1) {
+                                    var message = chatState.messagesList[index];
+                                    return PersistChatMessage(
+                                      key: ValueKey(message.id),
+                                      index: index,
+                                      prevMessage:
+                                          chatState.messagesList[index - 1],
+                                      message: message,
+                                      theme: theme,
+                                    );
+                                  }
+                                  if (index == 0) {
+                                    // 第0个消息是root消息，不应该被展示或者使用
+                                    return const SizedBox.shrink();
+                                  }
+                                  if (chatState.isResponding &&
+                                      index == itemCount - 1) {
+                                    return ChatMessageDynamicStream(
+                                      contentBuffer: chatState.newContentBuffer,
+                                      refreshFlag: chatState.refreshFlag,
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: ChatPanelInputBox(
+                            afterSubmit: () {
+                              if (_scrollController.offset <
+                                  _scrollController.position.maxScrollExtent) {
+                                _scrollController.animateTo(
+                                  _scrollController.position.maxScrollExtent,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInSine,
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-              const ChatPanelInputBox(),
-            ],
+                  Positioned(
+                    height: min(
+                      min(
+                            ChatSidebar.getHeight(
+                              chatState.messagesList.length,
+                            ),
+                            800,
+                          ) +
+                          50,
+                      height * 0.7,
+                    ),
+                    right: 8,
+                    width: 40,
+                    child: ChatSidebar(
+                      isDense:
+                          (width <
+                          1060), //this needs more space , so var isDense doesn't work here
+                      selectedIndex: indexChangeEvent,
+                      currentActiveIndex: currentActiveIndex,
+                      msgListener: messageInfo,
+                    ),
+                  ),
+                  BarChatMessagePreview(theme: theme, messageInfo: messageInfo),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -600,8 +738,27 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
   }
 }
 
+///[textInject]: inject text to the input box before it is build
+///
+/// [beforeSubmit]:called before submitting to chatState,which enables you to do some things before start the text generation (eg. switch branch)
+///
+/// [afterSubmit]:called after submitting to chatState,which enables you to do some things after the request is send (eg. close the box)
+///
+/// [cancelCallback]:when provided,a cancel button will be shown eg. use it to close the window
+///
+/// *yet all these stupid functions are simple added to reuse this box in message bubble's modified input*
 class ChatPanelInputBox extends ConsumerStatefulWidget {
-  const ChatPanelInputBox({super.key});
+  const ChatPanelInputBox({
+    super.key,
+    this.textInject,
+    this.beforeSubmit,
+    this.afterSubmit,
+    this.cancelCallback,
+  });
+  final void Function(TextEditingController)? textInject;
+  final void Function()? beforeSubmit;
+  final void Function()? afterSubmit;
+  final void Function()? cancelCallback;
 
   @override
   ConsumerState<ChatPanelInputBox> createState() => _ChatPanelInputBoxState();
@@ -617,15 +774,11 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   initState() {
     super.initState();
     chatState = ref.read(chatStateProvider);
+    widget.textInject?.call(_textController);
   }
 
   late ChatState chatState;
-
-  // Use a list to support multiple attachments in the future
-  final List<(String, UploadStatus)> _attachments = []; // 改为存储文件ID
   final Uuid _uuid = const Uuid();
-
-  bool _isUploading = false;
 
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
@@ -637,12 +790,8 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       for (var file in result.files) {
         if (file.path != null) {
           final actualFile = File(file.path!);
-          final previewId = _uuid.v4();
+          final previewId = _uuid.v7();
           // 添加预览ID到附件列表
-          setState(() {
-            _isUploading = true;
-            _attachments.add((previewId, UploadStatus.uploading));
-          });
           final appDocDir = await getApplicationDocumentsDirectory();
           final sessionFilesDir = Directory(
             '${appDocDir.path}/chat/session_files',
@@ -654,43 +803,16 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           // 使用UUID生成新的文件名
           final newFileName = previewId + p.extension(actualFile.path);
           final newFilePath = '${sessionFilesDir.path}/$newFileName';
-
           // 拷贝文件到新位置
           final copiedFile = await actualFile.copy(newFilePath);
-
           // Trigger the upload via the notifier
-          final uploadedFileId = await ref
+          await ref
               .read(chatStateProvider.notifier)
               .triggerUploadFile(
                 copiedFile,
                 previewId,
                 p.basename(actualFile.path),
               );
-
-          // 注意：这里不再更新附件状态，因为文件信息现在存储在ChatState中
-          if (uploadedFileId == null) {
-            // 上传失败，从附件列表中移除
-            setState(() {
-              _isUploading = false;
-              _attachments[_attachments.indexWhere(
-                (id) => id.$1 == previewId,
-              )] = (
-                previewId,
-                UploadStatus.failed,
-              );
-            });
-          } else {
-            // 更新附件状态为上传成功
-            setState(() {
-              _isUploading = false;
-              _attachments[_attachments.indexWhere(
-                (id) => id.$1 == previewId,
-              )] = (
-                previewId,
-                UploadStatus.uploaded,
-              );
-            });
-          }
         }
       }
     }
@@ -698,32 +820,19 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
 
   void _sendMessage() {
     final text = _textController.text.trim();
-
-    if (text.isEmpty && _attachments.isEmpty) return;
-    if (_isUploading) return; // Prevent sending while an upload is in progress
-    List<String> attachedFiles = [];
-    for (var a in _attachments) {
-      attachedFiles.add(a.$1);
-    }
-    ref
-        .read(chatStateProvider.notifier)
-        .sendMessage(
-          text,
-          attachedFiles: _attachments.isEmpty ? null : attachedFiles,
-        );
-
+    if (text.isEmpty) return;
+    widget.beforeSubmit?.call();
+    ref.read(chatStateProvider.notifier).sendMessage(text);
     _textController.clear();
-    setState(() {
-      _attachments.clear();
+    // wait for the state to update
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.afterSubmit?.call();
     });
   }
 
   Future<void> _readAndAttachFile(dynamic f, String fileExtension) async {
-    var previewId = _uuid.v4();
-    setState(() {
-      _isUploading = true;
-      _attachments.add((previewId, UploadStatus.uploading));
-    });
+    var previewId = _uuid.v7();
+    var fname = f.fileName ?? DateTime.now().toIso8601String() + fileExtension;
     var path = await PathProvider.getPath(
       "chat/session_files/$previewId$fileExtension",
     );
@@ -731,46 +840,32 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     final sink = file.openWrite();
     await f.getStream().forEach(sink.add);
     await sink.close();
-    final uploadedFileId = await ref
+    await ref
         .read(chatStateProvider.notifier)
-        .triggerUploadFile(
-          file,
-          previewId,
-          f.fileName ?? DateTime.now().toIso8601String() + fileExtension,
-        );
-    // 注意：这里不再更新附件状态，因为文件信息现在存储在ChatState中
-    if (uploadedFileId == null) {
-      // 上传失败，从附件列表中移除
-      setState(() {
-        _isUploading = false;
-        var id = _attachments.indexWhere((id) => id.$1 == previewId);
-        if (id != -1) {
-          _attachments[id] = (previewId, UploadStatus.failed);
-        }
-      });
-    } else {
-      // 更新附件状态为上传成功
-      setState(() {
-        _isUploading = false;
-        var id = _attachments.indexWhere((id) => id.$1 == previewId);
-        if (id != -1) {
-          _attachments[id] = (previewId, UploadStatus.uploaded);
-        }
-      });
-    }
+        .triggerUploadFile(file, previewId, fname);
   }
 
+  int _checkedTimes = 0;
   @override
   Widget build(BuildContext context) {
     chatState = ref.watch(chatStateProvider);
     final globalLoading = chatState.isLoading;
+    if (!chatState.isReady && _checkedTimes < 5) {
+      // wait some time before checking if ready (give the state sometime to prepare etc. load model), only check once
+      // after testing , 70ms seems to be enough (M4 MBP)
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await Future.delayed(const Duration(milliseconds: 70), () async {
+          ref.read(chatStateProvider.notifier).checkIfReady();
+          _checkedTimes++;
+        });
+      });
+    }
     theme = ref.watch(themeProvider);
-    final isSendButtonLoading =
-        _isUploading || (globalLoading && _attachments.isEmpty);
+    final isSendButtonLoading = (globalLoading);
     late Widget childPanel;
     if (isDroppingFiles) {
       childPanel = Container(
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
         color: Colors.white.withAlpha(180),
         child: Stack(
           alignment: Alignment.center,
@@ -919,17 +1014,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               return;
             },
           );
-        } else if (item.canProvide(Formats.plainTextFile)) {
-          item.dataReader?.getFile(
-            Formats.plainTextFile,
-            (f) async {
-              await _readAndAttachFile(f, p.extension(f.fileName ?? ".txt"));
-            },
-            onError: (error) {
-              return;
-            },
-          );
-          //plaintext必须放在最后，不然markdown的格式可能会变成text，很奇葩的问题
         } else if (item.canProvide(Formats.plainText)) {
           item.dataReader?.getValue<String>(
             Formats.plainText,
@@ -937,6 +1021,16 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               if (value != null) {
                 _textController.text += value;
               }
+            },
+            onError: (error) {
+              return;
+            },
+          );
+        } else if (item.canProvide(Formats.plainTextFile)) {
+          item.dataReader?.getFile(
+            Formats.plainTextFile,
+            (f) async {
+              await _readAndAttachFile(f, p.extension(f.fileName ?? ".txt"));
             },
             onError: (error) {
               return;
@@ -950,7 +1044,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         });
       },
       child: Container(
-        margin: const EdgeInsets.all(16),
         clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
           color: theme.zeroGradeColor,
@@ -961,8 +1054,153 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     );
   }
 
+  Future<void> readClipboard(SystemClipboard clipboard) async {
+    final reader = await clipboard.read();
+    //TMD 这个包真的逆天了，他的drop reader和clipboard reader 明明底层是一个东西，但是我需要写两遍愚蠢的代码！
+    //啊没错，这个包就不能提供一个获取拓展名的方法，非要这样搞
+    //而且他就不能提供一个file的类型的返回值，非要我一个个去读取。。。。
+    //TODO：把这个傻逼包给换掉->这玩意tm无法区分纯文本文件（txt）和文本，不论如何设置，要不然会把txt粘贴成纯文本，要不然就会把纯文本粘贴成文件。**垃圾！**
+    if (reader.canProvide(Formats.jpeg)) {
+      reader.getFile(
+        Formats.jpeg,
+        (f) async {
+          await _readAndAttachFile(f, ".jpeg");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.png)) {
+      reader.getFile(
+        Formats.png,
+        (f) async {
+          await _readAndAttachFile(f, ".png");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.pdf)) {
+      reader.getFile(
+        Formats.pdf,
+        (f) async {
+          await _readAndAttachFile(f, ".pdf");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.json)) {
+      reader.getFile(
+        Formats.json,
+        (f) async {
+          await _readAndAttachFile(f, ".json");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.csv)) {
+      reader.getFile(
+        Formats.csv,
+        (f) async {
+          await _readAndAttachFile(f, ".csv");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.htmlFile)) {
+      reader.getFile(
+        Formats.htmlFile,
+        (f) async {
+          await _readAndAttachFile(f, ".html");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.md)) {
+      reader.getFile(
+        Formats.md,
+        (f) async {
+          await _readAndAttachFile(f, ".md");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else
+    //但愿他的意思是typescript，不是什么奇葩
+    if (reader.canProvide(Formats.ts)) {
+      reader.getFile(
+        Formats.ts,
+        (f) async {
+          await _readAndAttachFile(f, ".ts");
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.plainText)) {
+      reader.getValue<String>(
+        Formats.plainText,
+        (value) {
+          if (value != null) {
+            _textController.text += value;
+          }
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    } else if (reader.canProvide(Formats.plainTextFile)) {
+      reader.getFile(
+        Formats.plainTextFile,
+        (f) async {
+          await _readAndAttachFile(f, p.extension(f.fileName ?? ".txt"));
+          return;
+        },
+        onError: (error) {
+          return;
+        },
+      );
+      return;
+    }
+  }
+
   late final _focusNode = FocusNode(
     onKeyEvent: (FocusNode node, KeyEvent evt) {
+      if (HardwareKeyboard.instance.isMetaPressed && evt.character == 'v') {
+        if (evt is KeyDownEvent) {
+          final clipboard = SystemClipboard.instance;
+          if (clipboard == null) {
+            return KeyEventResult
+                .ignored; // Clipboard API is not supported on this platform.
+          }
+          readClipboard(clipboard);
+          // this is a synchronous operation, no await future
+          return KeyEventResult.handled;
+        }
+      }
       if (HardwareKeyboard.instance.isShiftPressed &&
           evt.logicalKey == LogicalKeyboardKey.enter) {
         if (evt is KeyDownEvent) {
@@ -981,13 +1219,18 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_attachments.isNotEmpty) _buildAttachmentPreview(),
+        if (chatState.uploadedFilesStash.isNotEmpty) _buildAttachmentPreview(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2),
           child: TextField(
             focusNode: _focusNode,
+            onTap: () {
+              if (!chatState.isReady) {
+                ref.read(chatStateProvider.notifier).checkIfReady();
+              }
+            },
             textInputAction: TextInputAction.send,
-            maxLines: 7,
+            maxLines: 8,
             minLines: 2,
             controller: _textController,
             decoration: InputDecoration.collapsed(
@@ -1010,6 +1253,28 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               tooltip: 'Attach File',
             ),
             const Spacer(),
+            if (widget.cancelCallback != null)
+              Container(
+                height: 35,
+                width: 35,
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                child: Material(
+                  clipBehavior: Clip.hardEdge,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  color: theme.thirdGradeColor,
+                  child: InkWell(
+                    splashColor: Colors.grey,
+                    onTap: widget.cancelCallback,
+                    child: Icon(
+                      Icons.close,
+                      color: theme.primaryColor,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
             SizedBox(
               height: 35,
               width: 35,
@@ -1059,22 +1324,18 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   }
 
   Widget _buildAttachmentPreview() {
-    final chatState = ref.watch(chatStateProvider);
-
+    var val = chatState.uploadedFilesStash.values.toList();
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0, left: 10, right: 10),
       child: SizedBox(
         height: 60,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          itemCount: _attachments.length,
+          itemCount: val.length,
           itemBuilder: (context, index) {
-            final attachmentId = _attachments[index];
-            final chatFile = chatState.uploadedFiles[attachmentId.$1];
-
             return _buildAttachmentPreviewItem(
-              chatFile,
-              attachmentId.$2,
+              val[index].file,
+              val[index].status,
               index,
             );
           },
@@ -1147,7 +1408,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                           child: Padding(
                             padding: const EdgeInsets.all(2.0),
                             child: Text(
-                              chatFile.original_name,
+                              chatFile.originalName,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
@@ -1221,11 +1482,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               child: const Icon(Icons.cancel, color: Colors.black54, size: 16),
               onTap: () {
                 setState(() {
-                  _attachments.removeAt(index);
                   if (chatFile != null) {
                     ref
                         .read(chatStateProvider)
-                        .uploadedFiles
+                        .uploadedFilesStash
                         .remove(chatFile.name);
                   }
                 });

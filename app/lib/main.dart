@@ -223,6 +223,20 @@ class _MacOSMenuBarState extends ConsumerState<MacOSMenuBar> {
                     ref.read(chatStateProvider.notifier).clearSession();
                   },
                 ),
+                PlatformMenuItem(
+                  label: S.of(context).toggle_session_selector,
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyF,
+                    meta: true,
+                  ),
+                  onSelected: () {
+                    if (chatBannerKey.currentState?.overlayEntry == null) {
+                      chatBannerKey.currentState?.showSessionSelector();
+                    } else {
+                      chatBannerKey.currentState?.hide();
+                    }
+                  },
+                ),
               ],
             ),
           ],
@@ -275,7 +289,7 @@ class MainContState extends ConsumerState<MainCont> {
   Widget? _bannerWidget() {
     switch (page) {
       case Pages.chat:
-        return ChatBannerWidget();
+        return ChatBannerWidget(key: chatBannerKey);
       case Pages.agent:
         return null;
       case Pages.Rag:
@@ -307,7 +321,7 @@ class MainContState extends ConsumerState<MainCont> {
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
     return Scaffold(
-      backgroundColor: theme.secondGradeColor,
+      backgroundColor: theme.zeroGradeColor,
       body: Column(
         children: [
           MainBanner(bannerWidget: _bannerWidget()),
@@ -362,7 +376,17 @@ class MainContState extends ConsumerState<MainCont> {
                     ],
                   ),
                 ),
-                Expanded(child: _bodyWidget()),
+                Expanded(
+                  child: Container(
+                    margin: EdgeInsets.only(right: 4, bottom: 4),
+                    clipBehavior: Clip.hardEdge,
+                    decoration: BoxDecoration(
+                      color: theme.secondGradeColor,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: _bodyWidget(),
+                  ),
+                ),
               ],
             ),
           ),

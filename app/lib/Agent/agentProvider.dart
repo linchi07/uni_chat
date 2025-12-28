@@ -222,17 +222,18 @@ class AgentProvider extends StateNotifier<Agent?> {
   Stream<ChatResponse> getStreamingResponse(
     ChatSession session,
     List<ChatMessage> history,
-    ChatMessage usrMessage,
-    Map<String, ChatFile> uploadedFiles,
+    ChatMessage? usrMessage,
   ) async* {
     if (state != null) {
-      var fm = await formatMessage(history, usrMessage, uploadedFiles);
+      var fm = await formatMessage(history, usrMessage);
       if (state!.memoryBaseIds.isNotEmpty) {
         var rgp = ref.read(ragProvider);
         if (rgp.loadedAgentId != state!.id) {
           await rgp.loadKnowledgeBases(state!.memoryBaseIds, session);
         }
-        fm.ragMessages = await rgp.onUserNewMessageCall(usrMessage);
+        if (usrMessage != null) {
+          fm.ragMessages = await rgp.onUserNewMessageCall(usrMessage);
+        }
       }
       yield* state!.model.getStreamingResponse(fm);
     } else {
@@ -254,8 +255,7 @@ class AgentProvider extends StateNotifier<Agent?> {
 
   Future<ModelRequestContent> formatMessage(
     List<ChatMessage> history,
-    ChatMessage usrMessage,
-    Map<String, ChatFile> uploadedFiles,
+    ChatMessage? lastMessage,
   ) async {
     if (state == null) {
       throw Exception("Agent not initialized");
@@ -336,12 +336,11 @@ class AgentProvider extends StateNotifier<Agent?> {
         rc.uiMessages = ps;
       }
     }
-    var t1 = await processChatMessage(history, rc.chatHistory, uploadedFiles);
-    var t2 = await processChatMessage(
-      [usrMessage],
-      rc.usrMessage,
-      uploadedFiles,
-    );
+    var t1 = await processChatMessage(history, rc.chatHistory);
+    int t2 = 0;
+    if (lastMessage != null) {
+      t2 = await processChatMessage([lastMessage], rc.usrMessage);
+    }
     rc.modelSpecifics = state!.modelSpecifics;
     var t3 = 0;
     for (var i in rc.uiMessages) {
@@ -367,7 +366,6 @@ class AgentProvider extends StateNotifier<Agent?> {
   Future<int> processChatMessage(
     List<ChatMessage> message,
     List<FormattedChatMessage> output,
-    Map<String, ChatFile> uploadedFiles,
   ) async {
     if (state == null) {
       //TODO: 添加错误处理
@@ -376,14 +374,13 @@ class AgentProvider extends StateNotifier<Agent?> {
     int totalTokens = 0;
     for (var i in message) {
       switch (i.sender) {
+        case MessageSender.internal:
+          continue; //skip the internal messages ,mostly message root
         case MessageSender.user:
           // 处理多个附件文件
           if (i.attachedFiles != null && i.attachedFiles!.isNotEmpty) {
             for (var at in i.attachedFiles!) {
-              var attachedFile = uploadedFiles[at];
-              if (attachedFile == null) {
-                continue;
-              }
+              var attachedFile = at;
               switch (attachedFile.type) {
                 case FileTypeDefine.text:
                   var fileContent = await attachedFile.getFile();
@@ -393,7 +390,7 @@ class AgentProvider extends StateNotifier<Agent?> {
                       id: i.id,
                       sender: MessageSender.user,
                       content:
-                          "Uploaded File： Name：${attachedFile.original_name}，fileContent：${await fileContent.readAsString(encoding: utf8)}",
+                          "Uploaded File： Name：${attachedFile.originalName}，fileContent：${await fileContent.readAsString(encoding: utf8)}",
                     ),
                   );
                   break;

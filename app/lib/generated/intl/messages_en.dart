@@ -231,6 +231,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "general_settings": MessageLookupByLibrary.simpleMessage(
       "General settings",
     ),
+    "generate_title": MessageLookupByLibrary.simpleMessage("Generate title"),
+    "generate_title_hint": MessageLookupByLibrary.simpleMessage(
+      "Generate a title for this chat will overwrite the previous one",
+    ),
     "give_up_edit_confirm": MessageLookupByLibrary.simpleMessage(
       "Give up edit?",
     ),
@@ -527,6 +531,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "system_prompt_tokens": m13,
     "temperature": MessageLookupByLibrary.simpleMessage("Temperature"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat"),
+    "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
+      "Toggle session selector",
+    ),
     "token_available_for_chat": m14,
     "top_p": MessageLookupByLibrary.simpleMessage("Top P"),
     "total_context_lim": m15,

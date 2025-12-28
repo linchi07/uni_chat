@@ -101,18 +101,11 @@ class _ChatPageMainState extends ConsumerState<ChatPageMain> {
               ),
             ),
             Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: (bubbleDebug)
-                        ? MessageBubblePreviewer()
-                        : _isDebugUiql
-                        ? const UIQLPreviewer()
-                        : ChatPanel(),
-                  ),
-                  const PanelLayout(),
-                ],
-              ),
+              child: (bubbleDebug)
+                  ? MessageBubblePreviewer()
+                  : _isDebugUiql
+                  ? const UIQLPreviewer()
+                  : ChatPanel(),
             ),
           ],
         );

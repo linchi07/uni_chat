@@ -153,6 +153,7 @@ class AgentEditState {
       throw Exception("模型配置不存在");
     }
     return AgentData(
+      version: 1,
       id: id,
       name: name!,
       description: description,

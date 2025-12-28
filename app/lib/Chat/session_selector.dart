@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
@@ -22,11 +23,14 @@ class ChatBannerWidget extends ConsumerStatefulWidget {
   const ChatBannerWidget({super.key});
 
   @override
-  ConsumerState<ChatBannerWidget> createState() => _ChatBannerWidgetState();
+  ConsumerState<ChatBannerWidget> createState() => ChatBannerWidgetState();
 }
 
-class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
-  OverlayEntry? _overlayEntry;
+final GlobalKey<ChatBannerWidgetState> chatBannerKey = GlobalKey();
+//to toggle the overlay at any times
+
+class ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
+  OverlayEntry? overlayEntry;
   final GlobalKey<_SessionSelectorOverlayState> _overlayKey = GlobalKey();
 
   void showSessionSelector() {
@@ -36,10 +40,10 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
     final size = rb.size;
     final screenSize = MediaQuery.of(context).size;
 
-    _overlayEntry = OverlayEntry(
+    overlayEntry = OverlayEntry(
       builder: (context) => Stack(
         children: [
-          ModalBarrier(color: Colors.transparent, onDismiss: _hide),
+          ModalBarrier(color: Colors.transparent, onDismiss: hide),
           // **修改点**: 不再使用 Positioned 包装，直接放置 Overlay 组件
           // 它将自己负责自己的定位
           SessionSelectorOverlayContainer(
@@ -47,19 +51,19 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
             initialSize: size,
             initialPosition: pos,
             initialScreenSize: screenSize,
-            onClose: _hide,
+            onClose: hide,
           ),
         ],
       ),
     );
-    overlay.insert(_overlayEntry!);
+    overlay.insert(overlayEntry!);
   }
 
-  void _hide() {
+  void hide() {
     _overlayKey.currentState?.reverseAnimation().then((_) {
-      if (_overlayEntry != null) {
-        _overlayEntry?.remove();
-        _overlayEntry = null;
+      if (overlayEntry != null) {
+        overlayEntry?.remove();
+        overlayEntry = null;
       }
     });
   }
@@ -77,10 +81,10 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
           children: [
             StdButton(
               onPressed: () {
-                if (_overlayEntry == null) {
+                if (overlayEntry == null) {
                   showSessionSelector();
                 } else {
-                  _hide();
+                  hide();
                 }
               },
               padding: const EdgeInsets.all(6),
@@ -101,10 +105,10 @@ class _ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
                 clipBehavior: Clip.hardEdge,
                 child: InkWell(
                   onTap: () {
-                    if (_overlayEntry == null) {
+                    if (overlayEntry == null) {
                       showSessionSelector();
                     } else {
-                      _hide();
+                      hide();
                     }
                   },
                   child: Padding(
@@ -327,11 +331,13 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   final ScrollController _sessionScrollController = ScrollController();
   final ScrollController _agentScrollController = ScrollController();
   Timer? _hoverTimer;
-  (List<ChatMessageDisplay>, Map<String, ChatFile>)? _previewedSession;
+  List<ChatMessage>? _previewedSession;
   bool isSessionScrolled = false;
   late ThemeConfig theme;
   double lastScrollOffset = 0;
 
+  late final FocusNode
+  _inputboxFoucusNode; // for auto dismiss on escape key pressed
   @override
   void initState() {
     super.initState();
@@ -341,6 +347,20 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
       if (_sessionScrollController.position.isScrollingNotifier.value) {
         lastScrollOffset = _sessionScrollController.offset;
       }
+    });
+    _inputboxFoucusNode = FocusNode(
+      onKeyEvent: (node, event) {
+        if (event.logicalKey == LogicalKeyboardKey.escape) {
+          node.unfocus();
+          widget.onClose();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _inputboxFoucusNode.requestFocus();
+      //auto  focus on menu open
     });
   }
 
@@ -369,7 +389,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   }
 
   void _setPreviewSession(String sid) async {
-    var ps = await DatabaseService.instance.getMessagesForSession(sid);
+    var ps = await DatabaseService.instance.getMessageListForSession(sid);
     internalSetState(() {
       _previewedSession = ps;
     });
@@ -418,6 +438,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
       children: [
         Expanded(
           child: TextField(
+            focusNode: _inputboxFoucusNode,
             controller: _searchController,
             decoration: InputDecoration(
               hintText: S.of(context).search_any_chat_message,
@@ -646,7 +667,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       // ignore: prefer_is_empty
-                                      child: (_previewedSession?.$1.length == 0)
+                                      child: (_previewedSession?.length == 0)
                                           ? Center(
                                               child: Text(
                                                 S.of(context).no_message,
@@ -660,19 +681,16 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                                   MaterialTextSelectionControls(),
                                               child: ListView.builder(
                                                 reverse: true,
-                                                itemCount: _previewedSession
-                                                    ?.$1
-                                                    .length,
+                                                itemCount:
+                                                    _previewedSession?.length,
                                                 itemBuilder: (context, index) {
                                                   final message =
-                                                      _previewedSession!
-                                                          .$1[_previewedSession!
-                                                              .$1
-                                                              .length -
-                                                          1 -
-                                                          index];
+                                                      _previewedSession![index];
                                                   return PersistChatMessage(
-                                                    message: message.content,
+                                                    key: ValueKey(message.id),
+                                                    message: message,
+                                                    theme: theme,
+                                                    index: index,
                                                   );
                                                 },
                                               ),
@@ -848,10 +866,23 @@ class _SessionTileState extends State<_SessionTile> {
       borderRadius: BorderRadius.circular(8),
       clipBehavior: Clip.hardEdge,
       child: SizedBox(
-        width: 120, // Set a reasonable width for the menu
+        width: 200, // Set a reasonable width for the menu
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ListTile(
+              dense: true,
+              leading: Icon(Icons.auto_awesome),
+              title: Text(S.of(context).generate_title),
+              onTap: () {
+                _hideOverlay();
+                //TODO: rewrite this in order to generate title without leaving the session selector or switching current session
+                OverlayPortalService.show(
+                  context,
+                  child: _confirmAutoGenerateDialog(context, sessionId),
+                );
+              },
+            ),
             ListTile(
               dense: true,
               leading: Icon(Icons.edit),
@@ -935,6 +966,70 @@ class _SessionTileState extends State<_SessionTile> {
                               .read(chatStateProvider.notifier)
                               .deleteSession(sessionId);
                           OverlayPortalService.hide(context);
+                          setState(() {});
+                        },
+                        text: S.of(context).confirm_long_press,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _confirmAutoGenerateDialog(BuildContext context, String sessionId) {
+    return SizedBox(
+      width: 300,
+      height: 200,
+      child: Consumer(
+        builder: (context, ref, child) {
+          theme = ref.watch(themeProvider);
+          return Material(
+            color: theme.zeroGradeColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        S.of(context).generate_title_hint,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      StdButton(
+                        color: theme.thirdGradeColor,
+                        onPressed: () {
+                          OverlayPortalService.hide(context);
+                        },
+                        text: S.of(context).cancel,
+                      ),
+                      const SizedBox(width: 16),
+                      StdButton(
+                        color: Colors.red,
+                        onLongPress: () async {
+                          var n = ref.read(chatStateProvider.notifier);
+                          OverlayPortalService.hide(context);
+                          await n.switchSession(sessionId);
+                          n.generateTitle();
                           setState(() {});
                         },
                         text: S.of(context).confirm_long_press,
