@@ -9,6 +9,7 @@ import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_panel.dart';
 import 'package:uni_chat/Chat/inline_dynamic_fc_parser.dart';
+import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/promps.dart';
@@ -185,16 +186,22 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   void checkIfReady() {
     if (state.isReady) return;
     if (agent != null) {
-      state = state.copyWith(isReady: true);
+      state = state.copyWith(isReady: true, error: null);
     }
   }
 
   Future<void> createNewSession({String? agentId, String? title}) async {
     state = state.copyWith(isLoading: true);
     agentId ??= agent!.id;
+    String? pid = _ref.read(personaProvider).id;
+    if (!(pid.isNotEmpty && pid != "")) {
+      pid = null;
+      //如果是默认人格（id = “ ”），就不储存消息
+    }
     final session = await _dbService.createSession(
       agentId: agentId,
       title: title,
+      personaId: pid,
     );
     // After creating, switch to it to activate the agent and load everything
     await switchSession(session.id, fromNewSession: session);
@@ -240,6 +247,13 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         final msg = await _dbService.getMessagesForSession(sessionId);
         if (msg.$1 == null || msg.$2.isEmpty) {
           throw Exception('No messages found');
+        }
+        // if the session has a persona, load it
+        if (session.persona != null) {
+          // if the persona is not valid(eg deleted), this function will do nothing.(with out errors or side effects)
+          await _ref
+              .read(personaProvider.notifier)
+              .loadPersonaById(session.persona!);
         }
         var formed = formMessageTree(msg.$1!, msg.$2);
         state = state.copyWith(

@@ -8,14 +8,16 @@ import 'package:uni_chat/utils/tokenizer.dart';
 
 class ChatSession {
   final String id;
-  final String agentId; // 新增: 关联的Agent ID
+  final String agentId;
+  final String? persona;
   String name;
   DateTime lastMessageTime;
   final DateTime creationTime;
 
   ChatSession({
     required this.id,
-    required this.agentId, // 新增
+    required this.agentId,
+    this.persona,
     required this.name,
     required this.lastMessageTime,
     required this.creationTime,

@@ -12,6 +12,8 @@ import '../Persona/persona_provider.dart';
 import 'file_utils.dart';
 
 class AgentData {
+  final int version;
+  // the version of agent settings
   final String id;
   final String name;
   final String modelProviderConfigureId;
@@ -23,6 +25,7 @@ class AgentData {
   final bool isDefault;
 
   AgentData({
+    required this.version,
     required this.id,
     required this.name,
     required this.modelProviderConfigureId,
@@ -42,7 +45,6 @@ class AgentData {
       'name': name,
       'description': description,
       'system_prompt': systemPrompt,
-      'knowledge_bases': jsonEncode(knowledgeBases),
       'created_at': createdAt.toIso8601String(),
       'is_default': isDefault ? 1 : 0,
     };
@@ -68,6 +70,7 @@ class AgentData {
 
   String _parameterToJson() {
     Map<String, dynamic> parameters = {
+      'version': version,
       'model_provider_configure_id': modelProviderConfigureId,
       'system_prompt': systemPrompt,
       'knowledge_bases': knowledgeBases,
@@ -90,6 +93,7 @@ class AgentData {
   factory AgentData.fromDatabaseStorage(Map<String, dynamic> map) {
     var parameters = jsonDecode(map['configure']);
     return AgentData(
+      version: parameters['version'] as int,
       id: map['id'] as String,
       name: map['name'] as String,
       modelProviderConfigureId:
@@ -97,22 +101,6 @@ class AgentData {
       modelSpecifics: ModelSpecifics.fromJson(parameters['model_specifics']),
       description: map['description'] as String?,
       systemPrompt: parameters['system_prompt'] as String?,
-      knowledgeBases: (parameters['knowledge_bases'] as List<dynamic>)
-          .cast<String>(),
-      createdAt: DateTime.parse(map['created_at']),
-      isDefault: map['is_default'] == 1,
-    );
-  }
-
-  factory AgentData.fromMap(Map<String, dynamic> map) {
-    return AgentData(
-      id: map['id'],
-      name: map['name'],
-      description: map['description'],
-      modelSpecifics: ModelSpecifics.fromJson(map['model_specifics']),
-      modelProviderConfigureId: map['model_provider_configure_id'],
-      systemPrompt: map['system_prompt'],
-      knowledgeBases: (map['knowledge_bases'] as List<dynamic>).cast<String>(),
       createdAt: DateTime.parse(map['created_at']),
       isDefault: map['is_default'] == 1,
     );
@@ -176,8 +164,8 @@ class DatabaseService {
         created_at INTEGER NOT NULL,
         modified_at INTEGER NOT NULL,
         agent_override TEXT, -- 可以在会话层面覆盖agents的部分参数类似于 copy with 保留备用
+        persona_id TEXT, -- 关联到persona 当null或者空则使用当前activate的人格
         branch_info TEXT, -- 存储分支信息
-        root_info TEXT, -- 存储根信息
         FOREIGN KEY (agent_id) REFERENCES agents (id) ON DELETE CASCADE
       )
     ''');
@@ -206,18 +194,12 @@ class DatabaseService {
         id TEXT PRIMARY KEY,
         sender TEXT NOT NULL,
         content TEXT NOT NULL,
+        data TEXT,
+        persistent_data_pointer TEXT, -- 对话消息级别的持久化储存（只储存指针，数据在persistent_data表中）
         timestamp INTEGER NOT NULL,
         attachments TEXT
       )
     ''');
-
-    await db.execute('''
-      CREATE TABLE chat_data(
-      id TEXT PRIMARY KEY, -- 此处的prikey和message key 是完全相同的。
-      data TEXT,
-      persistent_data_props TEXT -- 对话消息级别的持久化储存（只储存指针，数据在persistent_data表中）
-      )
-      ''');
 
     await db.execute('''
       CREATE TABLE persistent_data(
@@ -355,12 +337,14 @@ class DatabaseService {
   Future<ChatSession> createSession({
     String? title,
     required String agentId,
+    String? personaId,
   }) async {
     final db = await database;
     final now = DateTime.now();
     final newSession = ChatSession(
       id: _uuid.v7(),
       agentId: agentId,
+      persona: personaId,
       name: title ?? 'New Chat - ${now.toIso8601String()}',
       creationTime: now,
       lastMessageTime: now,
@@ -373,6 +357,7 @@ class DatabaseService {
         'title': newSession.name,
         'created_at': newSession.creationTime.microsecondsSinceEpoch,
         'modified_at': newSession.lastMessageTime.microsecondsSinceEpoch,
+        'persona_id': newSession.persona,
       });
       // insert the root message
       // root message is always the first message (and will not be rendered)
@@ -401,6 +386,7 @@ class DatabaseService {
       return ChatSession(
         id: map['id'],
         agentId: map['agent_id'],
+        persona: map['persona_id'],
         name: map['title'],
         creationTime: DateTime.fromMicrosecondsSinceEpoch(map['created_at']),
         lastMessageTime: DateTime.fromMicrosecondsSinceEpoch(
@@ -429,6 +415,7 @@ class DatabaseService {
         creationTime: DateTime.fromMicrosecondsSinceEpoch(
           map['created_at'] as int,
         ),
+        persona: map['persona_id'],
         lastMessageTime: DateTime.fromMicrosecondsSinceEpoch(
           map['modified_at'] as int,
         ),
@@ -451,6 +438,7 @@ class DatabaseService {
         creationTime: DateTime.fromMicrosecondsSinceEpoch(
           map['created_at'] as int,
         ),
+        persona: map['persona_id'],
         lastMessageTime: DateTime.fromMicrosecondsSinceEpoch(
           map['modified_at'] as int,
         ),
