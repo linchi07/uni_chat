@@ -511,7 +511,10 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
             const SizedBox(height: 8),
             SizedBox(
               width: MediaQuery.of(context).size.width.clamp(0, 800),
-              child: ChatPanelInputBox(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ChatPanelInputBox(),
+              ),
             ),
           ],
         ),
@@ -546,6 +549,13 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
       }
     });
     chatState = ref.read(chatStateProvider);
+    chatState.refreshFlag.addListener(() {
+      if (_isAutoScroll) {
+        _scrollController.position.moveTo(
+          (_scrollController.position.maxScrollExtent),
+        );
+      }
+    });
     _listObserverController.controller = _scrollController;
     indexChangeEvent.addListener(() {
       if (indexChangeEvent.value != null) {
@@ -593,14 +603,6 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
   @override
   Widget build(BuildContext context) {
     chatState = ref.watch(chatStateProvider);
-    var screenSize = MediaQuery.of(context).size;
-    chatState.refreshFlag.addListener(() {
-      if (_isAutoScroll) {
-        _scrollController.position.moveTo(
-          (_scrollController.position.maxScrollExtent),
-        );
-      }
-    });
     // jump to bottom when session changes
     if (session != chatState.session) {
       jumpToBottom();
@@ -623,97 +625,112 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
         child: ScrollConfiguration(
           //and disable the default scrollbar
           behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-          child: Stack(
-            alignment: Alignment.center,
-            fit: StackFit.expand,
-            children: [
-              Positioned(
-                height: min(
-                  min(
-                        ChatSidebar.getHeight(chatState.messagesList.length),
-                        800,
-                      ) +
-                      50,
-                  screenSize.height * 0.8,
-                ),
-                right: 10,
-                width: 100,
-                child: ChatSidebar(
-                  selectedIndex: indexChangeEvent,
-                  currentActiveIndex: currentActiveIndex,
-                  msgListener: messageInfo,
-                ),
-              ),
-              Positioned(
-                top: 0,
-                bottom: 0,
-                width: screenSize.width.clamp(0, 1000),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: SelectionArea(
-                        //还是国人做的包好用。。
-                        child: ListViewObserver(
-                          controller: _listObserverController,
-                          // watch the index changes and update the value listener (watched by the sidebar to update the active index)
-                          onObserve: (result) {
-                            currentActiveIndex.value =
-                                result.firstChild?.index ?? 0;
-                          },
-                          child: ListView.builder(
-                            cacheExtent: 5000,
-                            controller: _scrollController,
-                            itemCount: itemCount,
-                            itemBuilder: (context, index) {
-                              if (index >= 1 &&
-                                  index <= chatState.messagesList.length - 1) {
-                                var message = chatState.messagesList[index];
-                                return PersistChatMessage(
-                                  key: ValueKey(message.id),
-                                  index: index,
-                                  prevMessage:
-                                      chatState.messagesList[index - 1],
-                                  message: message,
-                                  theme: theme,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              var height = constraints.maxHeight;
+              var width = constraints.maxWidth;
+              var isDense = width < 1000;
+              return Stack(
+                alignment: Alignment.center,
+                fit: StackFit.expand,
+                children: [
+                  Positioned(
+                    width: (!isDense) ? 1000 : null,
+                    left: (isDense) ? 0 : null,
+                    right: (isDense) ? 20 : null,
+                    top: 0,
+                    bottom: 0,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: SelectionArea(
+                            //还是国人做的包好用。。
+                            child: ListViewObserver(
+                              controller: _listObserverController,
+                              // watch the index changes and update the value listener (watched by the sidebar to update the active index)
+                              onObserve: (result) {
+                                currentActiveIndex.value =
+                                    result.firstChild?.index ?? 0;
+                              },
+                              child: ListView.builder(
+                                cacheExtent: 5000,
+                                controller: _scrollController,
+                                itemCount: itemCount,
+                                itemBuilder: (context, index) {
+                                  if (index >= 1 &&
+                                      index <=
+                                          chatState.messagesList.length - 1) {
+                                    var message = chatState.messagesList[index];
+                                    return PersistChatMessage(
+                                      key: ValueKey(message.id),
+                                      index: index,
+                                      prevMessage:
+                                          chatState.messagesList[index - 1],
+                                      message: message,
+                                      theme: theme,
+                                    );
+                                  }
+                                  if (index == 0) {
+                                    // 第0个消息是root消息，不应该被展示或者使用
+                                    return const SizedBox.shrink();
+                                  }
+                                  if (chatState.isResponding &&
+                                      index == itemCount - 1) {
+                                    return ChatMessageDynamicStream(
+                                      contentBuffer: chatState.newContentBuffer,
+                                      refreshFlag: chatState.refreshFlag,
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: ChatPanelInputBox(
+                            afterSubmit: () {
+                              if (_scrollController.offset <
+                                  _scrollController.position.maxScrollExtent) {
+                                _scrollController.animateTo(
+                                  _scrollController.position.maxScrollExtent,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInSine,
                                 );
                               }
-                              if (index == 0) {
-                                // 第0个消息是root消息，不应该被展示或者使用
-                                return const SizedBox.shrink();
-                              }
-                              if (chatState.isResponding &&
-                                  index == itemCount - 1) {
-                                return ChatMessageDynamicStream(
-                                  contentBuffer: chatState.newContentBuffer,
-                                  refreshFlag: chatState.refreshFlag,
-                                );
-                              }
-                              return const SizedBox.shrink();
                             },
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: ChatPanelInputBox(
-                        afterSubmit: () {
-                          if (_scrollController.offset <
-                              _scrollController.position.maxScrollExtent) {
-                            _scrollController.animateTo(
-                              _scrollController.position.maxScrollExtent,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInSine,
-                            );
-                          }
-                        },
-                      ),
+                  ),
+                  Positioned(
+                    height: min(
+                      min(
+                            ChatSidebar.getHeight(
+                              chatState.messagesList.length,
+                            ),
+                            800,
+                          ) +
+                          50,
+                      height * 0.7,
                     ),
-                  ],
-                ),
-              ),
-              BarChatMessagePreview(theme: theme, messageInfo: messageInfo),
-            ],
+                    right: 8,
+                    width: 40,
+                    child: ChatSidebar(
+                      isDense:
+                          (width <
+                          1060), //this needs more space , so var isDense doesn't work here
+                      selectedIndex: indexChangeEvent,
+                      currentActiveIndex: currentActiveIndex,
+                      msgListener: messageInfo,
+                    ),
+                  ),
+                  BarChatMessagePreview(theme: theme, messageInfo: messageInfo),
+                ],
+              );
+            },
           ),
         ),
       ),

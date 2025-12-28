@@ -1,6 +1,7 @@
 class Prompts {
   // 从open web ui那里直接逆向请求扒拉过来的
   static const String AUTO_TITLE_GENERATE_PROMPT = '''
+  <no_think>
 ### Task:
 Generate a concise, 6-8 word title summarizing the chat history.
 ### Guidelines:

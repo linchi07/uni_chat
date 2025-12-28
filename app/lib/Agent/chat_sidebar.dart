@@ -11,11 +11,16 @@ import '../theme_manager.dart';
 
 const double GAP = 10; // gap between lines
 const double LENGTH = 10; // line length
+const double DENSE_LINE_LENGTH = 5;
 const double MAX_INTERVAL_LENGTH = 25; // max interval line length
+const double MAX_DENSE_INTERVAL_LENGTH = 11;
 const double HIGHLIGHT_LENGTH = 35; // highlight line length
+const double MAX_DENSE_HIGHLIGHT_LENGTH = 15;
 const double DELTA =
     (MAX_INTERVAL_LENGTH - LENGTH) /
     INTERVAL_ITEM_COUNT; // the change of line length in interval
+const double DENSE_DELTA =
+    (MAX_DENSE_INTERVAL_LENGTH - DENSE_LINE_LENGTH) / INTERVAL_ITEM_COUNT;
 const double INTERVAL_ITEM_COUNT = 4; // number of lines to show in interval
 const int ANIM_SPEED = 10; // animation speed
 
@@ -25,7 +30,9 @@ class ChatSidebar extends ConsumerStatefulWidget {
     required this.currentActiveIndex,
     required this.msgListener,
     required this.selectedIndex,
+    this.isDense = false,
   });
+  final bool isDense;
   final ValueNotifier<int> currentActiveIndex;
   final ValueNotifier<({ChatMessage? message, Offset? pointerLoc})> msgListener;
   final ValueNotifier<int?> selectedIndex;
@@ -56,6 +63,15 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
   late List<double> currentLineLength = [];
   late List<double> targetLineLength;
   late final Ticker _ticker;
+
+  double get delta => (widget.isDense) ? DENSE_DELTA : DELTA;
+  double get maxLength =>
+      (widget.isDense) ? MAX_DENSE_INTERVAL_LENGTH : MAX_INTERVAL_LENGTH;
+  double get length => (widget.isDense) ? DENSE_LINE_LENGTH : LENGTH;
+  double get highlightLength =>
+      (widget.isDense) ? MAX_DENSE_HIGHLIGHT_LENGTH : HIGHLIGHT_LENGTH;
+  double get maxIntervalLength =>
+      (widget.isDense) ? MAX_DENSE_INTERVAL_LENGTH : MAX_INTERVAL_LENGTH;
   ValueNotifier<({bool trigger, int? highlightIndex, int activeIndex})>
   repaint = ValueNotifier((
     trigger: false,
@@ -69,26 +85,26 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
       targetLineLength.length - 1,
       activeIndex + INTERVAL_ITEM_COUNT,
     );
-    var lastLength = LENGTH;
+    var lastLength = length;
     for (int i = 0; i < targetLineLength.length; i++) {
       if (i >= startIdx && i <= endIdx) {
         if (i == activeIndex) {
-          targetLineLength[i] = HIGHLIGHT_LENGTH;
-          lastLength = MAX_INTERVAL_LENGTH;
+          targetLineLength[i] = highlightLength;
+          lastLength = maxIntervalLength;
           continue;
         }
         if (i > activeIndex && i < endIdx) {
-          lastLength = max(lastLength - DELTA, LENGTH);
+          lastLength = max(lastLength - delta, length);
           targetLineLength[i] = lastLength;
           continue;
         }
         if (i > startIdx && i < activeIndex) {
-          lastLength = min(lastLength + DELTA, MAX_INTERVAL_LENGTH);
+          lastLength = min(lastLength + delta, maxIntervalLength);
           targetLineLength[i] = lastLength;
           continue;
         }
       }
-      targetLineLength[i] = LENGTH;
+      targetLineLength[i] = length;
     }
   }
 
@@ -110,8 +126,8 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
       }
     });
     var l = ref.read(chatStateProvider).messagesList.length - 1;
-    targetLineLength = List.generate(l, (index) => LENGTH);
-    currentLineLength = List.generate(l, (index) => LENGTH);
+    targetLineLength = List.generate(l, (index) => length);
+    currentLineLength = List.generate(l, (index) => length);
   }
 
   Duration? _last;
@@ -134,8 +150,10 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
   @override
   void didUpdateWidget(covariant ChatSidebar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!_ticker.isActive) {
-      _ticker.start();
+    if (widget.isDense != oldWidget.isDense) {
+      //auto change the density
+      calcTargetLineLength(widget.currentActiveIndex.value);
+      if (!_ticker.isActive) _ticker.start();
     }
   }
 
@@ -155,7 +173,7 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
       currentLineLength.addAll(
         List.generate(
           targetLineLength.length - currentLineLength.length,
-          (index) => LENGTH,
+          (index) => length,
         ),
       );
       flag = false;
@@ -169,8 +187,8 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
         }
         currentLineLength[i] += (delta * ANIM_SPEED) * dt;
         currentLineLength[i] = currentLineLength[i].clamp(
-          LENGTH,
-          HIGHLIGHT_LENGTH,
+          length,
+          highlightLength,
         );
         flag = false;
       }
@@ -190,7 +208,7 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
             0,
             next.messagesList.length - 1,
           ), // sometimes the list will give a -1 ,so we need to avoid it
-          (index) => LENGTH,
+          (index) => length,
         );
         calcTargetLineLength(activeIndex);
         if (!_ticker.isActive) _ticker.start();
@@ -217,7 +235,7 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
               ((event.localPosition.dy + controller.offset - 20) / (GAP))
                   .floor();
           if (index >= 0) {
-            widget.selectedIndex.value = index;
+            widget.selectedIndex.value = index + 1;
           }
         },
         child: MouseRegion(
@@ -371,7 +389,7 @@ class _BarChatMessagePreviewState extends State<BarChatMessagePreview> {
     return Positioned(
       top: 10,
       bottom: 10,
-      right: 10 + ChatSidebar.actualWidth,
+      right: ChatSidebar.actualWidth - 5,
       width: 320,
       child: (message != null)
           ? Align(
@@ -394,7 +412,7 @@ class _BarChatMessagePreviewState extends State<BarChatMessagePreview> {
                       }
                     },
                     child: Padding(
-                      padding: const EdgeInsets.only(right: 20),
+                      padding: const EdgeInsets.only(right: 30),
                       child: Material(
                         color: widget.theme.zeroGradeColor,
                         elevation: 5,
