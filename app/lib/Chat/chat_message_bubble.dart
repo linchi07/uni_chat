@@ -473,7 +473,7 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
         var s = lerpSize(sizeTween.value);
         return Container(
           width: s.$1,
-          height: s.$2,
+          height: (t == 1) ? null : s.$2,
           margin: EdgeInsets.only(right: sizeTween.value * 14),
           padding: EdgeInsets.all(
             4 + ((sizeTween.value == 1) ? 0 : sizeTween.value * 12),
