@@ -419,6 +419,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "preferences": MessageLookupByLibrary.simpleMessage("Preferences"),
     "pres_penalty": MessageLookupByLibrary.simpleMessage("Presence Penalty"),
+    "preview_session": MessageLookupByLibrary.simpleMessage("Preview session"),
     "provider_select": MessageLookupByLibrary.simpleMessage(
       "Select the provider",
     ),
@@ -524,6 +525,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "supports_files_api": MessageLookupByLibrary.simpleMessage(
       "Whether this provider supports files API?",
+    ),
+    "swipe_right_to_see_session": MessageLookupByLibrary.simpleMessage(
+      "Swipe right on the title to preview session",
     ),
     "switch_persona": MessageLookupByLibrary.simpleMessage("Switch persona"),
     "sys_prompt": MessageLookupByLibrary.simpleMessage("System prompt"),

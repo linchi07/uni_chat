@@ -89,6 +89,26 @@ class S {
     );
   }
 
+  /// `Swipe right on the title to preview session`
+  String get swipe_right_to_see_session {
+    return Intl.message(
+      'Swipe right on the title to preview session',
+      name: 'swipe_right_to_see_session',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Preview session`
+  String get preview_session {
+    return Intl.message(
+      'Preview session',
+      name: 'preview_session',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `no message`
   String get no_message {
     return Intl.message('no message', name: 'no_message', desc: '', args: []);

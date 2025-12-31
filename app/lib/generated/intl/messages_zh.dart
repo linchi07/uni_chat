@@ -305,6 +305,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "plz_select_provider": MessageLookupByLibrary.simpleMessage("请选择提供商"),
     "preferences": MessageLookupByLibrary.simpleMessage("设置"),
     "pres_penalty": MessageLookupByLibrary.simpleMessage("存在惩罚"),
+    "preview_session": MessageLookupByLibrary.simpleMessage("预览会话"),
     "provider_select": MessageLookupByLibrary.simpleMessage("提供商选择"),
     "quit": MessageLookupByLibrary.simpleMessage("退出"),
     "reasoned": m9,
@@ -375,6 +376,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "支持md,docx,csv,txt,json,html",
     ),
     "supports_files_api": MessageLookupByLibrary.simpleMessage("是否支持文件API"),
+    "swipe_right_to_see_session": MessageLookupByLibrary.simpleMessage(
+      "向右滑动条目预览会话",
+    ),
     "switch_persona": MessageLookupByLibrary.simpleMessage("切换人格"),
     "sys_prompt": MessageLookupByLibrary.simpleMessage("系统提示词"),
     "system_internal_prompt": m12,
