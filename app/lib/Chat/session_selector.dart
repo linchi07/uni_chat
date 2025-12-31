@@ -360,15 +360,12 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
         return KeyEventResult.ignored;
       },
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // the delay is essential for mobile platforms
-      // after testing on my ipad , it seem if the soft-keyboard is triggered while the anim is playing
-      // there will be janky frames (even if my ipad is an M1 Pro)
-      // so we add a delay here to wait for the anim to finish before triggering the focus
-      await Future.delayed(Duration(milliseconds: 300));
-      _inputBoxFocusNode.requestFocus();
-      //auto  focus on menu open
-    });
+    if (!PlatForm().isMobile) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        _inputBoxFocusNode.requestFocus();
+        //auto  focus on menu open
+      });
+    }
   }
 
   @override
@@ -633,6 +630,28 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                         return ListView.builder(
                                           controller: _sessionScrollController,
                                           itemCount: asyncSnapshot.data!.length,
+                                          prototypeItem: _SessionTile(
+                                            onClose: widget.onClose,
+                                            setPreview: setPreviewSession,
+                                            session: ChatSession(
+                                              id: "",
+                                              agentId: "",
+                                              name: "112414",
+                                              lastMessageTime:
+                                                  DateTime.fromMicrosecondsSinceEpoch(
+                                                    0,
+                                                  ),
+                                              creationTime:
+                                                  DateTime.fromMicrosecondsSinceEpoch(
+                                                    0,
+                                                  ),
+                                            ),
+                                            theme: theme,
+                                            startHoverTimer: startHoverTimer,
+                                            cancelHoverTimer: cancelHoverTimer,
+                                            switchSession: switchSession,
+                                            isSelected: false,
+                                          ),
                                           itemBuilder: (context, index) {
                                             return _SessionTile(
                                               onClose: widget.onClose,
@@ -757,10 +776,11 @@ class _SessionTileState extends State<_SessionTile> {
   @override
   void initState() {
     super.initState();
-    k = widget.session.id;
+    if (PlatForm().isMobile) {
+      displayOptions = true;
+    }
   }
 
-  late String k;
   @override
   Widget build(BuildContext context) {
     var listTile = ListTile(
@@ -800,6 +820,7 @@ class _SessionTileState extends State<_SessionTile> {
                     OverlayPortalService.show(
                       barrierVisible: false,
                       context,
+                      autoAvoidSoftKeyboard: false,
                       offset: Offset(
                         MediaQuery.of(context).size.width -
                             button
@@ -820,7 +841,6 @@ class _SessionTileState extends State<_SessionTile> {
     );
 
     if (PlatForm().isMobile) {
-      displayOptions = true;
       return SwipeActionCell(
         backgroundColor: Colors.transparent,
         key: ValueKey(widget.session.id),
@@ -832,9 +852,6 @@ class _SessionTileState extends State<_SessionTile> {
             onTap: (handler) {
               widget.setPreview(widget.session.id);
               handler(false);
-              setState(() {
-                k = "${widget.session.id}1";
-              });
             },
             content: Container(
               decoration: BoxDecoration(
