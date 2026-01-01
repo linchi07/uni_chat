@@ -294,10 +294,7 @@ class _SessionSelectorOverlayState
               elevation: 4.0,
               color: theme.secondGradeColor,
               borderRadius: BorderRadius.circular(8),
-              child: Opacity(
-                opacity: _opacityAnimation.value,
-                child: (_widthAnimation.value >= 450) ? child : null,
-              ),
+              child: (_animationController.value >= 0.9) ? child : null,
             ),
           ),
         );
@@ -329,11 +326,10 @@ class SessionSelector extends ConsumerStatefulWidget {
 }
 
 class _SessionSelectorState extends ConsumerState<SessionSelector> {
-  final ScrollController _sessionScrollController = ScrollController();
-  final ScrollController _agentScrollController = ScrollController();
+  late final ScrollController _sessionScrollController;
+  late final ScrollController _agentScrollController;
   Timer? _hoverTimer;
   List<ChatMessage>? _previewedSession;
-  bool isSessionScrolled = false;
   late ThemeConfig theme;
   double lastScrollOffset = 0;
 
@@ -343,12 +339,6 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   void initState() {
     super.initState();
     selectedAgentId = ref.read(agentProvider)?.id;
-    // 监听滚动状态变化
-    _sessionScrollController.addListener(() {
-      if (_sessionScrollController.position.isScrollingNotifier.value) {
-        lastScrollOffset = _sessionScrollController.offset;
-      }
-    });
     theme = ref.read(themeProvider);
     _inputBoxFocusNode = FocusNode(
       onKeyEvent: (node, event) {
@@ -403,37 +393,8 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
     ref.read(chatStateProvider.notifier).switchSession(sid);
   }
 
-  void scrollToSelectedSession(int index) {
-    if (!isSessionScrolled) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_sessionScrollController.hasClients) {
-          return;
-        }
-        _sessionScrollController.jumpTo(
-          (64 * index.toDouble() - 128.0).clamp(0, double.maxFinite),
-        );
-        //让选中的不在最上面
-        isSessionScrolled = true;
-      });
-    }
-  }
-
-  bool isAgentScrolled = false;
-
-  void scrollToSelectedAgent(int index) {
-    if (!isSessionScrolled) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_agentScrollController.hasClients) {
-          return;
-        }
-        _agentScrollController.jumpTo(
-          (48 * index.toDouble() - 96.0).clamp(0, double.maxFinite),
-        );
-        //让选中的不在最上面
-        isAgentScrolled = true;
-      });
-    }
-  }
+  bool isSessionScrollInited = false;
+  bool isAgentScrollInited = false;
 
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -493,15 +454,27 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   String? selectedAgentId;
 
   Future<(List<AgentData>, List<File?>)> getAgentAndAvatars() async {
+    // wait after the anim is done
+    await Future.delayed(const Duration(milliseconds: 50));
     var agents = await DatabaseService.instance.getAllAgents();
     var avatars = <File?>[];
     for (int i = 0; i < agents.length; i++) {
       var agent = agents[i];
       var avatar = await agent.getAvatar();
-      if (agent.id == selectedAgentId) {
-        scrollToSelectedAgent(i);
+      if (agent.id == selectedAgentId && !isAgentScrollInited) {
+        _agentScrollController = ScrollController(
+          initialScrollOffset: ((48 * i.toDouble() - 96.0).clamp(
+            0,
+            double.maxFinite,
+          )),
+        );
+        isAgentScrollInited = true;
       }
       avatars.add(avatar);
+    }
+    if (!isAgentScrollInited) {
+      _agentScrollController = ScrollController();
+      isAgentScrollInited = true;
     }
     return (agents, avatars);
   }
@@ -534,7 +507,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                       future: getAgentAndAvatars(),
                       builder: (context, asyncSnapshot) {
                         if (asyncSnapshot.data == null) {
-                          return CircularProgressIndicator();
+                          return const SizedBox();
                         }
                         if (asyncSnapshot.data!.$1.isEmpty) {
                           return Center(
@@ -598,13 +571,19 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                       ),
                                     )
                                   : FutureBuilder(
-                                      future: DatabaseService.instance
-                                          .getAllSessionsByAgent(
-                                            selectedAgentId!,
-                                          ),
+                                      future: () async {
+                                        // wait after the anim is done
+                                        await Future.delayed(
+                                          const Duration(milliseconds: 50),
+                                        );
+                                        return DatabaseService.instance
+                                            .getAllSessionsByAgent(
+                                              selectedAgentId!,
+                                            );
+                                      }.call(),
                                       builder: (context, asyncSnapshot) {
                                         if (asyncSnapshot.data == null) {
-                                          return CircularProgressIndicator();
+                                          return const SizedBox();
                                         }
                                         if (asyncSnapshot.data!.isEmpty) {
                                           return Center(
@@ -623,9 +602,49 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                         ) {
                                           //这里必须手动循环，因为listview有懒加载机制
                                           if (asyncSnapshot.data![i].id ==
-                                              session?.id) {
-                                            scrollToSelectedSession(i);
+                                                  session?.id &&
+                                              !isSessionScrollInited) {
+                                            _sessionScrollController =
+                                                ScrollController(
+                                                  initialScrollOffset:
+                                                      (64 * i.toDouble() -
+                                                              128.0)
+                                                          .clamp(
+                                                            0,
+                                                            double.maxFinite,
+                                                          ),
+                                                );
+                                            // 监听滚动状态变化
+                                            _sessionScrollController
+                                                .addListener(() {
+                                                  if (_sessionScrollController
+                                                      .position
+                                                      .isScrollingNotifier
+                                                      .value) {
+                                                    lastScrollOffset =
+                                                        _sessionScrollController
+                                                            .offset;
+                                                  }
+                                                });
+                                            isSessionScrollInited = true;
                                           }
+                                        }
+                                        if (!isSessionScrollInited) {
+                                          _sessionScrollController =
+                                              ScrollController();
+                                          _sessionScrollController.addListener(
+                                            () {
+                                              if (_sessionScrollController
+                                                  .position
+                                                  .isScrollingNotifier
+                                                  .value) {
+                                                lastScrollOffset =
+                                                    _sessionScrollController
+                                                        .offset;
+                                              }
+                                            },
+                                          );
+                                          isSessionScrollInited = true;
                                         }
                                         return ListView.builder(
                                           controller: _sessionScrollController,

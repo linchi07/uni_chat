@@ -183,13 +183,14 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
             // 如果指定了位置，则使用 Positioned，否则使用 Center
             Widget positionedContent;
             if (data.offset != null) {
-              positionedContent = Positioned(
-                left: data.offset!.dx,
+              positionedContent = AnimatedPositioned(
+                left: data.offset!.dx - 20,
                 top: max(
                   0,
                   data.offset!.dy -
                       ((data.autoAvoidSoftKeyboard) ? _keyboardHeight : 0),
                 ),
+                duration: const Duration(milliseconds: 50),
                 child: SingleChildScrollView(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -199,10 +200,11 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
               );
             } else {
               positionedContent = Center(
-                child: Padding(
+                child: AnimatedPadding(
                   padding: EdgeInsets.only(
                     bottom: (data.autoAvoidSoftKeyboard) ? _keyboardHeight : 0,
                   ),
+                  duration: const Duration(milliseconds: 50),
                   child: SingleChildScrollView(
                     // enlarge the scroll area
                     child: Padding(
