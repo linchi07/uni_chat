@@ -59,18 +59,34 @@ class ThemeConfig {
 
 // 使用 StateNotifier 管理主题状态
 class ThemeManager extends StateNotifier<ThemeConfig> {
-  ThemeManager()
-    : super(
-        ThemeConfig(
-          primaryColor: const Color(0xFF000000),
-          zeroGradeColor: const Color(0xFFFFFFFF),
-          secondGradeColor: const Color(0xFFF2F2F2),
-          thirdGradeColor: const Color(0xFFD7D7D7),
-          darkTextColor: const Color(0xFF000000),
-          brightTextColor: const Color(0xFFFFFFFF),
-        ),
-      );
+  ThemeManager() : super(solarized);
 
+  static ThemeConfig light = ThemeConfig(
+    primaryColor: const Color(0xFF000000),
+    zeroGradeColor: const Color(0xFFFFFFFF),
+    secondGradeColor: const Color(0xFFF2F2F2),
+    thirdGradeColor: const Color(0xFFD7D7D7),
+    darkTextColor: const Color(0xFF000000),
+    brightTextColor: const Color(0xFFFFFFFF),
+  );
+
+  static ThemeConfig dark = ThemeConfig(
+    primaryColor: const Color(0xFFFFFFFF),
+    zeroGradeColor: const Color(0xFF000000),
+    secondGradeColor: const Color(0xFF282828),
+    thirdGradeColor: const Color(0xFF7A7979),
+    darkTextColor: const Color(0xFFFFFFFF),
+    brightTextColor: const Color(0xFF000000),
+  );
+
+  static ThemeConfig solarized = ThemeConfig(
+    primaryColor: const Color(0xff6e8082),
+    zeroGradeColor: const Color(0xfffdf6e3),
+    secondGradeColor: const Color(0xfff0ebda),
+    thirdGradeColor: const Color(0xffcfcab9),
+    darkTextColor: const Color(0xff000000),
+    brightTextColor: const Color(0xff788191),
+  );
   // 更新主题颜色的方法
   void updateTheme({
     Color? primaryColor,

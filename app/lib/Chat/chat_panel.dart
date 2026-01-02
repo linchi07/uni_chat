@@ -11,7 +11,7 @@ import 'package:scrollview_observer/scrollview_observer.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
-import 'package:uni_chat/Agent/chat_sidebar.dart';
+import 'package:uni_chat/Chat/chat_sidebar.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
@@ -534,23 +534,20 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
   late ScrollController _scrollController;
   late final ListObserverController _listObserverController =
       ListObserverController();
-  bool _isAutoScroll = true;
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _scrollController.addListener(() {
-      // 如果滚回到底部，重新开启自动吸底
+    chatState = ref.read(chatStateProvider);
+    chatState.refreshFlag.addListener(() {
+      print(
+        (_scrollController.offset - _scrollController.position.maxScrollExtent)
+            .abs(),
+      );
       if ((_scrollController.offset -
                   _scrollController.position.maxScrollExtent)
               .abs() <
-          10) {
-        _isAutoScroll = true;
-      }
-    });
-    chatState = ref.read(chatStateProvider);
-    chatState.refreshFlag.addListener(() {
-      if (_isAutoScroll) {
+          20) {
         _scrollController.position.moveTo(
           (_scrollController.position.maxScrollExtent),
         );
@@ -561,18 +558,10 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
       if (indexChangeEvent.value != null) {
         if (indexChangeEvent.value == chatState.messagesList.length - 1) {
           // the indexed based scroll is faulty when scrolling to the bottom , so we manually handle this
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInCubic,
-          );
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
           return;
         }
-        _listObserverController.animateTo(
-          index: indexChangeEvent.value!,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInCubic,
-        );
+        _listObserverController.jumpTo(index: indexChangeEvent.value!);
         indexChangeEvent.value = null;
       }
     });
@@ -649,8 +638,10 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                               controller: _listObserverController,
                               // watch the index changes and update the value listener (watched by the sidebar to update the active index)
                               onObserve: (result) {
-                                currentActiveIndex.value =
-                                    result.firstChild?.index ?? 0;
+                                currentActiveIndex.value = max(
+                                  0,
+                                  (result.firstChild?.index ?? 0) - 1,
+                                );
                               },
                               child: ListView.builder(
                                 cacheExtent: 5000,
@@ -855,6 +846,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       // after testing , 70ms seems to be enough (M4 MBP)
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Future.delayed(const Duration(milliseconds: 70), () async {
+          if (!mounted) return;
           ref.read(chatStateProvider.notifier).checkIfReady();
           _checkedTimes++;
         });
@@ -1189,6 +1181,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
 
   late final _focusNode = FocusNode(
     onKeyEvent: (FocusNode node, KeyEvent evt) {
+      /*
       if (HardwareKeyboard.instance.isMetaPressed && evt.character == 'v') {
         if (evt is KeyDownEvent) {
           final clipboard = SystemClipboard.instance;
@@ -1201,19 +1194,68 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           return KeyEventResult.handled;
         }
       }
+      */
       if (HardwareKeyboard.instance.isShiftPressed &&
           evt.logicalKey == LogicalKeyboardKey.enter) {
         if (evt is KeyDownEvent) {
-          //换行
-          _textController.text += '\n';
+          final value = _textController.value;
+          final selection = value.selection;
+
+          // 2. 在光标位置插入换行符
+          final newText = value.text.replaceRange(
+            selection.start,
+            selection.end,
+            '\n',
+          );
+          var ns = TextSelection.collapsed(offset: selection.start + 1);
+          // 3. 更新 Controller 并将光标移至换行符后
+          _textController.value = TextEditingValue(
+            text: newText,
+            selection: ns,
+            composing: TextRange.collapsed(selection.start + 1),
+          );
+
+          var boxSize =
+              ((context.findRenderObject() as RenderBox).size -
+                      Offset(4, 12)) // minus the padding
+                  as Size;
+          // we have to control the scroll by ourselves
+          // damn flutter wont expose the base of editable text (///▽///)
+          // 我tm花了整整6个小时尝试去调用editable text的内置方法，最后发现还是得自己算最方便
+          // 搞到凌晨1点，然后老子后天要春考了！我ctmd。
+          // 主要是给我调红温了
+          var tp = TextPainter(
+            text: TextSpan(
+              text: _textController.text.substring(0, selection.end + 1),
+              style: Theme.of(context).primaryTextTheme.bodyLarge,
+            ),
+            textDirection: TextDirection.ltr,
+            maxLines: null,
+          );
+          tp.layout(maxWidth: boxSize.width);
+          var current = _inputScrollController.offset;
+          var delta = (tp.size.height - current);
+          if (delta < 0) {
+            // this height is calculated according to the top of the cursor
+            // 20 is the height of the cursor
+            // so we need to add a fix height
+            _inputScrollController.jumpTo(current + delta - 20);
+          } else if (delta - boxSize.height + 40 > 0) {
+            // the same (40 is 2x height of cursor)
+            _inputScrollController.jumpTo(
+              min(
+                current + delta - boxSize.height + 40 + 6,
+                _inputScrollController.position.maxScrollExtent,
+              ),
+            ); //6 is a magic number……
+          }
+          return KeyEventResult.handled;
         }
-        return KeyEventResult.handled;
-      } else {
-        return KeyEventResult.ignored;
       }
+      return KeyEventResult.ignored;
     },
   );
-
+  final ScrollController _inputScrollController = ScrollController();
   Widget _buildChatPanel(bool isSendButtonLoading) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1223,6 +1265,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2),
           child: TextField(
+            autofocus: true,
             focusNode: _focusNode,
             onTap: () {
               if (!chatState.isReady) {
@@ -1232,16 +1275,17 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             textInputAction: TextInputAction.send,
             maxLines: 8,
             minLines: 2,
-            controller: _textController,
-            decoration: InputDecoration.collapsed(
-              hintText: S.of(context).send_a_message_hint,
-            ),
             onSubmitted: (text) {
               if (text.isEmpty || isSendButtonLoading || !chatState.isReady) {
                 return;
               }
               _sendMessage();
             },
+            scrollController: _inputScrollController,
+            controller: _textController,
+            decoration: InputDecoration.collapsed(
+              hintText: S.of(context).send_a_message_hint,
+            ),
             textCapitalization: TextCapitalization.sentences,
           ),
         ),

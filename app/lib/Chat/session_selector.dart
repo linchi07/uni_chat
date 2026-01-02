@@ -384,9 +384,11 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
 
   void setPreviewSession(String sid) async {
     var ps = await DatabaseService.instance.getMessageListForSession(sid);
-    internalSetState(() {
-      _previewedSession = ps;
-    });
+    if (mounted) {
+      internalSetState(() {
+        _previewedSession = ps;
+      });
+    }
   }
 
   void switchSession(String sid) {

@@ -67,6 +67,9 @@ enum RunningPlatform { web, android, ios, ipadOS, macos, windows }
 class PlatForm {
   static final PlatForm _instance = PlatForm._internal();
 
+  // only enable haptic on ios and macos (since ipads don't have haptic engines)
+  bool get enableHaptic =>
+      platform == RunningPlatform.ios || platform == RunningPlatform.macos;
   RunningPlatform platform = RunningPlatform.web;
   bool get isMobile =>
       platform == RunningPlatform.android ||
@@ -102,6 +105,11 @@ class UNIChat extends StatelessWidget {
         supportedLocales: S.delegate.supportedLocales,
         navigatorKey: navigatorKey,
         title: '',
+        scrollBehavior:
+            (PlatForm().platform == RunningPlatform.ios ||
+                PlatForm().platform == RunningPlatform.ipadOS)
+            ? const ScrollBehavior().copyWith(physics: const IOSScrollPhysics())
+            : null,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
@@ -347,7 +355,7 @@ class MainContState extends ConsumerState<MainCont> {
               children: [
                 Container(
                   width: 50,
-                  decoration: BoxDecoration(color: Colors.white),
+                  decoration: BoxDecoration(color: theme.zeroGradeColor),
                   child: Column(
                     children: [
                       IconButton(
