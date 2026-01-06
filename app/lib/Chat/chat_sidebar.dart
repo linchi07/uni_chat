@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
+import 'package:uni_chat/main.dart';
 
 import '../theme_manager.dart';
 
@@ -108,6 +109,8 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
     }
   }
 
+  late bool enableHaptic;
+
   @override
   void initState() {
     super.initState();
@@ -128,6 +131,7 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
     var l = ref.read(chatStateProvider).messagesList.length - 1;
     targetLineLength = List.generate(l, (index) => length);
     currentLineLength = List.generate(l, (index) => length);
+    enableHaptic = PlatForm().enableHaptic;
   }
 
   Duration? _last;
@@ -198,6 +202,11 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
 
   late int activeIndex;
 
+  Offset? _pointerPos;
+
+  int? oldIndex;
+  // identify if index changes
+
   @override
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
@@ -229,10 +238,23 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
         ).createShader(bounds);
       },
       blendMode: BlendMode.dstIn,
-      child: Listener(
-        onPointerDown: (event) {
+      child: GestureDetector(
+        onTapDown: (details) {
+          _pointerPos = details.localPosition;
+        },
+        onTap: () {
+          if (_pointerPos != null) {
+            var index = ((_pointerPos!.dy + controller.offset - 20) / (GAP))
+                .floor();
+            if (index >= 0) {
+              widget.selectedIndex.value = index + 1;
+            }
+          }
+          _pointerPos = null;
+        },
+        onPanUpdate: (details) {
           var index =
-              ((event.localPosition.dy + controller.offset - 20) / (GAP))
+              ((details.localPosition.dy + controller.offset - 20) / (GAP))
                   .floor();
           if (index >= 0) {
             widget.selectedIndex.value = index + 1;
@@ -389,7 +411,7 @@ class _BarChatMessagePreviewState extends State<BarChatMessagePreview> {
     return Positioned(
       top: 10,
       bottom: 10,
-      right: ChatSidebar.actualWidth - 5,
+      right: ChatSidebar.actualWidth - 10,
       width: 320,
       child: (message != null)
           ? Align(

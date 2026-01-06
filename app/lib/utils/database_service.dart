@@ -461,6 +461,16 @@ class DatabaseService {
     await db.delete('sessions', where: 'id = ?', whereArgs: [sessionId]);
   }
 
+  Future<void> updateActiveIndex(String id, int newIndex) async {
+    final db = await database;
+    await db.update(
+      'message_relations',
+      {'enabled_child_index': newIndex},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   // --- Message & Attachment CRUD Methods ---
 
   /// Add a message to the database

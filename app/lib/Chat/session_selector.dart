@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipe_action_cell/core/cell.dart';
 import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
@@ -260,7 +261,7 @@ class _SessionSelectorOverlayState
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: Interval(0.6, 1.0, curve: Curves.easeIn),
+        curve: Interval(0.8, 1.0, curve: Curves.easeIn),
       ),
     );
 
@@ -293,10 +294,7 @@ class _SessionSelectorOverlayState
               elevation: 4.0,
               color: theme.secondGradeColor,
               borderRadius: BorderRadius.circular(8),
-              child: Opacity(
-                opacity: _opacityAnimation.value,
-                child: (_widthAnimation.value >= 450) ? child : null,
-              ),
+              child: (_animationController.value >= 0.9) ? child : null,
             ),
           ),
         );
@@ -328,27 +326,21 @@ class SessionSelector extends ConsumerStatefulWidget {
 }
 
 class _SessionSelectorState extends ConsumerState<SessionSelector> {
-  final ScrollController _sessionScrollController = ScrollController();
-  final ScrollController _agentScrollController = ScrollController();
+  late final ScrollController _sessionScrollController;
+  late final ScrollController _agentScrollController;
   Timer? _hoverTimer;
   List<ChatMessage>? _previewedSession;
-  bool isSessionScrolled = false;
   late ThemeConfig theme;
   double lastScrollOffset = 0;
 
   late final FocusNode
-  _inputboxFoucusNode; // for auto dismiss on escape key pressed
+  _inputBoxFocusNode; // for auto dismiss on escape key pressed
   @override
   void initState() {
     super.initState();
     selectedAgentId = ref.read(agentProvider)?.id;
-    // 监听滚动状态变化
-    _sessionScrollController.addListener(() {
-      if (_sessionScrollController.position.isScrollingNotifier.value) {
-        lastScrollOffset = _sessionScrollController.offset;
-      }
-    });
-    _inputboxFoucusNode = FocusNode(
+    theme = ref.read(themeProvider);
+    _inputBoxFocusNode = FocusNode(
       onKeyEvent: (node, event) {
         if (event.logicalKey == LogicalKeyboardKey.escape) {
           node.unfocus();
@@ -358,18 +350,24 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
         return KeyEventResult.ignored;
       },
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _inputboxFoucusNode.requestFocus();
-      //auto  focus on menu open
-    });
+    if (!PlatForm().isMobile) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        _inputBoxFocusNode.requestFocus();
+        //auto  focus on menu open
+      });
+    }
   }
 
   @override
   void dispose() {
     super.dispose();
     cancelHoverTimer();
-    _sessionScrollController.dispose();
-    _agentScrollController.dispose();
+    if (isSessionScrollInited) {
+      _sessionScrollController.dispose();
+    }
+    if (isAgentScrollInited) {
+      _agentScrollController.dispose();
+    }
   }
 
   void startHoverTimer(String sid) {
@@ -377,7 +375,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
     if (_sessionScrollController.offset == lastScrollOffset) {
       _hoverTimer = Timer(Duration(milliseconds: 250), () {
         if (_sessionScrollController.offset == lastScrollOffset) {
-          _setPreviewSession(sid);
+          setPreviewSession(sid);
         }
       });
     }
@@ -388,48 +386,21 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
     _hoverTimer = null;
   }
 
-  void _setPreviewSession(String sid) async {
+  void setPreviewSession(String sid) async {
     var ps = await DatabaseService.instance.getMessageListForSession(sid);
-    internalSetState(() {
-      _previewedSession = ps;
-    });
+    if (mounted) {
+      internalSetState(() {
+        _previewedSession = ps;
+      });
+    }
   }
 
   void switchSession(String sid) {
     ref.read(chatStateProvider.notifier).switchSession(sid);
   }
 
-  void scrollToSelectedSession(int index) {
-    if (!isSessionScrolled) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_sessionScrollController.hasClients) {
-          return;
-        }
-        _sessionScrollController.jumpTo(
-          (64 * index.toDouble() - 128.0).clamp(0, double.maxFinite),
-        );
-        //让选中的不在最上面
-        isSessionScrolled = true;
-      });
-    }
-  }
-
-  bool isAgentScrolled = false;
-
-  void scrollToSelectedAgent(int index) {
-    if (!isSessionScrolled) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_agentScrollController.hasClients) {
-          return;
-        }
-        _agentScrollController.jumpTo(
-          (48 * index.toDouble() - 96.0).clamp(0, double.maxFinite),
-        );
-        //让选中的不在最上面
-        isAgentScrolled = true;
-      });
-    }
-  }
+  bool isSessionScrollInited = false;
+  bool isAgentScrollInited = false;
 
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -438,7 +409,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
       children: [
         Expanded(
           child: TextField(
-            focusNode: _inputboxFoucusNode,
+            focusNode: _inputBoxFocusNode,
             controller: _searchController,
             decoration: InputDecoration(
               hintText: S.of(context).search_any_chat_message,
@@ -489,15 +460,27 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   String? selectedAgentId;
 
   Future<(List<AgentData>, List<File?>)> getAgentAndAvatars() async {
+    // wait after the anim is done
+    await Future.delayed(const Duration(milliseconds: 50));
     var agents = await DatabaseService.instance.getAllAgents();
     var avatars = <File?>[];
     for (int i = 0; i < agents.length; i++) {
       var agent = agents[i];
       var avatar = await agent.getAvatar();
-      if (agent.id == selectedAgentId) {
-        scrollToSelectedAgent(i);
+      if (agent.id == selectedAgentId && !isAgentScrollInited) {
+        _agentScrollController = ScrollController(
+          initialScrollOffset: ((48 * i.toDouble() - 96.0).clamp(
+            0,
+            double.maxFinite,
+          )),
+        );
+        isAgentScrollInited = true;
       }
       avatars.add(avatar);
+    }
+    if (!isAgentScrollInited) {
+      _agentScrollController = ScrollController();
+      isAgentScrollInited = true;
     }
     return (agents, avatars);
   }
@@ -530,7 +513,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                       future: getAgentAndAvatars(),
                       builder: (context, asyncSnapshot) {
                         if (asyncSnapshot.data == null) {
-                          return CircularProgressIndicator();
+                          return const SizedBox();
                         }
                         if (asyncSnapshot.data!.$1.isEmpty) {
                           return Center(
@@ -594,13 +577,19 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                       ),
                                     )
                                   : FutureBuilder(
-                                      future: DatabaseService.instance
-                                          .getAllSessionsByAgent(
-                                            selectedAgentId!,
-                                          ),
+                                      future: () async {
+                                        // wait after the anim is done
+                                        await Future.delayed(
+                                          const Duration(milliseconds: 50),
+                                        );
+                                        return DatabaseService.instance
+                                            .getAllSessionsByAgent(
+                                              selectedAgentId!,
+                                            );
+                                      }.call(),
                                       builder: (context, asyncSnapshot) {
                                         if (asyncSnapshot.data == null) {
-                                          return CircularProgressIndicator();
+                                          return const SizedBox();
                                         }
                                         if (asyncSnapshot.data!.isEmpty) {
                                           return Center(
@@ -619,16 +608,79 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                         ) {
                                           //这里必须手动循环，因为listview有懒加载机制
                                           if (asyncSnapshot.data![i].id ==
-                                              session?.id) {
-                                            scrollToSelectedSession(i);
+                                                  session?.id &&
+                                              !isSessionScrollInited) {
+                                            _sessionScrollController =
+                                                ScrollController(
+                                                  initialScrollOffset:
+                                                      (64 * i.toDouble() -
+                                                              128.0)
+                                                          .clamp(
+                                                            0,
+                                                            double.maxFinite,
+                                                          ),
+                                                );
+                                            // 监听滚动状态变化
+                                            _sessionScrollController
+                                                .addListener(() {
+                                                  if (_sessionScrollController
+                                                      .position
+                                                      .isScrollingNotifier
+                                                      .value) {
+                                                    lastScrollOffset =
+                                                        _sessionScrollController
+                                                            .offset;
+                                                  }
+                                                });
+                                            isSessionScrollInited = true;
                                           }
+                                        }
+                                        if (!isSessionScrollInited) {
+                                          _sessionScrollController =
+                                              ScrollController();
+                                          _sessionScrollController.addListener(
+                                            () {
+                                              if (_sessionScrollController
+                                                  .position
+                                                  .isScrollingNotifier
+                                                  .value) {
+                                                lastScrollOffset =
+                                                    _sessionScrollController
+                                                        .offset;
+                                              }
+                                            },
+                                          );
+                                          isSessionScrollInited = true;
                                         }
                                         return ListView.builder(
                                           controller: _sessionScrollController,
                                           itemCount: asyncSnapshot.data!.length,
+                                          prototypeItem: _SessionTile(
+                                            onClose: widget.onClose,
+                                            setPreview: setPreviewSession,
+                                            session: ChatSession(
+                                              id: "",
+                                              agentId: "",
+                                              name: "112414",
+                                              lastMessageTime:
+                                                  DateTime.fromMicrosecondsSinceEpoch(
+                                                    0,
+                                                  ),
+                                              creationTime:
+                                                  DateTime.fromMicrosecondsSinceEpoch(
+                                                    0,
+                                                  ),
+                                            ),
+                                            theme: theme,
+                                            startHoverTimer: startHoverTimer,
+                                            cancelHoverTimer: cancelHoverTimer,
+                                            switchSession: switchSession,
+                                            isSelected: false,
+                                          ),
                                           itemBuilder: (context, index) {
                                             return _SessionTile(
                                               onClose: widget.onClose,
+                                              setPreview: setPreviewSession,
                                               session:
                                                   asyncSnapshot.data![index],
                                               theme: theme,
@@ -654,7 +706,13 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                               child: _previewedSession == null
                                   ? Center(
                                       child: Text(
-                                        S.of(context).hover_to_see_session,
+                                        (PlatForm().isMobile)
+                                            ? S
+                                                  .of(context)
+                                                  .swipe_right_to_see_session
+                                            : S
+                                                  .of(context)
+                                                  .hover_to_see_session,
                                         style: TextStyle(
                                           color: theme.thirdGradeColor,
                                         ),
@@ -719,6 +777,7 @@ class _SessionTile extends StatefulWidget {
     required this.cancelHoverTimer,
     required this.switchSession,
     required this.isSelected,
+    required this.setPreview,
     required this.onClose,
   });
   final VoidCallback onClose;
@@ -727,6 +786,7 @@ class _SessionTile extends StatefulWidget {
   final ThemeConfig theme;
   final dynamic startHoverTimer;
   final dynamic cancelHoverTimer;
+  final dynamic setPreview;
   final dynamic switchSession;
   @override
   State<_SessionTile> createState() => _SessionTileState();
@@ -735,11 +795,110 @@ class _SessionTile extends StatefulWidget {
 class _SessionTileState extends State<_SessionTile> {
   bool displayOptions = false;
   bool displayOverlay = false;
-  // 1. Controller to show/hide the custom popup menu.
-  final _overlayPortalController = OverlayPortalController();
+
+  ThemeConfig get theme => widget.theme;
+
+  @override
+  void initState() {
+    super.initState();
+    if (PlatForm().isMobile) {
+      displayOptions = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    var listTile = ListTile(
+      contentPadding: displayOptions
+          ? EdgeInsets.fromLTRB(10, 0, 5, 0)
+          : EdgeInsets.fromLTRB(10, 0, 10, 0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      onTap: () {
+        widget.switchSession(widget.session.id);
+        widget.onClose();
+      },
+      selectedTileColor: widget.theme.primaryColor,
+      selectedColor: ColorParser.textColor(
+        widget.isSelected
+            ? widget.theme.primaryColor
+            : widget.theme.secondGradeColor,
+      ),
+      title: Text(
+        widget.session.name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        widget.session.creationTime.toString(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: displayOptions
+          ? Builder(
+              builder: (buttonContext) {
+                return IconButton(
+                  icon: Icon(Icons.more_vert),
+                  onPressed: () {
+                    final RenderBox button =
+                        buttonContext.findRenderObject() as RenderBox;
+                    final Offset position = button.localToGlobal(Offset.zero);
+                    OverlayPortalService.show(
+                      barrierVisible: false,
+                      context,
+                      autoAvoidSoftKeyboard: false,
+                      offset: Offset(
+                        MediaQuery.of(context).size.width -
+                            button
+                                .localToGlobal(
+                                  button.size.bottomRight(Offset.zero),
+                                )
+                                .dx,
+                        position.dy + button.size.height,
+                      ),
+                      child: _buildPopupMenu(widget.session.id),
+                    );
+                  },
+                );
+              },
+            )
+          : null,
+      selected: widget.isSelected,
+    );
+
+    if (PlatForm().isMobile) {
+      return SwipeActionCell(
+        backgroundColor: Colors.transparent,
+        key: ValueKey(widget.session.id),
+        leadingActions: [
+          SwipeAction(
+            widthSpace: 100,
+            performsFirstActionWithFullSwipe: true,
+            color: theme.secondGradeColor,
+            onTap: (handler) {
+              widget.setPreview(widget.session.id);
+              handler(false);
+            },
+            content: Container(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  S.of(context).preview_session,
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+        ],
+        // this material is essential
+        // the list tile paints it's bk ground color on it's nearest ancestor material widget in the tree
+        // this swipe will transform the location of the list tile , however the bk ground color will not (since the material widget doesn't move)
+        // so we need this one here which will move with the list tile instead of a single one under the background
+        child: Material(color: Colors.transparent, child: listTile),
+      );
+    }
     return MouseRegion(
       onEnter: (event) {
         widget.startHoverTimer(widget.session.id);
@@ -760,101 +919,8 @@ class _SessionTileState extends State<_SessionTile> {
           });
         }
       },
-      child: ListTile(
-        contentPadding: displayOptions
-            ? EdgeInsets.fromLTRB(10, 0, 5, 0)
-            : EdgeInsets.fromLTRB(10, 0, 10, 0),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        onTap: () {
-          widget.switchSession(widget.session.id);
-          widget.onClose();
-        },
-        selectedTileColor: widget.theme.primaryColor,
-        selectedColor: ColorParser.textColor(
-          widget.isSelected
-              ? widget.theme.primaryColor
-              : widget.theme.secondGradeColor,
-        ),
-        title: Text(
-          widget.session.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          widget.session.creationTime.toString(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: displayOptions
-            ? Builder(
-                builder: (buttonContext) {
-                  //gemini 发癫，给劳资整成英文了，但是无所谓了
-                  // 2. The OverlayPortal widget. It doesn't display anything on its own.
-                  // Its 'child' is the anchor, and its 'overlayChildBuilder' is what's shown.
-                  return OverlayPortal(
-                    controller: _overlayPortalController,
-                    // 3. This builds the actual popup menu when shown.
-                    overlayChildBuilder: (BuildContext context) {
-                      // We need to calculate the position of the button to place the menu correctly.
-                      final RenderBox button =
-                          buttonContext.findRenderObject() as RenderBox;
-                      final RenderBox overlay =
-                          Overlay.of(context).context.findRenderObject()
-                              as RenderBox;
-                      final Offset position = button.localToGlobal(
-                        Offset(0, button.size.height),
-                        ancestor: overlay,
-                      );
-
-                      return Stack(
-                        children: [
-                          ModalBarrier(
-                            color: Colors.transparent,
-                            dismissible: true,
-                            onDismiss: () {
-                              _hideOverlay();
-                            },
-                          ),
-                          // Background GestureDetector to dismiss the menu when tapping outside.
-                          // Position the menu right below the button.
-                          Positioned(
-                            top: position.dy,
-                            // Adjust left/right positioning as needed.
-                            // Here, we align the right edge of the menu with the right edge of the tile.
-                            right:
-                                MediaQuery.of(context).size.width -
-                                button
-                                    .localToGlobal(
-                                      button.size.bottomRight(Offset.zero),
-                                      ancestor: overlay,
-                                    )
-                                    .dx,
-                            child: _buildPopupMenu(widget.session.id),
-                          ),
-                        ],
-                      );
-                    },
-                    // 4. This is the anchor widget, our IconButton.
-                    child: IconButton(
-                      icon: Icon(Icons.more_vert),
-                      onPressed: () {
-                        // Toggle the visibility of the overlay child.
-                        _overlayPortalController.toggle();
-                      },
-                    ),
-                  );
-                },
-              )
-            : null,
-        selected: widget.isSelected,
-      ),
+      child: listTile,
     );
-  }
-
-  void _hideOverlay() {
-    displayOptions = false;
-    if (displayOverlay) _overlayPortalController.hide();
-    displayOverlay = false;
   }
 
   // 5. A helper method to build the content of our custom menu.
@@ -875,7 +941,7 @@ class _SessionTileState extends State<_SessionTile> {
               leading: Icon(Icons.auto_awesome),
               title: Text(S.of(context).generate_title),
               onTap: () {
-                _hideOverlay();
+                OverlayPortalService.hide(context);
                 //TODO: rewrite this in order to generate title without leaving the session selector or switching current session
                 OverlayPortalService.show(
                   context,
@@ -888,7 +954,7 @@ class _SessionTileState extends State<_SessionTile> {
               leading: Icon(Icons.edit),
               title: Text(S.of(context).rename),
               onTap: () {
-                _hideOverlay();
+                OverlayPortalService.hide(context);
                 OverlayPortalService.show(
                   context,
                   child: _renameDialog(context, sessionId),
@@ -902,7 +968,7 @@ class _SessionTileState extends State<_SessionTile> {
               leading: Icon(Icons.delete),
               title: Text(S.of(context).delete),
               onTap: () {
-                _hideOverlay();
+                OverlayPortalService.hide(context);
                 OverlayPortalService.show(
                   context,
                   child: _confirmDeleteDialog(context, sessionId),
@@ -915,15 +981,12 @@ class _SessionTileState extends State<_SessionTile> {
     );
   }
 
-  late ThemeConfig theme;
-
   Widget _confirmDeleteDialog(BuildContext context, String sessionId) {
     return SizedBox(
       width: 300,
       height: 200,
       child: Consumer(
         builder: (context, ref, child) {
-          theme = ref.watch(themeProvider);
           return Material(
             color: theme.zeroGradeColor,
             shape: RoundedRectangleBorder(
@@ -987,7 +1050,6 @@ class _SessionTileState extends State<_SessionTile> {
       height: 200,
       child: Consumer(
         builder: (context, ref, child) {
-          theme = ref.watch(themeProvider);
           return Material(
             color: theme.zeroGradeColor,
             shape: RoundedRectangleBorder(
@@ -1052,7 +1114,6 @@ class _SessionTileState extends State<_SessionTile> {
       height: 200,
       child: Consumer(
         builder: (context, ref, child) {
-          theme = ref.watch(themeProvider);
           return Material(
             color: theme.zeroGradeColor,
             shape: RoundedRectangleBorder(

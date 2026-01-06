@@ -163,7 +163,6 @@ class MainBanner extends ConsumerWidget {
         children: [
           Positioned(
             left: 0,
-            top: 0,
             width: startLength.toDouble(),
             child: Row(
               mainAxisSize: MainAxisSize.min,

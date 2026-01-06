@@ -3,6 +3,8 @@
   "no_agent":"No agent , please add one",
   "no_history":"no chat history",
   "hover_to_see_session":"Hover to preview session",
+  "swipe_right_to_see_session": "Swipe right on the title to preview session",
+  "preview_session": "Preview session",
   "no_message":"no message",
   "generate_title": "Generate title",
   "generate_title_hint":"Generate a title for this chat will overwrite the previous one",

@@ -3,6 +3,8 @@
   "no_agent": "暂无Agent,请添加一个",
   "no_history": "暂无对话历史",
   "hover_to_see_session": "鼠标悬停来预览会话",
+  "swipe_right_to_see_session": "向右滑动条目预览会话",
+  "preview_session": "预览会话",
   "no_message": "没有消息",
   "generate_title": "生成标题",
   "generate_title_hint":"重新生成会覆盖旧标题",

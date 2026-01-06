@@ -216,7 +216,9 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
     ];
     final screenSize = MediaQuery.of(context).size;
     // 判断屏幕尺寸，如果是小屏幕，则强制为最大化
-    if (screenSize.height <= 800 || screenSize.width <= 600) {
+    if (PlatForm().isMobile ||
+        screenSize.height <= 800 ||
+        screenSize.width <= 600) {
       _isMaximized = true;
       _forceMaximize = true;
     } else {

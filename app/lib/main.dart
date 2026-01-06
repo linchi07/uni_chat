@@ -1,5 +1,6 @@
 import 'dart:io' as io show Platform;
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -34,7 +35,13 @@ Future<void> main() async {
   if (io.Platform.isAndroid) {
     PlatForm().platform = RunningPlatform.android;
   } else if (io.Platform.isIOS) {
-    PlatForm().platform = RunningPlatform.ios;
+    var di = await DeviceInfoPlugin().iosInfo;
+    // whether this is an ipad
+    if (di.model.contains("iPad")) {
+      PlatForm().platform = RunningPlatform.ipadOS;
+    } else {
+      PlatForm().platform = RunningPlatform.ios;
+    }
   } else if (io.Platform.isMacOS) {
     PlatForm().platform = RunningPlatform.macos;
     await MacOSSpecificsSetting.setWindowStyle();
@@ -55,12 +62,19 @@ Future<void> main() async {
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-enum RunningPlatform { web, android, ios, macos, windows }
+enum RunningPlatform { web, android, ios, ipadOS, macos, windows }
 
 class PlatForm {
   static final PlatForm _instance = PlatForm._internal();
 
+  // only enable haptic on ios and macos (since ipads don't have haptic engines)
+  bool get enableHaptic =>
+      platform == RunningPlatform.ios || platform == RunningPlatform.macos;
   RunningPlatform platform = RunningPlatform.web;
+  bool get isMobile =>
+      platform == RunningPlatform.android ||
+      platform == RunningPlatform.ios ||
+      platform == RunningPlatform.ipadOS;
   String platformInfo = '';
   String location = '';
   factory PlatForm() => _instance;
@@ -91,6 +105,11 @@ class UNIChat extends StatelessWidget {
         supportedLocales: S.delegate.supportedLocales,
         navigatorKey: navigatorKey,
         title: '',
+        scrollBehavior:
+            (PlatForm().platform == RunningPlatform.ios ||
+                PlatForm().platform == RunningPlatform.ipadOS)
+            ? const ScrollBehavior().copyWith(physics: const IOSScrollPhysics())
+            : null,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
@@ -103,6 +122,12 @@ class UNIChat extends StatelessWidget {
                 }
                 if (PlatForm().platform == RunningPlatform.macos) {
                   mainContent = MacOSMenuBar(mainContent: mainContent);
+                }
+                if (PlatForm().isMobile) {
+                  mainContent = Scaffold(
+                    backgroundColor: Colors.white,
+                    body: SafeArea(bottom: false, child: mainContent),
+                  );
                 }
                 if (!isSetUp) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -330,7 +355,7 @@ class MainContState extends ConsumerState<MainCont> {
               children: [
                 Container(
                   width: 50,
-                  decoration: BoxDecoration(color: Colors.white),
+                  decoration: BoxDecoration(color: theme.zeroGradeColor),
                   child: Column(
                     children: [
                       IconButton(
@@ -373,6 +398,9 @@ class MainContState extends ConsumerState<MainCont> {
                       Expanded(child: SizedBox()),
                       PersonaIndicator(),
                       SettingsMenuButton(),
+                      // to avoid the menu button being cut off
+                      if (PlatForm().platform == RunningPlatform.ipadOS)
+                        const SizedBox(height: 10),
                     ],
                   ),
                 ),

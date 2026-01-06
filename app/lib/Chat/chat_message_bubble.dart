@@ -17,9 +17,6 @@ import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import 'chat_models.dart';
 
-// A fixed speed for the typewriter animation.
-const int CHARACTERS_PER_SECOND = 400;
-
 /// A widget that displays a chat message.
 /// [prevMessage] is the previous message, used to show variants. **When null,the toolbar will be automatically hidden**
 class PersistChatMessage extends ConsumerStatefulWidget {
@@ -81,6 +78,9 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
           beforeSubmit: () {
             ref.read(chatStateProvider.notifier).addBranch(index);
           },
+          afterSubmit: () {
+            
+          }
           cancelCallback: () {
             setState(() {
               isEditMode = false;
@@ -100,6 +100,15 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
           () {
             ref.read(chatStateProvider.notifier).addBranch(index);
           },
+          () async {
+            // wait for the next frame (next state)
+            await Future.delayed(const Duration(milliseconds: 200));
+            var cps = chatPanel.currentState;
+            if (cps != null) {
+              cps.autoScroll = true;
+              cps.autoScrollFunc();
+            }
+          },
           () {
             setState(() {
               isEditMode = false;
@@ -109,6 +118,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
         var box = Align(
           alignment: Alignment.centerRight,
           child: _InputExpandAnimation(
+            originContentText: message.content,
             registeredFunctions: functionPT,
             theme: theme,
             originContent: content,
@@ -148,7 +158,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isUserMessage ? widget.theme.thirdGradeColor : null,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: content,
       ),
@@ -199,9 +209,11 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                 builder: (context, setState) {
                   if (isCopied) {
                     Timer(Duration(seconds: 1), () {
-                      setState(() {
-                        isCopied = false;
-                      });
+                      if (context.mounted) {
+                        setState(() {
+                          isCopied = false;
+                        });
+                      }
                     });
                   }
                   return InkWell(
@@ -232,10 +244,17 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                 width: 24,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(10),
-                  onTap: () {
+                  onTap: () async {
                     ref
                         .read(chatStateProvider.notifier)
                         .regenerateMessage(index);
+                    // wait for the next frame
+                    await Future.delayed(const Duration(milliseconds: 200));
+                    var cps = chatPanel.currentState;
+                    if (cps != null) {
+                      cps.autoScroll = true;
+                      cps.autoScrollFunc();
+                    }
                   },
                   child: Icon(Icons.refresh, size: 20),
                 ),
@@ -376,10 +395,12 @@ class _InputExpandAnimation extends StatefulWidget {
     required this.registeredFunctions,
     required this.theme,
     required this.originContent,
+    required this.originContentText,
   });
   final dynamic registeredFunctions;
   final ThemeConfig theme;
   final Widget originContent;
+  final String originContentText;
 
   @override
   State<_InputExpandAnimation> createState() => _InputExpandAnimationState();
@@ -432,24 +453,45 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
     if (_startSize != null) {
       return (
         lerpDouble(_startSize!.width, targetW, t),
-        lerpDouble(_startSize!.height, INPUT_BOX_COLLAPSED_HEIGHT, t),
+        lerpDouble(_startSize!.height, targetH, t),
       );
     }
     return (null, null);
   }
 
   late double targetW;
+  late double targetH;
   Size? _startSize;
   @override
   Widget build(BuildContext context) {
     targetW = min(MediaQuery.of(context).size.width * 0.8, 1000 * 0.9);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_startSize == null) {
-        final renderBox = context.findRenderObject() as RenderBox?;
-        _startSize = renderBox?.size;
+        final renderBox = context.findRenderObject() as RenderBox;
+        // calc the text size in the input box
+        var tp = TextPainter(
+          text: TextSpan(
+            text: widget.originContentText,
+            style: Theme.of(context).primaryTextTheme.bodyLarge,
+          ),
+          textDirection: TextDirection.ltr,
+          maxLines: null,
+        );
+        tp.layout(
+          maxWidth: renderBox.size.width - 18,
+        ); // minus left and right padding
+        targetH = (tp.height + 70).clamp(
+          //36 is the toolbar height
+          INPUT_BOX_COLLAPSED_HEIGHT,
+          INPUT_BOX_EXPANDED_HEIGHT - 18,
+        );
+        // 70 and 18 are just magic numbers that makes the animation smooth
+        // I have no idea why it works
+        _startSize = renderBox.size;
         _controller.forward();
       }
     });
+    var w = MediaQuery.of(context).size.width * 0.8;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -471,20 +513,38 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
           shadowTween.value,
         );
         var s = lerpSize(sizeTween.value);
+        var vertical = max(lerpDouble(5, 0, sizeTween.value)!, 0).toDouble();
+        var left = max(lerpDouble(5, 0, sizeTween.value)!, 0).toDouble();
+        var right = max(lerpDouble(8, 14, sizeTween.value)!, 0).toDouble();
+        var paddingOther = max(
+          lerpDouble(12, 16, sizeTween.value)!, // 12 -> 12 + 4
+          0,
+        ).toDouble();
+        var paddingBottom = max(
+          lerpDouble(12, 38, sizeTween.value)!, // 36 is 12 + bottom toolbar
+          0,
+        ).toDouble();
         return Container(
           width: s.$1,
-          height: (t == 1) ? null : s.$2,
-          margin: EdgeInsets.only(right: sizeTween.value * 14),
-          padding: EdgeInsets.all(
-            4 + ((sizeTween.value == 1) ? 0 : sizeTween.value * 12),
-          ),
+          height: (t >= 0.8) ? null : s.$2,
+          margin: EdgeInsets.fromLTRB(left, vertical, right, vertical),
+          padding: (t >= 0.8)
+              ? const EdgeInsets.all(4)
+              : EdgeInsets.fromLTRB(
+                  paddingOther,
+                  paddingOther,
+                  paddingOther,
+                  paddingBottom,
+                ),
           constraints: (t >= 0.8)
               ? BoxConstraints.loose(Size(targetW, INPUT_BOX_EXPANDED_HEIGHT))
+              : (t == 0)
+              ? BoxConstraints(maxWidth: min(w, 1000 * 0.9))
               : null,
           decoration: BoxDecoration(
             color: Color.lerp(
               widget.theme.thirdGradeColor,
-              Colors.white,
+              widget.theme.zeroGradeColor,
               colorTween.value,
             ),
             boxShadow: [?shadow],
@@ -494,12 +554,16 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
               ? ChatPanelInputBox(
                   textInject: widget.registeredFunctions.$1,
                   beforeSubmit: widget.registeredFunctions.$2,
+                  afterSubmit: widget.registeredFunctions.$3,
                   cancelCallback: () async {
                     await _controller.reverse();
-                    widget.registeredFunctions.$3.call();
+                    widget.registeredFunctions.$4.call();
                   },
                 )
-              : widget.originContent,
+              : ClipRRect(
+                  clipBehavior: Clip.hardEdge,
+                  child: widget.originContent,
+                ),
         );
       },
     );

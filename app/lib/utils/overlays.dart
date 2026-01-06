@@ -1,13 +1,27 @@
-import 'package:flutter/material.dart';
+import 'dart:math';
 
-class _PortalData {
+import 'package:flutter/material.dart';
+import 'package:uni_chat/main.dart';
+
+class _Portal {
   final OverlayPortalController controller = OverlayPortalController();
-  final ValueNotifier<Widget?> childNotifier = ValueNotifier(null);
-  final ValueNotifier<bool> barrierVisibleNotifier = ValueNotifier(true);
-  final ValueNotifier<Offset?> offsetNotifier = ValueNotifier(null);
+  final ValueNotifier<_PortalData?> dataNotifier = ValueNotifier(null);
   late final AnimationController animationController;
 
-  _PortalData();
+  _Portal();
+}
+
+class _PortalData {
+  Widget? child;
+  Offset? offset;
+  bool barrierVisible;
+  bool autoAvoidSoftKeyboard;
+  _PortalData({
+    this.child,
+    this.offset,
+    this.barrierVisible = true,
+    this.autoAvoidSoftKeyboard = true,
+  });
 }
 
 /// 全局对话框服务，用于通过 OverlayPortal 显示居中对话框。
@@ -15,30 +29,6 @@ class OverlayPortalService {
   // 1. 使用私有构造函数创建单例
   OverlayPortalService._();
   static final instance = OverlayPortalService._();
-
-  // 2. 存储所有注册的 portal 控制器和内容通知器
-  final Map<String, _PortalData> _portals = {};
-
-  /// 注册一个 portal
-  void _registerPortal(String key) {
-    if (!_portals.containsKey(key)) {
-      _portals[key] = _PortalData();
-    }
-  }
-
-  /// 注销一个 portal
-  void _unregisterPortal(String key) {
-    final portal = _portals.remove(key);
-    if (portal != null) {
-      portal.childNotifier.value = null;
-      portal.childNotifier.dispose();
-    }
-  }
-
-  /// 获取指定 key 的 portal 数据
-  _PortalData? _getPortal(String key) {
-    return _portals[key];
-  }
 
   /// 显示一个居中的对话框。
   ///
@@ -50,6 +40,7 @@ class OverlayPortalService {
     BuildContext context, {
     required Widget child,
     bool barrierVisible = true,
+    bool autoAvoidSoftKeyboard = true,
     Offset? offset,
   }) {
     final scopeState = context
@@ -60,10 +51,12 @@ class OverlayPortalService {
 
     final portal = scopeState._portalData;
 
-    // 更新要显示的内容和相关参数
-    portal.childNotifier.value = child;
-    portal.barrierVisibleNotifier.value = barrierVisible;
-    portal.offsetNotifier.value = offset;
+    portal.dataNotifier.value = _PortalData(
+      child: child,
+      offset: offset,
+      barrierVisible: barrierVisible,
+      autoAvoidSoftKeyboard: autoAvoidSoftKeyboard,
+    );
 
     // 显示 OverlayPortal
     portal.controller.show();
@@ -98,11 +91,6 @@ class OverlayPortalService {
 
     // 隐藏 OverlayPortal
     portal.controller.hide();
-
-    // 动画结束后清空内容，避免内存占用
-    Future.delayed(const Duration(milliseconds: 200), () {
-      portal.childNotifier.value = null;
-    });
   }
 }
 
@@ -117,19 +105,34 @@ class OverlayPortalScope extends StatefulWidget {
 }
 
 class _OverlayPortalScopeState extends State<OverlayPortalScope>
-    with TickerProviderStateMixin {
-  late _PortalData _portalData;
+    with TickerProviderStateMixin, WidgetsBindingObserver {
+  late _Portal _portalData;
 
   @override
   void initState() {
     super.initState();
-    _portalData = _PortalData();
+    _portalData = _Portal();
     // 初始化动画控制器
     _portalData.animationController = AnimationController(
       lowerBound: 0.6,
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+    if (PlatForm().isMobile) {
+      WidgetsBinding.instance.addObserver(this);
+    }
+  }
+
+  double _keyboardHeight = 0;
+
+  @override
+  void didChangeMetrics() {
+    // this is for soft-keyboard avoid on mobile platforms
+    super.didChangeMetrics();
+    final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+    setState(() {
+      _keyboardHeight = viewInsets;
+    });
   }
 
   @override
@@ -137,10 +140,10 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
     // 释放动画控制器
     _portalData.animationController.dispose();
     // 释放新增的通知器
-    _portalData.barrierVisibleNotifier.dispose();
-    _portalData.offsetNotifier.dispose();
-    _portalData.childNotifier.dispose();
-
+    _portalData.dataNotifier.dispose();
+    if (PlatForm().isMobile) {
+      WidgetsBinding.instance.removeObserver(this);
+    }
     super.dispose();
   }
 
@@ -152,11 +155,11 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
       // 这是实际的覆盖层内容构建器
       overlayChildBuilder: (BuildContext context) {
         // 使用 ValueListenableBuilder 来监听内容变化
-        return ValueListenableBuilder<Widget?>(
-          valueListenable: _portalData.childNotifier,
-          builder: (context, child, _) {
+        return ValueListenableBuilder<_PortalData?>(
+          valueListenable: _portalData.dataNotifier,
+          builder: (context, data, _) {
             // 如果没有内容，则不显示任何东西
-            if (child == null) {
+            if (data == null || data.child == null) {
               return const SizedBox.shrink();
             }
             //这里出现了一个bug或者奇葩的问题，反正就是在apikey设置页面的时候每次的焦点更改都会导致build然后就会放一次动画
@@ -175,53 +178,60 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
             );
 */
             // 监听遮罩可见性变化
-            return ValueListenableBuilder<bool>(
-              valueListenable: _portalData.barrierVisibleNotifier,
-              builder: (context, barrierVisible, _) {
-                // 监听位置变化
-                return ValueListenableBuilder<Offset?>(
-                  valueListenable: _portalData.offsetNotifier,
-                  builder: (context, offset, _) {
-                    // 监听大小变化
-                    Widget content = child;
-                    /*
-                    // 应用动画效果
-                    content = FadeTransition(
-                      opacity: fadeAnimation,
+            // 监听大小变化
+            Widget content = data.child!;
+            // 如果指定了位置，则使用 Positioned，否则使用 Center
+            Widget positionedContent;
+            if (data.offset != null) {
+              positionedContent = AnimatedPositioned(
+                left: data.offset!.dx - 20,
+                top: max(
+                  0,
+                  data.offset!.dy -
+                      ((data.autoAvoidSoftKeyboard) ? _keyboardHeight : 0),
+                ),
+                duration: const Duration(milliseconds: 50),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: content,
+                  ),
+                ),
+              );
+            } else {
+              positionedContent = Center(
+                child: AnimatedPadding(
+                  padding: EdgeInsets.only(
+                    bottom: (data.autoAvoidSoftKeyboard) ? _keyboardHeight : 0,
+                  ),
+                  duration: const Duration(milliseconds: 50),
+                  child: SingleChildScrollView(
+                    // enlarge the scroll area
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: content,
-                    );
-*/
-                    // 如果指定了位置，则使用 Positioned，否则使用 Center
-                    Widget positionedContent;
-                    if (offset != null) {
-                      positionedContent = Positioned(
-                        left: offset.dx,
-                        top: offset.dy,
-                        child: content,
-                      );
-                    } else {
-                      positionedContent = Center(child: content);
-                    }
-                    return Stack(
-                      children: [
-                        // 背景遮罩，点击时可以关闭对话框
-                        ModalBarrier(
-                          color: (barrierVisible)
-                              ? Colors.black.withAlpha(90)
-                              : Colors.transparent,
-                          dismissible: true,
-                          onDismiss: () {
-                            // 反向播放动画后再隐藏
-                            OverlayPortalService.hide(context);
-                          },
-                        ),
-                        // 将内容居中显示并添加动画效果
-                        positionedContent,
-                      ],
-                    );
+                    ),
+                  ),
+                ),
+              );
+            }
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                // 背景遮罩，点击时可以关闭对话框
+                ModalBarrier(
+                  color: (data.barrierVisible)
+                      ? Colors.black.withAlpha(90)
+                      : Colors.transparent,
+                  dismissible: true,
+                  onDismiss: () {
+                    // 反向播放动画后再隐藏
+                    OverlayPortalService.hide(context);
                   },
-                );
-              },
+                ),
+                // 将内容居中显示并添加动画效果
+                positionedContent,
+              ],
             );
           },
         );

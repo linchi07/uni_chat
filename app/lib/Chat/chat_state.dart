@@ -156,13 +156,14 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     return msg;
   }
 
-  void switchBranch(int startingPointIndex, int branchIndex) {
+  Future<void> switchBranch(int startingPointIndex, int branchIndex) async {
     if (startingPointIndex >= state.messagesList.length) {
       return;
     }
     var sl = state.messagesList.sublist(0, startingPointIndex);
     var current = sl.last;
     current.enabledChild = branchIndex;
+    var r = _dbService.updateActiveIndex(current.id, branchIndex);
     do {
       var child = state.messages[current.childIds[current.enabledChild]];
       if (child == null) {
@@ -172,6 +173,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       current = child;
     } while (current.childIds.isNotEmpty);
     state = state.copyWith(messagesList: sl);
+    await r;
   }
 
   // --- Public Session Management API ---
@@ -508,7 +510,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           dynamicUIQLParser.clear();
           print("p $e");
         }
-        print(chunk.content);
         state.newContentBuffer.write(chunk.content);
         state.refreshFlag.value = !state.refreshFlag.value;
       }
