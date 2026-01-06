@@ -510,7 +510,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           dynamicUIQLParser.clear();
           print("p $e");
         }
-        print(chunk.content);
         state.newContentBuffer.write(chunk.content);
         state.refreshFlag.value = !state.refreshFlag.value;
       }

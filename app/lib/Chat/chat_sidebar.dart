@@ -411,7 +411,7 @@ class _BarChatMessagePreviewState extends State<BarChatMessagePreview> {
     return Positioned(
       top: 10,
       bottom: 10,
-      right: ChatSidebar.actualWidth - 5,
+      right: ChatSidebar.actualWidth - 10,
       width: 320,
       child: (message != null)
           ? Align(

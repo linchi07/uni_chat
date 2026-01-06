@@ -362,8 +362,12 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   void dispose() {
     super.dispose();
     cancelHoverTimer();
-    _sessionScrollController.dispose();
-    _agentScrollController.dispose();
+    if (isSessionScrollInited) {
+      _sessionScrollController.dispose();
+    }
+    if (isAgentScrollInited) {
+      _agentScrollController.dispose();
+    }
   }
 
   void startHoverTimer(String sid) {

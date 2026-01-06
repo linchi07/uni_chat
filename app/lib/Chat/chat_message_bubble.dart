@@ -78,6 +78,9 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
           beforeSubmit: () {
             ref.read(chatStateProvider.notifier).addBranch(index);
           },
+          afterSubmit: () {
+            
+          }
           cancelCallback: () {
             setState(() {
               isEditMode = false;
@@ -96,6 +99,15 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
           },
           () {
             ref.read(chatStateProvider.notifier).addBranch(index);
+          },
+          () async {
+            // wait for the next frame (next state)
+            await Future.delayed(const Duration(milliseconds: 200));
+            var cps = chatPanel.currentState;
+            if (cps != null) {
+              cps.autoScroll = true;
+              cps.autoScrollFunc();
+            }
           },
           () {
             setState(() {
@@ -197,7 +209,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                 builder: (context, setState) {
                   if (isCopied) {
                     Timer(Duration(seconds: 1), () {
-                      if (mounted) {
+                      if (context.mounted) {
                         setState(() {
                           isCopied = false;
                         });
@@ -232,10 +244,17 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                 width: 24,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(10),
-                  onTap: () {
+                  onTap: () async {
                     ref
                         .read(chatStateProvider.notifier)
                         .regenerateMessage(index);
+                    // wait for the next frame
+                    await Future.delayed(const Duration(milliseconds: 200));
+                    var cps = chatPanel.currentState;
+                    if (cps != null) {
+                      cps.autoScroll = true;
+                      cps.autoScrollFunc();
+                    }
                   },
                   child: Icon(Icons.refresh, size: 20),
                 ),
@@ -535,9 +554,10 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
               ? ChatPanelInputBox(
                   textInject: widget.registeredFunctions.$1,
                   beforeSubmit: widget.registeredFunctions.$2,
+                  afterSubmit: widget.registeredFunctions.$3,
                   cancelCallback: () async {
                     await _controller.reverse();
-                    widget.registeredFunctions.$3.call();
+                    widget.registeredFunctions.$4.call();
                   },
                 )
               : ClipRRect(

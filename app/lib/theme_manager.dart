@@ -85,7 +85,7 @@ class ThemeManager extends StateNotifier<ThemeConfig> {
     secondGradeColor: const Color(0xfff0ebda),
     thirdGradeColor: const Color(0xffcfcab9),
     darkTextColor: const Color(0xff000000),
-    brightTextColor: const Color(0xff788191),
+    brightTextColor: const Color(0xFFFFFFFF),
   );
   // 更新主题颜色的方法
   void updateTheme({

@@ -105,7 +105,7 @@ class _ChatPageMainState extends ConsumerState<ChatPageMain> {
                   ? MessageBubblePreviewer()
                   : _isDebugUiql
                   ? const UIQLPreviewer()
-                  : ChatPanel(),
+                  : ChatPanel(key: chatPanel),
             ),
           ],
         );

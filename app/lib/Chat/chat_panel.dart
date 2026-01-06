@@ -527,41 +527,30 @@ class ChatPanel extends ConsumerStatefulWidget {
   const ChatPanel({super.key});
 
   @override
-  ConsumerState<ChatPanel> createState() => _ChatPanelState();
+  ConsumerState<ChatPanel> createState() => ChatPanelState();
 }
 
-class _ChatPanelState extends ConsumerState<ChatPanel> {
-  late ScrollController _scrollController;
-  late final ListObserverController _listObserverController =
+final chatPanel = GlobalKey<ChatPanelState>();
+
+class ChatPanelState extends ConsumerState<ChatPanel> {
+  late ScrollController scrollController;
+  late final ListObserverController listObserverController =
       ListObserverController();
+  bool autoScroll = true;
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
+    scrollController = ScrollController();
     chatState = ref.read(chatStateProvider);
-    chatState.refreshFlag.addListener(() {
-      print(
-        (_scrollController.offset - _scrollController.position.maxScrollExtent)
-            .abs(),
-      );
-      if ((_scrollController.offset -
-                  _scrollController.position.maxScrollExtent)
-              .abs() <
-          20) {
-        _scrollController.position.moveTo(
-          (_scrollController.position.maxScrollExtent),
-        );
-      }
-    });
-    _listObserverController.controller = _scrollController;
+    listObserverController.controller = scrollController;
     indexChangeEvent.addListener(() {
       if (indexChangeEvent.value != null) {
         if (indexChangeEvent.value == chatState.messagesList.length - 1) {
           // the indexed based scroll is faulty when scrolling to the bottom , so we manually handle this
-          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+          scrollController.jumpTo(scrollController.position.maxScrollExtent);
           return;
         }
-        _listObserverController.jumpTo(index: indexChangeEvent.value!);
+        listObserverController.jumpTo(index: indexChangeEvent.value!);
         indexChangeEvent.value = null;
       }
     });
@@ -570,16 +559,34 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
   late ChatState chatState;
   @override
   void dispose() {
-    _scrollController.dispose();
+    scrollController.dispose();
     super.dispose();
   }
 
   void jumpToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.position.moveTo(
-        (_scrollController.position.maxScrollExtent),
+    if (scrollController.offset < scrollController.position.maxScrollExtent) {
+      scrollController.position.moveTo(
+        (scrollController.position.maxScrollExtent),
       );
-    });
+    }
+  }
+
+  bool _callBackActivated = false;
+
+  Future<void> autoScrollFunc() async {
+    while (autoScroll && chatState.isResponding) {
+      //make sure not to add multiple callbacks
+      if (!_callBackActivated) {
+        // make sure not to scroll during building
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          jumpToBottom();
+          _callBackActivated = false;
+        });
+      }
+      _callBackActivated = true;
+      // when responding , self spin to auto scroll
+      await Future.delayed(Duration(milliseconds: 100));
+    }
   }
 
   ChatSession? session;
@@ -594,7 +601,9 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
     chatState = ref.watch(chatStateProvider);
     // jump to bottom when session changes
     if (session != chatState.session) {
-      jumpToBottom();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        jumpToBottom();
+      });
       session = chatState.session;
     }
     var theme = ref.watch(themeProvider);
@@ -608,44 +617,70 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
         : chatState.messages.length;
     return Scaffold(
       backgroundColor: theme.secondGradeColor,
-      //add the scrollbar outside the container
-      body: Scrollbar(
-        controller: _scrollController,
-        child: ScrollConfiguration(
-          //and disable the default scrollbar
-          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              var height = constraints.maxHeight;
-              var width = constraints.maxWidth;
-              var isDense = width < 1000;
-              return Stack(
-                alignment: Alignment.center,
-                fit: StackFit.expand,
-                children: [
-                  Positioned(
-                    width: (!isDense) ? 1000 : null,
-                    left: (isDense) ? 0 : null,
-                    right: (isDense) ? 20 : null,
-                    top: 0,
-                    bottom: 0,
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: SelectionArea(
-                            //还是国人做的包好用。。
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          var height = constraints.maxHeight;
+          var width = constraints.maxWidth;
+          var isDense = width < 1000;
+          return Stack(
+            alignment: Alignment.center,
+            fit: StackFit.expand,
+            children: [
+              Positioned(
+                width: (!isDense) ? 1000 : null,
+                left: (isDense) ? 0 : null,
+                right: (isDense) ? 15 : null,
+                top: 0,
+                bottom: 0,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SelectionArea(
+                        child: ScrollConfiguration(
+                          //disable the default scrollbar
+                          behavior: ScrollConfiguration.of(
+                            context,
+                          ).copyWith(scrollbars: false),
+                          child: NotificationListener<ScrollNotification>(
+                            onNotification: (notification) {
+                              if (notification is UserScrollNotification) {
+                                if (autoScroll && chatState.isResponding) {
+                                  autoScroll = false;
+                                  return false;
+                                }
+                                if (!autoScroll &&
+                                    (scrollController.position.maxScrollExtent -
+                                                scrollController.offset)
+                                            .abs() < // the abs is essential since we got the bouncing scroll physics
+                                        30) {
+                                  autoScroll = true;
+                                  if (chatState.isResponding) {
+                                    autoScrollFunc();
+                                  }
+                                  return false;
+                                }
+                              }
+                              return true;
+                            },
                             child: ListViewObserver(
-                              controller: _listObserverController,
+                              //还是国人做的包好用。。
+                              controller: listObserverController,
                               // watch the index changes and update the value listener (watched by the sidebar to update the active index)
                               onObserve: (result) {
-                                currentActiveIndex.value = max(
-                                  0,
-                                  (result.firstChild?.index ?? 0) - 1,
-                                );
+                                if (chatState.isResponding) {
+                                  // lock the index at the last message
+                                  currentActiveIndex.value =
+                                      chatState.messagesList.length - 1;
+                                } else {
+                                  currentActiveIndex.value = max(
+                                    0,
+                                    (result.firstChild?.index ?? 0) - 1,
+                                  );
+                                }
                               },
                               child: ListView.builder(
                                 cacheExtent: 5000,
-                                controller: _scrollController,
+                                controller: scrollController,
                                 itemCount: itemCount,
                                 itemBuilder: (context, index) {
                                   if (index >= 1 &&
@@ -678,52 +713,55 @@ class _ChatPanelState extends ConsumerState<ChatPanel> {
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: ChatPanelInputBox(
-                            afterSubmit: () {
-                              if (_scrollController.offset <
-                                  _scrollController.position.maxScrollExtent) {
-                                _scrollController.animateTo(
-                                  _scrollController.position.maxScrollExtent,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInSine,
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                  Positioned(
-                    height: min(
-                      min(
-                            ChatSidebar.getHeight(
-                              chatState.messagesList.length,
-                            ),
-                            800,
-                          ) +
-                          50,
-                      height * 0.7,
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: ChatPanelInputBox(
+                        afterSubmit: () async {
+                          if (scrollController.offset <
+                              scrollController.position.maxScrollExtent) {
+                            // wait for the loading animation
+                            await Future.delayed(
+                              const Duration(milliseconds: 200),
+                            );
+                            scrollController.animateTo(
+                              scrollController.position.maxScrollExtent,
+                              duration: const Duration(milliseconds: 150),
+                              curve: Curves.easeInSine,
+                            );
+                            autoScrollFunc();
+                          }
+                        },
+                      ),
                     ),
-                    right: 8,
-                    width: 40,
-                    child: ChatSidebar(
-                      isDense:
-                          (width <
-                          1060), //this needs more space , so var isDense doesn't work here
-                      selectedIndex: indexChangeEvent,
-                      currentActiveIndex: currentActiveIndex,
-                      msgListener: messageInfo,
-                    ),
-                  ),
-                  BarChatMessagePreview(theme: theme, messageInfo: messageInfo),
-                ],
-              );
-            },
-          ),
-        ),
+                  ],
+                ),
+              ),
+              Positioned(
+                height: min(
+                  min(
+                        ChatSidebar.getHeight(chatState.messagesList.length),
+                        800,
+                      ) +
+                      50,
+                  height * 0.7,
+                ),
+                right: 0,
+                width: 40,
+                child: ChatSidebar(
+                  isDense:
+                      (width <
+                      1060), //this needs more space , so var isDense doesn't work here
+                  selectedIndex: indexChangeEvent,
+                  currentActiveIndex: currentActiveIndex,
+                  msgListener: messageInfo,
+                ),
+              ),
+              BarChatMessagePreview(theme: theme, messageInfo: messageInfo),
+            ],
+          );
+        },
       ),
     );
   }
@@ -853,7 +891,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       });
     }
     theme = ref.watch(themeProvider);
-    final isSendButtonLoading = (globalLoading);
     late Widget childPanel;
     if (isDroppingFiles) {
       childPanel = Container(
@@ -862,7 +899,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            AbsorbPointer(child: _buildChatPanel(isSendButtonLoading)),
+            AbsorbPointer(child: _buildChatPanel(globalLoading)),
             Text(
               S.of(context).drop_files_hint,
               style: TextStyle(
@@ -877,7 +914,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     } else {
       childPanel = Padding(
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-        child: _buildChatPanel(isSendButtonLoading),
+        child: _buildChatPanel(globalLoading),
       );
     }
     if (chatState.error?.isNotEmpty ?? false) {
