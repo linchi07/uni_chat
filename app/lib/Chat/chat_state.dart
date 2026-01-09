@@ -294,11 +294,16 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   }
   // --- End Public Session Management API ---
 
-  Future<void> triggerUploadFile(File file, String id, String name) async {
+  Future<void> triggerUploadFile(
+    File file,
+    String id,
+    String name,
+    bool isText,
+  ) async {
     if (agentNotifier.state == null) {
       return;
     }
-    if (ChatFile.textExtensions.contains(p.extension(file.path))) {
+    if (isText) {
       state.uploadedFilesStash[id] = (
         file: ChatFile(
           name: id,
