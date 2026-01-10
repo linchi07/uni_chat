@@ -973,26 +973,16 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                                             'unknown.png',
                                           )
                                         : null,
-                                    onImageChanged: (s, e, setImage) async {
-                                      final sessionFilesDir = Directory(
+                                    onImageChanged: (s, setImage) async {
+                                      var f = await s.copyTo(
                                         await PathProvider.getPath(
                                           "chat/avatars",
                                         ),
+                                        rename: widget.persona.id,
+                                        replaceIfExist: true,
+                                        createDirIfNotExist: true,
                                       );
-                                      if (!await sessionFilesDir.exists()) {
-                                        await sessionFilesDir.create(
-                                          recursive: true,
-                                        );
-                                      }
-                                      final file = File(
-                                        await PathProvider.getPath(
-                                          "chat/avatars/${widget.persona.id}.$e",
-                                        ),
-                                      );
-                                      final sink = file.openWrite();
-                                      await s.forEach(sink.add);
-                                      await sink.close();
-                                      setImage(file.path);
+                                      setImage(f.path);
                                     },
                                   );
                                 },

@@ -8,14 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
-import 'package:super_clipboard/super_clipboard.dart';
 import 'package:uni_chat/Chat/chat_panel.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
+import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
-import '../utils/paste_and_drop/src/models.dart' show Language;
 import '../utils/prebuilt_widgets.dart' show FileIcon;
 import 'chat_models.dart';
 
@@ -221,13 +220,10 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                   return InkWell(
                     borderRadius: BorderRadius.circular(10),
                     onTap: () async {
-                      final clipboard = SystemClipboard.instance;
-                      if (clipboard == null) {
-                        return; // Clipboard API is not supported on this platform.
-                      }
-                      final item = DataWriterItem();
-                      item.add(Formats.plainText(message.content));
-                      await clipboard.write([item]);
+                      var d = [
+                        NativeDataWriterItem()..addText(message.content),
+                      ];
+                      await NativeClipboard.write(d);
                       setState(() {
                         isCopied = true;
                       });

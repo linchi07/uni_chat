@@ -2,13 +2,12 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
 import 'package:uni_chat/utils/overlays.dart';
+import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
@@ -806,6 +805,56 @@ class _StdSearchState extends State<StdSearch> {
   }
 }
 
+class ImageChangeResult {
+  late bool isNativeImage;
+  NativeImage? _nativeImage;
+  PlatformFile? _fileImage;
+
+  ImageChangeResult(NativeImage? nativeImage, PlatformFile? fileImage) {
+    isNativeImage = nativeImage != null;
+    if (isNativeImage) {
+      _nativeImage = nativeImage;
+    } else {
+      _fileImage = fileImage;
+    }
+  }
+
+  Future<File> copyTo(
+    String pathToDir, {
+    String? rename,
+    bool replaceIfExist = false,
+    bool createDirIfNotExist = false,
+    String? extension,
+  }) async {
+    if (isNativeImage) {
+      return _nativeImage!.copyTo(
+        pathToDir,
+        rename: rename,
+        replaceIfExist: replaceIfExist,
+        createDirIfNotExist: createDirIfNotExist,
+        extension: extension,
+      );
+    } else {
+      var path = _fileImage?.path;
+      if (path != null) {
+        var f = File(path);
+        var dir = Directory(pathToDir);
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+        var n = rename ?? p.basename(f.path);
+        if (extension != null && !extension.startsWith(".")) {
+          extension = ".$extension";
+        }
+        var e = extension ?? p.extension(n);
+        return await f.copy(p.join(pathToDir, "$n$e"));
+      } else {
+        throw Exception("File is null");
+      }
+    }
+  }
+}
+
 class StdAvatarPicker extends StatefulWidget {
   const StdAvatarPicker({
     super.key,
@@ -817,12 +866,7 @@ class StdAvatarPicker extends StatefulWidget {
   final Widget? initialWidget;
   final String? initialAssetImagePath;
   final File? initialImageFile;
-  final void Function(
-    Stream<Uint8List>,
-    String extension,
-    void Function(String),
-  )
-  onImageChanged;
+  final void Function(ImageChangeResult, void Function(String)) onImageChanged;
 
   @override
   State<StdAvatarPicker> createState() => _StdAvatarPickerState();
@@ -838,62 +882,28 @@ class _StdAvatarPickerState extends State<StdAvatarPicker> {
     });
   }
 
-  Stream<Uint8List> readFileAsStream(File file) async* {
-    try {
-      // 使用 openRead() 方法创建一个 Stream<List<int>>
-      await for (final chunk in file.openRead()) {
-        // 将每个数据块转换为 Uint8List 并 yield
-        yield Uint8List.fromList(chunk);
-      }
-    } catch (e) {
-      // 错误处理可以在监听时通过 onError 回调处理
-      throw Exception('读取文件时发生错误: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return DropRegion(
-      formats: [Formats.jpeg, Formats.png],
+    return NativeDropRegion(
+      supportedFormats: {
+        const FileFormat(extension: 'jpg', mimeType: 'image/jpeg'),
+        const FileFormat(extension: 'png', mimeType: 'image/png'),
+        const FileFormat(extension: 'jpeg', mimeType: 'image/jpeg'),
+      },
       onDropLeave: (e) {
         setState(() {
           isDroppingFiles = false;
         });
       },
-      onDropOver: (event) {
-        if (event.session.allowedOperations.contains(DropOperation.copy)) {
-          setState(() {
-            isDroppingFiles = true;
-          });
-          return DropOperation.copy;
-        }
-        return DropOperation.none;
+      onDropEnter: (e) {
+        setState(() {
+          isDroppingFiles = true;
+        });
       },
       onPerformDrop: (e) async {
-        var item = e.session.items.first;
-        if (item.dataReader == null) {
-          return;
-        }
-        if (item.canProvide(Formats.jpeg)) {
-          item.dataReader?.getFile(
-            Formats.jpeg,
-            (f) async {
-              widget.onImageChanged(f.getStream(), 'jpeg', setImage);
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        } else if (item.canProvide(Formats.png)) {
-          item.dataReader?.getFile(
-            Formats.png,
-            (f) async {
-              widget.onImageChanged(f.getStream(), 'png', setImage);
-            },
-            onError: (error) {
-              return;
-            },
-          );
+        var item = e.items.firstOrNull;
+        if (item is NativeImage) {
+          widget.onImageChanged(ImageChangeResult(item, null), setImage);
         }
       },
       child: Stack(
@@ -923,8 +933,7 @@ class _StdAvatarPickerState extends State<StdAvatarPicker> {
                     return;
                   }
                   widget.onImageChanged(
-                    readFileAsStream(File(file.path!)),
-                    p.extension(file.path!),
+                    ImageChangeResult(null, file),
                     setImage,
                   );
                 }

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -282,22 +280,14 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                           textAlign: TextAlign.center,
                         ),
                       ),
-                      onImageChanged: (s, e, setImage) async {
-                        final sessionFilesDir = Directory(
+                      onImageChanged: (s, setImage) async {
+                        var f = await s.copyTo(
                           await PathProvider.getPath("chat/avatars"),
+                          rename: agentState.id,
+                          replaceIfExist: true,
+                          createDirIfNotExist: true,
                         );
-                        if (!await sessionFilesDir.exists()) {
-                          await sessionFilesDir.create(recursive: true);
-                        }
-                        final file = File(
-                          await PathProvider.getPath(
-                            "chat/avatars/${agentState.id}.$e",
-                          ),
-                        );
-                        final sink = file.openWrite();
-                        await s.forEach(sink.add);
-                        await sink.close();
-                        setImage(file.path);
+                        setImage(f.path);
                       },
                     ),
                   ),
