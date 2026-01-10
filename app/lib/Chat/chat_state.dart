@@ -121,7 +121,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     List<ChatMessage>? messagesList,
     List<ChatMessage>? roots,
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
-    Map<String, ChatFile>? uploadedFiles,
     bool? isLoading,
     String? error,
   }) {
@@ -294,11 +293,16 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   }
   // --- End Public Session Management API ---
 
-  Future<void> triggerUploadFile(File file, String id, String name) async {
+  Future<void> triggerUploadFile(
+    File file,
+    String id,
+    String name,
+    bool isText,
+  ) async {
     if (agentNotifier.state == null) {
       return;
     }
-    if (ChatFile.textExtensions.contains(p.extension(file.path))) {
+    if (isText) {
       state.uploadedFilesStash[id] = (
         file: ChatFile(
           name: id,
@@ -316,7 +320,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       status: UploadStatus.uploading,
     );
     state = state.copyWith(isLoading: true);
-    if (ChatFile.imageExtensions.contains(p.extension(file.path)) &&
+    if (ChatFile.imageExtensions.contains(
+          p.extension(file.path).toLowerCase(),
+        ) &&
         agentNotifier.state!.model.modelAbilities.contains(
           ModelAbility.visualUnderStanding,
         )) {

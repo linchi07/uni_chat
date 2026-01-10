@@ -81,6 +81,17 @@ class ChatMessage {
   });
 
   factory ChatMessage.fromMap(Map<String, dynamic> map) {
+    var at = map['attachments'];
+    List<ChatFile>? attachments;
+    if (at != null) {
+      var dec = jsonDecode(at);
+      if (dec.isNotEmpty) {
+        attachments = [];
+        for (var i in dec) {
+          attachments.add(ChatFile.fromMap(i));
+        }
+      }
+    }
     return ChatMessage(
       id: map['id'],
       messageId: map['message_id'],
@@ -91,10 +102,8 @@ class ChatMessage {
       sender: MessageSenderExtension.fromString(
         (map['sender'] as String?) ?? 'internal',
       ),
+      attachedFiles: attachments,
       content: map['content'] ?? '',
-      attachedFiles: (map['attachedFiles'] as List<dynamic>?)
-          ?.map((e) => ChatFile.fromMap(e))
-          .toList(),
       timestamp: DateTime.fromMicrosecondsSinceEpoch(
         (map['timestamp'] as int?) ?? 0,
       ),
@@ -109,7 +118,7 @@ class ChatMessage {
       'child_ids': jsonEncode(childIds),
       'sender': sender.toString(),
       'content': content,
-      'attachedFiles': attachedFiles?.map((e) => e.toMap()).toList(),
+      'attachments': attachedFiles?.map((e) => e.toMap()).toList(),
       'timestamp': timestamp.microsecondsSinceEpoch,
       'enabledChild': enabledChild,
     };
@@ -284,7 +293,7 @@ class ChatFile {
   factory ChatFile.fromMap(Map<String, dynamic> map) {
     return ChatFile(
       name: map['name'],
-      originalName: map['original_name'],
+      originalName: map['originalName'],
       uploadTime: DateTime.parse(map['uploadTime']),
       providerInfo: {
         for (var e in map['providerInfo'])
@@ -296,7 +305,7 @@ class ChatFile {
   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'original_name': originalName,
+      'originalName': originalName,
       'uploadTime': uploadTime.microsecondsSinceEpoch,
       'providerInfo': [
         for (var e in providerInfo.entries)
@@ -385,7 +394,7 @@ class ChatFile {
     if (extension == null) {
       return FileTypeDefine.unknown;
     }
-
+    extension = extension.toLowerCase();
     if (imageExtensions.contains(extension)) {
       return FileTypeDefine.image;
     } else if (textExtensions.contains(extension)) {
@@ -402,6 +411,8 @@ class ChatFile {
     if (extension == null) {
       return 'application/octet-stream';
     }
+
+    extension = extension.toLowerCase();
 
     // 修复文本类型扩展名中的错误（'.css' 写成了 'css'）
     if (extension == 'css') {

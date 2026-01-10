@@ -8,13 +8,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
-import 'package:super_clipboard/super_clipboard.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Chat/chat_sidebar.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
+import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
@@ -537,6 +536,7 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
   late final ListObserverController listObserverController =
       ListObserverController();
   bool autoScroll = true;
+  bool showInputBox = true;
   @override
   void initState() {
     super.initState();
@@ -715,24 +715,27 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: ChatPanelInputBox(
-                        afterSubmit: () async {
-                          if (scrollController.offset <
-                              scrollController.position.maxScrollExtent) {
-                            // wait for the loading animation
-                            await Future.delayed(
-                              const Duration(milliseconds: 200),
-                            );
-                            scrollController.animateTo(
-                              scrollController.position.maxScrollExtent,
-                              duration: const Duration(milliseconds: 150),
-                              curve: Curves.easeInSine,
-                            );
-                            autoScrollFunc();
-                          }
-                        },
+                    Offstage(
+                      offstage: !showInputBox,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: ChatPanelInputBox(
+                          afterSubmit: () async {
+                            if (scrollController.offset <
+                                scrollController.position.maxScrollExtent) {
+                              // wait for the loading animation
+                              await Future.delayed(
+                                const Duration(milliseconds: 200),
+                              );
+                              scrollController.animateTo(
+                                scrollController.position.maxScrollExtent,
+                                duration: const Duration(milliseconds: 150),
+                                curve: Curves.easeInSine,
+                              );
+                              autoScrollFunc();
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ],
@@ -841,6 +844,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 copiedFile,
                 previewId,
                 p.basename(actualFile.path),
+                ChatFile.textExtensions.contains(p.extension(actualFile.path)),
               );
         }
       }
@@ -859,19 +863,24 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     });
   }
 
-  Future<void> _readAndAttachFile(dynamic f, String fileExtension) async {
+  Future<void> _readAndAttachFile(NativeData f) async {
+    //经过改造之后，就这样简单几行代码就能完成之前超长if的事情，而且还更准，更好用……
     var previewId = _uuid.v7();
-    var fname = f.fileName ?? DateTime.now().toIso8601String() + fileExtension;
-    var path = await PathProvider.getPath(
-      "chat/session_files/$previewId$fileExtension",
-    );
-    final file = File(path);
-    final sink = file.openWrite();
-    await f.getStream().forEach(sink.add);
-    await sink.close();
-    await ref
-        .read(chatStateProvider.notifier)
-        .triggerUploadFile(file, previewId, fname);
+    var path = await PathProvider.getPath("chat/session_files/");
+    try {
+      var file = await f.copyTo(path, rename: previewId);
+      await ref
+          .read(chatStateProvider.notifier)
+          .triggerUploadFile(
+            file,
+            previewId,
+            f.name ?? DateTime.now().toIso8601String(),
+            f is NativeTextFile,
+          );
+    } catch (e) {
+      //TODO: should display an error
+      return;
+    }
   }
 
   int _checkedTimes = 0;
@@ -942,135 +951,26 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         ],
       );
     }
-    return DropRegion(
-      formats: Formats.standardFormats,
-      onDropOver: (d) {
-        if (d.session.allowedOperations.contains(DropOperation.copy)) {
-          setState(() {
-            isDroppingFiles = true;
-          });
-          return DropOperation.copy;
-        }
-        return DropOperation.none;
-      },
-      onPerformDrop: (e) async {
-        var item = e.session.items.first;
-        if (item.dataReader == null) {
-          return;
-        }
-        //啊没错，这个包就不能提供一个获取拓展名的方法，非要这样搞
-        //而且他就不能提供一个file的类型的返回值，非要我一个个去读取。。。。
-        if (item.canProvide(Formats.jpeg)) {
-          item.dataReader?.getFile(
-            Formats.jpeg,
-            (f) async {
-              await _readAndAttachFile(f, ".jpeg");
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        } else if (item.canProvide(Formats.png)) {
-          item.dataReader?.getFile(
-            Formats.png,
-            (f) async {
-              await _readAndAttachFile(f, ".png");
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        } else if (item.canProvide(Formats.pdf)) {
-          item.dataReader?.getFile(
-            Formats.pdf,
-            (f) async {
-              await _readAndAttachFile(f, ".pdf");
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        } else if (item.canProvide(Formats.json)) {
-          item.dataReader?.getFile(
-            Formats.json,
-            (f) async {
-              await _readAndAttachFile(f, ".json");
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        } else if (item.canProvide(Formats.csv)) {
-          item.dataReader?.getFile(
-            Formats.csv,
-            (f) async {
-              await _readAndAttachFile(f, ".csv");
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        }
-        if (item.canProvide(Formats.htmlFile)) {
-          item.dataReader?.getFile(
-            Formats.htmlFile,
-            (f) async {
-              await _readAndAttachFile(f, ".html");
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        } else if (item.canProvide(Formats.md)) {
-          item.dataReader?.getFile(
-            Formats.md,
-            (f) async {
-              await _readAndAttachFile(f, ".md");
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        } else
-        //但愿他的意思是typescript，不是什么奇葩
-        if (item.canProvide(Formats.ts)) {
-          item.dataReader?.getFile(
-            Formats.ts,
-            (f) async {
-              await _readAndAttachFile(f, ".ts");
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        } else if (item.canProvide(Formats.plainText)) {
-          item.dataReader?.getValue<String>(
-            Formats.plainText,
-            (value) {
-              if (value != null) {
-                _textController.text += value;
-              }
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        } else if (item.canProvide(Formats.plainTextFile)) {
-          item.dataReader?.getFile(
-            Formats.plainTextFile,
-            (f) async {
-              await _readAndAttachFile(f, p.extension(f.fileName ?? ".txt"));
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        }
+    return NativeDropRegion(
+      supportedFormats: supportedFormats,
+      onDropEnter: (d) {
+        setState(() {
+          isDroppingFiles = true;
+        });
       },
       onDropLeave: (e) {
         setState(() {
           isDroppingFiles = false;
         });
+      },
+      onPerformDrop: (NativeDataReader reader) async {
+        for (var f in reader.items) {
+          if (f is NativeText) {
+            _textController.text += await f.getText();
+          } else {
+            await _readAndAttachFile(f);
+          }
+        }
       },
       child: Container(
         clipBehavior: Clip.hardEdge,
@@ -1083,155 +983,35 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     );
   }
 
-  Future<void> readClipboard(SystemClipboard clipboard) async {
-    final reader = await clipboard.read();
-    //TMD 这个包真的逆天了，他的drop reader和clipboard reader 明明底层是一个东西，但是我需要写两遍愚蠢的代码！
-    //啊没错，这个包就不能提供一个获取拓展名的方法，非要这样搞
-    //而且他就不能提供一个file的类型的返回值，非要我一个个去读取。。。。
-    //TODO：把这个傻逼包给换掉->这玩意tm无法区分纯文本文件（txt）和文本，不论如何设置，要不然会把txt粘贴成纯文本，要不然就会把纯文本粘贴成文件。**垃圾！**
-    if (reader.canProvide(Formats.jpeg)) {
-      reader.getFile(
-        Formats.jpeg,
-        (f) async {
-          await _readAndAttachFile(f, ".jpeg");
-          return;
-        },
-        onError: (error) {
-          return;
-        },
-      );
-      return;
-    } else if (reader.canProvide(Formats.png)) {
-      reader.getFile(
-        Formats.png,
-        (f) async {
-          await _readAndAttachFile(f, ".png");
-          return;
-        },
-        onError: (error) {
-          return;
-        },
-      );
-      return;
-    } else if (reader.canProvide(Formats.pdf)) {
-      reader.getFile(
-        Formats.pdf,
-        (f) async {
-          await _readAndAttachFile(f, ".pdf");
-          return;
-        },
-        onError: (error) {
-          return;
-        },
-      );
-      return;
-    } else if (reader.canProvide(Formats.json)) {
-      reader.getFile(
-        Formats.json,
-        (f) async {
-          await _readAndAttachFile(f, ".json");
-          return;
-        },
-        onError: (error) {
-          return;
-        },
-      );
-      return;
-    } else if (reader.canProvide(Formats.csv)) {
-      reader.getFile(
-        Formats.csv,
-        (f) async {
-          await _readAndAttachFile(f, ".csv");
-          return;
-        },
-        onError: (error) {
-          return;
-        },
-      );
-      return;
-    } else if (reader.canProvide(Formats.htmlFile)) {
-      reader.getFile(
-        Formats.htmlFile,
-        (f) async {
-          await _readAndAttachFile(f, ".html");
-          return;
-        },
-        onError: (error) {
-          return;
-        },
-      );
-      return;
-    } else if (reader.canProvide(Formats.md)) {
-      reader.getFile(
-        Formats.md,
-        (f) async {
-          await _readAndAttachFile(f, ".md");
-          return;
-        },
-        onError: (error) {
-          return;
-        },
-      );
-      return;
-    } else
-    //但愿他的意思是typescript，不是什么奇葩
-    if (reader.canProvide(Formats.ts)) {
-      reader.getFile(
-        Formats.ts,
-        (f) async {
-          await _readAndAttachFile(f, ".ts");
-          return;
-        },
-        onError: (error) {
-          return;
-        },
-      );
-      return;
-    } else if (reader.canProvide(Formats.plainText)) {
-      reader.getValue<String>(
-        Formats.plainText,
-        (value) {
-          if (value != null) {
-            _textController.text += value;
-          }
-          return;
-        },
-        onError: (error) {
-          return;
-        },
-      );
-      return;
-    } else if (reader.canProvide(Formats.plainTextFile)) {
-      reader.getFile(
-        Formats.plainTextFile,
-        (f) async {
-          await _readAndAttachFile(f, p.extension(f.fileName ?? ".txt"));
-          return;
-        },
-        onError: (error) {
-          return;
-        },
-      );
-      return;
+  static Set<FileFormat> supportedFormats = {
+    const AllowAllTextFileFormats(),
+    const AllowPlainText(),
+    const FileFormat(mimeType: "image/png", extension: "png"),
+    const FileFormat(mimeType: "image/jpeg", extension: "jpg"),
+    const FileFormat(extension: "pdf"),
+  };
+
+  Future<void> readClipboard() async {
+    var data = await NativeClipboard.read(supportedFormats: supportedFormats);
+    if (data == null) return;
+    for (var f in data.items) {
+      if (f is NativeText) {
+        _textController.text += await f.getText();
+      } else {
+        await _readAndAttachFile(f);
+      }
     }
   }
 
   late final _focusNode = FocusNode(
     onKeyEvent: (FocusNode node, KeyEvent evt) {
-      /*
       if (HardwareKeyboard.instance.isMetaPressed && evt.character == 'v') {
         if (evt is KeyDownEvent) {
-          final clipboard = SystemClipboard.instance;
-          if (clipboard == null) {
-            return KeyEventResult
-                .ignored; // Clipboard API is not supported on this platform.
-          }
-          readClipboard(clipboard);
+          readClipboard();
           // this is a synchronous operation, no await future
           return KeyEventResult.handled;
         }
       }
-      */
       if (HardwareKeyboard.instance.isShiftPressed &&
           evt.logicalKey == LogicalKeyboardKey.enter) {
         if (evt is KeyDownEvent) {
@@ -1476,24 +1256,32 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                   return Container(
                     padding: const EdgeInsets.all(8),
                     height: 50,
-                    width: 120,
+                    width: 130,
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: theme.primaryColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.description_outlined, size: 24),
+                        FileIcon(
+                          color:
+                              Language.getLanguage(chatFile.extension)?.color ??
+                              theme.brightTextColor,
+                          extension: chatFile.extension,
+                        ),
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(2.0),
                             child: Text(
                               chatFile.originalName,
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 14),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: theme.brightTextColor,
+                              ),
                             ),
                           ),
                         ),

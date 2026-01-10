@@ -8,13 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
-import 'package:super_clipboard/super_clipboard.dart';
 import 'package:uni_chat/Chat/chat_panel.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
+import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
+import '../utils/prebuilt_widgets.dart' show FileIcon;
 import 'chat_models.dart';
 
 /// A widget that displays a chat message.
@@ -54,7 +55,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (files.isNotEmpty) ...[
+          if (files.isNotEmpty && !isEditMode) ...[
             Wrap(
               children: [
                 for (var file in files)
@@ -96,6 +97,22 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
         var functionPT = (
           (con) {
             con.text = message.content;
+            if (message.attachedFiles != null &&
+                message.attachedFiles!.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ref
+                    .read(chatStateProvider.notifier)
+                    .stateCopyWith(
+                      uploadedFilesStash: {
+                        for (var file in message.attachedFiles!)
+                          file.name: (
+                            file: file,
+                            status: UploadStatus.uploaded,
+                          ),
+                      },
+                    );
+              });
+            }
           },
           () {
             ref.read(chatStateProvider.notifier).addBranch(index);
@@ -110,9 +127,22 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
             }
           },
           () {
+            var cs = chatPanel.currentState;
+            if (cs != null && !cs.showInputBox) {
+              cs.showInputBox = true;
+              cs.setState(() {});
+            }
             setState(() {
               isEditMode = false;
             });
+            if (message.attachedFiles != null &&
+                message.attachedFiles!.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ref
+                    .read(chatStateProvider.notifier)
+                    .stateCopyWith(uploadedFilesStash: {});
+              });
+            }
           },
         );
         var box = Align(
@@ -195,6 +225,11 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(10),
                   onTap: () {
+                    if (MediaQuery.of(context).size.height <= 700) {
+                      var cs = chatPanel.currentState;
+                      cs?.showInputBox = false;
+                      cs?.setState(() {});
+                    }
                     setState(() {
                       isEditMode = true;
                     });
@@ -219,13 +254,10 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                   return InkWell(
                     borderRadius: BorderRadius.circular(10),
                     onTap: () async {
-                      final clipboard = SystemClipboard.instance;
-                      if (clipboard == null) {
-                        return; // Clipboard API is not supported on this platform.
-                      }
-                      final item = DataWriterItem();
-                      item.add(Formats.plainText(message.content));
-                      await clipboard.write([item]);
+                      var d = [
+                        NativeDataWriterItem()..addText(message.content),
+                      ];
+                      await NativeClipboard.write(d);
                       setState(() {
                         isCopied = true;
                       });
@@ -336,7 +368,9 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
     final isImage = file.type == FileTypeDefine.image;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: (isImage)
+          ? const EdgeInsets.fromLTRB(8, 0, 8, 8)
+          : const EdgeInsets.only(bottom: 8.0),
       child: isImage
           ? Container(
               clipBehavior: Clip.hardEdge,
@@ -359,30 +393,38 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
               ),
             )
           : Container(
+              padding: const EdgeInsets.all(8),
+              height: 50,
+              width: 130,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8.0),
-                color: Colors.grey[200],
+                color: theme.primaryColor,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.description_outlined,
-                      size: 24,
-                      color: theme.textColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FileIcon(
+                    color:
+                        Language.getLanguage(file.extension)?.color ??
+                        theme.brightTextColor,
+                    extension: file.extension,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(2.0),
                       child: Text(
                         file.originalName,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.brightTextColor,
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
     );
