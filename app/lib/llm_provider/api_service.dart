@@ -399,12 +399,17 @@ class OpenAiCompletionService implements LLMApiService {
           'content': message.content,
         });*/
       } else if (message.type == ChatMessageType.base64Image) {
-        /*
         contents.add({
           'role': getSender(message.sender),
-          'type': 'input_image',
-          'content': "data:${message.mimeType};base64,${message.content}",
-        });*/
+          'content': [
+            {
+              "type": "image_url",
+              "image_url": {
+                "url": "data:${message.mimeType};base64,${message.content}",
+              },
+            },
+          ],
+        });
       }
     }
   }

@@ -15,6 +15,8 @@ import 'package:uni_chat/utils/chunked_string_buffer.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
+import '../utils/paste_and_drop/src/models.dart' show Language;
+import '../utils/prebuilt_widgets.dart' show FileIcon;
 import 'chat_models.dart';
 
 /// A widget that displays a chat message.
@@ -336,7 +338,9 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
     final isImage = file.type == FileTypeDefine.image;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: (isImage)
+          ? const EdgeInsets.fromLTRB(8, 0, 8, 8)
+          : const EdgeInsets.only(bottom: 8.0),
       child: isImage
           ? Container(
               clipBehavior: Clip.hardEdge,
@@ -359,30 +363,38 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
               ),
             )
           : Container(
+              padding: const EdgeInsets.all(8),
+              height: 50,
+              width: 130,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8.0),
-                color: Colors.grey[200],
+                color: theme.primaryColor,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.description_outlined,
-                      size: 24,
-                      color: theme.textColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FileIcon(
+                    color:
+                        Language.getLanguage(file.extension)?.color ??
+                        theme.brightTextColor,
+                    extension: file.extension,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(2.0),
                       child: Text(
                         file.originalName,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.brightTextColor,
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
     );

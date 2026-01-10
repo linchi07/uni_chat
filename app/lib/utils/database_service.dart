@@ -493,9 +493,13 @@ class DatabaseService {
         'sender': message.sender.name, // 'message.contentSender.user' -> 'user'
         'content': message.content,
         'timestamp': message.timestamp.microsecondsSinceEpoch,
-        'attachments': jsonEncode(
-          message.attachedFiles?.map((file) => file.toJson()).toList(),
-        ),
+        'attachments':
+            (message.attachedFiles != null && message.attachedFiles!.isNotEmpty)
+            ? jsonEncode(
+                message.attachedFiles!.map((file) => file.toJson()).toList(),
+              )
+            : null,
+        //or a string "null" will be inserted...
       });
       await txn.insert('message_relations', {
         'id': message.id,

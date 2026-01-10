@@ -321,7 +321,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       status: UploadStatus.uploading,
     );
     state = state.copyWith(isLoading: true);
-    if (ChatFile.imageExtensions.contains(p.extension(file.path)) &&
+    if (ChatFile.imageExtensions.contains(
+          p.extension(file.path).toLowerCase(),
+        ) &&
         agentNotifier.state!.model.modelAbilities.contains(
           ModelAbility.visualUnderStanding,
         )) {

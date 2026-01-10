@@ -418,7 +418,7 @@ class Language {
   final int? _colorCode;
   final String? mime;
 
-  get color => Color(_colorCode ?? 0x00000000);
+  Color get color => Color(_colorCode ?? 0x00000000);
 
   static Language? getLanguage(String extension) {
     if (extension.startsWith('.')) {

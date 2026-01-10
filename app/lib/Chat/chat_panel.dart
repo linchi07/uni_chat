@@ -1252,24 +1252,32 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                   return Container(
                     padding: const EdgeInsets.all(8),
                     height: 50,
-                    width: 120,
+                    width: 130,
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: theme.primaryColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.description_outlined, size: 24),
+                        FileIcon(
+                          color:
+                              Language.getLanguage(chatFile.extension)?.color ??
+                              theme.brightTextColor,
+                          extension: chatFile.extension,
+                        ),
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(2.0),
                             child: Text(
                               chatFile.originalName,
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 14),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: theme.brightTextColor,
+                              ),
                             ),
                           ),
                         ),

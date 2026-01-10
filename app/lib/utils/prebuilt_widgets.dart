@@ -994,3 +994,46 @@ class StdAvatar extends StatelessWidget {
     );
   }
 }
+
+class FileIcon extends StatelessWidget {
+  const FileIcon({
+    super.key,
+    required this.color,
+    required this.extension,
+    this.size = const Size(30, 30),
+  });
+  final Color color;
+  final Size size;
+  final String extension;
+
+  @override
+  Widget build(BuildContext context) {
+    String e;
+    if (extension.startsWith(".")) {
+      e = extension.substring(1);
+    } else {
+      e = extension;
+    }
+    ;
+    return Container(
+      height: size.height,
+      width: size.width,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(size.shortestSide * 0.2),
+      ),
+      child: Center(
+        child: Text(
+          e,
+          overflow: TextOverflow.fade,
+          style: TextStyle(
+            fontSize: size.shortestSide * 0.4,
+            color: (color.computeLuminance() > 0.5)
+                ? Colors.black
+                : Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+}
