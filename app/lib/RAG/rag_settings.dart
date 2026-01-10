@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart' hide MetaData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:uni_chat/RAG/rag_databases.dart';
 import 'package:uni_chat/RAG/rag_entity.dart';
 import 'package:uni_chat/RAG/rag_process.dart';
@@ -14,7 +13,6 @@ import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/back_ground_task_manager.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/document_display.dart';
-import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
@@ -1126,6 +1124,7 @@ class _RagFileManagementState extends ConsumerState<RagFileManagement> {
   bool isDroppingFiles = false;
   bool isDropFilesValid = false;
   bool isProcessing = false;
+  /*
   (bool, dynamic, String) validateFormat(DropItem item) {
     if (item.canProvide(Formats.md)) {
       return (true, Formats.md, "md");
@@ -1150,7 +1149,7 @@ class _RagFileManagementState extends ConsumerState<RagFileManagement> {
     }
     return (false, null, "");
   }
-
+*/
   void process(String path) async {
     try {
       //这个在后台运行
@@ -1321,94 +1320,37 @@ class _RagFileManagementState extends ConsumerState<RagFileManagement> {
       return Center(child: CircularProgressIndicator());
     }
 
-    return DropRegion(
-      formats: Formats.standardFormats,
-      onDropLeave: (e) {
-        setState(() {
-          isDroppingFiles = false;
-        });
-      },
-      onDropOver: (event) {
-        if (event.session.allowedOperations.contains(DropOperation.copy)) {
-          if (validateFormat(event.session.items.first).$1) {
-            setState(() {
-              isDropFilesValid = true;
-              isDroppingFiles = true;
-            });
-            return DropOperation.copy;
-          } else {
-            setState(() {
-              isDropFilesValid = false;
-              isDroppingFiles = true;
-            });
-            return DropOperation.forbidden;
-          }
-        }
-        return DropOperation.none;
-      },
-      onPerformDrop: (e) async {
-        var item = e.session.items.first;
-        if (item.dataReader == null) {
-          return;
-        }
-        var v = validateFormat(item);
-        if (v.$1) {
-          item.dataReader?.getFile(
-            v.$2,
-            (f) async {
-              var path = await PathProvider.getPath(
-                //有时候他会返回一个null，所以用当前时间
-                "RAG/tmp/${f.fileName ?? "${DateTime.now().toIso8601String()}.${v.$3}"}",
-              );
-              final file = File(path);
-              final sink = file.openWrite();
-              await f.getStream().forEach(sink.add);
-              await sink.close();
-              setState(() {
-                isProcessing = true;
-              });
-              process(path);
-            },
-            onError: (error) {
-              return;
-            },
-          );
-        }
-      },
-      //是的，这样很蠢，但是我发现，必须加上一个container而且必须指定一个颜色，这个时候拖拽有用
-      //而不加的话拖拽无法触发，而且加sized box expand 或者centre都没用。有一个玄学问题·····
-      child: Container(
-        color: Colors.transparent,
-        child: Stack(
-          children: [
-            child,
-            if (isDroppingFiles)
-              Container(
-                color: Colors.white.withAlpha(80),
-                child: Container(
-                  margin: EdgeInsets.all(30),
-                  decoration: BoxDecoration(
-                    color: (isDropFilesValid)
-                        ? Colors.white.withAlpha(120)
-                        : Colors.red[200],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      isDropFilesValid
-                          ? S.of(context).drop_files_hint
-                          : S.of(context).unsupported_format,
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: (isDropFilesValid) ? Colors.black : Colors.red,
-                      ),
+    return Container(
+      color: Colors.transparent,
+      child: Stack(
+        children: [
+          child,
+          if (isDroppingFiles)
+            Container(
+              color: Colors.white.withAlpha(80),
+              child: Container(
+                margin: EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  color: (isDropFilesValid)
+                      ? Colors.white.withAlpha(120)
+                      : Colors.red[200],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    isDropFilesValid
+                        ? S.of(context).drop_files_hint
+                        : S.of(context).unsupported_format,
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: (isDropFilesValid) ? Colors.black : Colors.red,
                     ),
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
