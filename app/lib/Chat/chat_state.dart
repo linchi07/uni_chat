@@ -121,7 +121,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     List<ChatMessage>? messagesList,
     List<ChatMessage>? roots,
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
-    Map<String, ChatFile>? uploadedFiles,
     bool? isLoading,
     String? error,
   }) {

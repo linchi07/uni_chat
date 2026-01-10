@@ -536,6 +536,7 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
   late final ListObserverController listObserverController =
       ListObserverController();
   bool autoScroll = true;
+  bool showInputBox = true;
   @override
   void initState() {
     super.initState();
@@ -714,24 +715,27 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: ChatPanelInputBox(
-                        afterSubmit: () async {
-                          if (scrollController.offset <
-                              scrollController.position.maxScrollExtent) {
-                            // wait for the loading animation
-                            await Future.delayed(
-                              const Duration(milliseconds: 200),
-                            );
-                            scrollController.animateTo(
-                              scrollController.position.maxScrollExtent,
-                              duration: const Duration(milliseconds: 150),
-                              curve: Curves.easeInSine,
-                            );
-                            autoScrollFunc();
-                          }
-                        },
+                    Offstage(
+                      offstage: !showInputBox,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: ChatPanelInputBox(
+                          afterSubmit: () async {
+                            if (scrollController.offset <
+                                scrollController.position.maxScrollExtent) {
+                              // wait for the loading animation
+                              await Future.delayed(
+                                const Duration(milliseconds: 200),
+                              );
+                              scrollController.animateTo(
+                                scrollController.position.maxScrollExtent,
+                                duration: const Duration(milliseconds: 150),
+                                curve: Curves.easeInSine,
+                              );
+                              autoScrollFunc();
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ],

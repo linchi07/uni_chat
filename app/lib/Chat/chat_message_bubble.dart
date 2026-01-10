@@ -55,7 +55,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (files.isNotEmpty) ...[
+          if (files.isNotEmpty && !isEditMode) ...[
             Wrap(
               children: [
                 for (var file in files)
@@ -97,6 +97,22 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
         var functionPT = (
           (con) {
             con.text = message.content;
+            if (message.attachedFiles != null &&
+                message.attachedFiles!.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ref
+                    .read(chatStateProvider.notifier)
+                    .stateCopyWith(
+                      uploadedFilesStash: {
+                        for (var file in message.attachedFiles!)
+                          file.name: (
+                            file: file,
+                            status: UploadStatus.uploaded,
+                          ),
+                      },
+                    );
+              });
+            }
           },
           () {
             ref.read(chatStateProvider.notifier).addBranch(index);
@@ -111,9 +127,22 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
             }
           },
           () {
+            var cs = chatPanel.currentState;
+            if (cs != null && !cs.showInputBox) {
+              cs.showInputBox = true;
+              cs.setState(() {});
+            }
             setState(() {
               isEditMode = false;
             });
+            if (message.attachedFiles != null &&
+                message.attachedFiles!.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ref
+                    .read(chatStateProvider.notifier)
+                    .stateCopyWith(uploadedFilesStash: {});
+              });
+            }
           },
         );
         var box = Align(
@@ -196,6 +225,11 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(10),
                   onTap: () {
+                    if (MediaQuery.of(context).size.height <= 700) {
+                      var cs = chatPanel.currentState;
+                      cs?.showInputBox = false;
+                      cs?.setState(() {});
+                    }
                     setState(() {
                       isEditMode = true;
                     });
