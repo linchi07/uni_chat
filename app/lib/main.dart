@@ -166,34 +166,6 @@ class MacOSMenuBar extends ConsumerStatefulWidget {
 }
 
 class _MacOSMenuBarState extends ConsumerState<MacOSMenuBar> {
-  OverlayEntry? _overlayEntry;
-  void _showSettingsMenu(BuildContext context) {
-    if (_overlayEntry != null) {
-      return;
-    }
-    final overlay = Overlay.of(context);
-
-    _overlayEntry = OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          // 背景变暗和点击外部关闭
-          ModalBarrier(
-            color: Colors.black.withAlpha(80),
-            onDismiss: _hideSettingsMenu,
-          ),
-          SettingsMenu(onClose: _hideSettingsMenu),
-        ],
-      ),
-    );
-
-    overlay.insert(_overlayEntry!);
-  }
-
-  void _hideSettingsMenu() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-  }
-
   @override
   Widget build(BuildContext context) {
     return PlatformMenuBar(
@@ -210,7 +182,13 @@ class _MacOSMenuBarState extends ConsumerState<MacOSMenuBar> {
                     meta: true,
                   ),
                   onSelected: () {
-                    _showSettingsMenu(context);
+                    // make sure there's no settings menu open
+                    if (settingsMenuKey.currentState == null) {
+                      OverlayWrapper.showOverlay(
+                        context,
+                        overlayContent: SettingsMenu(key: settingsMenuKey),
+                      );
+                    }
                   },
                 ),
                 PlatformMenuItem(label: S.of(context).about, onSelected: () {}),
@@ -397,7 +375,15 @@ class MainContState extends ConsumerState<MainCont> {
                       ),
                       Expanded(child: SizedBox()),
                       PersonaIndicator(),
-                      SettingsMenuButton(),
+                      IconButton(
+                        onPressed: () {
+                          OverlayWrapper.showOverlay(
+                            context,
+                            overlayContent: SettingsMenu(key: settingsMenuKey),
+                          );
+                        },
+                        icon: Icon(Icons.settings_outlined),
+                      ),
                       // to avoid the menu button being cut off
                       if (PlatForm().platform == RunningPlatform.ipadOS)
                         const SizedBox(height: 10),
@@ -420,51 +406,6 @@ class MainContState extends ConsumerState<MainCont> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class SettingsMenuButton extends StatefulWidget {
-  const SettingsMenuButton({super.key});
-
-  @override
-  State<SettingsMenuButton> createState() => _SettingsMenuButtonState();
-}
-
-class _SettingsMenuButtonState extends State<SettingsMenuButton> {
-  OverlayEntry? _overlayEntry;
-
-  void _showSettingsMenu(BuildContext context) {
-    final overlay = Overlay.of(context);
-
-    _overlayEntry = OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          // 背景变暗和点击外部关闭
-          ModalBarrier(
-            color: Colors.black.withAlpha(80),
-            onDismiss: _hideSettingsMenu,
-          ),
-          SettingsMenu(onClose: _hideSettingsMenu),
-        ],
-      ),
-    );
-
-    overlay.insert(_overlayEntry!);
-  }
-
-  void _hideSettingsMenu() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: () {
-        _showSettingsMenu(context);
-      },
-      icon: Icon(Icons.settings_outlined),
     );
   }
 }

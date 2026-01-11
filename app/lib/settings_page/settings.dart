@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/settings_page/about.dart';
+import 'package:uni_chat/settings_page/api_configure.dart';
 import 'package:uni_chat/settings_page/model_settings.dart';
 import 'package:uni_chat/utils/overlays.dart';
 
@@ -9,7 +10,6 @@ import '../generated/l10n.dart';
 import '../main.dart';
 import '../theme_manager.dart';
 import '../utils/prebuilt_widgets.dart';
-import 'api_settings.dart';
 
 /// “账户”设置页面的占位符
 class _GeneralSettings extends StatelessWidget {
@@ -109,17 +109,16 @@ class _SettingItem {
   });
 }
 
-class SettingsMenu extends ConsumerStatefulWidget {
-  // onClose 回调函数，用于在动画结束后通知父组件移除 OverlayEntry
-  final VoidCallback onClose;
+final settingsMenuKey = GlobalKey<SettingsMenuState>();
 
-  const SettingsMenu({super.key, required this.onClose});
+class SettingsMenu extends ConsumerStatefulWidget {
+  const SettingsMenu({super.key});
 
   @override
-  ConsumerState<SettingsMenu> createState() => _SettingsMenuState();
+  ConsumerState<SettingsMenu> createState() => SettingsMenuState();
 }
 
-class _SettingsMenuState extends ConsumerState<SettingsMenu>
+class SettingsMenuState extends ConsumerState<SettingsMenu>
     with SingleTickerProviderStateMixin {
   // 用于驱动进入和退出动画的控制器
   late final AnimationController _animationController;
@@ -158,6 +157,12 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
       end: 1.0,
     ).animate(curvedAnimation);
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      OverlayWrapper.registerOnClose(context, () async {
+        await _animationController.reverse();
+        return true;
+      });
+    });
     // 启动进入动画
     _animationController.forward();
   }
@@ -171,7 +176,7 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
   // 处理关闭事件：先反向播放动画，动画结束后再调用父级的onClose方法
   void _handleClose() {
     _animationController.reverse().then((_) {
-      widget.onClose();
+      OverlayWrapper.removeOverlay(context);
     });
   }
 
@@ -196,7 +201,7 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
       _SettingItem(
         icon: Icons.network_check,
         title: S.of(context).api_settings,
-        contentWidget: ApiSettingsView(),
+        contentWidget: ApiConfigure(),
       ),
       _SettingItem(
         icon: Icons.model_training,

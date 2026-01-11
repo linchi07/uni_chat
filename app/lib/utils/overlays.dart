@@ -257,7 +257,7 @@ class OverlayWrapper extends StatefulWidget {
     BuildContext context, {
     required Widget overlayContent,
     bool barrierDismissible = true,
-    bool Function()? onClose,
+    Future<bool> Function()? onClose,
   }) {
     final scopeState = context.findAncestorStateOfType<OverlayWrapperState>();
     if (scopeState == null) {
@@ -268,6 +268,21 @@ class OverlayWrapper extends StatefulWidget {
       barrierDismissible: barrierDismissible,
       onClose: onClose,
     );
+  }
+
+  /// Register a onClose callback to the current displayed overlay
+  /// Useful when you want to close the overlay when the user presses the back button
+  static void registerOnClose(
+    BuildContext context,
+    Future<bool> Function()? onClose,
+  ) {
+    final overlayRef = OverlayReference.of(context);
+    if (overlayRef != null) {
+      overlayRef.overlayState.onClose = onClose;
+      return;
+    } else {
+      throw Exception('No OverlayWrapper found in context');
+    }
   }
 
   final Widget child;
@@ -291,16 +306,16 @@ class OverlayWrapperState extends State<OverlayWrapper> {
     super.dispose();
   }
 
-  bool Function()? _onClose;
+  Future<bool> Function()? onClose;
 
   /// 插入 OverlayEntry 到 OverlayState
   void insertOverlay({
     required Widget overlayContent,
-    bool Function()? onClose,
+    Future<bool> Function()? onClose,
     bool barrierDismissible = true,
   }) {
     if (_overlayEntry != null) return; // 避免重复插入
-    _onClose = onClose;
+    this.onClose = onClose;
     _overlayEntry = OverlayEntry(
       builder: (context) {
         // 这里的浮层内容通常需要定位 (如 Positioned, Align 或 Center)
@@ -326,15 +341,13 @@ class OverlayWrapperState extends State<OverlayWrapper> {
         );
       },
     );
-
-    // 确保当前 Widget 有一个 Overlay 的祖先
     Overlay.of(context).insert(_overlayEntry!);
   }
 
   /// 移除 OverlayEntry
-  void removeOverlay() {
+  void removeOverlay() async {
     if (_overlayEntry == null) return;
-    if (!(_onClose?.call() ?? true)) {
+    if (!(await onClose?.call() ?? true)) {
       return;
     }
     _overlayEntry?.remove();
