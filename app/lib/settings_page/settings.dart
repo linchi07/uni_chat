@@ -12,9 +12,9 @@ import '../utils/prebuilt_widgets.dart';
 import 'api_configure.dart' show ApiSettings;
 
 /// “账户”设置页面的占位符
-class _GeneralSettings extends StatelessWidget {
+class _GeneralSettings extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: const EdgeInsets.all(24.0),
       children: [
@@ -26,6 +26,22 @@ class _GeneralSettings extends StatelessWidget {
         Text(S.of(context).language_settings, style: TextStyle(fontSize: 18)),
         const SizedBox(height: 20),
         LanguageSwitcher(),
+        const SizedBox(height: 20),
+        StdDropDown(
+          height: 55,
+          itemBuilder: (c, index, onTap) {
+            return StdListTile(
+              title: Text(ThemeManager.themes[index].name),
+              onTap: () {
+                ref
+                    .read(themeProvider.notifier)
+                    .updateTheme(theme: ThemeManager.themes[index].theme);
+                onTap(index);
+              },
+            );
+          },
+          itemCount: ThemeManager.themes.length,
+        ),
         const SizedBox(height: 20),
         Text(
           S.of(context).language_switch_restart_note,

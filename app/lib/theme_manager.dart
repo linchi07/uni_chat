@@ -73,6 +73,12 @@ class ThemeConfig {
 class ThemeManager extends StateNotifier<ThemeConfig> {
   ThemeManager() : super(solarized);
 
+  static List<({String name, ThemeConfig theme})> themes = [
+    (name: 'light', theme: light),
+    (name: 'dark', theme: dark),
+    (name: 'solarized', theme: solarized),
+  ];
+
   static ThemeConfig light = ThemeConfig(
     primaryColor: const Color(0xFF000000),
     zeroGradeColor: const Color(0xFFFFFFFF),
@@ -109,22 +115,8 @@ class ThemeManager extends StateNotifier<ThemeConfig> {
     errorColor: const Color(0xffe3674b),
   );
   // 更新主题颜色的方法
-  void updateTheme({
-    Color? primaryColor,
-    Color? surfaceColor,
-    Color? backgroundColor,
-    Color? boxColor,
-    Color? darkTextColor,
-    Color? brightTextColor,
-  }) {
-    state = state.copyWith(
-      primaryColor: primaryColor,
-      zeroGradeColor: surfaceColor,
-      secondGradeColor: backgroundColor,
-      thirdGradeColor: boxColor,
-      darkTextColor: darkTextColor,
-      brightTextColor: brightTextColor,
-    );
+  void updateTheme({ThemeConfig? theme}) {
+    state = theme ?? state.copyWith();
   }
 }
 

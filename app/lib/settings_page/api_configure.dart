@@ -21,6 +21,24 @@ class ApiSettings extends ConsumerStatefulWidget {
 }
 
 class _ApiSettingsState extends ConsumerState<ApiSettings> {
+  Widget getInfoTags(String category, String amount) {
+    return Container(
+      margin: const EdgeInsets.only(right: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      height: 30,
+      decoration: BoxDecoration(
+        color: theme.primaryColor,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Center(
+        child: Text(
+          "$category  $amount",
+          style: TextStyle(color: theme.brightTextColor),
+        ),
+      ),
+    );
+  }
+
   late ThemeConfig theme;
   @override
   Widget build(BuildContext context) {
@@ -88,13 +106,9 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                       onTap: () {},
                       tileColor: theme.zeroGradeColor,
                       leading: (img != null)
-                          ? StdAvatar(length: 50, assetImage: AssetImage(img))
+                          ? StdAvatar(length: 40, assetImage: AssetImage(img))
                           : null,
                       title: Text(provider.name),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [Text("11")],
-                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
