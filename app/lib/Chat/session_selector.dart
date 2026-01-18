@@ -42,19 +42,19 @@ class ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
     final screenSize = MediaQuery.of(context).size;
 
     overlayEntry = OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          ModalBarrier(color: Colors.transparent, onDismiss: hide),
-          // **修改点**: 不再使用 Positioned 包装，直接放置 Overlay 组件
-          // 它将自己负责自己的定位
-          SessionSelectorOverlayContainer(
-            key: _overlayKey,
-            initialSize: size,
-            initialPosition: pos,
-            initialScreenSize: screenSize,
-            onClose: hide,
-          ),
-        ],
+      builder: (context) => RepaintBoundary(
+        child: Stack(
+          children: [
+            ModalBarrier(color: Colors.transparent, onDismiss: hide),
+            SessionSelectorOverlayContainer(
+              key: _overlayKey,
+              initialSize: size,
+              initialPosition: pos,
+              initialScreenSize: screenSize,
+              onClose: hide,
+            ),
+          ],
+        ),
       ),
     );
     overlay.insert(overlayEntry!);

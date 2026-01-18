@@ -291,6 +291,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "or_expand_window": MessageLookupByLibrary.simpleMessage("或请拉大窗口"),
     "over_maximum_context_length_hint": m8,
     "persona_description_hint": MessageLookupByLibrary.simpleMessage("请介绍一下自己"),
+    "plz_enter": MessageLookupByLibrary.simpleMessage("请输入"),
     "plz_enter_content": MessageLookupByLibrary.simpleMessage("请输入内容"),
     "plz_enter_description": MessageLookupByLibrary.simpleMessage("请输入描述"),
     "plz_enter_name": MessageLookupByLibrary.simpleMessage("请输入名称"),

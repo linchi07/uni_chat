@@ -16,11 +16,13 @@ class _PortalData {
   Offset? offset;
   bool barrierVisible;
   bool autoAvoidSoftKeyboard;
+  bool animate;
   _PortalData({
     this.child,
     this.offset,
     this.barrierVisible = true,
     this.autoAvoidSoftKeyboard = true,
+    this.animate = false,
   });
 }
 
@@ -40,6 +42,7 @@ class OverlayPortalService {
     BuildContext context, {
     required Widget child,
     bool barrierVisible = true,
+    bool animate = false,
     bool autoAvoidSoftKeyboard = true,
     Offset? offset,
   }) {
@@ -56,6 +59,7 @@ class OverlayPortalService {
       offset: offset,
       barrierVisible: barrierVisible,
       autoAvoidSoftKeyboard: autoAvoidSoftKeyboard,
+      animate: animate,
     );
 
     // 显示 OverlayPortal
@@ -64,23 +68,49 @@ class OverlayPortalService {
 
   static void showDialog(
     BuildContext context, {
+    EdgeInsets padding = const EdgeInsets.all(16),
     required Widget child,
+    List<Widget>? actions,
     required Color backGroundColor,
+    double? width,
+    double? height,
   }) {
+    Widget c;
+    if (actions != null) {
+      c = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: padding,
+            child: Center(child: child),
+          ),
+          if (actions.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: actions,
+              ),
+            ),
+        ],
+      );
+    } else {
+      c = child;
+    }
     child = SizedBox(
-      width: 300,
-      height: 200,
+      width: width ?? ((actions != null && actions.isNotEmpty) ? 300 : null),
+      height: height,
       child: Material(
         color: backGroundColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: Padding(padding: const EdgeInsets.all(16), child: child),
+        child: Padding(padding: padding, child: c),
       ),
     );
-    OverlayPortalService.show(context, child: child);
+    OverlayPortalService.show(context, child: child, animate: true);
   }
 
   /// 隐藏指定 context 下的对话框。
-  static void hide(BuildContext context) {
+  static Future<void> hide(BuildContext context) async {
     final scopeState = context
         .findAncestorStateOfType<_OverlayPortalScopeState>();
     if (scopeState == null) {
@@ -88,7 +118,9 @@ class OverlayPortalService {
     }
 
     final portal = scopeState._portalData;
-
+    if (portal.dataNotifier.value?.animate ?? false) {
+      await portal.animationController.reverse(from: 1.0);
+    }
     // 隐藏 OverlayPortal
     portal.controller.hide();
   }
@@ -107,17 +139,28 @@ class OverlayPortalScope extends StatefulWidget {
 class _OverlayPortalScopeState extends State<OverlayPortalScope>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late _Portal _portalData;
-
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnim;
   @override
   void initState() {
     super.initState();
     _portalData = _Portal();
     // 初始化动画控制器
     _portalData.animationController = AnimationController(
-      lowerBound: 0.6,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 250),
+      reverseDuration: const Duration(milliseconds: 180),
       vsync: this,
     );
+    final curvedAnimation = CurvedAnimation(
+      parent: _portalData.animationController,
+      curve: Curves.easeOutQuart,
+      reverseCurve: Curves.easeInQuart,
+    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(curvedAnimation);
+    _scaleAnim = Tween<double>(begin: 0.9, end: 1.0).animate(curvedAnimation);
     if (PlatForm().isMobile) {
       WidgetsBinding.instance.addObserver(this);
     }
@@ -162,21 +205,12 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
             if (data == null || data.child == null) {
               return const SizedBox.shrink();
             }
-            //这里出现了一个bug或者奇葩的问题，反正就是在apikey设置页面的时候每次的焦点更改都会导致build然后就会放一次动画
-            //解决方案是把动画注释掉··
-            /*
             // 当portal显示时启动动画
-            if (_portalData.controller.isShowing) {
-              _portalData.animationController.forward(from: 0.6);
+            if (_portalData.controller.isShowing &&
+                data.animate &&
+                _portalData.animationController.value == 0.0) {
+              _portalData.animationController.forward();
             }
-            
-            final fadeAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
-              CurvedAnimation(
-                parent: _portalData.animationController,
-                curve: Interval(0.6, 1.0, curve: Curves.easeInSine),
-              ),
-            );
-*/
             // 监听遮罩可见性变化
             // 监听大小变化
             Widget content = data.child!;
@@ -215,7 +249,7 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
                 ),
               );
             }
-            return Stack(
+            var w = Stack(
               alignment: Alignment.center,
               children: [
                 // 背景遮罩，点击时可以关闭对话框
@@ -225,19 +259,28 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
                       : Colors.transparent,
                   dismissible: true,
                   onDismiss: () {
-                    // 反向播放动画后再隐藏
                     OverlayPortalService.hide(context);
                   },
                 ),
                 // 将内容居中显示并添加动画效果
-                positionedContent,
+                (data.animate)
+                    ? ScaleTransition(
+                        scale: _scaleAnim,
+                        child: positionedContent,
+                      )
+                    : positionedContent,
               ],
             );
+            if (data.animate) {
+              return FadeTransition(opacity: _fadeAnimation, child: w);
+            } else {
+              return w;
+            }
           },
         );
       },
       // 这是你的主应用内容
-      child: widget.child,
+      child: RepaintBoundary(child: widget.child),
     );
   }
 }
@@ -357,7 +400,7 @@ class OverlayWrapperState extends State<OverlayWrapper> {
   @override
   Widget build(BuildContext context) {
     // 始终返回子 Widget
-    return widget.child;
+    return RepaintBoundary(child: widget.child);
   }
 }
 

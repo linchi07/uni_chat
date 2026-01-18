@@ -14,12 +14,6 @@ import '../src/internals/slivers.dart';
 // ignore_for_file: INVALID_USE_OF_VISIBLE_FOR_TESTING_MEMBER
 // ignore_for_file: DEPRECATED_MEMBER_USE
 
-/// when viewport not full one page, for different state,whether it should follow the content
-typedef void OnTwoLevel(bool isOpen);
-
-/// when viewport not full one page, for different state,whether it should follow the content
-typedef bool ShouldFollowContent(LoadStatus? status);
-
 /// global default indicator builder
 typedef IndicatorBuilder = Widget Function();
 
@@ -85,18 +79,6 @@ enum RefreshStyle {
   Front,
 }
 
-/// footer indicator display style
-enum LoadStyle {
-  /// indicator always own layoutExtent whatever the state
-  ShowAlways,
-
-  /// indicator always own 0.0 layoutExtent whatever the state
-  HideAlways,
-
-  /// indicator always own layoutExtent when loading state, the other state is 0.0 layoutExtent
-  ShowWhenLoading,
-}
-
 /// A nested page scroll widget to achieve the same effect of AppleWatch
 ///
 /// Inspired and modified from [flutter pull_to_refresh](https://github.com/peng8350/flutter_pulltorefresh)
@@ -119,6 +101,8 @@ class PagedScroll extends StatefulWidget {
   /// copy from ScrollView,for setting in SingleChildView,not ScrollView
   final bool? reverse;
 
+  final void Function(int)? onPageChanged;
+
   /// copy from ScrollView,for setting in SingleChildView,not ScrollView
   final ScrollController? scrollController;
 
@@ -139,6 +123,9 @@ class PagedScroll extends StatefulWidget {
 
   late final PageController pageController;
 
+  /// build a header on top of each page
+  final Widget Function(BuildContext, int)? headerBuilder;
+
   /// creates a widget help attach the refresh and load more function
   /// controller must not be null,
   /// child is your refresh content,Note that there's a big difference between children inheriting from ScrollView or not.
@@ -148,18 +135,20 @@ class PagedScroll extends StatefulWidget {
   /// If you don't need pull down refresh ,just enablePullDown = false,
   /// If you  need pull up load ,just enablePullUp = true
   PagedScroll({
-    Key? key,
+    super.key,
     PageController? controller,
     this.children,
+    this.headerBuilder,
     this.dragStartBehavior,
     this.primary,
     this.cacheExtent,
     this.semanticChildCount,
     this.reverse,
     this.physics,
+    this.onPageChanged,
     this.scrollDirection,
     this.scrollController,
-  }) : super(key: key) {
+  }) {
     pageController = controller ?? PageController();
   }
   static PagedScroll? of(BuildContext? context) {
@@ -178,7 +167,6 @@ class PagedScroll extends StatefulWidget {
 }
 
 class PagedScrollState extends State<PagedScroll> {
-  bool _updatePhysics = false;
   double viewportExtent = 0;
   PageController get pageController => widget.pageController;
   bool _canDrag = true;
@@ -187,11 +175,10 @@ class PagedScrollState extends State<PagedScroll> {
     return OverScrollTransferPhysics(
       onOverScroll: (v) async {
         if (pageController.hasClients) {
-          pageController.jumpTo(pageController.offset - v);
           var p = pageController.page;
           if (p != null && !alineFlag) {
+            pageController.jumpTo(pageController.offset - v);
             var delta = p - p.round();
-            print(delta);
             if (delta.abs() > 0.1) {
               alineFlag = true;
               await pageController.animateToPage(
@@ -209,7 +196,6 @@ class PagedScrollState extends State<PagedScroll> {
         var p = pageController.page;
         if (p != null && !alineFlag) {
           var delta = p - p.round();
-          print(delta);
           if (delta.abs() > 0.1) {
             alineFlag = true;
             await pageController.animateToPage(
@@ -302,7 +288,7 @@ class PagedScrollState extends State<PagedScroll> {
         dragStartBehavior: dragStartBehavior ?? DragStartBehavior.start,
         reverse: reverse ?? false,
       );
-    } else
+    } else {
       body = Scrollable(
         physics: _getScrollPhysics(
           childView.physics ?? AlwaysScrollableScrollPhysics(),
@@ -317,6 +303,7 @@ class PagedScrollState extends State<PagedScroll> {
           return viewport;
         },
       );
+    }
 
     return body;
   }
@@ -355,15 +342,29 @@ class PagedScrollState extends State<PagedScroll> {
     return LayoutBuilder(
       builder: (c2, cons) {
         viewportExtent = cons.biggest.height;
+        List<Widget> children = <Widget>[];
+        for (int i = 0; i < widget.children!.length; i++) {
+          var e = widget.children![i];
+          Widget? body;
+          List<Widget>? slivers = _buildSliversByChild(context, e);
+          body = _buildBodyBySlivers(e, slivers);
+          if (widget.headerBuilder != null) {
+            var header = widget.headerBuilder!(context, i);
+            body = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                header,
+                Expanded(child: body!),
+              ],
+            );
+          }
+          children.add(body!);
+        }
         return PageView(
           controller: pageController,
+          onPageChanged: widget.onPageChanged,
           scrollDirection: widget.scrollDirection ?? Axis.vertical,
-          children: (widget.children ?? []).map((e) {
-            Widget? body;
-            List<Widget>? slivers = _buildSliversByChild(context, e);
-            body = _buildBodyBySlivers(e, slivers);
-            return body!;
-          }).toList(),
+          children: children,
         );
       },
     );

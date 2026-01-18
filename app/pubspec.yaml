@@ -76,5 +76,6 @@ flutter:
   assets:
     - resources/
     - resources/provider_model_icons/
+    - resources/data/
 flutter_intl:
   enabled: true

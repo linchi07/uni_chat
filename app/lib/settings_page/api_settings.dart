@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/llm_provider/pre_build_providers.dart';
 import 'package:uni_chat/llm_provider/pre_built_models.dart';
+import 'package:uni_chat/settings_page/api_configure.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/llm_image_indexer.dart';
 import 'package:uni_chat/utils/overlays.dart';
@@ -12,8 +13,6 @@ import 'package:uuid/uuid.dart';
 import '../generated/l10n.dart';
 import '../utils/api_database_service.dart';
 
-// --- 为右侧内容区创建的占位小部件 ---
-// 在实际应用中，您会用真实的设置界面替换它们。
 class ApiSettingsView extends ConsumerStatefulWidget {
   const ApiSettingsView({super.key});
 
@@ -215,9 +214,13 @@ class _ApiSettingsViewState extends ConsumerState<ApiSettingsView> {
                             onPressed: () {
                               ref.read(addApiState.notifier).state =
                                   AddApiState();
-                              setState(() {
-                                isAddingProvider = true;
-                              });
+                              OverlayPortalService.showDialog(
+                                context,
+                                width: 450,
+                                height: 800,
+                                child: ApiPresetSelect(),
+                                backGroundColor: theme.zeroGradeColor,
+                              );
                             },
                             child: child!,
                           );

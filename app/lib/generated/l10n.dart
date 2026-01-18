@@ -589,6 +589,11 @@ class S {
     return Intl.message('Save', name: 'save', desc: '', args: []);
   }
 
+  /// `Please enter `
+  String get plz_enter {
+    return Intl.message('Please enter ', name: 'plz_enter', desc: '', args: []);
+  }
+
   /// `Add`
   String get add {
     return Intl.message('Add', name: 'add', desc: '', args: []);

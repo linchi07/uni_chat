@@ -66,7 +66,7 @@ enum RunningPlatform { web, android, ios, ipadOS, macos, windows }
 
 class PlatForm {
   static final PlatForm _instance = PlatForm._internal();
-
+  String? languageCode;
   // only enable haptic on ios and macos (since ipads don't have haptic engines)
   bool get enableHaptic =>
       platform == RunningPlatform.ios || platform == RunningPlatform.macos;
@@ -119,6 +119,11 @@ class UNIChat extends StatelessWidget {
               builder: (context) {
                 if (locale != null) {
                   S.load(locale!);
+                  PlatForm().languageCode = locale!.languageCode;
+                } else {
+                  PlatForm().languageCode = Localizations.localeOf(
+                    context,
+                  ).languageCode;
                 }
                 if (PlatForm().platform == RunningPlatform.macos) {
                   mainContent = MacOSMenuBar(mainContent: mainContent);

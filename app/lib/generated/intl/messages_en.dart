@@ -393,6 +393,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "persona_description_hint": MessageLookupByLibrary.simpleMessage(
       "Describe yourself...",
     ),
+    "plz_enter": MessageLookupByLibrary.simpleMessage("Please enter "),
     "plz_enter_content": MessageLookupByLibrary.simpleMessage(
       "Please enter content",
     ),
