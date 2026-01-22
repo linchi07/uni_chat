@@ -133,7 +133,9 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                                 context,
                                 child: Text(
                                   textAlign: TextAlign.center,
-                                  "确定删除提供商${provider.name}吗？\n 一切记录和Key都会被一同删除",
+                                  S
+                                      .of(context)
+                                      .provider_delete_warning(provider.name),
                                   style: TextStyle(
                                     fontSize: 18.0,
                                     fontWeight: FontWeight.bold,
@@ -195,7 +197,7 @@ class ApiPresetSelect extends ConsumerWidget {
                 var langC = PlatForm().languageCode;
                 return StdSearch(
                   isOutlined: true,
-                  hintText: "搜索提供商",
+                  hintText: S.of(context).search_provider,
                   searchItems: f.data!.map((e) => e.getName(langC)).toList(),
                   itemBuilder: (context, index) {
                     var imgP = LLMImageIndexer.tryGetImagePath(
@@ -239,7 +241,7 @@ class ApiPresetSelect extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         StdButton(
-          text: "添加其他供应商",
+          text: S.of(context).add_other_provider,
           onPressed: () async {
             await OverlayPortalService.hide(context);
             var sc = settingsMenuKey.currentState;
@@ -497,134 +499,151 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                     ),
                   ),
                 Expanded(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ListView(
-                      children: [
-                        if (ac.type ==
-                                ProviderPresetType.typeSetMultiInstance &&
-                            ac.providerPreset != null)
-                          Center(
-                            child: Container(
-                              margin: const EdgeInsets.only(top: 8),
-                              decoration: BoxDecoration(
-                                color: theme.primaryColor,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              child: Text(
-                                ac.providerPreset!.getName(lanC),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: theme.brightTextColor,
+                  child: ShaderMask(
+                    blendMode: BlendMode.dstOut,
+                    shaderCallback: (Rect bounds) {
+                      return LinearGradient(
+                        begin: Alignment.center,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent, // 底部结束点透明
+                          Colors.black, // 中间保持不透明
+                        ],
+                        stops: const [0.9, 1.0],
+                      ).createShader(bounds);
+                    },
+                    child: Material(
+                      color: Colors.transparent,
+                      child: ListView(
+                        children: [
+                          if (ac.type ==
+                                  ProviderPresetType.typeSetMultiInstance &&
+                              ac.providerPreset != null)
+                            Center(
+                              child: Container(
+                                margin: const EdgeInsets.only(top: 8),
+                                decoration: BoxDecoration(
+                                  color: theme.primaryColor,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                child: Text(
+                                  ac.providerPreset!.getName(lanC),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: theme.brightTextColor,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        const SizedBox(height: 2),
-                        Text(
-                          (acName) ? ac.name! : "未设置名称",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 23,
-                            fontWeight: FontWeight.bold,
-                            color: (acName)
-                                ? theme.darkTextColor
-                                : theme.errorColor,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          (endpoint)
-                              ? (endPointValid)
-                                    ? "有效：${ac.endpoint}"
-                                    : "可能无效地址: ${ac.endpoint}"
-                              : "未设置API地址",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: (endpoint)
-                                ? (endPointValid)
-                                      ? theme.okColor
-                                      : theme.warningColor
-                                : theme.errorColor,
-                          ),
-                        ),
-                        Text(
-                          ac.apiType?.getFriendlyName() ?? "未知",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: (ac.apiType != null)
-                                ? theme.darkTextColor
-                                : theme.errorColor,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        if (showBasic)
-                          StdListTile(
-                            title: Text("基础设置"),
-                            subtitle: _indicator(
-                              acName && endpoint,
-                              ValueKey("base info set"),
-                              "已完成配置",
-                              "未完成配置",
+                          const SizedBox(height: 2),
+                          Text(
+                            (acName) ? ac.name! : S.of(context).name_not_set,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 23,
+                              fontWeight: FontWeight.bold,
+                              color: (acName)
+                                  ? theme.darkTextColor
+                                  : theme.errorColor,
                             ),
-                            isSelected: page == 0,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            (endpoint)
+                                ? (endPointValid)
+                                      ? "${S.of(context).valid}: ${ac.endpoint}"
+                                      : "${S.of(context).endPoint_might_not_valid}: ${ac.endpoint}"
+                                : S.of(context).endPoint_not_set,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: (endpoint)
+                                  ? (endPointValid)
+                                        ? theme.okColor
+                                        : theme.warningColor
+                                  : theme.errorColor,
+                            ),
+                          ),
+                          Text(
+                            ac.apiType?.getFriendlyName() ??
+                                S.of(context).unknown,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: (ac.apiType != null)
+                                  ? theme.darkTextColor
+                                  : theme.errorColor,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (showBasic)
+                            StdListTile(
+                              title: Text(S.of(context).basic_configure),
+                              subtitle: _indicator(
+                                acName && endpoint,
+                                ValueKey("base info set"),
+                                S.of(context).configure_all_set,
+                                S.of(context).configure_not_set,
+                              ),
+                              isSelected: page == 0,
+                              onTap: () {
+                                controller.animateToPage(
+                                  0,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInSine,
+                                );
+                              },
+                            ),
+                          StdListTile(
+                            title: Text(S.of(context).api_keys_configure),
+                            isSelected: page == 1 + indexShift,
+                            subtitle: _indicator(
+                              ac.keys.isNotEmpty,
+                              ValueKey("api key set"),
+                              S
+                                  .of(context)
+                                  .api_keys_confiugured(ac.keys.length),
+                              S.of(context).api_keys_not_set,
+                            ),
                             onTap: () {
                               controller.animateToPage(
-                                0,
+                                1 + indexShift,
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInSine,
                               );
                             },
                           ),
-                        StdListTile(
-                          title: Text("API密钥配置"),
-                          isSelected: page == 1 + indexShift,
-                          subtitle: _indicator(
-                            ac.keys.isNotEmpty,
-                            ValueKey("api key set"),
-                            "共${ac.keys.length}个密钥已配置",
-                            "未配置密钥",
+                          StdListTile(
+                            isSelected: page == 2 + indexShift,
+                            title: Text(S.of(context).model_configure),
+                            onTap: () {
+                              controller.animateToPage(
+                                2 + indexShift,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInSine,
+                              );
+                            },
+                            subtitle: _indicator(
+                              ac.models.isNotEmpty,
+                              ValueKey("model set"),
+                              S.of(context).model_configured(ac.models.length),
+                              S.of(context).model_configure_not_set,
+                            ),
                           ),
-                          onTap: () {
-                            controller.animateToPage(
-                              1 + indexShift,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInSine,
-                            );
-                          },
-                        ),
-                        StdListTile(
-                          isSelected: page == 2 + indexShift,
-                          title: Text("模型配置"),
-                          onTap: () {
-                            controller.animateToPage(
-                              2 + indexShift,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInSine,
-                            );
-                          },
-                          subtitle: _indicator(
-                            ac.models.isNotEmpty,
-                            ValueKey("model set"),
-                            "已配置${ac.models.length}个模型",
-                            "未配置模型",
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 if (page != 0)
                   StdButton(
                     color: theme.thirdGradeColor,
-                    text: "上一步",
+                    text: S.of(context).previous_step,
                     onPressed: () {
                       controller.previousPage(
                         duration: const Duration(milliseconds: 300),
@@ -634,7 +653,9 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                   ),
                 const SizedBox(height: 10),
                 StdButton(
-                  text: (page == 2 + indexShift) ? "保存" : "下一步",
+                  text: (page == 2 + indexShift)
+                      ? S.of(context).save
+                      : S.of(context).next_step,
                   onPressed: () async {
                     if (page == 2 + indexShift) {
                       if (ac.getIfValid()) {
@@ -823,7 +844,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "基础信息",
+            S.of(context).basic_configure,
             style: TextStyle(
               fontSize: 35,
               fontWeight: FontWeight.bold,
@@ -832,7 +853,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
           ),
           const Divider(height: 20, thickness: 1),
           Text(
-            "名称",
+            S.of(context).name,
             style: TextStyle(fontSize: 20, color: theme.darkTextColor),
           ),
           const SizedBox(height: 10),
@@ -846,7 +867,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
               ),
               child: StdTextFieldOutlined(
                 controller: name,
-                hintText: "请输入名称",
+                hintText: S.of(context).plz_enter_name,
                 onSubmitted: (s) {
                   ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
                     name: s,
@@ -859,7 +880,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
           if (ac.type == ProviderPresetType.fullyCustomize)
             ...apiTypeSelector(ac),
           Text(
-            "端点",
+            S.of(context).end_point(""),
             style: TextStyle(fontSize: 20, color: theme.darkTextColor),
           ),
           const SizedBox(height: 10),
@@ -878,13 +899,13 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
                   );
                 },
                 controller: endpoint,
-                hintText: "请输入端点",
+                hintText: S.of(context).enter_end_point,
               ),
             ),
           ),
           const SizedBox(height: 10),
           StdCheckbox(
-            text: "添加版本号",
+            text: S.of(context).add_ver_flag,
             value: addVersionFlag,
             onChanged: (value) {
               setState(() {
@@ -903,7 +924,10 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
   List<Widget> apiTypeSelector(ApiConfigure ac) {
     return [
       const SizedBox(height: 20),
-      Text("API类型", style: TextStyle(fontSize: 20, color: theme.darkTextColor)),
+      Text(
+        S.of(context).api_type,
+        style: TextStyle(fontSize: 20, color: theme.darkTextColor),
+      ),
       const SizedBox(height: 10),
       Align(
         alignment: Alignment.centerLeft,
@@ -955,7 +979,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text("端点预览", style: tStyle),
+                      Text(S.of(context).end_point_preview, style: tStyle),
                       const SizedBox(height: 10),
                       ...selected!.getEndPointInfo(text),
                       const SizedBox(height: 10),
@@ -1168,7 +1192,7 @@ class _ApiKeyInfoState extends ConsumerState<ApiKeyInfo> {
                     OverlayPortalService.showDialog(
                       context,
                       child: Text(
-                        "确定删除吗",
+                        S.of(context).delete_confirm,
                         style: TextStyle(
                           fontSize: 25,
                           fontWeight: FontWeight.bold,
@@ -1219,12 +1243,18 @@ class _ApiKeyInfoState extends ConsumerState<ApiKeyInfo> {
                     child: Row(
                       children: [
                         if (apiKey.rpm != null)
-                          getInfoTags("每分钟请求数", apiKey.rpm!.toString()),
+                          getInfoTags(
+                            S.of(context).request_per_minute,
+                            apiKey.rpm!.toString(),
+                          ),
                         if (apiKey.rpd != null)
-                          getInfoTags("每日请求上限", apiKey.rpd!.toString()),
+                          getInfoTags(
+                            S.of(context).request_daily_limit,
+                            apiKey.rpd!.toString(),
+                          ),
                         if (apiKey.tokenLimit != null)
                           getInfoTags(
-                            "每日token上限",
+                            S.of(context).token_daily_limit,
                             apiKey.tokenLimit!.toString(),
                           ),
                       ],
@@ -1253,7 +1283,7 @@ class _ApiKeyInfoState extends ConsumerState<ApiKeyInfo> {
             ? widget.theme.okColor
             : widget.theme.errorColor,
         child: Text(
-          (apiKey.isEnabled) ? "已启用" : "未启用",
+          (apiKey.isEnabled) ? S.of(context).enable : S.of(context).disable,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 15,
@@ -1325,11 +1355,12 @@ class _ApiKeyEditMenuState extends State<ApiKeyEditMenu> {
     return Form(
       key: fKey,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 10),
           Text(
-            "配置API密钥",
+            S.of(context).api_keys_configure,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 25,
@@ -1346,10 +1377,11 @@ class _ApiKeyEditMenuState extends State<ApiKeyEditMenu> {
             validateFailureText: S.of(context).fill_in_api_key,
           ),
           const SizedBox(height: 10),
-          Text("备注", style: ts),
+          Text(S.of(context).remark, style: ts),
           const SizedBox(height: 5),
           StdTextFormFieldOutlined(
-            hintText: "请输入备注",
+            hintText:
+                S.of(context).plz_enter + S.of(context).remark.toLowerCase(),
             controller: _remark,
             validator: (v) {
               return null;
@@ -1376,7 +1408,7 @@ class _ApiKeyEditMenuState extends State<ApiKeyEditMenu> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    "高级设置",
+                    S.of(context).advance_settings,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -1428,19 +1460,20 @@ class _ApiKeyEditMenuState extends State<ApiKeyEditMenu> {
       const SizedBox(height: 10),
       Row(
         children: [
-          Text("每分钟请求数", style: ts),
+          Text(S.of(context).request_per_minute, style: ts),
           const SizedBox(width: 10),
           Expanded(
             child: StdTextFormFieldOutlined(
-              hintText: "请输入每分钟请求数",
+              hintText:
+                  "${S.of(context).plz_enter}${S.of(context).request_per_minute.toLowerCase()}",
               controller: _rpm,
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return null;
                 } else if (int.tryParse(value) == null) {
-                  return "请输入数字";
+                  return S.of(context).plz_enter_digit;
                 } else if (int.tryParse(value)! < 0) {
-                  return "请输入正数";
+                  return S.of(context).plz_enter_a_number_bigger_than_zero;
                 }
                 return null;
               },
@@ -1451,19 +1484,21 @@ class _ApiKeyEditMenuState extends State<ApiKeyEditMenu> {
       const SizedBox(height: 10),
       Row(
         children: [
-          Text("每日请求上限", style: ts),
+          Text(S.of(context).request_daily_limit, style: ts),
           const SizedBox(width: 10),
           Expanded(
             child: StdTextFormFieldOutlined(
-              hintText: "请输入每日请求上限",
+              hintText:
+                  S.of(context).plz_enter +
+                  S.of(context).request_daily_limit.toLowerCase(),
               controller: _rpd,
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return null;
                 } else if (int.tryParse(value) == null) {
-                  return "请输入数字";
+                  return S.of(context).plz_enter_digit;
                 } else if (int.tryParse(value)! < 0) {
-                  return "请输入正数";
+                  return S.of(context).plz_enter_a_number_bigger_than_zero;
                 }
                 return null;
               },
@@ -1474,19 +1509,21 @@ class _ApiKeyEditMenuState extends State<ApiKeyEditMenu> {
       const SizedBox(height: 10),
       Row(
         children: [
-          Text("日Token上限", style: ts),
+          Text(S.of(context).token_daily_limit, style: ts),
           const SizedBox(width: 10),
           Expanded(
             child: StdTextFormFieldOutlined(
-              hintText: "请输入Token上限",
+              hintText:
+                  S.of(context).plz_enter +
+                  S.of(context).token_daily_limit.toLowerCase(),
               controller: _tL,
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return null;
                 } else if (int.tryParse(value) == null) {
-                  return "请输入数字";
+                  return S.of(context).plz_enter_digit;
                 } else if (int.tryParse(value)! < 0) {
-                  return "请输入正数";
+                  return S.of(context).plz_enter_a_number_bigger_than_zero;
                 }
                 return null;
               },
@@ -1530,7 +1567,7 @@ class _ModelAddPageHeaderState extends State<ModelAddPageHeader> {
                   var theme = ref.watch(themeProvider);
                   var ac = ref.read(apiConfigureProvider);
                   return StdButton(
-                    text: "添加模型",
+                    text: S.of(context).add_model,
                     onPressed: () {
                       OverlayPortalService.showDialog(
                         context,
@@ -1683,7 +1720,7 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
                           OverlayPortalService.showDialog(
                             context,
                             child: Text(
-                              "确定删除吗",
+                              S.of(context).delete_confirm,
                               style: TextStyle(
                                 fontSize: 25,
                                 fontWeight: FontWeight.bold,
@@ -1888,7 +1925,7 @@ class _ModelAddWidgetState extends State<ModelAddWidget> {
         if (model.hasData) {
           _models = model.data!;
           return StdSearch(
-            hintText: "搜索你需要的模型，宁可少输不要输错哦",
+            hintText: S.of(context).search_for_models,
             isOutlined: true,
             searchItems: _models.map((e) => e.friendlyName).toList(),
             itemBuilder: (context, e) => buildSearchResult(_models[e]),
@@ -1897,7 +1934,7 @@ class _ModelAddWidgetState extends State<ModelAddWidget> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    "没有找到模型，请检查输入，或者添加新模型",
+                    S.of(context).model_not_found,
                     style: TextStyle(
                       color: widget.theme.darkTextColor,
                       fontSize: 16,
@@ -1905,7 +1942,7 @@ class _ModelAddWidgetState extends State<ModelAddWidget> {
                   ),
                   const SizedBox(height: 20),
                   StdButton(
-                    text: "添加模型",
+                    text: S.of(context).add_model,
                     onPressed: () {
                       setState(() {
                         adding = true;
@@ -2161,7 +2198,7 @@ class _ModelConfigureWidgetState extends State<ModelConfigureWidget> {
         children: [
           const SizedBox(height: 10),
           Text(
-            "配置模型",
+            S.of(context).model_configure,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 25,

@@ -338,5 +338,62 @@
   "setup_add_persona_hint": "AI learn about you through personas,\n you can be \"The true me\"or let the AIs calls you \"Master\" :-D ",
   "star_github": "Star us on GitHub plz(≧∇≦)",
   "show_document": "Show Docs",
-  "hide_document": "Hide Docs"
+  "hide_document": "Hide Docs",
+  "comment@forApiSettings": "",
+  "provider_delete_warning": " Are you sure to delete {provider}?\\n All the records and key will be deleted as well.",
+  "@provider_delete_warning": {
+    "placeholders": {
+      "provider": {}
+    }
+  },
+  "search_provider": "Search provider",
+  "add_other_provider": "Add other provider",
+  "name_not_set": "Unnamed",
+  "valid": "Valid",
+  "endPoint_might_not_valid": "Address might not be valid",
+  "endPoint_not_set": "API end point not set",
+  "unknown": "unknown",
+  "basic_configure": "Basic configuration",
+  "configure_all_set": "Configured",
+  "configure_not_set": "Not configured",
+  "api_keys_configure": "API Keys configuration",
+  "api_keys_confiugured": "{num} API Keys added",
+  "@api_keys_confiugured": {
+    "placeholders": {
+      "num": {}
+    }
+  },
+  "api_keys_not_set": "Api Keys not added",
+  "model_configure":"Model configuration",
+  "model_configure_not_set": "Model not set",
+  "model_configured": "Added {num} models",
+  "@model_configured": {
+    "placeholders": {
+      "num": {}
+    }
+  },
+  "previous_step": "Previous Step",
+  "add_ver_flag": "Add version flags",
+  "api_type": "API Type",
+  "end_point_preview": "API end point preview",
+  "delete_confirm": "Confirm your delete.",
+  "request_per_minute": "Request per minute",
+  "request_daily_limit": "Request per day",
+  "token_daily_limit": "Token limit per day",
+  "remark": "Remark",
+  "advance_settings": "Advance Settings",
+  "plz_enter_digit": "Enter a digit",
+  "plz_enter_a_number_bigger_than_zero": "Enter a >0 number",
+  "add_model": "Add model",
+  "search_for_models": "Search model",
+  "model_not_found": "Model not found , please check your spelling",
+  "comment@model_ability": "",
+  "textGenerate": "Text Generation",
+  "imageGenerate": "Image Generation",
+  "image2imageGenerate": "Image to Image Generation",
+  "visual": "Visual Understanding",
+  "file": "File",
+  "embedding": "Embedding",
+  "audio": "Audio",
+  "video": "Video"
 }

@@ -334,5 +334,62 @@
   "setup_add_agent_hint": "Agent是一个高度自定义的聊天机器人，\\n 通过UNIChat强大的Agent系统，不论是代码大师还是可爱猫娘，随你定义",
   "setup_add_persona": "在添加API之后，让我们添加一个人格",
   "setup_add_persona_hint": "人格向AI描述了你，你可以填写最真实的自己 \\n 当然也可以让AI把你当成 “主人”:-D",
-  "star_github": "能给我们的GitHub项目点个Star吗？ 求你了(≧∇≦)"
+  "star_github": "能给我们的GitHub项目点个Star吗？ 求你了(≧∇≦)",
+  "comment@forApiSettings": "",
+  "provider_delete_warning": " 确定删除提供商{provider}吗？\\n 一切记录和Key都会被一同删除",
+  "@provider_delete_warning": {
+    "placeholders": {
+      "provider": {}
+    }
+  },
+  "search_provider": "搜索提供商",
+  "add_other_provider": "添加其他提供商",
+  "name_not_set": "未命名",
+  "valid": "有效",
+  "endPoint_might_not_valid": "可能无效地址：",
+  "endPoint_not_set": "未设置API地址",
+  "unknown": "未知",
+  "basic_configure": "基础配置",
+  "configure_all_set": "已配置完毕",
+  "configure_not_set": "未完成配置",
+  "api_keys_configure": "API密钥配置",
+  "api_keys_confiugured": "共{num}个密钥已配置",
+  "@api_keys_confiugured": {
+    "placeholders": {
+      "num": {}
+    }
+  },
+  "api_keys_not_set": "未配置密钥",
+  "model_configure":"模型配置",
+  "model_configure_not_set": "未配置模型",
+  "model_configured": "已配置{num}个模型",
+  "@model_configured": {
+    "placeholders": {
+      "num": {}
+    }
+  },
+  "previous_step": "上一步",
+  "add_ver_flag": "添加版本号",
+  "api_type": "API类型",
+  "end_point_preview": "API地址预览",
+  "delete_confirm": "确定删除吗？",
+  "request_per_minute": "每分钟请求数",
+  "request_daily_limit": "每日请求上限",
+  "token_daily_limit": "每日Token上限",
+  "remark": "备注",
+  "advance_settings": "高级设置",
+  "plz_enter_digit": "请输入数字",
+  "plz_enter_a_number_bigger_than_zero": "请输入正数",
+  "add_model": "添加模型",
+  "search_for_models": "搜索模型",
+  "model_not_found": "未找到模型,请检查输入",
+  "comment@model_ability": "",
+  "textGenerate": "文本生成",
+  "imageGenerate": "图像生成",
+  "image2imageGenerate": "图像到图像生成",
+  "visual": "视觉理解",
+  "file": "文件处理",
+  "embedding": "嵌入模型",
+  "audio": "音频",
+  "video": "视频"
 }

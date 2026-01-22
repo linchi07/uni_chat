@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 
+import '../generated/l10n.dart' show S;
+
 class ApiProvider {
   final String id;
   final String name;
@@ -156,21 +158,21 @@ extension XModelAlibity on ModelAbility {
   String name(BuildContext context) {
     switch (this) {
       case ModelAbility.textGenerate:
-        return '文本生成';
+        return S.of(context).textGenerate;
       case ModelAbility.imageGenerate:
-        return '图像生成';
+        return S.of(context).imageGenerate;
       case ModelAbility.image2imageGenerate:
-        return '图像到图像生成';
+        return S.of(context).image2imageGenerate;
       case ModelAbility.visual:
-        return '视觉理解';
+        return S.of(context).visual;
       case ModelAbility.file:
-        return 'PDF理解';
+        return S.of(context).file;
       case ModelAbility.embedding:
-        return '嵌入';
+        return S.of(context).embedding;
       case ModelAbility.audio:
-        return '音频';
+        return S.of(context).audio;
       case ModelAbility.video:
-        return '视频';
+        return S.of(context).video;
     }
   }
 
