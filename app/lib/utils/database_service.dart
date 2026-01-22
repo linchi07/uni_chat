@@ -121,13 +121,7 @@ class DatabaseService {
   }
 
   Future<Database> _initDatabase() async {
-    final documentsDirectory = await getApplicationDocumentsDirectory();
-    final dbDirectory = p.join(documentsDirectory.path, 'chat');
-
-    // Ensure the directory exists
-    await Directory(dbDirectory).create(recursive: true);
-
-    final dbPath = p.join(dbDirectory, 'session_saves.db');
+   var dbPath = await PathProvider.getPath("chat/session_saves.db");
 
     return await openDatabase(
       dbPath,

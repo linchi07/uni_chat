@@ -4,10 +4,12 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' show Color, Offset;
 
+import 'package:charset/charset.dart';
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 import 'package:super_native_extensions/raw_clipboard.dart' as raw;
 import 'package:super_native_extensions/raw_drag_drop.dart' show DropOperation;
+import 'package:uni_chat/main.dart';
 
 import 'file_semantic_map.g.dart';
 
@@ -200,11 +202,16 @@ abstract class NativeData {
   /// 尝试解析本地文件路径 (针对 public.file-url)
   Future<String?> _resolveFilePath() async {
     String? uriFormat;
-    if (_info.formats.contains("public.file-url")) {
-      uriFormat = "public.file-url";
-    } else if (_info.formats.contains("text/uri-list")) {
-      uriFormat = "text/uri-list";
+    if(PlatForm().isWindows){
+      if(_info.formats.contains("NativeShell_CF_15")) uriFormat = "NativeShell_CF_15";
+    }else{
+      if (_info.formats.contains("public.file-url")) {
+        uriFormat = "public.file-url";
+      } else if (_info.formats.contains("text/uri-list")) {
+        uriFormat = "text/uri-list";
+      }
     }
+
 
     if (uriFormat != null) {
       final (future, _) = _item.getDataForFormat(uriFormat);
@@ -230,18 +237,26 @@ abstract class NativeData {
         if (uri != null) {
           bool isFileUri = false;
           // 严谨校验
-          if (uri.isScheme('file')) {
-            isFileUri = true;
-          } else if (!uri.hasScheme &&
-              (uri.path.startsWith('/') ||
-                  uri.path.startsWith(RegExp(r'[a-zA-Z]:\\')))) {
-            if (uriFormat == "public.file-url" ||
-                uriFormat == "text/uri-list") {
-              uri = Uri.file(uriStr.trim());
+          if(PlatForm().isWindows){
+            if (uri.isScheme('file')) {
               isFileUri = true;
+            } else if (uriFormat == "NativeShell_CF_15") {
+              uri = Uri.file(p.normalize(uriStr.trim()),windows: true);
+                isFileUri = true;
+              }
+          }else {
+            if (uri.isScheme('file')) {
+              isFileUri = true;
+            } else if (!uri.hasScheme &&
+                (uri.path.startsWith('/') ||
+                    uri.path.startsWith(RegExp(r'[a-zA-Z]:\\')))) {
+              if (uriFormat == "public.file-url" ||
+                  uriFormat == "text/uri-list") {
+                uri = Uri.file(uriStr.trim());
+                isFileUri = true;
+              }
             }
           }
-
           if (isFileUri) {
             return uri.toFilePath();
           }
@@ -260,7 +275,7 @@ abstract class NativeData {
     String pathToDir, {
     String? rename,
     bool replaceIfExist = false,
-    bool createDirIfNotExist = false,
+    bool createDirIfNotExist = true,
     String? extension,
   }) async {
     if (createDirIfNotExist) {
@@ -316,15 +331,26 @@ class NativeText extends NativeData {
   Future<String> getText() async {
     final formats = _info.formats;
     String? target;
-    if (formats.contains("public.utf8-plain-text")) {
-      target = "public.utf8-plain-text";
-    } else if (formats.contains("text/plain")) {
-      target = "text/plain";
+    if(PlatForm().isWindows){
+      if (formats.contains("NativeShell_CF_13")) {
+        target = "NativeShell_CF_13";
+      }
+    }else{
+      if (formats.contains("public.utf8-plain-text")) {
+        target = "public.utf8-plain-text";
+      } else if (formats.contains("text/plain")) {
+        target = "text/plain";
+      }
     }
+
 
     if (target != null) {
       final (future, _) = _item.getDataForFormat(target);
       final data = await future;
+      if(PlatForm().isWindows){
+        //windows uses utf16le codec
+        return Utf16Decoder().decodeUtf16Le(data as List<int>);
+      }
       if (data is String) return data;
       if (data is Uint8List) return utf8.decode(data);
     }

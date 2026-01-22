@@ -1,7 +1,8 @@
-import 'dart:io';
+import 'dart:io' hide Platform;
 
 import 'package:path/path.dart' as p;
 import 'package:super_native_extensions/raw_clipboard.dart' as raw;
+import 'package:uni_chat/main.dart';
 
 import 'models.dart';
 
@@ -17,11 +18,21 @@ const _iosCommonExtensions = {
   "net.daringfireball.markdown": ".md", // Official Markdown
 };
 
+// win的剪贴板不允许阻塞也就是直接打断点，只能这样用一个不await的future来防止系统阻塞，这个只是debug用的
+class TempStorage {
+  static Future<void> writeA(List<String> a) async {
+    await Future.delayed(const Duration(seconds: 4));
+    print(a);
+    return;
+  }
+}
+
 class NativeTypeResolver {
   /// 智能解析数据项
   static Future<List<NativeData>> resolveItems(
-      Iterable<raw.DataReaderItem> items,
-      Set<FileFormat>? allowedFormats) async {
+    Iterable<raw.DataReaderItem> items,
+    Set<FileFormat>? allowedFormats,
+  ) async {
     final result = <NativeData>[];
     bool acceptAll = false;
     if (allowedFormats == null ||
@@ -41,23 +52,32 @@ class NativeTypeResolver {
       }
 
       final formats = info.formats.toSet();
-
-      bool isFile = formats.contains("public.file-url");
-      bool hasText = formats.contains("text/plain") ||
-          formats.contains("public.utf8-plain-text");
+      TempStorage.writeA(formats.toList());
+      late bool isFile;
+      late bool hasText;
+      if (PlatForm().platform == RunningPlatform.windows) {
+        isFile = formats.contains("NativeShell_CF_15");
+        hasText = formats.contains("NativeShell_CF_13");
+      } else {
+        bool isFile = formats.contains("public.file-url");
+        bool hasText =
+            formats.contains("text/plain") ||
+            formats.contains("public.utf8-plain-text");
+      }
       var name = info.suggestedName;
       if (hasText && !isFile && name == null) {
         if (acceptAll || allowedFormats!.contains(const AllowPlainText())) ;
-        result.add(NativeText(
-          format: FileFormat(mimeType: "text/plain", extension: "txt"),
-          item: item,
-          info: info,
-          name: info.suggestedName,
-        ));
+        result.add(
+          NativeText(
+            format: FileFormat(mimeType: "text/plain", extension: "txt"),
+            item: item,
+            info: info,
+            name: info.suggestedName,
+          ),
+        );
         continue;
       }
-
-      if (Platform.isIOS && name != null && p.extension(name).isEmpty) {
+      if (PlatForm().platform  == RunningPlatform.ios && name != null && p.extension(name).isEmpty) {
         for (final format in info.formats) {
           final ext = _iosCommonExtensions[format];
           if (ext != null) {
@@ -79,15 +99,20 @@ class NativeTypeResolver {
             ext.contains("jpg") ||
             ext.contains("jpeg") &&
                 (acceptAll ||
-                    allowedFormats!
-                        .contains(FileFormat(extension: extNoDot)))) {
-          result.add(NativeImage(
-            format:
-                FileFormat(mimeType: "image/$extNoDot", extension: extNoDot),
-            item: item,
-            info: info,
-            name: name,
-          ));
+                    allowedFormats!.contains(
+                      FileFormat(extension: extNoDot),
+                    ))) {
+          result.add(
+            NativeImage(
+              format: FileFormat(
+                mimeType: "image/$extNoDot",
+                extension: extNoDot,
+              ),
+              item: item,
+              info: info,
+              name: name,
+            ),
+          );
           continue;
         }
         var r = Language.getLanguage(ext);
@@ -96,37 +121,48 @@ class NativeTypeResolver {
               allowedFormats!.contains(const AllowAllTextFileFormats()) ||
               allowedFormats.contains(FileFormat(extension: extNoDot))) {
             result.add(
-                NativeTextFile.fromLanguage(item, r, name, extNoDot, info));
+              NativeTextFile.fromLanguage(item, r, name, extNoDot, info),
+            );
           }
           continue;
         } else if (hasText && ext == "txt") {
           if (acceptAll ||
               allowedFormats!.contains(const AllowAllTextFileFormats()) ||
               allowedFormats.contains(const FileFormat(extension: "txt"))) {
-            result.add(NativeTextFile(
-              format: FileFormat(
-                  mimeType: "text/plain", extension: p.extension(name)),
-              item: item,
-              info: info,
-              name: name,
-            ));
+            result.add(
+              NativeTextFile(
+                format: FileFormat(
+                  mimeType: "text/plain",
+                  extension: p.extension(name),
+                ),
+                item: item,
+                info: info,
+                name: name,
+              ),
+            );
           }
           continue;
         }
-      } else if (formats.any((f) =>
-              f.startsWith("image/") ||
-              f == "public.png" ||
-              f == "public.jpeg") &&
+      } else if (formats.any(
+            (f) =>
+                f.startsWith("image/") ||
+                f == "public.png" ||
+                f == "public.jpeg",
+          ) &&
           (acceptAll ||
               allowedFormats!.contains(const FileFormat(extension: "png")))) {
-        String? mime = formats.firstWhere((f) => f.startsWith("image/"),
-            orElse: () => "image/png");
-        result.add(NativeImage(
-          format: FileFormat(mimeType: mime, extension: "png"),
-          item: item,
-          info: info,
-          name: info.suggestedName,
-        ));
+        String? mime = formats.firstWhere(
+          (f) => f.startsWith("image/"),
+          orElse: () => "image/png",
+        );
+        result.add(
+          NativeImage(
+            format: FileFormat(mimeType: mime, extension: "png"),
+            item: item,
+            info: info,
+            name: info.suggestedName,
+          ),
+        );
         continue;
       }
 
@@ -136,24 +172,30 @@ class NativeTypeResolver {
           ext = ext.substring(1);
         }
         if (acceptAll || allowedFormats!.contains(FileFormat(extension: ext)))
-          result.add(NativeFile(
-            format: FileFormat(
-                mimeType: "application/octet-stream", extension: ext),
-            item: item,
-            info: info,
-            name: name,
-          ));
+          result.add(
+            NativeFile(
+              format: FileFormat(
+                mimeType: "application/octet-stream",
+                extension: ext,
+              ),
+              item: item,
+              info: info,
+              name: name,
+            ),
+          );
       } else if (hasText) {
         if (acceptAll ||
             allowedFormats!.contains(const AllowAllTextFileFormats()) ||
             allowedFormats.contains(FileFormat(extension: "txt")))
           // 如果没有 file-url 但有 text，即使可能是个文件内容，也作为 Text 处理
-          result.add(NativeText(
-            format: FileFormat(mimeType: "text/plain", extension: "txt"),
-            item: item,
-            info: info,
-            name: name,
-          ));
+          result.add(
+            NativeText(
+              format: FileFormat(mimeType: "text/plain", extension: "txt"),
+              item: item,
+              info: info,
+              name: name,
+            ),
+          );
       }
     }
 

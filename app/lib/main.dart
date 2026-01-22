@@ -66,6 +66,7 @@ enum RunningPlatform { web, android, ios, ipadOS, macos, windows }
 
 class PlatForm {
   static final PlatForm _instance = PlatForm._internal();
+  bool get isWindows => platform == RunningPlatform.windows;
   String? languageCode;
   // only enable haptic on ios and macos (since ipads don't have haptic engines)
   bool get enableHaptic =>

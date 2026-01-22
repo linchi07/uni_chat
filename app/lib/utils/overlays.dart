@@ -214,6 +214,15 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
             // 监听遮罩可见性变化
             // 监听大小变化
             Widget content = data.child!;
+            if(PlatForm().isMobile){
+              content = SingleChildScrollView(
+                // enlarge the scroll area
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: content,
+                ),
+              );
+            }
             // 如果指定了位置，则使用 Positioned，否则使用 Center
             Widget positionedContent;
             if (data.offset != null) {
@@ -225,12 +234,7 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
                       ((data.autoAvoidSoftKeyboard) ? _keyboardHeight : 0),
                 ),
                 duration: const Duration(milliseconds: 50),
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: content,
-                  ),
-                ),
+                child: content,
               );
             } else {
               positionedContent = Center(
@@ -239,17 +243,12 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
                     bottom: (data.autoAvoidSoftKeyboard) ? _keyboardHeight : 0,
                   ),
                   duration: const Duration(milliseconds: 50),
-                  child: SingleChildScrollView(
-                    // enlarge the scroll area
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: content,
-                    ),
-                  ),
+                  child: content
                 ),
               );
             }
             var w = Stack(
+              fit: StackFit.passthrough,
               alignment: Alignment.center,
               children: [
                 // 背景遮罩，点击时可以关闭对话框

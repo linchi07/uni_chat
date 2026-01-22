@@ -22,7 +22,7 @@ class MacOSSpecificsSetting {
 
 class WindowsSpecificsSetting {
   static Future<void> setWindowStyle() async {
-    appWindow.size = const Size(640, 480);
+    appWindow.minSize = const Size(640, 480);
   }
 }
 

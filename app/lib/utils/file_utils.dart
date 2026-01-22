@@ -80,12 +80,17 @@ class FileUtils {
 class PathProvider {
   static Future<String> getPath(String relativePath) async {
     relativePath = "/$relativePath";
+    late String docPath;
     if (PlatForm().platform == RunningPlatform.windows) {
       // windows真的烦，还得给他擦屁股
       relativePath = relativePath.replaceAll(RegExp(r'/'), r'\');
+      //win下不能用doc作为路径，那个是系统的文档文件夹，而且是全局的。
+      docPath = (await getApplicationSupportDirectory()).path;
+    }else{
+      docPath = (await getApplicationDocumentsDirectory()).path;
     }
     var finalPath =
-        "${(await getApplicationDocumentsDirectory()).path}$relativePath";
+        "$docPath$relativePath";
     var dir = Directory(p.dirname(finalPath));
     if (!(await dir.exists())) {
       await dir.create(recursive: true);
