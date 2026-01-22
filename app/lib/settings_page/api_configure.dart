@@ -497,127 +497,141 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                     ),
                   ),
                 Expanded(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ListView(
-                      children: [
-                        if (ac.type ==
-                                ProviderPresetType.typeSetMultiInstance &&
-                            ac.providerPreset != null)
-                          Center(
-                            child: Container(
-                              margin: const EdgeInsets.only(top: 8),
-                              decoration: BoxDecoration(
-                                color: theme.primaryColor,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              child: Text(
-                                ac.providerPreset!.getName(lanC),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: theme.brightTextColor,
+                  child: ShaderMask(
+                    blendMode: BlendMode.dstOut,
+                    shaderCallback: (Rect bounds) {
+                      return LinearGradient(
+                        begin: Alignment.center,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent, // 底部结束点透明
+                          Colors.black, // 中间保持不透明
+                        ],
+                        stops: const [0.9, 1.0],
+                      ).createShader(bounds);
+                    },
+                    child: Material(
+                      color: Colors.transparent,
+                      child: ListView(
+                        children: [
+                          if (ac.type ==
+                                  ProviderPresetType.typeSetMultiInstance &&
+                              ac.providerPreset != null)
+                            Center(
+                              child: Container(
+                                margin: const EdgeInsets.only(top: 8),
+                                decoration: BoxDecoration(
+                                  color: theme.primaryColor,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                child: Text(
+                                  ac.providerPreset!.getName(lanC),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: theme.brightTextColor,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        const SizedBox(height: 2),
-                        Text(
-                          (acName) ? ac.name! : "未设置名称",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 23,
-                            fontWeight: FontWeight.bold,
-                            color: (acName)
-                                ? theme.darkTextColor
-                                : theme.errorColor,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          (endpoint)
-                              ? (endPointValid)
-                                    ? "有效：${ac.endpoint}"
-                                    : "可能无效地址: ${ac.endpoint}"
-                              : "未设置API地址",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: (endpoint)
-                                ? (endPointValid)
-                                      ? theme.okColor
-                                      : theme.warningColor
-                                : theme.errorColor,
-                          ),
-                        ),
-                        Text(
-                          ac.apiType?.getFriendlyName() ?? "未知",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: (ac.apiType != null)
-                                ? theme.darkTextColor
-                                : theme.errorColor,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        if (showBasic)
-                          StdListTile(
-                            title: Text("基础设置"),
-                            subtitle: _indicator(
-                              acName && endpoint,
-                              ValueKey("base info set"),
-                              "已完成配置",
-                              "未完成配置",
+                          const SizedBox(height: 2),
+                          Text(
+                            (acName) ? ac.name! : "未设置名称",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 23,
+                              fontWeight: FontWeight.bold,
+                              color: (acName)
+                                  ? theme.darkTextColor
+                                  : theme.errorColor,
                             ),
-                            isSelected: page == 0,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            (endpoint)
+                                ? (endPointValid)
+                                      ? "有效：${ac.endpoint}"
+                                      : "可能无效地址: ${ac.endpoint}"
+                                : "未设置API地址",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: (endpoint)
+                                  ? (endPointValid)
+                                        ? theme.okColor
+                                        : theme.warningColor
+                                  : theme.errorColor,
+                            ),
+                          ),
+                          Text(
+                            ac.apiType?.getFriendlyName() ?? "未知",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: (ac.apiType != null)
+                                  ? theme.darkTextColor
+                                  : theme.errorColor,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (showBasic)
+                            StdListTile(
+                              title: Text("基础设置"),
+                              subtitle: _indicator(
+                                acName && endpoint,
+                                ValueKey("base info set"),
+                                "已完成配置",
+                                "未完成配置",
+                              ),
+                              isSelected: page == 0,
+                              onTap: () {
+                                controller.animateToPage(
+                                  0,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInSine,
+                                );
+                              },
+                            ),
+                          StdListTile(
+                            title: Text("API密钥配置"),
+                            isSelected: page == 1 + indexShift,
+                            subtitle: _indicator(
+                              ac.keys.isNotEmpty,
+                              ValueKey("api key set"),
+                              "共${ac.keys.length}个密钥已配置",
+                              "未配置密钥",
+                            ),
                             onTap: () {
                               controller.animateToPage(
-                                0,
+                                1 + indexShift,
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInSine,
                               );
                             },
                           ),
-                        StdListTile(
-                          title: Text("API密钥配置"),
-                          isSelected: page == 1 + indexShift,
-                          subtitle: _indicator(
-                            ac.keys.isNotEmpty,
-                            ValueKey("api key set"),
-                            "共${ac.keys.length}个密钥已配置",
-                            "未配置密钥",
+                          StdListTile(
+                            isSelected: page == 2 + indexShift,
+                            title: Text("模型配置"),
+                            onTap: () {
+                              controller.animateToPage(
+                                2 + indexShift,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInSine,
+                              );
+                            },
+                            subtitle: _indicator(
+                              ac.models.isNotEmpty,
+                              ValueKey("model set"),
+                              "已配置${ac.models.length}个模型",
+                              "未配置模型",
+                            ),
                           ),
-                          onTap: () {
-                            controller.animateToPage(
-                              1 + indexShift,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInSine,
-                            );
-                          },
-                        ),
-                        StdListTile(
-                          isSelected: page == 2 + indexShift,
-                          title: Text("模型配置"),
-                          onTap: () {
-                            controller.animateToPage(
-                              2 + indexShift,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInSine,
-                            );
-                          },
-                          subtitle: _indicator(
-                            ac.models.isNotEmpty,
-                            ValueKey("model set"),
-                            "已配置${ac.models.length}个模型",
-                            "未配置模型",
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -634,7 +648,7 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                   ),
                 const SizedBox(height: 10),
                 StdButton(
-                  text: (page == 2 + indexShift) ? "保存" : "下一步",
+                  text: (page == 2 + indexShift) ? S.of(context).save : S.of(context).next_step,
                   onPressed: () async {
                     if (page == 2 + indexShift) {
                       if (ac.getIfValid()) {
@@ -832,7 +846,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
           ),
           const Divider(height: 20, thickness: 1),
           Text(
-            "名称",
+            S.of(context).name,
             style: TextStyle(fontSize: 20, color: theme.darkTextColor),
           ),
           const SizedBox(height: 10),
@@ -846,7 +860,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
               ),
               child: StdTextFieldOutlined(
                 controller: name,
-                hintText: "请输入名称",
+                hintText: S.of(context).plz_enter_name,
                 onSubmitted: (s) {
                   ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
                     name: s,
@@ -859,7 +873,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
           if (ac.type == ProviderPresetType.fullyCustomize)
             ...apiTypeSelector(ac),
           Text(
-            "端点",
+            S.of(context).end_point(""),
             style: TextStyle(fontSize: 20, color: theme.darkTextColor),
           ),
           const SizedBox(height: 10),
@@ -878,7 +892,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
                   );
                 },
                 controller: endpoint,
-                hintText: "请输入端点",
+                hintText: S.of(context).enter_end_point,
               ),
             ),
           ),
@@ -1253,7 +1267,7 @@ class _ApiKeyInfoState extends ConsumerState<ApiKeyInfo> {
             ? widget.theme.okColor
             : widget.theme.errorColor,
         child: Text(
-          (apiKey.isEnabled) ? "已启用" : "未启用",
+          (apiKey.isEnabled) ? S.of(context).enable : S.of(context).disable ,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 15,
