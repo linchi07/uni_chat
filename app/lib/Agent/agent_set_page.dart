@@ -1,8 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uni_chat/RAG/rag_databases.dart';
-import 'package:uni_chat/RAG/rag_settings.dart';
 import 'package:uni_chat/llm_provider/pre_built_models.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/theme_manager.dart';
@@ -828,12 +826,13 @@ class AgentEditDetails extends ConsumerWidget {
       case PropertyEditing.opening:
         return Opening();
       case PropertyEditing.knowledgeBase:
+        return SizedBox();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref
               .read(documentDisplayProvider.notifier)
               .setUrl("$websiteURL/docs/Agents/knowledge_base");
         });
-        return MemoryBase();
+      //return MemoryBase();
       case PropertyEditing.UIQL:
         return Uiql();
       default:
@@ -1565,6 +1564,7 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
   }
 }
 
+/*
 class MemoryBase extends ConsumerStatefulWidget {
   const MemoryBase({super.key});
 
@@ -1661,7 +1661,7 @@ class _MemoryBaseState extends ConsumerState<MemoryBase> {
             ],
           ),
         ),
-        const SizedBox(height: 16),*/
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -1714,12 +1714,12 @@ class _MemoryBaseState extends ConsumerState<MemoryBase> {
               );
             },
           ),
-        ),
+        ),*/
       ],
     );
   }
 }
-
+*/
 class Opening extends ConsumerStatefulWidget {
   const Opening({super.key});
 

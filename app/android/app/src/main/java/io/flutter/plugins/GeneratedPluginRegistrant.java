@@ -36,11 +36,6 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin irondash_engine_context, dev.irondash.engine_context.IrondashEngineContextPlugin", e);
     }
     try {
-      flutterEngine.getPlugins().add(new io.objectbox.objectbox_flutter_libs.ObjectboxFlutterLibsPlugin());
-    } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin objectbox_flutter_libs, io.objectbox.objectbox_flutter_libs.ObjectboxFlutterLibsPlugin", e);
-    }
-    try {
       flutterEngine.getPlugins().add(new io.flutter.plugins.pathprovider.PathProviderPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin path_provider_android, io.flutter.plugins.pathprovider.PathProviderPlugin", e);
@@ -54,6 +49,11 @@ public final class GeneratedPluginRegistrant {
       flutterEngine.getPlugins().add(new com.tekartik.sqflite.SqflitePlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin sqflite_android, com.tekartik.sqflite.SqflitePlugin", e);
+    }
+    try {
+      flutterEngine.getPlugins().add(new eu.simonbinder.sqlite3_flutter_libs.Sqlite3FlutterLibsPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin sqlite3_flutter_libs, eu.simonbinder.sqlite3_flutter_libs.Sqlite3FlutterLibsPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new com.superlist.super_native_extensions.SuperNativeExtensionsPlugin());

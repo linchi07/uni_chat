@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
-import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
@@ -226,6 +225,7 @@ class AgentProvider extends StateNotifier<Agent?> {
   ) async* {
     if (state != null) {
       var fm = await formatMessage(history, usrMessage);
+      /*
       if (state!.memoryBaseIds.isNotEmpty) {
         var rgp = ref.read(ragProvider);
         if (rgp.loadedAgentId != state!.id) {
@@ -234,7 +234,7 @@ class AgentProvider extends StateNotifier<Agent?> {
         if (usrMessage != null) {
           fm.ragMessages = await rgp.onUserNewMessageCall(usrMessage);
         }
-      }
+      }*/
       yield* state!.model.getStreamingResponse(fm);
     } else {
       throw Exception("Agent not initialized");

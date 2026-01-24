@@ -20,7 +20,6 @@ import 'package:uni_chat/top_banner.dart';
 import 'package:uni_chat/utils/overlays.dart';
 
 import 'Agent/agent_page.dart';
-import 'RAG/RAG_main_page.dart';
 import 'generated/l10n.dart';
 
 final Map<String, Locale> languages = const {
@@ -313,7 +312,8 @@ class MainContState extends ConsumerState<MainCont> {
       case Pages.agent:
         return AgentPage();
       case Pages.Rag:
-        return RagPage();
+        //return RagPage();
+        return Container();
     }
   }
 

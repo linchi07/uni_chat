@@ -1,10 +1,13 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart';
 import 'package:flutter/widgets.dart';
+import 'package:uni_chat/api_configs/api_database.dart';
+import 'package:uni_chat/api_configs/database_models.dart';
 
 import '../generated/l10n.dart' show S;
 
-class ApiProvider {
+class ApiProvider implements Insertable<ApiProvider> {
   final String id;
   final String name;
   final ApiType type;
@@ -38,9 +41,20 @@ class ApiProvider {
       'preset': preset,
     };
   }
+
+  @override
+  Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
+    return ApiProvidersCompanion(
+      id: Value(id),
+      name: Value(name),
+      type: Value(type),
+      endpoint: Value(endpoint),
+      preset: Value(preset),
+    ).toColumns(nullToAbsent);
+  }
 }
 
-class ApiKey {
+class ApiKey implements Insertable<ApiKeysTableData> {
   final String providerId;
   String id;
   String key;
@@ -48,7 +62,7 @@ class ApiKey {
   int? rpm;
   int? rpd;
   int? tokenLimit;
-  bool isEnabled;
+  bool enabled;
 
   ApiKey(
     this.providerId,
@@ -58,7 +72,7 @@ class ApiKey {
     this.rpm,
     this.rpd,
     this.tokenLimit,
-    this.isEnabled = true,
+    this.enabled = true,
   });
 
   bool enableAdvanced() {
@@ -84,7 +98,7 @@ class ApiKey {
       rpm: rpm ?? this.rpm,
       rpd: rpd ?? this.rpd,
       tokenLimit: tokenLimit ?? this.tokenLimit,
-      isEnabled: isEnabled ?? this.isEnabled,
+      enabled: isEnabled ?? this.enabled,
     );
   }
 
@@ -97,7 +111,7 @@ class ApiKey {
       'rpm': rpm,
       'rpd': rpd,
       'token_limit': tokenLimit,
-      'is_enabled': isEnabled ? 1 : 0,
+      'is_enabled': enabled ? 1 : 0,
     };
   }
 
@@ -110,7 +124,7 @@ class ApiKey {
       rpm: map['rpm'],
       rpd: map['rpd'],
       tokenLimit: map['token_limit'],
-      isEnabled: map['is_enabled'] == 1,
+      enabled: map['is_enabled'] == 1,
     );
   }
 
@@ -125,7 +139,7 @@ class ApiKey {
         other.rpm == rpm &&
         other.rpd == rpd &&
         other.tokenLimit == tokenLimit &&
-        other.isEnabled == isEnabled;
+        other.enabled == enabled;
   }
 
   @override
@@ -138,9 +152,108 @@ class ApiKey {
       rpm,
       rpd,
       tokenLimit,
-      isEnabled,
+      enabled,
     );
   }
+
+  @override
+  Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
+    return ApiKeysTableCompanion(
+      providerId: Value(providerId),
+      id: Value(id),
+      key: Value(key),
+      remark: Value(remark),
+      rpm: Value(rpm),
+      rpd: Value(rpd),
+      tokenLimit: Value(tokenLimit),
+      enabled: Value(enabled),
+    ).toColumns(nullToAbsent);
+  }
+}
+
+class ApiKeyInvokeData implements Insertable<ApiKeysTable> {
+  int retryCount;
+  DateTime? nextAvailableTime;
+  int? lastStatusCode;
+
+  int todayUsedTokens;
+  int requestToday;
+  DateTime resetTime;
+  ApiKeyInvokeData({
+    required this.retryCount,
+    this.nextAvailableTime,
+    this.lastStatusCode,
+    required this.todayUsedTokens,
+    required this.requestToday,
+    required this.resetTime,
+  });
+
+  @override
+  Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
+    return ApiKeysTableCompanion(
+      retryCount: Value(retryCount),
+      nextAvailableTime: Value(nextAvailableTime),
+      lastStatusCode: Value(lastStatusCode),
+      todayUsedTokens: Value(todayUsedTokens),
+      requestToday: Value(requestToday),
+      resetTime: Value(resetTime),
+    ).toColumns(nullToAbsent);
+  }
+}
+
+@immutable
+class TokenUsage {
+  final int prompt;
+  final int completion;
+  final int cached;
+  final int cot;
+  final int other;
+  int get total => prompt + completion;
+
+  const TokenUsage({
+    required this.prompt,
+    required this.completion,
+    this.cached = 0,
+    this.cot = 0,
+    this.other = 0,
+  });
+
+  factory TokenUsage.fromMap(Map<String, dynamic> map) {
+    return TokenUsage(
+      prompt: map['prompt'],
+      completion: map['completion'],
+      cached: map['cached'],
+      cot: map['cot'],
+      other: map['other'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'prompt': prompt,
+      'completion': completion,
+      'cached': (cached == 0) ? null : cached,
+      'cot': (cot == 0) ? null : cot,
+      'other': (other == 0) ? null : other,
+    };
+  }
+}
+
+@immutable
+class ApiKeyUsage {
+  final String apiKeyId;
+  final String modelId;
+  final String? agentId;
+  final DateTime time;
+  final TokenUsage usage;
+
+  const ApiKeyUsage({
+    required this.apiKeyId,
+    required this.modelId,
+    this.agentId,
+    required this.time,
+    required this.usage,
+  });
 }
 
 enum ModelAbility {
@@ -176,7 +289,7 @@ extension XModelAlibity on ModelAbility {
     }
   }
 
-  String getSimpleString() {
+  String get simpleString {
     switch (this) {
       case ModelAbility.textGenerate:
         return 'textGenerate';
@@ -195,6 +308,10 @@ extension XModelAlibity on ModelAbility {
       case ModelAbility.video:
         return 'video';
     }
+  }
+
+  static String toDatabaseSet(Iterable<ModelAbility> abilities) {
+    return abilities.map((e) => e.simpleString).join(',');
   }
 
   static Set<ModelAbility> fromList(List<dynamic> list) {
@@ -272,11 +389,10 @@ class ModelPricing {
   }
 }
 
-class Model {
+class Model implements Insertable<Model> {
   final String id;
   final String friendlyName;
   final String family;
-  final String? description;
   final Set<ModelAbility> abilities;
   final int? contextLength;
   final int? maxCompletionTokens;
@@ -288,7 +404,6 @@ class Model {
     required this.friendlyName,
     required this.family,
     required this.abilities,
-    this.description,
     this.contextLength,
     this.maxCompletionTokens,
     this.pricing,
@@ -301,9 +416,8 @@ class Model {
       'friendly_name': friendlyName,
       'family': family,
       'abilities': jsonEncode(
-        abilities.map((ability) => ability.getSimpleString()).toList(),
+        abilities.map((ability) => ability.simpleString).toList(),
       ),
-      'description': description,
       'context_length': contextLength,
       'max_completion_tokens': maxCompletionTokens,
       'pricing': jsonEncode(pricing?.toMap()),
@@ -330,7 +444,6 @@ class Model {
       id: map['id'],
       family: map['family'],
       friendlyName: map['friendly_name'],
-      description: map['description'],
       abilities: XModelAlibity.fromList((jsonDecode(map['abilities']) as List)),
       contextLength: map['context_length'],
       maxCompletionTokens: map['max_completion_tokens'],
@@ -340,15 +453,29 @@ class Model {
       parameters: parameters,
     );
   }
+
+  @override
+  Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
+    return ModelsCompanion(
+      id: Value(id),
+      friendlyName: Value(friendlyName),
+      family: Value(family),
+      abilities: Value(abilities),
+      contextLength: Value(contextLength),
+      maxCompletionTokens: Value(maxCompletionTokens),
+      pricing: Value(pricing),
+      parameters: Value(parameters),
+    ).toColumns(nullToAbsent);
+  }
 }
 
-class ProviderModelConfig {
+class ProviderModelConfig implements Insertable<ProviderModelConfig> {
   String providerId;
   String modelId;
   String callName;
   Set<ModelAbility>? abilitiesOverride;
   ModelPricing? pricingOverride;
-  ModelParameters? parametersOverride;
+  List<ModelParameters>? parametersOverride;
   ProviderModelConfig({
     required this.providerId,
     required this.modelId,
@@ -364,7 +491,7 @@ class ProviderModelConfig {
     String? callName,
     Set<ModelAbility>? abilitiesOverride,
     ModelPricing? pricingOverride,
-    ModelParameters? parametersOverride,
+    List<ModelParameters>? parametersOverride,
   }) {
     return ProviderModelConfig(
       providerId: providerId ?? this.providerId,
@@ -384,7 +511,7 @@ class ProviderModelConfig {
       'abilities_override': (abilitiesOverride != null)
           ? jsonEncode(
               abilitiesOverride
-                  ?.map((ability) => ability.getSimpleString())
+                  ?.map((ability) => ability.simpleString)
                   .toList(),
             )
           : null,
@@ -392,7 +519,7 @@ class ProviderModelConfig {
           ? jsonEncode(pricingOverride!.toMap())
           : null,
       'parameters_override': (parametersOverride != null)
-          ? jsonEncode(parametersOverride!.toMap())
+          ? jsonEncode(parametersOverride!)
           : null,
     };
   }
@@ -412,8 +539,21 @@ class ProviderModelConfig {
           : null,
       parametersOverride: map['parameters_override'] != null
           ? ModelParameters.fromMap(jsonDecode(map['parameters_override']))
+                as List<ModelParameters>
           : null,
     );
+  }
+
+  @override
+  Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
+    return ProviderModelConfigsCompanion(
+      providerId: Value(providerId),
+      modelId: Value(modelId),
+      callName: Value(callName),
+      abilitiesOverride: Value(abilitiesOverride),
+      pricingOverride: Value(pricingOverride),
+      parametersOverride: Value(parametersOverride),
+    ).toColumns(nullToAbsent);
   }
 }
 
@@ -511,13 +651,13 @@ enum ProviderPresetType {
   fullyCustomize,
 }
 
-class ProviderPreset {
+class ProviderPreset implements Insertable<ProviderPresetsTableData> {
   String id;
   late Map<String, String> _i18nName;
   ProviderPresetType type;
   String? endpoint;
   ApiType apiType;
-  Map<String, ProviderModelConfig>? models;
+  List<ProviderModelConfig>? models;
 
   static List<ProviderPreset> presets = [
     ProviderPreset(
@@ -532,18 +672,18 @@ class ProviderPreset {
       i18nName: {'en': "DeepSeek", 'zh': "深度求索"},
       type: ProviderPresetType.singleInstance,
       apiType: ApiType.openaiChatCompletions,
-      models: {
-        '@official-464a9745-faf7-5e9c-813d-dc230998fed4': ProviderModelConfig(
+      models: [
+        ProviderModelConfig(
           providerId: 'deepseek',
           modelId: '@official-464a9745-faf7-5e9c-813d-dc230998fed4',
           callName: 'deepseek/deepseek-r1',
         ),
-        '@official-a8c6da93-45af-5030-bbbd-b415bfa11e66': ProviderModelConfig(
+        ProviderModelConfig(
           providerId: 'deepseek',
           modelId: '@official-a8c6da93-45af-5030-bbbd-b415bfa11e66',
           callName: 'deepseek/deepseek-v3.2',
         ),
-      },
+      ],
     ),
   ];
 
@@ -569,24 +709,18 @@ class ProviderPreset {
       'type': type.toString(),
       'endpoint': endpoint,
       'api_type': apiType.toString(),
-      'models': (models != null)
-          ? jsonEncode(
-              models?.map((k, v) {
-                return MapEntry(k, v.toMap());
-              }),
-            )
-          : null,
+      'models': (models != null) ? jsonEncode(models) : null,
     };
   }
 
   factory ProviderPreset.fromMap(Map<String, dynamic> map) {
     var m = map['models'];
-    Map<String, ProviderModelConfig>? models;
+    List<ProviderModelConfig>? models;
     if (m != null) {
       var mp = jsonDecode(m);
-      models = {};
-      for (var i in mp.entries) {
-        models[i.key] = ProviderModelConfig.fromMap(i.value);
+      models = [];
+      for (var i in mp) {
+        models.add(ProviderModelConfig.fromMap(i.value));
       }
     }
     return ProviderPreset(
@@ -601,6 +735,27 @@ class ProviderPreset {
       ),
       models: models,
     );
+  }
+
+  ProviderPresetsTableCompanion get companion => ProviderPresetsTableCompanion(
+    id: Value(id),
+    i18nName: Value(_i18nName),
+    type: Value(type),
+    endpoint: Value(endpoint),
+    apiType: Value(apiType),
+    models: Value(models),
+  );
+
+  @override
+  Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
+    return ProviderPresetsTableCompanion(
+      id: Value(id),
+      i18nName: Value(_i18nName),
+      type: Value(type),
+      endpoint: Value(endpoint),
+      apiType: Value(apiType),
+      models: Value(models),
+    ).toColumns(nullToAbsent);
   }
 }
 

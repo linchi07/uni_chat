@@ -596,7 +596,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.1;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Wejoinnwk.UNIChat;
 				PRODUCT_COPYRIGHT = "Copyright © 2025 com.Wejoinnwk.UNIChat. All rights reserved.";
 				PRODUCT_NAME = UNIChat;
@@ -738,7 +738,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.1;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Wejoinnwk.UNIChat;
 				PRODUCT_COPYRIGHT = "Copyright © 2025 com.Wejoinnwk.UNIChat. All rights reserved.";
 				PRODUCT_NAME = UNIChat;
@@ -765,7 +765,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.1;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Wejoinnwk.UNIChat;
 				PRODUCT_COPYRIGHT = "Copyright © 2025 com.Wejoinnwk.UNIChat. All rights reserved.";
 				PRODUCT_NAME = UNIChat;

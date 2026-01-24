@@ -297,14 +297,11 @@ class ApiConfigure {
         : Uuid().v7();
     List<({Model model, ProviderModelConfig config})> configs = [];
     if (preset.models != null) {
-      var m = await ApiDatabase.instance.getModelsBatch(
-        preset.models!.keys.toList(),
-      );
-      for (var mo in m) {
-        if (preset.models != null) {
-          var c = preset.models![mo.id]!;
-          c.providerId = id;
-          configs.add((model: mo, config: c));
+      for (var mo in preset.models!) {
+        var m = await ApiDatabase.instance.getModelById(mo.modelId);
+        if (m != null) {
+          mo.providerId = id;
+          configs.add((model: m, config: mo));
         }
       }
     }
@@ -322,13 +319,16 @@ class ApiConfigure {
   }
 
   static Future<ApiConfigure?> formDatabase(String providerID) async {
-    //TODO：replace sqflite with drift so I can use join to get all data in one query without having to use alias
     var apip = await ApiDatabase.instance.getProviderById(providerID);
     var keys = await ApiDatabase.instance.getApiKeys(providerID);
     var pmfc = await ApiDatabase.instance.getProviderModelConfigs(providerID);
-    var model = await ApiDatabase.instance.getModelsBatch(
-      pmfc.map((e) => e.modelId).toList(),
-    );
+    List<Model> model = [];
+    for (var m in pmfc) {
+      var mo = await ApiDatabase.instance.getModelById(m.modelId);
+      if (mo != null) {
+        model.add(mo);
+      }
+    }
     ProviderPreset? ps;
     if (apip?.preset != null) {
       ps = await ApiDatabase.instance.getProviderPresetById(apip!.preset!);
@@ -1276,14 +1276,14 @@ class _ApiKeyInfoState extends ConsumerState<ApiKeyInfo> {
       child: StdButton(
         onPressed: () {
           setState(() {
-            apiKey.isEnabled = !apiKey.isEnabled;
+            apiKey.enabled = !apiKey.enabled;
           });
         },
-        color: (apiKey.isEnabled)
+        color: (apiKey.enabled)
             ? widget.theme.okColor
             : widget.theme.errorColor,
         child: Text(
-          (apiKey.isEnabled) ? S.of(context).enable : S.of(context).disable,
+          (apiKey.enabled) ? S.of(context).enable : S.of(context).disable,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 15,
@@ -2193,6 +2193,7 @@ class _ModelConfigureWidgetState extends State<ModelConfigureWidget> {
     return Form(
       key: fKey,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
