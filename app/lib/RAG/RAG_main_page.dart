@@ -1,4 +1,8 @@
+/*
+
+ 
 import 'package:flutter/material.dart';
+ 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/RAG/rag_databases.dart';
 import 'package:uni_chat/RAG/rag_entity.dart';
@@ -81,7 +85,7 @@ class _RagPageState extends State<RagPage> {
     );
   }
 }
-
+/*
 class RAGSelector extends ConsumerStatefulWidget {
   const RAGSelector({super.key, required this.onEdit});
   final dynamic onEdit;
@@ -245,3 +249,6 @@ class _RAGSelectorState extends ConsumerState<RAGSelector> {
     );
   }
 }
+
+ */
+*/

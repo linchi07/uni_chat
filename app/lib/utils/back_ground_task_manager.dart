@@ -2,8 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uni_chat/RAG/rag_databases.dart';
-import 'package:uni_chat/RAG/rag_provider.dart';
 
 class ActivityState {
   Map<String, Activity> activities;
@@ -82,6 +80,7 @@ class ActivityManager extends StateNotifier<ActivityState> {
   ///注意，他只负责启动任务，但是具体任务是否需要被启动，是任务本身自己决定
   ///当任务确定需要启动之后他会调用[registerActivity]来注册到任务系统中
   Future<void> startActivity(Activity activity) async {
+    /*
     if (activity.type == ActivityType.autoIndexTask) {
       var notOK = await RAGDatabaseManager().getNotOkKnowledgeBase();
       //TODO: 处理短时间重复提交的问题
@@ -108,6 +107,8 @@ class ActivityManager extends StateNotifier<ActivityState> {
       //TODO: 处理短时间重复提交的问题
       _ref.read(ragProvider).processKnowledgeBase(kb, activity);
     }
+    
+     */
   }
 
   void registerActivity(Activity activity) {

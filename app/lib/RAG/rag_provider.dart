@@ -1,3 +1,4 @@
+/*
 import 'dart:async';
 import 'dart:isolate';
 import 'dart:math';
@@ -588,3 +589,5 @@ class AutoIndexResult {
 final ragProvider = StateProvider<RagProvider>((ref) {
   return RagProvider(ref);
 });
+
+ */

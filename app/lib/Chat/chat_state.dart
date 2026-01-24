@@ -10,7 +10,6 @@ import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_panel.dart';
 import 'package:uni_chat/Chat/inline_dynamic_fc_parser.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
-import 'package:uni_chat/RAG/rag_provider.dart';
 import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/promps.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
@@ -531,12 +530,15 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       );
       lastMessage.childIds.add(finalAiMessage.id);
       lastMessage.enabledChild = (lastMessage.childIds.length - 1);
+      /*
       _ref
           .read(ragProvider)
           .onAgentRespondCompleteCallback(
             user: lastMessage,
             agent: finalAiMessage,
           );
+        
+       */
       state.messages[finalAiMessage.id] = finalAiMessage;
       state.messagesList.add(finalAiMessage);
       state = state.copyWith(isResponding: false);

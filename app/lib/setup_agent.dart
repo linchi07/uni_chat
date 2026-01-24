@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
-import 'package:uni_chat/RAG/rag_settings.dart';
 import 'package:uni_chat/settings_page/api_settings.dart';
 import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/theme_manager.dart';
@@ -393,7 +392,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
           Expanded(
             child: AgentSetPage(
               onSaveReturn: () {
-                ref.read(ragEditState.notifier).newState();
+                //ref.read(ragEditState.notifier).newState();
                 nextPage();
               },
             ),
