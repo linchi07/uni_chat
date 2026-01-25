@@ -19,6 +19,7 @@ part 'api_database.g.dart';
     ProviderPresetsTable,
     ApiProviders,
     ApiKeysTable,
+    ApiKeyUsages,
   ],
 )
 class _ApiDb extends _$_ApiDb {
@@ -166,6 +167,55 @@ class _ApiDb extends _$_ApiDb {
         .toList();
   }
 
+  Future<void> insertApikeyUsage(ApiKeyUsage usage) =>
+      into(apiKeyUsages).insert(usage);
+
+  Future<List<({ApiKeyInvokeData invokeData, ApiKey key})>> getAvailableApiKeys(
+    String providerId,
+  ) async {
+    var r =
+        await (select(apiKeysTable)
+              ..where((e) {
+                return e.enabled.equals(true) &
+                    e.providerId.equals(providerId) &
+                    (e.nextAvailableTime.isNull() |
+                        e.nextAvailableTime.unixepoch.isSmallerThanValue(
+                          DateTime.timestamp().millisecondsSinceEpoch ~/ 1000,
+                        ));
+              })
+              ..orderBy([(e) => OrderingTerm.random()]))
+            .get();
+
+    var result = <({ApiKey key, ApiKeyInvokeData invokeData})>[];
+    for (var k in r) {
+      var key = ApiKey(
+        k.providerId,
+        k.id,
+        k.key,
+        rpm: k.rpm,
+        rpd: k.rpd,
+        tokenLimit: k.tokenLimit,
+      );
+      var invDt = ApiKeyInvokeData(
+        lastStatusCode: k.lastStatusCode,
+        retryCount: k.retryCount,
+        todayUsedTokens: k.todayUsedTokens,
+        requestToday: k.requestToday,
+        resetTime: k.resetTime,
+      );
+      result.add((key: key, invokeData: invDt));
+    }
+    return result;
+  }
+
+  Future<List<ApiKeyUsage>> getHistory(ApiKey key) {
+    return (select(apiKeyUsages)
+          ..orderBy([(e) => OrderingTerm.desc(e.time)])
+          ..where((e) => e.apiKeyId.equals(key.id))
+          ..limit((key.rpm ?? 5)))
+        .get();
+  }
+
   Future<int> insertProviderModelConfig(ProviderModelConfig config) =>
       into(providerModelConfigs).insert(config);
 
@@ -217,6 +267,16 @@ class _ApiDb extends _$_ApiDb {
           )
           .get());
     }
+  }
+
+  Future<ProviderModelConfig?> getProviderModelConfig(
+    String providerId,
+    String modelId,
+  ) {
+    return (select(providerModelConfigs)..where(
+          (e) => e.providerId.equals(providerId) & e.modelId.equals(modelId),
+        ))
+        .getSingleOrNull();
   }
 
   Future<ProviderPreset?> getProviderPresetById(String id) =>
@@ -342,6 +402,17 @@ class ApiDatabase {
   Future<List<ProviderModelConfig>> getProviderModelConfigs(
     String providerID,
   ) => _adb.getProviderModelConfigsByProviderId(providerID);
+  Future<void> insertApikeyUsage(ApiKeyUsage usage) =>
+      _adb.insertApikeyUsage(usage);
 
-  // apikey使用操作表
+  Future<List<({ApiKeyInvokeData invokeData, ApiKey key})>> getAvailableApiKeys(
+    String providerId,
+  ) => _adb.getAvailableApiKeys(providerId);
+
+  Future<ProviderModelConfig?> getProviderModelConfig(
+    String providerId,
+    String modelId,
+  ) => _adb.getProviderModelConfig(providerId, modelId);
+
+  Future<List<ApiKeyUsage>> getHistory(ApiKey key) => _adb.getHistory(key);
 }

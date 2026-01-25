@@ -178,15 +178,33 @@ class ApiKeyInvokeData implements Insertable<ApiKeysTable> {
 
   int todayUsedTokens;
   int requestToday;
-  DateTime resetTime;
+  DateTime? resetTime;
   ApiKeyInvokeData({
     required this.retryCount,
     this.nextAvailableTime,
     this.lastStatusCode,
     required this.todayUsedTokens,
     required this.requestToday,
-    required this.resetTime,
+    this.resetTime,
   });
+
+  ApiKeyInvokeData copyWith({
+    int? retryCount,
+    DateTime? nextAvailableTime,
+    int? lastStatusCode,
+    int? todayUsedTokens,
+    int? requestToday,
+    DateTime? resetTime,
+  }) {
+    return ApiKeyInvokeData(
+      retryCount: retryCount ?? this.retryCount,
+      nextAvailableTime: nextAvailableTime ?? this.nextAvailableTime,
+      lastStatusCode: lastStatusCode ?? this.lastStatusCode,
+      todayUsedTokens: todayUsedTokens ?? this.todayUsedTokens,
+      requestToday: requestToday ?? this.requestToday,
+      resetTime: resetTime ?? this.resetTime,
+    );
+  }
 
   @override
   Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
@@ -203,44 +221,45 @@ class ApiKeyInvokeData implements Insertable<ApiKeysTable> {
 
 @immutable
 class TokenUsage {
-  final int prompt;
-  final int completion;
-  final int cached;
-  final int cot;
-  final int other;
-  int get total => prompt + completion;
+  final int promptTokens;
+  final int completionTokens;
+  final int cachedTokens;
+  final int cotTokens;
+  final int otherTokens;
+  int get total =>
+      promptTokens + completionTokens + cachedTokens + cotTokens + otherTokens;
 
   const TokenUsage({
-    required this.prompt,
-    required this.completion,
-    this.cached = 0,
-    this.cot = 0,
-    this.other = 0,
+    required this.promptTokens,
+    required this.completionTokens,
+    this.cachedTokens = 0,
+    this.cotTokens = 0,
+    this.otherTokens = 0,
   });
 
   factory TokenUsage.fromMap(Map<String, dynamic> map) {
     return TokenUsage(
-      prompt: map['prompt'],
-      completion: map['completion'],
-      cached: map['cached'],
-      cot: map['cot'],
-      other: map['other'],
+      promptTokens: map['promptTokens'],
+      completionTokens: map['completionTokens'],
+      cachedTokens: map['cachedTokens'],
+      cotTokens: map['cotTokens'],
+      otherTokens: map['otherTokens'],
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'prompt': prompt,
-      'completion': completion,
-      'cached': (cached == 0) ? null : cached,
-      'cot': (cot == 0) ? null : cot,
-      'other': (other == 0) ? null : other,
+      'promptTokens': promptTokens,
+      'completionTokens': completionTokens,
+      'cachedTokens': cachedTokens,
+      'cotTokens': cotTokens,
+      'otherTokens': otherTokens,
     };
   }
 }
 
 @immutable
-class ApiKeyUsage {
+class ApiKeyUsage implements Insertable<ApiKeyUsage> {
   final String apiKeyId;
   final String modelId;
   final String? agentId;
@@ -254,6 +273,17 @@ class ApiKeyUsage {
     required this.time,
     required this.usage,
   });
+
+  @override
+  Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
+    return ApiKeyUsagesCompanion(
+      apiKeyId: Value(apiKeyId),
+      modelId: Value(modelId),
+      agentId: Value(agentId),
+      time: Value(time),
+      usage: Value(usage),
+    ).toColumns(nullToAbsent);
+  }
 }
 
 enum ModelAbility {

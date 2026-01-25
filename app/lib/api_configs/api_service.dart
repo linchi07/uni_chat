@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show immutable;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/api_configs/api_database.dart';
@@ -11,11 +12,84 @@ import '../Chat/chat_models.dart';
 
 class _ApiResponse {
   final ChatResponse? response;
-  final UsageData? usage;
-  _ApiResponse({this.response, this.usage});
+  final InvokeData? invokeData;
+  _ApiResponse({this.response, this.invokeData});
 }
 
-class UsageData {}
+@immutable
+class InvokeData {
+  final int statusCode;
+  final String? error;
+  final TokenUsage? usage;
+
+  const InvokeData({required this.statusCode, this.error, this.usage});
+}
+
+typedef KeyInfo = ({ApiKeyInvokeData invokeData, ApiKey key});
+
+class KeySelector {
+  final List<KeyInfo> keys;
+  KeySelector(this.keys);
+
+  Future<KeyInfo> select() async {
+    final now = DateTime.timestamp();
+
+    // 1. 过滤掉完全不可用的（401/400 或 严重超额且未到重置时间的）
+    var available = keys.where((k) {
+      final d = k.invokeData;
+      // 如果有重置时间且目前还处于超额状态，则排除
+      if (d.resetTime != null && d.resetTime!.isAfter(now)) {
+        if ((k.key.tokenLimit != null &&
+                d.todayUsedTokens >= k.key.tokenLimit!) ||
+            (k.key.rpd != null && d.requestToday >= k.key.rpd!)) {
+          return false;
+        }
+      }
+      return d.lastStatusCode != 401 &&
+          d.lastStatusCode != 403 &&
+          d.lastStatusCode != 402;
+    }).toList();
+
+    if (available.isEmpty) throw "No available keys";
+
+    // 2. 优先级排序逻辑：
+    // 优先级 A: 状态码 200 或新 Key (lastStatusCode == null)
+    // 优先级 B: 状态码 429 且 nextAvailableTime 已过
+    // 优先级 C: 其他错误 (5xx) 且 nextAvailableTime 已过
+    // 优先级 D: 其他（按 nextAvailableTime 排序）
+    available.sort((a, b) {
+      int scoreA = _calculateScore(a.invokeData, now);
+      int scoreB = _calculateScore(b.invokeData, now);
+      if (scoreA != scoreB) return scoreA.compareTo(scoreB);
+
+      // 分数相同，选最早可用的
+      return a.invokeData.nextAvailableTime?.compareTo(
+            b.invokeData.nextAvailableTime ?? now,
+          ) ??
+          0;
+    });
+
+    for (var k in available) {
+      if (k.key.rpd != null) {
+        var dt = now.subtract(const Duration(minutes: 1));
+        var history = await ApiDatabase.instance.getHistory(k.key);
+        if (history.isNotEmpty && history.last.time.isAfter(dt)) continue;
+      }
+      return k;
+    }
+
+    throw "All keys are rate-limited";
+  }
+
+  int _calculateScore(dynamic d, DateTime now) {
+    if (d.lastStatusCode == null || d.lastStatusCode == 200) return 1;
+    if (d.nextAvailableTime!.isBefore(now)) {
+      if (d.lastStatusCode == 429) return 2;
+      return 3;
+    }
+    return 4; // 还没到重试时间的，排最后
+  }
+}
 
 class ApiClient {
   late final BaseApiService service;
@@ -40,22 +114,148 @@ class ApiClient {
     }
   }
 
+  static Future<ApiClient> fromFactory(
+    String providerId,
+    String modelId,
+  ) async {
+    var provider = await ApiDatabase.instance.getProviderById(providerId);
+    var model = await ApiDatabase.instance.getModelById(modelId);
+    var providerConfig = await ApiDatabase.instance.getProviderModelConfig(
+      providerId,
+      modelId,
+    );
+    if (provider == null) {
+      throw "Provider not found";
+    }
+    if (model == null) {
+      throw "Model not found";
+    }
+    if (providerConfig == null) {
+      throw "The provider doesn't provide this model";
+    }
+    return ApiClient(
+      providerConfig: providerConfig,
+      model: model,
+      provider: provider,
+    );
+  }
+
   Stream<ChatResponse> getStreamingResponse({
     required ModelRequestContent modelRequestContent,
+    String? agentId,
   }) async* {
-    var key = await ApiDatabase.instance.getApiKeys("1");
+    var keysCandidate = await ApiDatabase.instance.getAvailableApiKeys(
+      provider.id,
+    );
+    var selector = KeySelector(keysCandidate);
+    var keyInfo = await selector.select();
     var s = service.getStreamingResponse(
       this,
-      key.first,
+      keyInfo.key,
       modelRequestContent: modelRequestContent,
     );
+    InvokeData? invokeData;
     await for (final response in s) {
       if (response.response != null) {
         yield response.response!;
+      }
+      invokeData = response.invokeData;
+    }
+    if (invokeData != null) {
+      if (invokeData.statusCode == 200) {
+        handleOk(invokeData, keyInfo);
+      } else if (invokeData.statusCode == 429) {
+        handleOverLimit(invokeData, keyInfo);
       } else {
-        return;
+        //401 402 403 are also processed here but will not be used again
+        handleError(invokeData, keyInfo);
       }
     }
+  }
+
+  static List<int> overLimitRetryCountsMinutes = [1, 1, 5, 60];
+  static List<int> errorRetryCountsMinutes = [1, 5, 10, 60, 120, 180];
+
+  ({ApiKeyUsage? usage, ApiKeyInvokeData invokeData}) handleError(
+    InvokeData invokeData,
+    KeyInfo keyInfo,
+  ) {
+    var keyI = keyInfo.invokeData;
+    late DateTime nextAvailableTime;
+    var dt = DateTime.timestamp();
+    if (keyI.retryCount > errorRetryCountsMinutes.length) {
+      nextAvailableTime = DateTime.utc(dt.year, dt.month, dt.day + 1);
+    } else {
+      nextAvailableTime = dt.add(
+        Duration(minutes: errorRetryCountsMinutes[keyI.retryCount]),
+      );
+    }
+    var id = keyI.copyWith(
+      lastStatusCode: invokeData.statusCode,
+      retryCount: keyI.retryCount + 1,
+      nextAvailableTime: nextAvailableTime,
+      requestToday: keyI.requestToday++,
+    );
+    return (usage: null, invokeData: id);
+  }
+
+  ({ApiKeyUsage? usage, ApiKeyInvokeData invokeData}) handleOverLimit(
+    InvokeData invokeData,
+    KeyInfo keyInfo,
+  ) {
+    var keyI = keyInfo.invokeData;
+    late DateTime nextAvailableTime;
+    var dt = DateTime.timestamp();
+    if (keyI.retryCount > overLimitRetryCountsMinutes.length) {
+      nextAvailableTime = DateTime.utc(dt.year, dt.month, dt.day + 1);
+    } else {
+      nextAvailableTime = dt.add(
+        Duration(minutes: overLimitRetryCountsMinutes[keyI.retryCount]),
+      );
+    }
+    var id = keyI.copyWith(
+      lastStatusCode: invokeData.statusCode,
+      retryCount: keyI.retryCount + 1,
+      nextAvailableTime: nextAvailableTime,
+      requestToday: keyI.requestToday++,
+    );
+    return (usage: null, invokeData: id);
+  }
+
+  ({ApiKeyUsage? usage, ApiKeyInvokeData invokeData}) handleOk(
+    InvokeData invokeData,
+    KeyInfo keyInfo,
+  ) {
+    ApiKeyUsage? usg;
+    var keyI = keyInfo.invokeData;
+    var dt = DateTime.timestamp();
+    if (invokeData.usage != null) {
+      usg = ApiKeyUsage(
+        apiKeyId: keyInfo.key.id,
+        modelId: model.id,
+        time: dt,
+        usage: invokeData.usage!,
+      );
+    }
+    DateTime? rt;
+    late int tut;
+    late int rtd;
+    if (keyI.resetTime == null || keyI.resetTime!.isBefore(dt)) {
+      rt = DateTime.utc(dt.year, dt.month, dt.day + 1);
+      tut = 0;
+      rtd = 1;
+    } else {
+      tut = keyI.todayUsedTokens + invokeData.usage!.total;
+      rtd = keyI.requestToday++;
+    }
+    var id = ApiKeyInvokeData(
+      retryCount: 0,
+      todayUsedTokens: tut,
+      requestToday: rtd,
+      resetTime: rt ?? keyI.resetTime,
+      //TODO: auto set reset time according to the api timezone
+    );
+    return (usage: usg, invokeData: id);
   }
 
   Future<List<List<double>>> embedding({
@@ -199,9 +399,9 @@ class OpenAiApiService extends BaseApiService {
               (json) => json['output'] != null && json['output'].isNotEmpty,
             )
             .expand((json) {
+              final List<_ApiResponse> responses = [];
               try {
                 final outputItems = json['output'] as List;
-                final List<_ApiResponse> responses = [];
 
                 for (final item in outputItems) {
                   if (item['type'] == 'message' &&
@@ -223,16 +423,36 @@ class OpenAiApiService extends BaseApiService {
                     }
                   }
                 }
-                return responses;
+                final usage = json['usage'] as Map<String, dynamic>?;
+                if (usage != null) {
+                  responses.add(
+                    _ApiResponse(
+                      invokeData: InvokeData(
+                        statusCode: response.statusCode,
+                        usage: TokenUsage(
+                          promptTokens: usage['input_tokens'],
+                          cachedTokens:
+                              usage['input_tokens_details']['cached_tokens'],
+                          completionTokens: usage['output_tokens'],
+                          cotTokens:
+                              usage['output_tokens_details']['reasoning_tokens'],
+                        ),
+                      ),
+                    ),
+                  );
+                }
               } catch (e) {
-                // 忽略解析错误
-                return <_ApiResponse>[];
+                print(e);
               }
+              return responses;
             });
       } else {
         final errorBody = await response.stream.bytesToString();
-        throw Exception(
-          'OpenAI API Error: ${response.statusCode} - $errorBody',
+        yield _ApiResponse(
+          invokeData: InvokeData(
+            statusCode: response.statusCode,
+            error: errorBody,
+          ),
         );
       }
     } finally {
@@ -549,9 +769,9 @@ class OpenAiCompletionService extends OpenAiApiService {
               (json) => json['choices'] != null && json['choices'].isNotEmpty,
             )
             .expand((json) {
+              final List<_ApiResponse> responses = [];
               try {
                 final outputItems = json['choices'] as List;
-                final List<_ApiResponse> responses = [];
 
                 for (final item in outputItems) {
                   if (item['delta'] != null &&
@@ -567,16 +787,36 @@ class OpenAiCompletionService extends OpenAiApiService {
                     );
                   }
                 }
-                return responses;
+                final usage = json['usage'] as Map<String, dynamic>?;
+                if (usage != null) {
+                  responses.add(
+                    _ApiResponse(
+                      invokeData: InvokeData(
+                        statusCode: response.statusCode,
+                        usage: TokenUsage(
+                          promptTokens: usage['prompt_tokens'],
+                          completionTokens: usage['completion_tokens'],
+                          cachedTokens:
+                              usage['prompt_tokens_details']['cached_tokens'],
+                          cotTokens:
+                              usage['completion_tokens_details']['reasoning_tokens'],
+                        ),
+                      ),
+                    ),
+                  );
+                }
               } catch (e) {
                 // 忽略解析错误
-                return <_ApiResponse>[];
               }
+              return responses;
             });
       } else {
         final errorBody = await response.stream.bytesToString();
-        throw Exception(
-          'OpenAI Completion API Error: ${response.statusCode} - $errorBody',
+        yield _ApiResponse(
+          invokeData: InvokeData(
+            statusCode: response.statusCode,
+            error: errorBody,
+          ),
         );
       }
     } finally {
@@ -796,29 +1036,50 @@ class GeminiApiService extends BaseApiService {
                   json['candidates'] != null && json['candidates'].isNotEmpty,
             )
             .expand((json) {
+              var r = <_ApiResponse>[];
               try {
                 final text =
                     json['candidates'][0]['content']['parts'][0]['text']
                         as String?;
                 if (text != null) {
-                  return [
+                  r.add(
                     _ApiResponse(
                       response: ChatResponse(
                         type: ResponseType.text,
                         content: text,
                       ),
                     ),
-                  ];
+                  );
+                }
+                final usage = json['usageMetadata'] as Map<String, dynamic>?;
+                if (usage != null) {
+                  r.add(
+                    _ApiResponse(
+                      invokeData: InvokeData(
+                        statusCode: response.statusCode,
+                        usage: TokenUsage(
+                          promptTokens: usage['promptTokenCount'],
+                          completionTokens: usage['candidateTokenCount'],
+                          cachedTokens: usage['cachedTokenCount'],
+                          cotTokens: usage['thoughtsTokenCount'],
+                          otherTokens: usage['toolUsePromptTokenCount'],
+                        ),
+                      ),
+                    ),
+                  );
                 }
               } catch (e) {
-                // Ignore parsing errors for this chunk
+                print(e);
               }
-              return <_ApiResponse>[];
+              return r;
             });
       } else {
         final errorBody = await response.stream.bytesToString();
-        throw Exception(
-          'Gemini API Error: ${response.statusCode} - $errorBody',
+        yield _ApiResponse(
+          invokeData: InvokeData(
+            statusCode: response.statusCode,
+            error: errorBody,
+          ),
         );
       }
     } finally {

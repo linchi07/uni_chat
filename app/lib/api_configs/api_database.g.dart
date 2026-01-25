@@ -2257,6 +2257,293 @@ class ApiKeysTableCompanion extends UpdateCompanion<ApiKeysTableData> {
   }
 }
 
+class $ApiKeyUsagesTable extends ApiKeyUsages
+    with TableInfo<$ApiKeyUsagesTable, ApiKeyUsage> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ApiKeyUsagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _apiKeyIdMeta = const VerificationMeta(
+    'apiKeyId',
+  );
+  @override
+  late final GeneratedColumn<String> apiKeyId = GeneratedColumn<String>(
+    'api_key_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES api_keys (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _providerIdMeta = const VerificationMeta(
+    'providerId',
+  );
+  @override
+  late final GeneratedColumn<String> providerId = GeneratedColumn<String>(
+    'provider_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modelIdMeta = const VerificationMeta(
+    'modelId',
+  );
+  @override
+  late final GeneratedColumn<String> modelId = GeneratedColumn<String>(
+    'model_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _agentIdMeta = const VerificationMeta(
+    'agentId',
+  );
+  @override
+  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
+    'agent_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _timeMeta = const VerificationMeta('time');
+  @override
+  late final GeneratedColumn<DateTime> time = GeneratedColumn<DateTime>(
+    'time',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<TokenUsage, String> usage =
+      GeneratedColumn<String>(
+        'usage',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<TokenUsage>($ApiKeyUsagesTable.$converterusage);
+  @override
+  List<GeneratedColumn> get $columns => [
+    apiKeyId,
+    providerId,
+    modelId,
+    agentId,
+    time,
+    usage,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'api_key_usages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ApiKeyUsage> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('api_key_id')) {
+      context.handle(
+        _apiKeyIdMeta,
+        apiKeyId.isAcceptableOrUnknown(data['api_key_id']!, _apiKeyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_apiKeyIdMeta);
+    }
+    if (data.containsKey('provider_id')) {
+      context.handle(
+        _providerIdMeta,
+        providerId.isAcceptableOrUnknown(data['provider_id']!, _providerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_providerIdMeta);
+    }
+    if (data.containsKey('model_id')) {
+      context.handle(
+        _modelIdMeta,
+        modelId.isAcceptableOrUnknown(data['model_id']!, _modelIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modelIdMeta);
+    }
+    if (data.containsKey('agent_id')) {
+      context.handle(
+        _agentIdMeta,
+        agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta),
+      );
+    }
+    if (data.containsKey('time')) {
+      context.handle(
+        _timeMeta,
+        time.isAcceptableOrUnknown(data['time']!, _timeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timeMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => const {};
+  @override
+  ApiKeyUsage map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ApiKeyUsage(
+      apiKeyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}api_key_id'],
+      )!,
+      modelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_id'],
+      )!,
+      agentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_id'],
+      ),
+      time: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}time'],
+      )!,
+      usage: $ApiKeyUsagesTable.$converterusage.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}usage'],
+        )!,
+      ),
+    );
+  }
+
+  @override
+  $ApiKeyUsagesTable createAlias(String alias) {
+    return $ApiKeyUsagesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<TokenUsage, String> $converterusage =
+      TokenUsageConverter();
+}
+
+class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
+  final Value<String> apiKeyId;
+  final Value<String> providerId;
+  final Value<String> modelId;
+  final Value<String?> agentId;
+  final Value<DateTime> time;
+  final Value<TokenUsage> usage;
+  final Value<int> rowid;
+  const ApiKeyUsagesCompanion({
+    this.apiKeyId = const Value.absent(),
+    this.providerId = const Value.absent(),
+    this.modelId = const Value.absent(),
+    this.agentId = const Value.absent(),
+    this.time = const Value.absent(),
+    this.usage = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ApiKeyUsagesCompanion.insert({
+    required String apiKeyId,
+    required String providerId,
+    required String modelId,
+    this.agentId = const Value.absent(),
+    required DateTime time,
+    required TokenUsage usage,
+    this.rowid = const Value.absent(),
+  }) : apiKeyId = Value(apiKeyId),
+       providerId = Value(providerId),
+       modelId = Value(modelId),
+       time = Value(time),
+       usage = Value(usage);
+  static Insertable<ApiKeyUsage> custom({
+    Expression<String>? apiKeyId,
+    Expression<String>? providerId,
+    Expression<String>? modelId,
+    Expression<String>? agentId,
+    Expression<DateTime>? time,
+    Expression<String>? usage,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (apiKeyId != null) 'api_key_id': apiKeyId,
+      if (providerId != null) 'provider_id': providerId,
+      if (modelId != null) 'model_id': modelId,
+      if (agentId != null) 'agent_id': agentId,
+      if (time != null) 'time': time,
+      if (usage != null) 'usage': usage,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ApiKeyUsagesCompanion copyWith({
+    Value<String>? apiKeyId,
+    Value<String>? providerId,
+    Value<String>? modelId,
+    Value<String?>? agentId,
+    Value<DateTime>? time,
+    Value<TokenUsage>? usage,
+    Value<int>? rowid,
+  }) {
+    return ApiKeyUsagesCompanion(
+      apiKeyId: apiKeyId ?? this.apiKeyId,
+      providerId: providerId ?? this.providerId,
+      modelId: modelId ?? this.modelId,
+      agentId: agentId ?? this.agentId,
+      time: time ?? this.time,
+      usage: usage ?? this.usage,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (apiKeyId.present) {
+      map['api_key_id'] = Variable<String>(apiKeyId.value);
+    }
+    if (providerId.present) {
+      map['provider_id'] = Variable<String>(providerId.value);
+    }
+    if (modelId.present) {
+      map['model_id'] = Variable<String>(modelId.value);
+    }
+    if (agentId.present) {
+      map['agent_id'] = Variable<String>(agentId.value);
+    }
+    if (time.present) {
+      map['time'] = Variable<DateTime>(time.value);
+    }
+    if (usage.present) {
+      map['usage'] = Variable<String>(
+        $ApiKeyUsagesTable.$converterusage.toSql(usage.value),
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ApiKeyUsagesCompanion(')
+          ..write('apiKeyId: $apiKeyId, ')
+          ..write('providerId: $providerId, ')
+          ..write('modelId: $modelId, ')
+          ..write('agentId: $agentId, ')
+          ..write('time: $time, ')
+          ..write('usage: $usage, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$_ApiDb extends GeneratedDatabase {
   _$_ApiDb(QueryExecutor e) : super(e);
   $_ApiDbManager get managers => $_ApiDbManager(this);
@@ -2267,6 +2554,11 @@ abstract class _$_ApiDb extends GeneratedDatabase {
   late final $ProviderPresetsTableTable providerPresetsTable =
       $ProviderPresetsTableTable(this);
   late final $ApiKeysTableTable apiKeysTable = $ApiKeysTableTable(this);
+  late final $ApiKeyUsagesTable apiKeyUsages = $ApiKeyUsagesTable(this);
+  late final Index keyUsageTimeIdx = Index(
+    'key_usage_time_idx',
+    'CREATE INDEX key_usage_time_idx ON api_key_usages (time)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2277,6 +2569,8 @@ abstract class _$_ApiDb extends GeneratedDatabase {
     providerModelConfigs,
     providerPresetsTable,
     apiKeysTable,
+    apiKeyUsages,
+    keyUsageTimeIdx,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2300,6 +2594,13 @@ abstract class _$_ApiDb extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('api_keys', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'api_keys',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('api_key_usages', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -3895,6 +4196,27 @@ final class $$ApiKeysTableTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$ApiKeyUsagesTable, List<ApiKeyUsage>>
+  _apiKeyUsagesRefsTable(_$_ApiDb db) => MultiTypedResultKey.fromTable(
+    db.apiKeyUsages,
+    aliasName: $_aliasNameGenerator(
+      db.apiKeysTable.id,
+      db.apiKeyUsages.apiKeyId,
+    ),
+  );
+
+  $$ApiKeyUsagesTableProcessedTableManager get apiKeyUsagesRefs {
+    final manager = $$ApiKeyUsagesTableTableManager(
+      $_db,
+      $_db.apiKeyUsages,
+    ).filter((f) => f.apiKeyId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_apiKeyUsagesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ApiKeysTableTableFilterComposer
@@ -3992,6 +4314,31 @@ class $$ApiKeysTableTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> apiKeyUsagesRefs(
+    Expression<bool> Function($$ApiKeyUsagesTableFilterComposer f) f,
+  ) {
+    final $$ApiKeyUsagesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.apiKeyUsages,
+      getReferencedColumn: (t) => t.apiKeyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ApiKeyUsagesTableFilterComposer(
+            $db: $db,
+            $table: $db.apiKeyUsages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -4175,6 +4522,31 @@ class $$ApiKeysTableTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> apiKeyUsagesRefs<T extends Object>(
+    Expression<T> Function($$ApiKeyUsagesTableAnnotationComposer a) f,
+  ) {
+    final $$ApiKeyUsagesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.apiKeyUsages,
+      getReferencedColumn: (t) => t.apiKeyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ApiKeyUsagesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.apiKeyUsages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ApiKeysTableTableTableManager
@@ -4190,7 +4562,7 @@ class $$ApiKeysTableTableTableManager
           $$ApiKeysTableTableUpdateCompanionBuilder,
           (ApiKeysTableData, $$ApiKeysTableTableReferences),
           ApiKeysTableData,
-          PrefetchHooks Function({bool providerId})
+          PrefetchHooks Function({bool providerId, bool apiKeyUsagesRefs})
         > {
   $$ApiKeysTableTableTableManager(_$_ApiDb db, $ApiKeysTableTable table)
     : super(
@@ -4279,7 +4651,375 @@ class $$ApiKeysTableTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({providerId = false}) {
+          prefetchHooksCallback:
+              ({providerId = false, apiKeyUsagesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (apiKeyUsagesRefs) db.apiKeyUsages,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (providerId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.providerId,
+                                    referencedTable:
+                                        $$ApiKeysTableTableReferences
+                                            ._providerIdTable(db),
+                                    referencedColumn:
+                                        $$ApiKeysTableTableReferences
+                                            ._providerIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (apiKeyUsagesRefs)
+                        await $_getPrefetchedData<
+                          ApiKeysTableData,
+                          $ApiKeysTableTable,
+                          ApiKeyUsage
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ApiKeysTableTableReferences
+                              ._apiKeyUsagesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ApiKeysTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).apiKeyUsagesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.apiKeyId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ApiKeysTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$_ApiDb,
+      $ApiKeysTableTable,
+      ApiKeysTableData,
+      $$ApiKeysTableTableFilterComposer,
+      $$ApiKeysTableTableOrderingComposer,
+      $$ApiKeysTableTableAnnotationComposer,
+      $$ApiKeysTableTableCreateCompanionBuilder,
+      $$ApiKeysTableTableUpdateCompanionBuilder,
+      (ApiKeysTableData, $$ApiKeysTableTableReferences),
+      ApiKeysTableData,
+      PrefetchHooks Function({bool providerId, bool apiKeyUsagesRefs})
+    >;
+typedef $$ApiKeyUsagesTableCreateCompanionBuilder =
+    ApiKeyUsagesCompanion Function({
+      required String apiKeyId,
+      required String providerId,
+      required String modelId,
+      Value<String?> agentId,
+      required DateTime time,
+      required TokenUsage usage,
+      Value<int> rowid,
+    });
+typedef $$ApiKeyUsagesTableUpdateCompanionBuilder =
+    ApiKeyUsagesCompanion Function({
+      Value<String> apiKeyId,
+      Value<String> providerId,
+      Value<String> modelId,
+      Value<String?> agentId,
+      Value<DateTime> time,
+      Value<TokenUsage> usage,
+      Value<int> rowid,
+    });
+
+final class $$ApiKeyUsagesTableReferences
+    extends BaseReferences<_$_ApiDb, $ApiKeyUsagesTable, ApiKeyUsage> {
+  $$ApiKeyUsagesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ApiKeysTableTable _apiKeyIdTable(_$_ApiDb db) =>
+      db.apiKeysTable.createAlias(
+        $_aliasNameGenerator(db.apiKeyUsages.apiKeyId, db.apiKeysTable.id),
+      );
+
+  $$ApiKeysTableTableProcessedTableManager get apiKeyId {
+    final $_column = $_itemColumn<String>('api_key_id')!;
+
+    final manager = $$ApiKeysTableTableTableManager(
+      $_db,
+      $_db.apiKeysTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_apiKeyIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ApiKeyUsagesTableFilterComposer
+    extends Composer<_$_ApiDb, $ApiKeyUsagesTable> {
+  $$ApiKeyUsagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get providerId => $composableBuilder(
+    column: $table.providerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get agentId => $composableBuilder(
+    column: $table.agentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get time => $composableBuilder(
+    column: $table.time,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<TokenUsage, TokenUsage, String> get usage =>
+      $composableBuilder(
+        column: $table.usage,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  $$ApiKeysTableTableFilterComposer get apiKeyId {
+    final $$ApiKeysTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.apiKeyId,
+      referencedTable: $db.apiKeysTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ApiKeysTableTableFilterComposer(
+            $db: $db,
+            $table: $db.apiKeysTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ApiKeyUsagesTableOrderingComposer
+    extends Composer<_$_ApiDb, $ApiKeyUsagesTable> {
+  $$ApiKeyUsagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get providerId => $composableBuilder(
+    column: $table.providerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get agentId => $composableBuilder(
+    column: $table.agentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get time => $composableBuilder(
+    column: $table.time,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get usage => $composableBuilder(
+    column: $table.usage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ApiKeysTableTableOrderingComposer get apiKeyId {
+    final $$ApiKeysTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.apiKeyId,
+      referencedTable: $db.apiKeysTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ApiKeysTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.apiKeysTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ApiKeyUsagesTableAnnotationComposer
+    extends Composer<_$_ApiDb, $ApiKeyUsagesTable> {
+  $$ApiKeyUsagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get providerId => $composableBuilder(
+    column: $table.providerId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get modelId =>
+      $composableBuilder(column: $table.modelId, builder: (column) => column);
+
+  GeneratedColumn<String> get agentId =>
+      $composableBuilder(column: $table.agentId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get time =>
+      $composableBuilder(column: $table.time, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<TokenUsage, String> get usage =>
+      $composableBuilder(column: $table.usage, builder: (column) => column);
+
+  $$ApiKeysTableTableAnnotationComposer get apiKeyId {
+    final $$ApiKeysTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.apiKeyId,
+      referencedTable: $db.apiKeysTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ApiKeysTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.apiKeysTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ApiKeyUsagesTableTableManager
+    extends
+        RootTableManager<
+          _$_ApiDb,
+          $ApiKeyUsagesTable,
+          ApiKeyUsage,
+          $$ApiKeyUsagesTableFilterComposer,
+          $$ApiKeyUsagesTableOrderingComposer,
+          $$ApiKeyUsagesTableAnnotationComposer,
+          $$ApiKeyUsagesTableCreateCompanionBuilder,
+          $$ApiKeyUsagesTableUpdateCompanionBuilder,
+          (ApiKeyUsage, $$ApiKeyUsagesTableReferences),
+          ApiKeyUsage,
+          PrefetchHooks Function({bool apiKeyId})
+        > {
+  $$ApiKeyUsagesTableTableManager(_$_ApiDb db, $ApiKeyUsagesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ApiKeyUsagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ApiKeyUsagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ApiKeyUsagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> apiKeyId = const Value.absent(),
+                Value<String> providerId = const Value.absent(),
+                Value<String> modelId = const Value.absent(),
+                Value<String?> agentId = const Value.absent(),
+                Value<DateTime> time = const Value.absent(),
+                Value<TokenUsage> usage = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ApiKeyUsagesCompanion(
+                apiKeyId: apiKeyId,
+                providerId: providerId,
+                modelId: modelId,
+                agentId: agentId,
+                time: time,
+                usage: usage,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String apiKeyId,
+                required String providerId,
+                required String modelId,
+                Value<String?> agentId = const Value.absent(),
+                required DateTime time,
+                required TokenUsage usage,
+                Value<int> rowid = const Value.absent(),
+              }) => ApiKeyUsagesCompanion.insert(
+                apiKeyId: apiKeyId,
+                providerId: providerId,
+                modelId: modelId,
+                agentId: agentId,
+                time: time,
+                usage: usage,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ApiKeyUsagesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({apiKeyId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -4299,15 +5039,15 @@ class $$ApiKeysTableTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (providerId) {
+                    if (apiKeyId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.providerId,
-                                referencedTable: $$ApiKeysTableTableReferences
-                                    ._providerIdTable(db),
-                                referencedColumn: $$ApiKeysTableTableReferences
-                                    ._providerIdTable(db)
+                                currentColumn: table.apiKeyId,
+                                referencedTable: $$ApiKeyUsagesTableReferences
+                                    ._apiKeyIdTable(db),
+                                referencedColumn: $$ApiKeyUsagesTableReferences
+                                    ._apiKeyIdTable(db)
                                     .id,
                               )
                               as T;
@@ -4324,19 +5064,19 @@ class $$ApiKeysTableTableTableManager
       );
 }
 
-typedef $$ApiKeysTableTableProcessedTableManager =
+typedef $$ApiKeyUsagesTableProcessedTableManager =
     ProcessedTableManager<
       _$_ApiDb,
-      $ApiKeysTableTable,
-      ApiKeysTableData,
-      $$ApiKeysTableTableFilterComposer,
-      $$ApiKeysTableTableOrderingComposer,
-      $$ApiKeysTableTableAnnotationComposer,
-      $$ApiKeysTableTableCreateCompanionBuilder,
-      $$ApiKeysTableTableUpdateCompanionBuilder,
-      (ApiKeysTableData, $$ApiKeysTableTableReferences),
-      ApiKeysTableData,
-      PrefetchHooks Function({bool providerId})
+      $ApiKeyUsagesTable,
+      ApiKeyUsage,
+      $$ApiKeyUsagesTableFilterComposer,
+      $$ApiKeyUsagesTableOrderingComposer,
+      $$ApiKeyUsagesTableAnnotationComposer,
+      $$ApiKeyUsagesTableCreateCompanionBuilder,
+      $$ApiKeyUsagesTableUpdateCompanionBuilder,
+      (ApiKeyUsage, $$ApiKeyUsagesTableReferences),
+      ApiKeyUsage,
+      PrefetchHooks Function({bool apiKeyId})
     >;
 
 class $_ApiDbManager {
@@ -4352,4 +5092,6 @@ class $_ApiDbManager {
       $$ProviderPresetsTableTableTableManager(_db, _db.providerPresetsTable);
   $$ApiKeysTableTableTableManager get apiKeysTable =>
       $$ApiKeysTableTableTableManager(_db, _db.apiKeysTable);
+  $$ApiKeyUsagesTableTableManager get apiKeyUsages =>
+      $$ApiKeyUsagesTableTableManager(_db, _db.apiKeyUsages);
 }
