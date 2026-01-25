@@ -28,6 +28,10 @@ class ThemeConfig {
     this.darkTextColor = darkTextColor ?? Colors.white;
   }
 
+  TextStyle get bodyTextStyle {
+    return TextStyle(fontSize: 16, color: textColor);
+  }
+
   Color get textColor {
     if (secondGradeColor.computeLuminance() > 0.5) {
       return darkTextColor;

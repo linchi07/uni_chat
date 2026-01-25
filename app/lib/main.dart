@@ -90,6 +90,7 @@ class UNIChat extends StatelessWidget {
   final bool isSetUp;
 
   // This widget is the root of your application.
+
   @override
   Widget build(BuildContext context) {
     Widget mainContent = MainCont(key: masterNavigatorKey);
@@ -136,16 +137,11 @@ class UNIChat extends StatelessWidget {
                 }
                 if (!isSetUp) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    var s = MediaQuery.of(context).size;
                     OverlayWrapper.showOverlay(
                       context,
-                      overlayContent: SizedBox(
-                        height: s.height,
-                        width: s.width,
-                        child: Padding(
-                          padding: const EdgeInsets.all(50.0),
-                          child: SetupAgent(),
-                        ),
+                      overlayContent: Padding(
+                        padding: const EdgeInsets.all(50.0),
+                        child: SetupAgent(),
                       ),
                       barrierDismissible: false,
                     );

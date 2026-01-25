@@ -77,7 +77,6 @@ class ApiProviders extends Table {
 class ApiKeyUsages extends Table {
   TextColumn get apiKeyId =>
       text().references(ApiKeysTable, #id, onDelete: KeyAction.cascade)();
-  TextColumn get providerId => text()();
   TextColumn get modelId => text()();
   TextColumn get agentId => text().nullable()();
   DateTimeColumn get time => dateTime()();

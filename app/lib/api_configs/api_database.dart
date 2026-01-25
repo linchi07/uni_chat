@@ -176,12 +176,7 @@ class _ApiDb extends _$_ApiDb {
     var r =
         await (select(apiKeysTable)
               ..where((e) {
-                return e.enabled.equals(true) &
-                    e.providerId.equals(providerId) &
-                    (e.nextAvailableTime.isNull() |
-                        e.nextAvailableTime.unixepoch.isSmallerThanValue(
-                          DateTime.timestamp().millisecondsSinceEpoch ~/ 1000,
-                        ));
+                return e.enabled.equals(true) & e.providerId.equals(providerId);
               })
               ..orderBy([(e) => OrderingTerm.random()]))
             .get();
@@ -216,6 +211,19 @@ class _ApiDb extends _$_ApiDb {
         .get();
   }
 
+  Future<void> updateApiKeyInvokeData(ApiKey key, ApiKeyInvokeData data) {
+    return (update(apiKeysTable)..where((e) => e.id.equals(key.id))).write(
+      ApiKeysTableCompanion(
+        lastStatusCode: Value(data.lastStatusCode),
+        retryCount: Value(data.retryCount),
+        nextAvailableTime: Value(data.nextAvailableTime),
+        todayUsedTokens: Value(data.todayUsedTokens),
+        requestToday: Value(data.requestToday),
+        resetTime: Value(data.resetTime),
+      ),
+    );
+  }
+
   Future<int> insertProviderModelConfig(ProviderModelConfig config) =>
       into(providerModelConfigs).insert(config);
 
@@ -224,6 +232,16 @@ class _ApiDb extends _$_ApiDb {
   ) => (select(
     providerModelConfigs,
   )..where((e) => e.modelId.equals(modelId))).get();
+
+  Future<List<ApiProvider>> getApiProviderByModelId(String modelId) =>
+      (select(providerModelConfigs).join([
+            innerJoin(
+              apiProviders,
+              providerModelConfigs.providerId.equalsExp(apiProviders.id),
+            ),
+          ])..where(providerModelConfigs.modelId.equals(modelId)))
+          .map((e) => e.readTable(apiProviders))
+          .get();
 
   Future<List<ProviderModelConfig>> getProviderModelConfigsByProviderId(
     String providerId,
@@ -292,6 +310,12 @@ class _ApiDb extends _$_ApiDb {
             ),
           )
           .getSingleOrNull();
+
+  Future<List<Model>> getAvailableModels() {
+    return (select(providerModelConfigs).join([
+      innerJoin(models, providerModelConfigs.modelId.equalsExp(models.id)),
+    ])).map((t) => t.readTable(models)).get();
+  }
 
   Future<void> loadDefaultData() async {
     final String response = await rootBundle.loadString(
@@ -415,4 +439,9 @@ class ApiDatabase {
   ) => _adb.getProviderModelConfig(providerId, modelId);
 
   Future<List<ApiKeyUsage>> getHistory(ApiKey key) => _adb.getHistory(key);
+  Future<List<Model>> getAvailableModels() => _adb.getAvailableModels();
+  Future<List<ApiProvider>> getApiProviderByModelId(String modelId) =>
+      _adb.getApiProviderByModelId(modelId);
+  Future<void> updateApiKeyInvokeData(ApiKey key, ApiKeyInvokeData data) =>
+      _adb.updateApiKeyInvokeData(key, data);
 }

@@ -139,7 +139,7 @@ class ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
                         ),
                         Container(
                           width: 1.5,
-                          color: Colors.grey[300],
+                          color: theme.thirdGradeColor,
                           height: 20,
                         ),
                         const SizedBox(width: 8),

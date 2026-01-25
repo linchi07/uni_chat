@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/settings_page/about.dart';
-import 'package:uni_chat/settings_page/model_settings.dart';
 import 'package:uni_chat/utils/overlays.dart';
 
 import '../generated/l10n.dart';
@@ -236,11 +235,13 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
         title: S.of(context).api_settings,
         contentWidget: ApiSettings(),
       ),
+      /*
       _SettingItem(
         icon: Icons.model_training,
         title: S.of(context).model_management,
         contentWidget: ModelSettings(),
       ),
+       */
       _SettingItem(
         icon: Icons.settings_outlined,
         title: S.of(context).general_settings,

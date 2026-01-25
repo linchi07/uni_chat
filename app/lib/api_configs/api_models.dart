@@ -715,6 +715,25 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
         ),
       ],
     ),
+    ProviderPreset(
+      id: 'google',
+      endpoint: "https://generativelanguage.googleapis.com/v1beta",
+      i18nName: {'en': "Google", 'zh': "谷歌"},
+      type: ProviderPresetType.singleInstance,
+      apiType: ApiType.google,
+      models: [
+        ProviderModelConfig(
+          providerId: 'google',
+          modelId: '@official-823a8f64-0788-52d9-bf53-2f502472b5c5',
+          callName: 'gemini-3-flash-preview',
+        ),
+        ProviderModelConfig(
+          providerId: 'google',
+          modelId: '@official-86eda6c0-ff35-5820-a46c-c73e2d037ded',
+          callName: 'gemini-3-pro-preview',
+        ),
+      ],
+    ),
   ];
 
   ProviderPreset({

@@ -227,7 +227,7 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
             Widget positionedContent;
             if (data.offset != null) {
               positionedContent = AnimatedPositioned(
-                left: data.offset!.dx - 20,
+                left: data.offset!.dx,
                 top: max(
                   0,
                   data.offset!.dy -

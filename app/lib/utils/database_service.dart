@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uuid/uuid.dart';
@@ -16,7 +14,8 @@ class AgentData {
   // the version of agent settings
   final String id;
   final String name;
-  final String modelProviderConfigureId;
+  final String providerId;
+  final String modelId;
   final String? description;
   final String? systemPrompt;
   late final List<String> knowledgeBases;
@@ -28,7 +27,8 @@ class AgentData {
     required this.version,
     required this.id,
     required this.name,
-    required this.modelProviderConfigureId,
+    required this.providerId,
+    required this.modelId,
     required this.modelSpecifics,
     this.description,
     this.systemPrompt,
@@ -71,7 +71,8 @@ class AgentData {
   String _parameterToJson() {
     Map<String, dynamic> parameters = {
       'version': version,
-      'model_provider_configure_id': modelProviderConfigureId,
+      'provider_id': providerId,
+      'model_id': modelId,
       'system_prompt': systemPrompt,
       'knowledge_bases': knowledgeBases,
       'model_specifics': modelSpecifics.toJson(),
@@ -96,8 +97,8 @@ class AgentData {
       version: parameters['version'] as int,
       id: map['id'] as String,
       name: map['name'] as String,
-      modelProviderConfigureId:
-          parameters['model_provider_configure_id'] as String,
+      providerId: parameters['provider_id'] as String? ?? '',
+      modelId: parameters['model_id'] as String,
       modelSpecifics: ModelSpecifics.fromJson(parameters['model_specifics']),
       description: map['description'] as String?,
       systemPrompt: parameters['system_prompt'] as String?,
@@ -121,7 +122,7 @@ class DatabaseService {
   }
 
   Future<Database> _initDatabase() async {
-   var dbPath = await PathProvider.getPath("chat/session_saves.db");
+    var dbPath = await PathProvider.getPath("chat/session_saves.db");
 
     return await openDatabase(
       dbPath,

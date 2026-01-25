@@ -40,15 +40,12 @@ class StdButton extends ConsumerWidget {
         onHover: (value) {},
         onTap: onPressed,
         onLongPress: onLongPress,
-        child: Padding(
-          padding: padding ?? const EdgeInsets.all(8.0),
-          child:
-              child ??
-              Text(
-                text ?? "",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: theme.getTextColor(c)),
-              ),
+        child: DefaultTextStyle(
+          style: TextStyle(color: theme.getTextColor(c)),
+          child: Padding(
+            padding: padding ?? const EdgeInsets.all(8.0),
+            child: child ?? Text(text ?? "", textAlign: TextAlign.center),
+          ),
         ),
       ),
     );

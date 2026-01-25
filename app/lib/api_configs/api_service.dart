@@ -34,60 +34,67 @@ class KeySelector {
   Future<KeyInfo> select() async {
     final now = DateTime.timestamp();
 
-    // 1. 过滤掉完全不可用的（401/400 或 严重超额且未到重置时间的）
-    var available = keys.where((k) {
-      final d = k.invokeData;
-      // 如果有重置时间且目前还处于超额状态，则排除
-      if (d.resetTime != null && d.resetTime!.isAfter(now)) {
-        if ((k.key.tokenLimit != null &&
-                d.todayUsedTokens >= k.key.tokenLimit!) ||
-            (k.key.rpd != null && d.requestToday >= k.key.rpd!)) {
-          return false;
-        }
+    // 1. 定义筛选档位 (Tiering)
+    // 档位从高到低：200/新Key > 429待命 > 其他错误待命
+    final List<bool Function(KeyInfo)> tiers = [
+      (k) =>
+          (k.invokeData.lastStatusCode == null ||
+          k.invokeData.lastStatusCode == 200),
+      (k) =>
+          k.invokeData.lastStatusCode == 429 &&
+          (k.invokeData.nextAvailableTime == null ||
+              k.invokeData.nextAvailableTime!.isBefore(now)),
+      (k) =>
+          ![200, 429, 401, 400].contains(k.invokeData.lastStatusCode) &&
+          (k.invokeData.nextAvailableTime == null ||
+              k.invokeData.nextAvailableTime!.isBefore(now)),
+    ];
+
+    // 2. 按档位依次尝试
+    for (var isMatchTier in tiers) {
+      final candidates = keys
+          .where((k) => _isNotExceeded(k, now) && isMatchTier(k))
+          .toList();
+
+      for (var k in candidates) {
+        if (await _checkRpm(k)) return k; // 检查通过则返回
       }
-      return d.lastStatusCode != 401 &&
-          d.lastStatusCode != 403 &&
-          d.lastStatusCode != 402;
-    }).toList();
-
-    if (available.isEmpty) throw "No available keys";
-
-    // 2. 优先级排序逻辑：
-    // 优先级 A: 状态码 200 或新 Key (lastStatusCode == null)
-    // 优先级 B: 状态码 429 且 nextAvailableTime 已过
-    // 优先级 C: 其他错误 (5xx) 且 nextAvailableTime 已过
-    // 优先级 D: 其他（按 nextAvailableTime 排序）
-    available.sort((a, b) {
-      int scoreA = _calculateScore(a.invokeData, now);
-      int scoreB = _calculateScore(b.invokeData, now);
-      if (scoreA != scoreB) return scoreA.compareTo(scoreB);
-
-      // 分数相同，选最早可用的
-      return a.invokeData.nextAvailableTime?.compareTo(
-            b.invokeData.nextAvailableTime ?? now,
-          ) ??
-          0;
-    });
-
-    for (var k in available) {
-      if (k.key.rpd != null) {
-        var dt = now.subtract(const Duration(minutes: 1));
-        var history = await ApiDatabase.instance.getHistory(k.key);
-        if (history.isNotEmpty && history.last.time.isAfter(dt)) continue;
-      }
-      return k;
     }
 
-    throw "All keys are rate-limited";
+    // 3. 最后保底：如果全都在冷却，选一个最快能用的
+    keys.sort(
+      (a, b) => a.invokeData.nextAvailableTime!.compareTo(
+        b.invokeData.nextAvailableTime!,
+      ),
+    );
+    return keys.firstWhere(
+      (k) =>
+          ![401, 403].contains(k.invokeData.lastStatusCode) &&
+          k.invokeData.retryCount <=
+              ApiClient.overLimitRetryCountsMinutes.length,
+      orElse: () => throw "No available key",
+    );
   }
 
-  int _calculateScore(dynamic d, DateTime now) {
-    if (d.lastStatusCode == null || d.lastStatusCode == 200) return 1;
-    if (d.nextAvailableTime!.isBefore(now)) {
-      if (d.lastStatusCode == 429) return 2;
-      return 3;
+  // 基础限额判定
+  bool _isNotExceeded(KeyInfo k, DateTime now) {
+    final d = k.invokeData;
+    if (d.resetTime != null && d.resetTime!.isAfter(now)) {
+      if (k.key.tokenLimit != null && d.todayUsedTokens >= k.key.tokenLimit!) {
+        return false;
+      }
+      if (k.key.rpd != null && d.requestToday >= k.key.rpd!) return false;
     }
-    return 4; // 还没到重试时间的，排最后
+    return true;
+  }
+
+  // RPM 判定
+  Future<bool> _checkRpm(KeyInfo k) async {
+    if (k.key.rpd == null) return true; // 未设置RPM则不限
+    final history = await ApiDatabase.instance.getHistory(k.key);
+    final minuteAgo = DateTime.timestamp().subtract(Duration(minutes: 1));
+    // 检查最近一分钟的调用次数是否超过限制
+    return history.where((h) => h.time.isAfter(minuteAgo)).length < k.key.rpd!;
   }
 }
 
@@ -112,6 +119,20 @@ class ApiClient {
         service = GeminiApiService();
         break;
     }
+  }
+
+  static Future<ApiClient> fromProviderAndModel(
+    ApiProvider provider,
+    Model model,
+  ) async {
+    var pmc = await ApiDatabase.instance.getProviderModelConfig(
+      provider.id,
+      model.id,
+    );
+    if (pmc == null) {
+      throw "The provider doesn't provide this model";
+    }
+    return ApiClient(providerConfig: pmc, model: model, provider: provider);
   }
 
   static Future<ApiClient> fromFactory(
@@ -144,31 +165,51 @@ class ApiClient {
     required ModelRequestContent modelRequestContent,
     String? agentId,
   }) async* {
-    var keysCandidate = await ApiDatabase.instance.getAvailableApiKeys(
-      provider.id,
-    );
-    var selector = KeySelector(keysCandidate);
-    var keyInfo = await selector.select();
-    var s = service.getStreamingResponse(
-      this,
-      keyInfo.key,
-      modelRequestContent: modelRequestContent,
-    );
-    InvokeData? invokeData;
-    await for (final response in s) {
-      if (response.response != null) {
-        yield response.response!;
+    while (true) {
+      var keysCandidate = await ApiDatabase.instance.getAvailableApiKeys(
+        provider.id,
+      );
+      var selector = KeySelector(keysCandidate);
+      var keyInfo = await selector.select();
+      var s = service.getStreamingResponse(
+        this,
+        keyInfo.key,
+        modelRequestContent: modelRequestContent,
+      );
+      InvokeData? invokeData;
+      await for (final response in s) {
+        if (response.response != null) {
+          yield response.response!;
+        }
+        invokeData = response.invokeData;
       }
-      invokeData = response.invokeData;
-    }
-    if (invokeData != null) {
-      if (invokeData.statusCode == 200) {
-        handleOk(invokeData, keyInfo);
-      } else if (invokeData.statusCode == 429) {
-        handleOverLimit(invokeData, keyInfo);
+      if (invokeData != null) {
+        late ({ApiKeyUsage? usage, ApiKeyInvokeData invokeData}) d;
+        if (invokeData.statusCode == 200) {
+          d = handleOk(invokeData, keyInfo);
+          if (d.usage != null) {
+            await ApiDatabase.instance.insertApikeyUsage(d.usage!);
+          }
+          await ApiDatabase.instance.updateApiKeyInvokeData(
+            keyInfo.key,
+            d.invokeData,
+          );
+          break;
+        } else if (invokeData.statusCode == 429) {
+          d = handleOverLimit(invokeData, keyInfo);
+        } else {
+          //401 402 403 are also processed here but will not be used again
+          d = handleError(invokeData, keyInfo);
+        }
+        if (d.usage != null) {
+          await ApiDatabase.instance.insertApikeyUsage(d.usage!);
+        }
+        await ApiDatabase.instance.updateApiKeyInvokeData(
+          keyInfo.key,
+          d.invokeData,
+        );
       } else {
-        //401 402 403 are also processed here but will not be used again
-        handleError(invokeData, keyInfo);
+        break;
       }
     }
   }
@@ -183,7 +224,7 @@ class ApiClient {
     var keyI = keyInfo.invokeData;
     late DateTime nextAvailableTime;
     var dt = DateTime.timestamp();
-    if (keyI.retryCount > errorRetryCountsMinutes.length) {
+    if (keyI.retryCount > errorRetryCountsMinutes.length - 1) {
       nextAvailableTime = DateTime.utc(dt.year, dt.month, dt.day + 1);
     } else {
       nextAvailableTime = dt.add(
@@ -206,7 +247,7 @@ class ApiClient {
     var keyI = keyInfo.invokeData;
     late DateTime nextAvailableTime;
     var dt = DateTime.timestamp();
-    if (keyI.retryCount > overLimitRetryCountsMinutes.length) {
+    if (keyI.retryCount > overLimitRetryCountsMinutes.length - 1) {
       nextAvailableTime = DateTime.utc(dt.year, dt.month, dt.day + 1);
     } else {
       nextAvailableTime = dt.add(
@@ -245,11 +286,14 @@ class ApiClient {
       tut = 0;
       rtd = 1;
     } else {
-      tut = keyI.todayUsedTokens + invokeData.usage!.total;
+      tut =
+          keyI.todayUsedTokens +
+          ((invokeData.usage != null) ? invokeData.usage!.total : 0);
       rtd = keyI.requestToday++;
     }
     var id = ApiKeyInvokeData(
       retryCount: 0,
+      lastStatusCode: invokeData.statusCode,
       todayUsedTokens: tut,
       requestToday: rtd,
       resetTime: rt ?? keyI.resetTime,
@@ -387,6 +431,7 @@ class OpenAiApiService extends BaseApiService {
 
     try {
       final response = await httpClient.send(request);
+      TokenUsage? usg;
       if (response.statusCode == 200) {
         yield* response.stream
             .transform(utf8.decoder)
@@ -425,20 +470,17 @@ class OpenAiApiService extends BaseApiService {
                 }
                 final usage = json['usage'] as Map<String, dynamic>?;
                 if (usage != null) {
-                  responses.add(
-                    _ApiResponse(
-                      invokeData: InvokeData(
-                        statusCode: response.statusCode,
-                        usage: TokenUsage(
-                          promptTokens: usage['input_tokens'],
-                          cachedTokens:
-                              usage['input_tokens_details']['cached_tokens'],
-                          completionTokens: usage['output_tokens'],
-                          cotTokens:
-                              usage['output_tokens_details']['reasoning_tokens'],
-                        ),
-                      ),
-                    ),
+                  usg = TokenUsage(
+                    promptTokens: usage['input_tokens'] as int? ?? 0,
+                    cachedTokens:
+                        usage['input_tokens_details']['cached_tokens']
+                            as int? ??
+                        0,
+                    completionTokens: usage['output_tokens'] as int? ?? 0,
+                    cotTokens:
+                        usage['output_tokens_details']['reasoning_tokens']
+                            as int? ??
+                        0,
                   );
                 }
               } catch (e) {
@@ -446,6 +488,9 @@ class OpenAiApiService extends BaseApiService {
               }
               return responses;
             });
+        yield _ApiResponse(
+          invokeData: InvokeData(statusCode: response.statusCode, usage: usg),
+        );
       } else {
         final errorBody = await response.stream.bytesToString();
         yield _ApiResponse(
@@ -758,6 +803,7 @@ class OpenAiCompletionService extends OpenAiApiService {
     try {
       final response = await httpClient.send(request);
       if (response.statusCode == 200) {
+        TokenUsage? usg;
         yield* response.stream
             .transform(utf8.decoder)
             .transform(const LineSplitter())
@@ -789,27 +835,27 @@ class OpenAiCompletionService extends OpenAiApiService {
                 }
                 final usage = json['usage'] as Map<String, dynamic>?;
                 if (usage != null) {
-                  responses.add(
-                    _ApiResponse(
-                      invokeData: InvokeData(
-                        statusCode: response.statusCode,
-                        usage: TokenUsage(
-                          promptTokens: usage['prompt_tokens'],
-                          completionTokens: usage['completion_tokens'],
-                          cachedTokens:
-                              usage['prompt_tokens_details']['cached_tokens'],
-                          cotTokens:
-                              usage['completion_tokens_details']['reasoning_tokens'],
-                        ),
-                      ),
-                    ),
+                  usg = TokenUsage(
+                    promptTokens: usage['prompt_tokens'] as int? ?? 0,
+                    completionTokens: usage['completion_tokens'] as int? ?? 0,
+                    cachedTokens:
+                        (usage['prompt_tokens_details']['cached_tokens']
+                            as int?) ??
+                        0,
+                    cotTokens:
+                        usage['completion_tokens_details']['reasoning_tokens']
+                            as int? ??
+                        0,
                   );
                 }
               } catch (e) {
-                // 忽略解析错误
+                print(e);
               }
               return responses;
             });
+        yield _ApiResponse(
+          invokeData: InvokeData(statusCode: response.statusCode, usage: usg),
+        );
       } else {
         final errorBody = await response.stream.bytesToString();
         yield _ApiResponse(
@@ -953,7 +999,7 @@ class GeminiApiService extends BaseApiService {
   }
 
   String getGenerateEndpoint(ApiClient client) {
-    return '${client.provider.endpoint}/v1beta/models/${client.providerConfig.callName}';
+    return '${client.provider.endpoint}/models/${client.providerConfig.callName}';
   }
 
   @override
@@ -1025,6 +1071,7 @@ class GeminiApiService extends BaseApiService {
       final response = await httpClient.send(request);
 
       if (response.statusCode == 200) {
+        TokenUsage? usg;
         yield* response.stream
             .transform(utf8.decoder)
             .transform(const LineSplitter())
@@ -1053,19 +1100,12 @@ class GeminiApiService extends BaseApiService {
                 }
                 final usage = json['usageMetadata'] as Map<String, dynamic>?;
                 if (usage != null) {
-                  r.add(
-                    _ApiResponse(
-                      invokeData: InvokeData(
-                        statusCode: response.statusCode,
-                        usage: TokenUsage(
-                          promptTokens: usage['promptTokenCount'],
-                          completionTokens: usage['candidateTokenCount'],
-                          cachedTokens: usage['cachedTokenCount'],
-                          cotTokens: usage['thoughtsTokenCount'],
-                          otherTokens: usage['toolUsePromptTokenCount'],
-                        ),
-                      ),
-                    ),
+                  usg = TokenUsage(
+                    promptTokens: usage['promptTokenCount'] as int? ?? 0,
+                    completionTokens: usage['candidateTokenCount'] as int? ?? 0,
+                    cachedTokens: usage['cachedTokenCount'] as int? ?? 0,
+                    cotTokens: usage['thoughtsTokenCount'] as int? ?? 0,
+                    otherTokens: usage['toolUsePromptTokenCount'] as int? ?? 0,
                   );
                 }
               } catch (e) {
@@ -1073,6 +1113,9 @@ class GeminiApiService extends BaseApiService {
               }
               return r;
             });
+        yield _ApiResponse(
+          invokeData: InvokeData(statusCode: response.statusCode, usage: usg),
+        );
       } else {
         final errorBody = await response.stream.bytesToString();
         yield _ApiResponse(

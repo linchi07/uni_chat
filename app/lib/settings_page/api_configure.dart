@@ -65,7 +65,20 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                     context,
                     width: 450,
                     height: 800,
-                    child: ApiPresetSelect(),
+                    child: ApiPresetSelect(
+                      onClose: () async {
+                        await OverlayPortalService.hide(context);
+                        var sc = settingsMenuKey.currentState;
+                        if (sc != null) {
+                          sc.insertPage(
+                            ApiConfigurePage(
+                              onExit: (_) =>
+                                  settingsMenuKey.currentState?.popPage(),
+                            ),
+                          );
+                        }
+                      },
+                    ),
                     backGroundColor: theme.zeroGradeColor,
                   );
                 },
@@ -122,7 +135,12 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                               if (ac != null && cs != null) {
                                 ref.read(apiConfigureProvider.notifier).state =
                                     ac;
-                                cs.insertPage(ApiConfigurePage());
+                                cs.insertPage(
+                                  ApiConfigurePage(
+                                    onExit: (_) =>
+                                        settingsMenuKey.currentState?.popPage(),
+                                  ),
+                                );
                               }
                             },
                           ),
@@ -180,7 +198,8 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
 }
 
 class ApiPresetSelect extends ConsumerWidget {
-  const ApiPresetSelect({super.key});
+  const ApiPresetSelect({super.key, required this.onClose});
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -207,16 +226,12 @@ class ApiPresetSelect extends ConsumerWidget {
                       padding: const EdgeInsets.all(8.0),
                       child: StdListTile(
                         onTap: () async {
-                          await OverlayPortalService.hide(context);
+                          onClose();
                           ref
                               .read(apiConfigureProvider.notifier)
                               .state = await ApiConfigure.fromProviderPreset(
                             f.data![index],
                           );
-                          var sc = settingsMenuKey.currentState;
-                          if (sc != null) {
-                            sc.insertPage(ApiConfigurePage());
-                          }
                         },
                         leading: (imgP != null)
                             ? StdAvatar(
@@ -243,11 +258,7 @@ class ApiPresetSelect extends ConsumerWidget {
         StdButton(
           text: S.of(context).add_other_provider,
           onPressed: () async {
-            await OverlayPortalService.hide(context);
-            var sc = settingsMenuKey.currentState;
-            if (sc != null) {
-              sc.insertPage(ApiConfigurePage());
-            }
+            onClose();
             ref.read(apiConfigureProvider.notifier).state = ApiConfigure(
               id: Uuid().v7(),
               type: ProviderPresetType.fullyCustomize,
@@ -405,8 +416,8 @@ final StateProvider<ApiConfigure> apiConfigureProvider =
     StateProvider<ApiConfigure>((_) => ApiConfigure(id: Uuid().v7()));
 
 class ApiConfigurePage extends ConsumerStatefulWidget {
-  const ApiConfigurePage({super.key});
-
+  const ApiConfigurePage({super.key, required this.onExit});
+  final void Function(bool finished) onExit;
   @override
   ConsumerState<ApiConfigurePage> createState() => _ApiConfigureState();
 }
@@ -640,17 +651,22 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                     ),
                   ),
                 ),
-                if (page != 0)
-                  StdButton(
-                    color: theme.thirdGradeColor,
-                    text: S.of(context).previous_step,
-                    onPressed: () {
-                      controller.previousPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInSine,
-                      );
-                    },
-                  ),
+                StdButton(
+                  color: theme.thirdGradeColor,
+                  text: (page == 0)
+                      ? S.of(context).cancel
+                      : S.of(context).previous_step,
+                  onPressed: () {
+                    if (page == 0) {
+                      widget.onExit(false);
+                      return;
+                    }
+                    controller.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInSine,
+                    );
+                  },
+                ),
                 const SizedBox(height: 10),
                 StdButton(
                   text: (page == 2 + indexShift)
@@ -660,7 +676,7 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                     if (page == 2 + indexShift) {
                       if (ac.getIfValid()) {
                         await ac.save();
-                        settingsMenuKey.currentState?.popPage();
+                        widget.onExit(true);
                       }
                     } else {
                       controller.nextPage(
@@ -895,7 +911,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
               child: StdTextFieldOutlined(
                 onSubmitted: (s) {
                   ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
-                    endpoint: s,
+                    endpoint: s + ((addVersionFlag) ? selected!.vFlag : ""),
                   );
                 },
                 controller: endpoint,
@@ -910,6 +926,15 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
             onChanged: (value) {
               setState(() {
                 addVersionFlag = value ?? false;
+                if (addVersionFlag) {
+                  ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
+                    endpoint: endpoint.text + selected!.vFlag,
+                  );
+                } else {
+                  ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
+                    endpoint: endpoint.text,
+                  );
+                }
               });
             },
           ),

@@ -2277,17 +2277,6 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
       'REFERENCES api_keys (id) ON DELETE CASCADE',
     ),
   );
-  static const VerificationMeta _providerIdMeta = const VerificationMeta(
-    'providerId',
-  );
-  @override
-  late final GeneratedColumn<String> providerId = GeneratedColumn<String>(
-    'provider_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _modelIdMeta = const VerificationMeta(
     'modelId',
   );
@@ -2331,7 +2320,6 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
   @override
   List<GeneratedColumn> get $columns => [
     apiKeyId,
-    providerId,
     modelId,
     agentId,
     time,
@@ -2356,14 +2344,6 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
       );
     } else if (isInserting) {
       context.missing(_apiKeyIdMeta);
-    }
-    if (data.containsKey('provider_id')) {
-      context.handle(
-        _providerIdMeta,
-        providerId.isAcceptableOrUnknown(data['provider_id']!, _providerIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_providerIdMeta);
     }
     if (data.containsKey('model_id')) {
       context.handle(
@@ -2432,7 +2412,6 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
 
 class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
   final Value<String> apiKeyId;
-  final Value<String> providerId;
   final Value<String> modelId;
   final Value<String?> agentId;
   final Value<DateTime> time;
@@ -2440,7 +2419,6 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
   final Value<int> rowid;
   const ApiKeyUsagesCompanion({
     this.apiKeyId = const Value.absent(),
-    this.providerId = const Value.absent(),
     this.modelId = const Value.absent(),
     this.agentId = const Value.absent(),
     this.time = const Value.absent(),
@@ -2449,20 +2427,17 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
   });
   ApiKeyUsagesCompanion.insert({
     required String apiKeyId,
-    required String providerId,
     required String modelId,
     this.agentId = const Value.absent(),
     required DateTime time,
     required TokenUsage usage,
     this.rowid = const Value.absent(),
   }) : apiKeyId = Value(apiKeyId),
-       providerId = Value(providerId),
        modelId = Value(modelId),
        time = Value(time),
        usage = Value(usage);
   static Insertable<ApiKeyUsage> custom({
     Expression<String>? apiKeyId,
-    Expression<String>? providerId,
     Expression<String>? modelId,
     Expression<String>? agentId,
     Expression<DateTime>? time,
@@ -2471,7 +2446,6 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
   }) {
     return RawValuesInsertable({
       if (apiKeyId != null) 'api_key_id': apiKeyId,
-      if (providerId != null) 'provider_id': providerId,
       if (modelId != null) 'model_id': modelId,
       if (agentId != null) 'agent_id': agentId,
       if (time != null) 'time': time,
@@ -2482,7 +2456,6 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
 
   ApiKeyUsagesCompanion copyWith({
     Value<String>? apiKeyId,
-    Value<String>? providerId,
     Value<String>? modelId,
     Value<String?>? agentId,
     Value<DateTime>? time,
@@ -2491,7 +2464,6 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
   }) {
     return ApiKeyUsagesCompanion(
       apiKeyId: apiKeyId ?? this.apiKeyId,
-      providerId: providerId ?? this.providerId,
       modelId: modelId ?? this.modelId,
       agentId: agentId ?? this.agentId,
       time: time ?? this.time,
@@ -2505,9 +2477,6 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
     final map = <String, Expression>{};
     if (apiKeyId.present) {
       map['api_key_id'] = Variable<String>(apiKeyId.value);
-    }
-    if (providerId.present) {
-      map['provider_id'] = Variable<String>(providerId.value);
     }
     if (modelId.present) {
       map['model_id'] = Variable<String>(modelId.value);
@@ -2533,7 +2502,6 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
   String toString() {
     return (StringBuffer('ApiKeyUsagesCompanion(')
           ..write('apiKeyId: $apiKeyId, ')
-          ..write('providerId: $providerId, ')
           ..write('modelId: $modelId, ')
           ..write('agentId: $agentId, ')
           ..write('time: $time, ')
@@ -4740,7 +4708,6 @@ typedef $$ApiKeysTableTableProcessedTableManager =
 typedef $$ApiKeyUsagesTableCreateCompanionBuilder =
     ApiKeyUsagesCompanion Function({
       required String apiKeyId,
-      required String providerId,
       required String modelId,
       Value<String?> agentId,
       required DateTime time,
@@ -4750,7 +4717,6 @@ typedef $$ApiKeyUsagesTableCreateCompanionBuilder =
 typedef $$ApiKeyUsagesTableUpdateCompanionBuilder =
     ApiKeyUsagesCompanion Function({
       Value<String> apiKeyId,
-      Value<String> providerId,
       Value<String> modelId,
       Value<String?> agentId,
       Value<DateTime> time,
@@ -4791,11 +4757,6 @@ class $$ApiKeyUsagesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get providerId => $composableBuilder(
-    column: $table.providerId,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get modelId => $composableBuilder(
     column: $table.modelId,
     builder: (column) => ColumnFilters(column),
@@ -4850,11 +4811,6 @@ class $$ApiKeyUsagesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get providerId => $composableBuilder(
-    column: $table.providerId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get modelId => $composableBuilder(
     column: $table.modelId,
     builder: (column) => ColumnOrderings(column),
@@ -4908,11 +4864,6 @@ class $$ApiKeyUsagesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get providerId => $composableBuilder(
-    column: $table.providerId,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<String> get modelId =>
       $composableBuilder(column: $table.modelId, builder: (column) => column);
 
@@ -4978,7 +4929,6 @@ class $$ApiKeyUsagesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> apiKeyId = const Value.absent(),
-                Value<String> providerId = const Value.absent(),
                 Value<String> modelId = const Value.absent(),
                 Value<String?> agentId = const Value.absent(),
                 Value<DateTime> time = const Value.absent(),
@@ -4986,7 +4936,6 @@ class $$ApiKeyUsagesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ApiKeyUsagesCompanion(
                 apiKeyId: apiKeyId,
-                providerId: providerId,
                 modelId: modelId,
                 agentId: agentId,
                 time: time,
@@ -4996,7 +4945,6 @@ class $$ApiKeyUsagesTableTableManager
           createCompanionCallback:
               ({
                 required String apiKeyId,
-                required String providerId,
                 required String modelId,
                 Value<String?> agentId = const Value.absent(),
                 required DateTime time,
@@ -5004,7 +4952,6 @@ class $$ApiKeyUsagesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ApiKeyUsagesCompanion.insert(
                 apiKeyId: apiKeyId,
-                providerId: providerId,
                 modelId: modelId,
                 agentId: agentId,
                 time: time,
