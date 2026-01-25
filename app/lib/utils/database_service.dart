@@ -647,11 +647,11 @@ WHERE
     final db = await database;
     final List<Map<String, dynamic>> messageMaps = await db.rawQuery(
       '''
- WITH RECURSIVE chat_tree AS (
-    -- 1. 仅定位关系表的根节点（不包含 message 信息）
+WITH RECURSIVE chat_tree AS (
+    -- 1. 定位根节点
     SELECT 
         id, 
-		message_id,
+        message_id,
         child_ids, 
         enabled_child_index,
         0 AS depth
@@ -660,18 +660,22 @@ WHERE
 
     UNION ALL
 
-    -- 2. 从第二层开始连接 messages 表
+    -- 2. 递归查找子节点：使用 substr 绝对定位
     SELECT 
         r.id,
-		r.message_id,
+        r.message_id,
         r.child_ids,
         r.enabled_child_index,
         ct.depth + 1
-    FROM message_relations r -- use "->>" to extract json without quotes
-    JOIN chat_tree ct ON r.id = (ct.child_ids ->> ('\$[' || ct.enabled_child_index || ']'))
+    FROM message_relations r
+    JOIN chat_tree ct ON r.id = substr(
+        ct.child_ids, 
+        (ct.enabled_child_index * 37) + 1, 
+        36
+    )
     WHERE r.session_id = ?
 )
--- 3. 最终结果连接 messages 表并过滤掉 depth = 0 的根节点
+-- 3. 最终结果
 SELECT 
     m.id AS message_id,
     m.sender,
