@@ -274,6 +274,7 @@ class ApiConfigure {
   ProviderPreset? providerPreset;
   late final String id;
   ProviderPresetType? type;
+  bool showVerFlags;
   String? name;
   String? endpoint;
   ApiType? apiType;
@@ -291,6 +292,7 @@ class ApiConfigure {
     this.type,
     this.name,
     this.endpoint,
+    this.showVerFlags = true,
     this.apiType,
     List<ApiKey>? keys,
     List<({Model model, ProviderModelConfig config})>? models,
@@ -317,6 +319,9 @@ class ApiConfigure {
       }
     }
     return ApiConfigure(
+      showVerFlags: (preset.type == ProviderPresetType.singleInstance)
+          ? false
+          : true,
       providerPreset: preset,
       id: id,
       name: (preset.type == ProviderPresetType.singleInstance)
@@ -373,6 +378,7 @@ class ApiConfigure {
     String? name,
     String? endpoint,
     ApiType? apiType,
+    bool? showVerFlags,
     List<ApiKey>? keys,
     List<({Model model, ProviderModelConfig config})>? models,
   }) {
@@ -382,6 +388,7 @@ class ApiConfigure {
       type: type ?? this.type,
       name: name ?? this.name,
       endpoint: endpoint ?? this.endpoint,
+      showVerFlags: showVerFlags ?? this.showVerFlags,
       apiType: apiType ?? this.apiType,
       keys: keys ?? this.keys,
       models: models ?? this.models,
@@ -403,7 +410,7 @@ class ApiConfigure {
     return ApiProvider(
       id: id,
       name: name!,
-      endpoint: endpoint!,
+      endpoint: (showVerFlags) ? endpoint! + apiType!.vFlag : endpoint!,
       type: apiType!,
       preset: providerPreset?.id,
     );
@@ -480,6 +487,11 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
             var endpoint = ac.endpoint != null && ac.endpoint! != "";
             var endPointValid =
                 endpoint && (Uri.tryParse(ac.endpoint!)?.isAbsolute ?? false);
+            String? endPointT = (ac.endpoint != null && ac.apiType != null)
+                ? (ac.showVerFlags)
+                      ? ac.endpoint! + ac.apiType!.vFlag
+                      : ac.endpoint
+                : null;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -565,10 +577,10 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            (endpoint)
+                            (endpoint && endPointT != null)
                                 ? (endPointValid)
-                                      ? "${S.of(context).valid}: ${ac.endpoint}"
-                                      : "${S.of(context).endPoint_might_not_valid}: ${ac.endpoint}"
+                                      ? "${S.of(context).valid}: $endPointT"
+                                      : "${S.of(context).endPoint_might_not_valid}: $endPointT"
                                 : S.of(context).endPoint_not_set,
                             textAlign: TextAlign.center,
                             style: TextStyle(
@@ -808,52 +820,33 @@ class _BaseInfo extends ConsumerStatefulWidget {
 class __BaseInfoState extends ConsumerState<_BaseInfo> {
   ThemeConfig get theme => widget.theme;
 
-  ApiType? selected;
-
   late TextStyle tStyle;
+  ApiType? get selected => ac.apiType;
 
   ValueNotifier<String?> endPointText = ValueNotifier(null);
-  bool addVersionFlag = true;
-
+  late ApiConfigure ac;
   @override
   void initState() {
     super.initState();
-    endpoint.addListener(() {
-      if (endpoint.text.isEmpty) {
-        endPointText.value = null;
-      } else {
-        if (addVersionFlag && selected != null) {
-          endPointText.value = endpoint.text + selected!.vFlag;
-        } else {
-          endPointText.value = endpoint.text;
-        }
-      }
-    });
-    var ac = ref.read(apiConfigureProvider);
+    ac = ref.read(apiConfigureProvider);
     name.text = ac.name ?? "";
     endpoint.text = ac.endpoint ?? "";
-    selected = ac.apiType;
+    endPointText.value = endpoint.text;
+    endpoint.addListener((){
+      endPointText.value = endpoint.text;
+    });
   }
 
   TextEditingController name = TextEditingController();
   TextEditingController endpoint = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    var ac = ref.watch(apiConfigureProvider);
+    ac = ref.watch(apiConfigureProvider);
     ref.listen(apiConfigureProvider, (_, ac) {
       ac.name = name.text;
       ac.endpoint = endpoint.text;
     });
     tStyle = TextStyle(fontSize: 20, color: theme.darkTextColor);
-    if (endpoint.text.isEmpty) {
-      endPointText.value = null;
-    } else {
-      if (addVersionFlag && selected != null) {
-        endPointText.value = endpoint.text + selected!.vFlag;
-      } else {
-        endPointText.value = endpoint.text;
-      }
-    }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -911,7 +904,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
               child: StdTextFieldOutlined(
                 onSubmitted: (s) {
                   ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
-                    endpoint: s + ((addVersionFlag) ? selected!.vFlag : ""),
+                    endpoint: s,
                   );
                 },
                 controller: endpoint,
@@ -922,20 +915,11 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
           const SizedBox(height: 10),
           StdCheckbox(
             text: S.of(context).add_ver_flag,
-            value: addVersionFlag,
+            value: ac.showVerFlags,
             onChanged: (value) {
-              setState(() {
-                addVersionFlag = value ?? false;
-                if (addVersionFlag) {
-                  ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
-                    endpoint: endpoint.text + selected!.vFlag,
-                  );
-                } else {
-                  ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
-                    endpoint: endpoint.text,
-                  );
-                }
-              });
+              ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
+                showVerFlags: value,
+              );
             },
           ),
           const SizedBox(height: 10),
@@ -961,12 +945,9 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
           width: 500,
           initialIndex: selected?.index,
           onChanged: (index) {
-            setState(() {
-              selected = ApiType.values[index];
-              ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
-                apiType: selected,
-              );
-            });
+            ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
+              apiType: selected,
+            );
           },
           itemBuilder: (context, index, onTap) {
             return Padding(
@@ -989,7 +970,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
     return ValueListenableBuilder(
       valueListenable: endPointText,
       builder: (context, text, c) {
-        return (text == null && selected == null)
+        return (text == null || selected == null)
             ? const SizedBox()
             : Align(
                 alignment: Alignment.centerLeft,
@@ -1006,7 +987,9 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
                     children: [
                       Text(S.of(context).end_point_preview, style: tStyle),
                       const SizedBox(height: 10),
-                      ...selected!.getEndPointInfo(text),
+                      ...selected!.getEndPointInfo(
+                        (ac.showVerFlags) ? (text + ac.apiType!.vFlag) : text,
+                      ),
                       const SizedBox(height: 10),
                     ],
                   ),

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Chat/session_selector.dart';
@@ -146,6 +147,15 @@ class UNIChat extends StatelessWidget {
                       barrierDismissible: false,
                     );
                   });
+                }
+                if(PlatForm().isWindows){
+                  // windows will force the window to get too small when showing desktop even when window size is set
+                  // so we need to avoid the negative constrained error
+                  var mdof = MediaQuery.of(context);
+                  var s = mdof.size;
+                  if(s.height < 480|| s.width < 640) {
+                    return const SizedBox.shrink();
+                  }
                 }
                 return mainContent;
               },
