@@ -170,7 +170,7 @@ class _ApiDb extends _$_ApiDb {
   Future<void> insertApikeyUsage(ApiKeyUsage usage) =>
       into(apiKeyUsages).insert(usage);
 
-  Future<List<({ApiKeyInvokeData invokeData, ApiKey key})>> getAvailableApiKeys(
+  Future<List<({ApiKey key,String? invokeDataJson})>> getAvailableApiKeys(
     String providerId,
   ) async {
     var r =
@@ -181,7 +181,7 @@ class _ApiDb extends _$_ApiDb {
               ..orderBy([(e) => OrderingTerm.random()]))
             .get();
 
-    var result = <({ApiKey key, ApiKeyInvokeData invokeData})>[];
+    var result = <({ApiKey key,String? invokeDataJson})>[];
     for (var k in r) {
       var key = ApiKey(
         k.providerId,
@@ -191,14 +191,7 @@ class _ApiDb extends _$_ApiDb {
         rpd: k.rpd,
         tokenLimit: k.tokenLimit,
       );
-      var invDt = ApiKeyInvokeData(
-        lastStatusCode: k.lastStatusCode,
-        retryCount: k.retryCount,
-        todayUsedTokens: k.todayUsedTokens,
-        requestToday: k.requestToday,
-        resetTime: k.resetTime,
-      );
-      result.add((key: key, invokeData: invDt));
+      result.add((key: key, invokeDataJson: k.invokeData));
     }
     return result;
   }
@@ -211,15 +204,10 @@ class _ApiDb extends _$_ApiDb {
         .get();
   }
 
-  Future<void> updateApiKeyInvokeData(ApiKey key, ApiKeyInvokeData data) {
+  Future<void> updateApiKeyInvokeData(ApiKey key,String dataJson) {
     return (update(apiKeysTable)..where((e) => e.id.equals(key.id))).write(
       ApiKeysTableCompanion(
-        lastStatusCode: Value(data.lastStatusCode),
-        retryCount: Value(data.retryCount),
-        nextAvailableTime: Value(data.nextAvailableTime),
-        todayUsedTokens: Value(data.todayUsedTokens),
-        requestToday: Value(data.requestToday),
-        resetTime: Value(data.resetTime),
+        invokeData: Value(dataJson),
       ),
     );
   }
@@ -429,7 +417,7 @@ class ApiDatabase {
   Future<void> insertApikeyUsage(ApiKeyUsage usage) =>
       _adb.insertApikeyUsage(usage);
 
-  Future<List<({ApiKeyInvokeData invokeData, ApiKey key})>> getAvailableApiKeys(
+  Future<List<({ApiKey key,String? invokeDataJson})>> getAvailableApiKeys(
     String providerId,
   ) => _adb.getAvailableApiKeys(providerId);
 
@@ -442,6 +430,6 @@ class ApiDatabase {
   Future<List<Model>> getAvailableModels() => _adb.getAvailableModels();
   Future<List<ApiProvider>> getApiProviderByModelId(String modelId) =>
       _adb.getApiProviderByModelId(modelId);
-  Future<void> updateApiKeyInvokeData(ApiKey key, ApiKeyInvokeData data) =>
-      _adb.updateApiKeyInvokeData(key, data);
+  Future<void> updateApiKeyInvokeData(ApiKey key,String dataJson) =>
+      _adb.updateApiKeyInvokeData(key, dataJson);
 }

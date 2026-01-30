@@ -99,12 +99,6 @@ class ApiKeysTable extends Table {
   IntColumn get rpd => integer().nullable()();
   IntColumn get tokenLimit => integer().nullable()();
   BoolColumn get enabled => boolean().withDefault(const Constant(true))();
-  // 下面是动态信息
-  IntColumn get retryCount => integer().withDefault(const Constant(0))();
-  DateTimeColumn get nextAvailableTime => dateTime().nullable()();
-  IntColumn get lastStatusCode => integer().nullable()();
 
-  IntColumn get todayUsedTokens => integer().withDefault(const Constant(0))();
-  IntColumn get requestToday => integer().withDefault(const Constant(0))();
-  DateTimeColumn get resetTime => dateTime().nullable()();
+  TextColumn get invokeData => text().nullable()();
 }

@@ -171,53 +171,6 @@ class ApiKey implements Insertable<ApiKeysTableData> {
   }
 }
 
-class ApiKeyInvokeData implements Insertable<ApiKeysTable> {
-  int retryCount;
-  DateTime? nextAvailableTime;
-  int? lastStatusCode;
-
-  int todayUsedTokens;
-  int requestToday;
-  DateTime? resetTime;
-  ApiKeyInvokeData({
-    required this.retryCount,
-    this.nextAvailableTime,
-    this.lastStatusCode,
-    required this.todayUsedTokens,
-    required this.requestToday,
-    this.resetTime,
-  });
-
-  ApiKeyInvokeData copyWith({
-    int? retryCount,
-    DateTime? nextAvailableTime,
-    int? lastStatusCode,
-    int? todayUsedTokens,
-    int? requestToday,
-    DateTime? resetTime,
-  }) {
-    return ApiKeyInvokeData(
-      retryCount: retryCount ?? this.retryCount,
-      nextAvailableTime: nextAvailableTime ?? this.nextAvailableTime,
-      lastStatusCode: lastStatusCode ?? this.lastStatusCode,
-      todayUsedTokens: todayUsedTokens ?? this.todayUsedTokens,
-      requestToday: requestToday ?? this.requestToday,
-      resetTime: resetTime ?? this.resetTime,
-    );
-  }
-
-  @override
-  Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
-    return ApiKeysTableCompanion(
-      retryCount: Value(retryCount),
-      nextAvailableTime: Value(nextAvailableTime),
-      lastStatusCode: Value(lastStatusCode),
-      todayUsedTokens: Value(todayUsedTokens),
-      requestToday: Value(requestToday),
-      resetTime: Value(resetTime),
-    ).toColumns(nullToAbsent);
-  }
-}
 
 @immutable
 class TokenUsage {

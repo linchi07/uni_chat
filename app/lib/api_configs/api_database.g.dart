@@ -1521,74 +1521,15 @@ class $ApiKeysTableTable extends ApiKeysTable
     ),
     defaultValue: const Constant(true),
   );
-  static const VerificationMeta _retryCountMeta = const VerificationMeta(
-    'retryCount',
+  static const VerificationMeta _invokeDataMeta = const VerificationMeta(
+    'invokeData',
   );
   @override
-  late final GeneratedColumn<int> retryCount = GeneratedColumn<int>(
-    'retry_count',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _nextAvailableTimeMeta = const VerificationMeta(
-    'nextAvailableTime',
-  );
-  @override
-  late final GeneratedColumn<DateTime> nextAvailableTime =
-      GeneratedColumn<DateTime>(
-        'next_available_time',
-        aliasedName,
-        true,
-        type: DriftSqlType.dateTime,
-        requiredDuringInsert: false,
-      );
-  static const VerificationMeta _lastStatusCodeMeta = const VerificationMeta(
-    'lastStatusCode',
-  );
-  @override
-  late final GeneratedColumn<int> lastStatusCode = GeneratedColumn<int>(
-    'last_status_code',
+  late final GeneratedColumn<String> invokeData = GeneratedColumn<String>(
+    'invoke_data',
     aliasedName,
     true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _todayUsedTokensMeta = const VerificationMeta(
-    'todayUsedTokens',
-  );
-  @override
-  late final GeneratedColumn<int> todayUsedTokens = GeneratedColumn<int>(
-    'today_used_tokens',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _requestTodayMeta = const VerificationMeta(
-    'requestToday',
-  );
-  @override
-  late final GeneratedColumn<int> requestToday = GeneratedColumn<int>(
-    'request_today',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _resetTimeMeta = const VerificationMeta(
-    'resetTime',
-  );
-  @override
-  late final GeneratedColumn<DateTime> resetTime = GeneratedColumn<DateTime>(
-    'reset_time',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
   @override
@@ -1601,12 +1542,7 @@ class $ApiKeysTableTable extends ApiKeysTable
     rpd,
     tokenLimit,
     enabled,
-    retryCount,
-    nextAvailableTime,
-    lastStatusCode,
-    todayUsedTokens,
-    requestToday,
-    resetTime,
+    invokeData,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1671,52 +1607,10 @@ class $ApiKeysTableTable extends ApiKeysTable
         enabled.isAcceptableOrUnknown(data['enabled']!, _enabledMeta),
       );
     }
-    if (data.containsKey('retry_count')) {
+    if (data.containsKey('invoke_data')) {
       context.handle(
-        _retryCountMeta,
-        retryCount.isAcceptableOrUnknown(data['retry_count']!, _retryCountMeta),
-      );
-    }
-    if (data.containsKey('next_available_time')) {
-      context.handle(
-        _nextAvailableTimeMeta,
-        nextAvailableTime.isAcceptableOrUnknown(
-          data['next_available_time']!,
-          _nextAvailableTimeMeta,
-        ),
-      );
-    }
-    if (data.containsKey('last_status_code')) {
-      context.handle(
-        _lastStatusCodeMeta,
-        lastStatusCode.isAcceptableOrUnknown(
-          data['last_status_code']!,
-          _lastStatusCodeMeta,
-        ),
-      );
-    }
-    if (data.containsKey('today_used_tokens')) {
-      context.handle(
-        _todayUsedTokensMeta,
-        todayUsedTokens.isAcceptableOrUnknown(
-          data['today_used_tokens']!,
-          _todayUsedTokensMeta,
-        ),
-      );
-    }
-    if (data.containsKey('request_today')) {
-      context.handle(
-        _requestTodayMeta,
-        requestToday.isAcceptableOrUnknown(
-          data['request_today']!,
-          _requestTodayMeta,
-        ),
-      );
-    }
-    if (data.containsKey('reset_time')) {
-      context.handle(
-        _resetTimeMeta,
-        resetTime.isAcceptableOrUnknown(data['reset_time']!, _resetTimeMeta),
+        _invokeDataMeta,
+        invokeData.isAcceptableOrUnknown(data['invoke_data']!, _invokeDataMeta),
       );
     }
     return context;
@@ -1760,29 +1654,9 @@ class $ApiKeysTableTable extends ApiKeysTable
         DriftSqlType.bool,
         data['${effectivePrefix}enabled'],
       )!,
-      retryCount: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}retry_count'],
-      )!,
-      nextAvailableTime: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}next_available_time'],
-      ),
-      lastStatusCode: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}last_status_code'],
-      ),
-      todayUsedTokens: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}today_used_tokens'],
-      )!,
-      requestToday: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}request_today'],
-      )!,
-      resetTime: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}reset_time'],
+      invokeData: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}invoke_data'],
       ),
     );
   }
@@ -1803,12 +1677,7 @@ class ApiKeysTableData extends DataClass
   final int? rpd;
   final int? tokenLimit;
   final bool enabled;
-  final int retryCount;
-  final DateTime? nextAvailableTime;
-  final int? lastStatusCode;
-  final int todayUsedTokens;
-  final int requestToday;
-  final DateTime? resetTime;
+  final String? invokeData;
   const ApiKeysTableData({
     required this.id,
     required this.providerId,
@@ -1818,12 +1687,7 @@ class ApiKeysTableData extends DataClass
     this.rpd,
     this.tokenLimit,
     required this.enabled,
-    required this.retryCount,
-    this.nextAvailableTime,
-    this.lastStatusCode,
-    required this.todayUsedTokens,
-    required this.requestToday,
-    this.resetTime,
+    this.invokeData,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1844,17 +1708,8 @@ class ApiKeysTableData extends DataClass
       map['token_limit'] = Variable<int>(tokenLimit);
     }
     map['enabled'] = Variable<bool>(enabled);
-    map['retry_count'] = Variable<int>(retryCount);
-    if (!nullToAbsent || nextAvailableTime != null) {
-      map['next_available_time'] = Variable<DateTime>(nextAvailableTime);
-    }
-    if (!nullToAbsent || lastStatusCode != null) {
-      map['last_status_code'] = Variable<int>(lastStatusCode);
-    }
-    map['today_used_tokens'] = Variable<int>(todayUsedTokens);
-    map['request_today'] = Variable<int>(requestToday);
-    if (!nullToAbsent || resetTime != null) {
-      map['reset_time'] = Variable<DateTime>(resetTime);
+    if (!nullToAbsent || invokeData != null) {
+      map['invoke_data'] = Variable<String>(invokeData);
     }
     return map;
   }
@@ -1873,18 +1728,9 @@ class ApiKeysTableData extends DataClass
           ? const Value.absent()
           : Value(tokenLimit),
       enabled: Value(enabled),
-      retryCount: Value(retryCount),
-      nextAvailableTime: nextAvailableTime == null && nullToAbsent
+      invokeData: invokeData == null && nullToAbsent
           ? const Value.absent()
-          : Value(nextAvailableTime),
-      lastStatusCode: lastStatusCode == null && nullToAbsent
-          ? const Value.absent()
-          : Value(lastStatusCode),
-      todayUsedTokens: Value(todayUsedTokens),
-      requestToday: Value(requestToday),
-      resetTime: resetTime == null && nullToAbsent
-          ? const Value.absent()
-          : Value(resetTime),
+          : Value(invokeData),
     );
   }
 
@@ -1902,14 +1748,7 @@ class ApiKeysTableData extends DataClass
       rpd: serializer.fromJson<int?>(json['rpd']),
       tokenLimit: serializer.fromJson<int?>(json['tokenLimit']),
       enabled: serializer.fromJson<bool>(json['enabled']),
-      retryCount: serializer.fromJson<int>(json['retryCount']),
-      nextAvailableTime: serializer.fromJson<DateTime?>(
-        json['nextAvailableTime'],
-      ),
-      lastStatusCode: serializer.fromJson<int?>(json['lastStatusCode']),
-      todayUsedTokens: serializer.fromJson<int>(json['todayUsedTokens']),
-      requestToday: serializer.fromJson<int>(json['requestToday']),
-      resetTime: serializer.fromJson<DateTime?>(json['resetTime']),
+      invokeData: serializer.fromJson<String?>(json['invokeData']),
     );
   }
   @override
@@ -1924,12 +1763,7 @@ class ApiKeysTableData extends DataClass
       'rpd': serializer.toJson<int?>(rpd),
       'tokenLimit': serializer.toJson<int?>(tokenLimit),
       'enabled': serializer.toJson<bool>(enabled),
-      'retryCount': serializer.toJson<int>(retryCount),
-      'nextAvailableTime': serializer.toJson<DateTime?>(nextAvailableTime),
-      'lastStatusCode': serializer.toJson<int?>(lastStatusCode),
-      'todayUsedTokens': serializer.toJson<int>(todayUsedTokens),
-      'requestToday': serializer.toJson<int>(requestToday),
-      'resetTime': serializer.toJson<DateTime?>(resetTime),
+      'invokeData': serializer.toJson<String?>(invokeData),
     };
   }
 
@@ -1942,12 +1776,7 @@ class ApiKeysTableData extends DataClass
     Value<int?> rpd = const Value.absent(),
     Value<int?> tokenLimit = const Value.absent(),
     bool? enabled,
-    int? retryCount,
-    Value<DateTime?> nextAvailableTime = const Value.absent(),
-    Value<int?> lastStatusCode = const Value.absent(),
-    int? todayUsedTokens,
-    int? requestToday,
-    Value<DateTime?> resetTime = const Value.absent(),
+    Value<String?> invokeData = const Value.absent(),
   }) => ApiKeysTableData(
     id: id ?? this.id,
     providerId: providerId ?? this.providerId,
@@ -1957,16 +1786,7 @@ class ApiKeysTableData extends DataClass
     rpd: rpd.present ? rpd.value : this.rpd,
     tokenLimit: tokenLimit.present ? tokenLimit.value : this.tokenLimit,
     enabled: enabled ?? this.enabled,
-    retryCount: retryCount ?? this.retryCount,
-    nextAvailableTime: nextAvailableTime.present
-        ? nextAvailableTime.value
-        : this.nextAvailableTime,
-    lastStatusCode: lastStatusCode.present
-        ? lastStatusCode.value
-        : this.lastStatusCode,
-    todayUsedTokens: todayUsedTokens ?? this.todayUsedTokens,
-    requestToday: requestToday ?? this.requestToday,
-    resetTime: resetTime.present ? resetTime.value : this.resetTime,
+    invokeData: invokeData.present ? invokeData.value : this.invokeData,
   );
   ApiKeysTableData copyWithCompanion(ApiKeysTableCompanion data) {
     return ApiKeysTableData(
@@ -1982,22 +1802,9 @@ class ApiKeysTableData extends DataClass
           ? data.tokenLimit.value
           : this.tokenLimit,
       enabled: data.enabled.present ? data.enabled.value : this.enabled,
-      retryCount: data.retryCount.present
-          ? data.retryCount.value
-          : this.retryCount,
-      nextAvailableTime: data.nextAvailableTime.present
-          ? data.nextAvailableTime.value
-          : this.nextAvailableTime,
-      lastStatusCode: data.lastStatusCode.present
-          ? data.lastStatusCode.value
-          : this.lastStatusCode,
-      todayUsedTokens: data.todayUsedTokens.present
-          ? data.todayUsedTokens.value
-          : this.todayUsedTokens,
-      requestToday: data.requestToday.present
-          ? data.requestToday.value
-          : this.requestToday,
-      resetTime: data.resetTime.present ? data.resetTime.value : this.resetTime,
+      invokeData: data.invokeData.present
+          ? data.invokeData.value
+          : this.invokeData,
     );
   }
 
@@ -2012,12 +1819,7 @@ class ApiKeysTableData extends DataClass
           ..write('rpd: $rpd, ')
           ..write('tokenLimit: $tokenLimit, ')
           ..write('enabled: $enabled, ')
-          ..write('retryCount: $retryCount, ')
-          ..write('nextAvailableTime: $nextAvailableTime, ')
-          ..write('lastStatusCode: $lastStatusCode, ')
-          ..write('todayUsedTokens: $todayUsedTokens, ')
-          ..write('requestToday: $requestToday, ')
-          ..write('resetTime: $resetTime')
+          ..write('invokeData: $invokeData')
           ..write(')'))
         .toString();
   }
@@ -2032,12 +1834,7 @@ class ApiKeysTableData extends DataClass
     rpd,
     tokenLimit,
     enabled,
-    retryCount,
-    nextAvailableTime,
-    lastStatusCode,
-    todayUsedTokens,
-    requestToday,
-    resetTime,
+    invokeData,
   );
   @override
   bool operator ==(Object other) =>
@@ -2051,12 +1848,7 @@ class ApiKeysTableData extends DataClass
           other.rpd == this.rpd &&
           other.tokenLimit == this.tokenLimit &&
           other.enabled == this.enabled &&
-          other.retryCount == this.retryCount &&
-          other.nextAvailableTime == this.nextAvailableTime &&
-          other.lastStatusCode == this.lastStatusCode &&
-          other.todayUsedTokens == this.todayUsedTokens &&
-          other.requestToday == this.requestToday &&
-          other.resetTime == this.resetTime);
+          other.invokeData == this.invokeData);
 }
 
 class ApiKeysTableCompanion extends UpdateCompanion<ApiKeysTableData> {
@@ -2068,12 +1860,7 @@ class ApiKeysTableCompanion extends UpdateCompanion<ApiKeysTableData> {
   final Value<int?> rpd;
   final Value<int?> tokenLimit;
   final Value<bool> enabled;
-  final Value<int> retryCount;
-  final Value<DateTime?> nextAvailableTime;
-  final Value<int?> lastStatusCode;
-  final Value<int> todayUsedTokens;
-  final Value<int> requestToday;
-  final Value<DateTime?> resetTime;
+  final Value<String?> invokeData;
   final Value<int> rowid;
   const ApiKeysTableCompanion({
     this.id = const Value.absent(),
@@ -2084,12 +1871,7 @@ class ApiKeysTableCompanion extends UpdateCompanion<ApiKeysTableData> {
     this.rpd = const Value.absent(),
     this.tokenLimit = const Value.absent(),
     this.enabled = const Value.absent(),
-    this.retryCount = const Value.absent(),
-    this.nextAvailableTime = const Value.absent(),
-    this.lastStatusCode = const Value.absent(),
-    this.todayUsedTokens = const Value.absent(),
-    this.requestToday = const Value.absent(),
-    this.resetTime = const Value.absent(),
+    this.invokeData = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ApiKeysTableCompanion.insert({
@@ -2101,12 +1883,7 @@ class ApiKeysTableCompanion extends UpdateCompanion<ApiKeysTableData> {
     this.rpd = const Value.absent(),
     this.tokenLimit = const Value.absent(),
     this.enabled = const Value.absent(),
-    this.retryCount = const Value.absent(),
-    this.nextAvailableTime = const Value.absent(),
-    this.lastStatusCode = const Value.absent(),
-    this.todayUsedTokens = const Value.absent(),
-    this.requestToday = const Value.absent(),
-    this.resetTime = const Value.absent(),
+    this.invokeData = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        providerId = Value(providerId),
@@ -2120,12 +1897,7 @@ class ApiKeysTableCompanion extends UpdateCompanion<ApiKeysTableData> {
     Expression<int>? rpd,
     Expression<int>? tokenLimit,
     Expression<bool>? enabled,
-    Expression<int>? retryCount,
-    Expression<DateTime>? nextAvailableTime,
-    Expression<int>? lastStatusCode,
-    Expression<int>? todayUsedTokens,
-    Expression<int>? requestToday,
-    Expression<DateTime>? resetTime,
+    Expression<String>? invokeData,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2137,12 +1909,7 @@ class ApiKeysTableCompanion extends UpdateCompanion<ApiKeysTableData> {
       if (rpd != null) 'rpd': rpd,
       if (tokenLimit != null) 'token_limit': tokenLimit,
       if (enabled != null) 'enabled': enabled,
-      if (retryCount != null) 'retry_count': retryCount,
-      if (nextAvailableTime != null) 'next_available_time': nextAvailableTime,
-      if (lastStatusCode != null) 'last_status_code': lastStatusCode,
-      if (todayUsedTokens != null) 'today_used_tokens': todayUsedTokens,
-      if (requestToday != null) 'request_today': requestToday,
-      if (resetTime != null) 'reset_time': resetTime,
+      if (invokeData != null) 'invoke_data': invokeData,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2156,12 +1923,7 @@ class ApiKeysTableCompanion extends UpdateCompanion<ApiKeysTableData> {
     Value<int?>? rpd,
     Value<int?>? tokenLimit,
     Value<bool>? enabled,
-    Value<int>? retryCount,
-    Value<DateTime?>? nextAvailableTime,
-    Value<int?>? lastStatusCode,
-    Value<int>? todayUsedTokens,
-    Value<int>? requestToday,
-    Value<DateTime?>? resetTime,
+    Value<String?>? invokeData,
     Value<int>? rowid,
   }) {
     return ApiKeysTableCompanion(
@@ -2173,12 +1935,7 @@ class ApiKeysTableCompanion extends UpdateCompanion<ApiKeysTableData> {
       rpd: rpd ?? this.rpd,
       tokenLimit: tokenLimit ?? this.tokenLimit,
       enabled: enabled ?? this.enabled,
-      retryCount: retryCount ?? this.retryCount,
-      nextAvailableTime: nextAvailableTime ?? this.nextAvailableTime,
-      lastStatusCode: lastStatusCode ?? this.lastStatusCode,
-      todayUsedTokens: todayUsedTokens ?? this.todayUsedTokens,
-      requestToday: requestToday ?? this.requestToday,
-      resetTime: resetTime ?? this.resetTime,
+      invokeData: invokeData ?? this.invokeData,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2210,23 +1967,8 @@ class ApiKeysTableCompanion extends UpdateCompanion<ApiKeysTableData> {
     if (enabled.present) {
       map['enabled'] = Variable<bool>(enabled.value);
     }
-    if (retryCount.present) {
-      map['retry_count'] = Variable<int>(retryCount.value);
-    }
-    if (nextAvailableTime.present) {
-      map['next_available_time'] = Variable<DateTime>(nextAvailableTime.value);
-    }
-    if (lastStatusCode.present) {
-      map['last_status_code'] = Variable<int>(lastStatusCode.value);
-    }
-    if (todayUsedTokens.present) {
-      map['today_used_tokens'] = Variable<int>(todayUsedTokens.value);
-    }
-    if (requestToday.present) {
-      map['request_today'] = Variable<int>(requestToday.value);
-    }
-    if (resetTime.present) {
-      map['reset_time'] = Variable<DateTime>(resetTime.value);
+    if (invokeData.present) {
+      map['invoke_data'] = Variable<String>(invokeData.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -2245,12 +1987,7 @@ class ApiKeysTableCompanion extends UpdateCompanion<ApiKeysTableData> {
           ..write('rpd: $rpd, ')
           ..write('tokenLimit: $tokenLimit, ')
           ..write('enabled: $enabled, ')
-          ..write('retryCount: $retryCount, ')
-          ..write('nextAvailableTime: $nextAvailableTime, ')
-          ..write('lastStatusCode: $lastStatusCode, ')
-          ..write('todayUsedTokens: $todayUsedTokens, ')
-          ..write('requestToday: $requestToday, ')
-          ..write('resetTime: $resetTime, ')
+          ..write('invokeData: $invokeData, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4115,12 +3852,7 @@ typedef $$ApiKeysTableTableCreateCompanionBuilder =
       Value<int?> rpd,
       Value<int?> tokenLimit,
       Value<bool> enabled,
-      Value<int> retryCount,
-      Value<DateTime?> nextAvailableTime,
-      Value<int?> lastStatusCode,
-      Value<int> todayUsedTokens,
-      Value<int> requestToday,
-      Value<DateTime?> resetTime,
+      Value<String?> invokeData,
       Value<int> rowid,
     });
 typedef $$ApiKeysTableTableUpdateCompanionBuilder =
@@ -4133,12 +3865,7 @@ typedef $$ApiKeysTableTableUpdateCompanionBuilder =
       Value<int?> rpd,
       Value<int?> tokenLimit,
       Value<bool> enabled,
-      Value<int> retryCount,
-      Value<DateTime?> nextAvailableTime,
-      Value<int?> lastStatusCode,
-      Value<int> todayUsedTokens,
-      Value<int> requestToday,
-      Value<DateTime?> resetTime,
+      Value<String?> invokeData,
       Value<int> rowid,
     });
 
@@ -4231,33 +3958,8 @@ class $$ApiKeysTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get retryCount => $composableBuilder(
-    column: $table.retryCount,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get nextAvailableTime => $composableBuilder(
-    column: $table.nextAvailableTime,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get lastStatusCode => $composableBuilder(
-    column: $table.lastStatusCode,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get todayUsedTokens => $composableBuilder(
-    column: $table.todayUsedTokens,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get requestToday => $composableBuilder(
-    column: $table.requestToday,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get resetTime => $composableBuilder(
-    column: $table.resetTime,
+  ColumnFilters<String> get invokeData => $composableBuilder(
+    column: $table.invokeData,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4354,33 +4056,8 @@ class $$ApiKeysTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get retryCount => $composableBuilder(
-    column: $table.retryCount,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get nextAvailableTime => $composableBuilder(
-    column: $table.nextAvailableTime,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get lastStatusCode => $composableBuilder(
-    column: $table.lastStatusCode,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get todayUsedTokens => $composableBuilder(
-    column: $table.todayUsedTokens,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get requestToday => $composableBuilder(
-    column: $table.requestToday,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get resetTime => $composableBuilder(
-    column: $table.resetTime,
+  ColumnOrderings<String> get invokeData => $composableBuilder(
+    column: $table.invokeData,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4440,33 +4117,10 @@ class $$ApiKeysTableTableAnnotationComposer
   GeneratedColumn<bool> get enabled =>
       $composableBuilder(column: $table.enabled, builder: (column) => column);
 
-  GeneratedColumn<int> get retryCount => $composableBuilder(
-    column: $table.retryCount,
+  GeneratedColumn<String> get invokeData => $composableBuilder(
+    column: $table.invokeData,
     builder: (column) => column,
   );
-
-  GeneratedColumn<DateTime> get nextAvailableTime => $composableBuilder(
-    column: $table.nextAvailableTime,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get lastStatusCode => $composableBuilder(
-    column: $table.lastStatusCode,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get todayUsedTokens => $composableBuilder(
-    column: $table.todayUsedTokens,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get requestToday => $composableBuilder(
-    column: $table.requestToday,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<DateTime> get resetTime =>
-      $composableBuilder(column: $table.resetTime, builder: (column) => column);
 
   $$ApiProvidersTableAnnotationComposer get providerId {
     final $$ApiProvidersTableAnnotationComposer composer = $composerBuilder(
@@ -4553,12 +4207,7 @@ class $$ApiKeysTableTableTableManager
                 Value<int?> rpd = const Value.absent(),
                 Value<int?> tokenLimit = const Value.absent(),
                 Value<bool> enabled = const Value.absent(),
-                Value<int> retryCount = const Value.absent(),
-                Value<DateTime?> nextAvailableTime = const Value.absent(),
-                Value<int?> lastStatusCode = const Value.absent(),
-                Value<int> todayUsedTokens = const Value.absent(),
-                Value<int> requestToday = const Value.absent(),
-                Value<DateTime?> resetTime = const Value.absent(),
+                Value<String?> invokeData = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ApiKeysTableCompanion(
                 id: id,
@@ -4569,12 +4218,7 @@ class $$ApiKeysTableTableTableManager
                 rpd: rpd,
                 tokenLimit: tokenLimit,
                 enabled: enabled,
-                retryCount: retryCount,
-                nextAvailableTime: nextAvailableTime,
-                lastStatusCode: lastStatusCode,
-                todayUsedTokens: todayUsedTokens,
-                requestToday: requestToday,
-                resetTime: resetTime,
+                invokeData: invokeData,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4587,12 +4231,7 @@ class $$ApiKeysTableTableTableManager
                 Value<int?> rpd = const Value.absent(),
                 Value<int?> tokenLimit = const Value.absent(),
                 Value<bool> enabled = const Value.absent(),
-                Value<int> retryCount = const Value.absent(),
-                Value<DateTime?> nextAvailableTime = const Value.absent(),
-                Value<int?> lastStatusCode = const Value.absent(),
-                Value<int> todayUsedTokens = const Value.absent(),
-                Value<int> requestToday = const Value.absent(),
-                Value<DateTime?> resetTime = const Value.absent(),
+                Value<String?> invokeData = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ApiKeysTableCompanion.insert(
                 id: id,
@@ -4603,12 +4242,7 @@ class $$ApiKeysTableTableTableManager
                 rpd: rpd,
                 tokenLimit: tokenLimit,
                 enabled: enabled,
-                retryCount: retryCount,
-                nextAvailableTime: nextAvailableTime,
-                lastStatusCode: lastStatusCode,
-                todayUsedTokens: todayUsedTokens,
-                requestToday: requestToday,
-                resetTime: resetTime,
+                invokeData: invokeData,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

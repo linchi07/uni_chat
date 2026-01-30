@@ -23,6 +23,7 @@ class MacOSSpecificsSetting {
 class WindowsSpecificsSetting {
   static Future<void> setWindowStyle() async {
     appWindow.minSize = const Size(640, 480);
+    appWindow.title = "UniChat";
   }
 }
 
