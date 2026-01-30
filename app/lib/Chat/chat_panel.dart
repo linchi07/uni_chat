@@ -9,8 +9,10 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
+import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Chat/chat_sidebar.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
+import 'package:uni_chat/api_configs/api_service.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
@@ -884,6 +886,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   }
 
   int _checkedTimes = 0;
+  late Agent? agent;
   @override
   Widget build(BuildContext context) {
     chatState = ref.watch(chatStateProvider);
@@ -900,6 +903,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       });
     }
     theme = ref.watch(themeProvider);
+    agent = ref.watch(agentProvider);
     late Widget childPanel;
     if (isDroppingFiles) {
       childPanel = Container(
@@ -924,31 +928,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       childPanel = Padding(
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
         child: _buildChatPanel(globalLoading),
-      );
-    }
-    if (chatState.error?.isNotEmpty ?? false) {
-      childPanel = Column(
-        children: [
-          Container(
-            margin: const EdgeInsets.all(8),
-            width: double.infinity,
-            height: 35,
-            decoration: BoxDecoration(
-              color: Colors.red[100],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                chatState.error!,
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          childPanel,
-        ],
       );
     }
     return NativeDropRegion(
@@ -1078,6 +1057,25 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (chatState.error?.isNotEmpty ?? false)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            width: double.infinity,
+            height: 35,
+            decoration: BoxDecoration(
+              color: Colors.red[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                chatState.error!,
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
         if (chatState.uploadedFilesStash.isNotEmpty) _buildAttachmentPreview(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2),
@@ -1114,11 +1112,41 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               tooltip: 'Attach File',
             ),
             const Spacer(),
+            if (agent != null)
+              ModelSelect.buildPreview(
+                context,
+                26,
+                EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                agent!.client.provider,
+                agent!.client.model,
+                () {
+                  OverlayPortalService.showDialog(
+                    context,
+                    height: 500,
+                    width: 450,
+                    child: ModelSelect(
+                      theme: theme,
+                      onSelect: (p, m) async {
+                        agent?.client = await ApiClient.fromProviderAndModel(
+                          p,
+                          m,
+                        );
+                        ref.read(agentProvider.notifier).state = agent
+                            ?.copyWith();
+                        await OverlayPortalService.hide(context);
+                      },
+                    ),
+                    backGroundColor: theme.zeroGradeColor,
+                  );
+                },
+                theme,
+              ),
+            const SizedBox(width: 4),
             if (widget.cancelCallback != null)
               Container(
                 height: 35,
                 width: 35,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
                 child: Material(
                   clipBehavior: Clip.hardEdge,
                   shape: RoundedRectangleBorder(
@@ -1136,45 +1164,48 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                   ),
                 ),
               ),
-            SizedBox(
-              height: 35,
-              width: 35,
-              child: Material(
-                clipBehavior: Clip.hardEdge,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                color: (isSendButtonLoading || !chatState.isReady)
-                    ? Colors.grey[600]
-                    : theme.primaryColor,
-                child: InkWell(
-                  splashColor: Colors.grey,
-                  onTap: (isSendButtonLoading || !chatState.isReady)
-                      ? null
-                      : _sendMessage,
-                  child: isSendButtonLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: Padding(
-                            padding: EdgeInsets.all(7.0),
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 3,
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: SizedBox(
+                height: 35,
+                width: 35,
+                child: Material(
+                  clipBehavior: Clip.hardEdge,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  color: (isSendButtonLoading || !chatState.isReady)
+                      ? Colors.grey[600]
+                      : theme.primaryColor,
+                  child: InkWell(
+                    splashColor: Colors.grey,
+                    onTap: (isSendButtonLoading || !chatState.isReady)
+                        ? null
+                        : _sendMessage,
+                    child: isSendButtonLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: Padding(
+                              padding: EdgeInsets.all(7.0),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 3,
+                              ),
                             ),
+                          )
+                        : (chatState.isReady)
+                        ? const Icon(
+                            Icons.arrow_forward_sharp,
+                            color: Colors.white,
+                            size: 20,
+                          )
+                        : const Icon(
+                            Icons.do_not_disturb_alt_sharp,
+                            color: Colors.white,
+                            size: 20,
                           ),
-                        )
-                      : (chatState.isReady)
-                      ? const Icon(
-                          Icons.arrow_forward_sharp,
-                          color: Colors.white,
-                          size: 20,
-                        )
-                      : const Icon(
-                          Icons.do_not_disturb_alt_sharp,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+                  ),
                 ),
               ),
             ),
@@ -1342,7 +1373,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 ),
               ),
             ),
-
           // 关闭按钮
           Positioned(
             top: 0,

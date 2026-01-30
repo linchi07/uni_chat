@@ -715,11 +715,12 @@ class PersonaEditorContent extends ConsumerStatefulWidget {
     required this.onSaveReturn,
     this.onBack,
     required this.persona,
+    this.isSetup = false,
   });
   final dynamic onSaveReturn;
   final void Function()? onBack;
   final Persona persona;
-
+  final bool isSetup;
   @override
   ConsumerState<PersonaEditorContent> createState() =>
       _PersonaEditorContentState();
@@ -907,27 +908,31 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
     });
     return Material(
       borderRadius: BorderRadius.circular(8),
-      color: theme.zeroGradeColor,
+      color: (widget.isSetup) ? theme.secondGradeColor : theme.zeroGradeColor,
       clipBehavior: Clip.hardEdge,
-      elevation: 4,
+      elevation: (widget.isSetup) ? 0 : 4,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 10),
-              child: Row(
-                children: [
-                  Text(
-                    S.of(context).edit_persona,
-                    style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-                  ),
-                  Spacer(),
-                  ShowDocButton(),
-                ],
+            if (!widget.isSetup)
+              Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: Row(
+                  children: [
+                    Text(
+                      S.of(context).edit_persona,
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Spacer(),
+                    ShowDocButton(),
+                  ],
+                ),
               ),
-            ),
             const SizedBox(height: 16),
             Expanded(
               child: Row(

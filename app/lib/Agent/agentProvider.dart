@@ -5,14 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
-import 'package:uni_chat/RAG/rag_provider.dart';
-import 'package:uni_chat/llm_provider/api_service.dart';
+import 'package:uni_chat/api_configs/api_service.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
 
 import '../Chat/chat_models.dart';
-import '../llm_provider/api_service_provider.dart';
-import '../llm_provider/pre_built_models.dart';
+import '../api_configs/api_models.dart';
 import '../utils/file_utils.dart';
 
 class ModelSpecifics {
@@ -74,25 +72,28 @@ class Agent {
   Agent({
     required this.id,
     required this.name,
-    required this.model,
     this.systemPrompt,
     required this.modelSpecifics,
     required this.memoryBaseIds,
+    required this.client,
   });
   final String id;
   final String name;
   final bool enableUIQL = false;
   final String? systemPrompt;
   final ModelSpecifics modelSpecifics;
-  Set<ApiAbility> get abilities => model.abilities;
   final List<String> memoryBaseIds;
-  LLMApiService model;
+  ApiClient client;
 
-  factory Agent.fromAgentData(AgentData agentData, LLMApiService model) {
+  static Future<Agent> fromAgentData(AgentData agentData) async {
+    var client = await ApiClient.fromFactory(
+      agentData.providerId,
+      agentData.modelId,
+    );
     return Agent(
       id: agentData.id,
       name: agentData.name,
-      model: model,
+      client: client,
       modelSpecifics: agentData.modelSpecifics,
       systemPrompt: agentData.systemPrompt,
       memoryBaseIds: agentData.knowledgeBases,
@@ -103,7 +104,7 @@ class Agent {
     Ref? ref,
     String? id,
     String? name,
-    LLMApiService? model,
+    ApiClient? client,
     ModelSpecifics? modelSpecifics,
     String? systemPrompt,
     List<String>? memoryBaseIds,
@@ -111,7 +112,7 @@ class Agent {
     return Agent(
       id: id ?? this.id,
       name: name ?? this.name,
-      model: model ?? this.model,
+      client: client ?? this.client,
       modelSpecifics: modelSpecifics ?? this.modelSpecifics,
       systemPrompt: systemPrompt ?? this.systemPrompt,
       memoryBaseIds: memoryBaseIds ?? this.memoryBaseIds,
@@ -144,22 +145,9 @@ class AgentProvider extends StateNotifier<Agent?> {
 
   void loadDefaultAgent() async {
     var agentData = await DatabaseService.instance.loadDefaultAgent();
-    if (agentData != null) {
-      // 4. Create the API service
-      final modelService = await ApiServiceProvider.instance.createApiService(
-        agentData.modelProviderConfigureId,
-      );
-      if (modelService != null) {
-        state = Agent.fromAgentData(agentData, modelService);
-      } else {
-        ref
-            .read(chatStateProvider.notifier)
-            .stateCopyWith(
-              error: 'Failed to find Model Service for the agent.',
-              isReady: false,
-            );
-      }
-    } else {
+    try {
+      state = await Agent.fromAgentData(agentData!);
+    } catch (e) {
       ref
           .read(chatStateProvider.notifier)
           .stateCopyWith(error: 'Failed to find agent.', isReady: false);
@@ -171,22 +159,9 @@ class AgentProvider extends StateNotifier<Agent?> {
       return;
     }
     var agentData = await DatabaseService.instance.getAgent(id);
-    if (agentData != null) {
-      // 4. Create the API service
-      final modelService = await ApiServiceProvider.instance.createApiService(
-        agentData.modelProviderConfigureId,
-      );
-      if (modelService == null) {
-        ref
-            .read(chatStateProvider.notifier)
-            .stateCopyWith(
-              error: 'Failed to find Model Service for the agent.',
-              isReady: false,
-            );
-      } else {
-        state = Agent.fromAgentData(agentData, modelService);
-      }
-    } else {
+    try {
+      state = await Agent.fromAgentData(agentData!);
+    } catch (e) {
       ref
           .read(chatStateProvider.notifier)
           .stateCopyWith(error: 'Failed to find agent.', isReady: false);
@@ -203,11 +178,9 @@ class AgentProvider extends StateNotifier<Agent?> {
   final Ref ref;
   Future<String?> fileUpload(File file, String mime) async {
     if (state != null) {
-      if (state!.model.abilities.contains(ApiAbility.supportsFilesApi)) {
-        var r = await state!.model.fileUpload(
-          file, // 使用拷贝后的文件
-          mime,
-        );
+      if ( /*state!.client.abilities.contains(ApiAbility.supportsFilesApi)*/ false) {
+        // 暂时关闭文件上传功能
+        var r = await state!.client.fileUpload(file: file, mime: mime);
         if (r == null) {
           return null;
         }
@@ -226,6 +199,7 @@ class AgentProvider extends StateNotifier<Agent?> {
   ) async* {
     if (state != null) {
       var fm = await formatMessage(history, usrMessage);
+      /*
       if (state!.memoryBaseIds.isNotEmpty) {
         var rgp = ref.read(ragProvider);
         if (rgp.loadedAgentId != state!.id) {
@@ -234,8 +208,11 @@ class AgentProvider extends StateNotifier<Agent?> {
         if (usrMessage != null) {
           fm.ragMessages = await rgp.onUserNewMessageCall(usrMessage);
         }
-      }
-      yield* state!.model.getStreamingResponse(fm);
+      }*/
+      yield* state!.client.getStreamingResponse(
+        modelRequestContent: fm,
+        agentId: state!.id,
+      );
     } else {
       throw Exception("Agent not initialized");
     }
@@ -396,14 +373,15 @@ class AgentProvider extends StateNotifier<Agent?> {
                   break;
                 case FileTypeDefine.image:
                   //当模型不支持图片识别的时候直接忽略图片
-                  if (!state!.model.modelAbilities.contains(
-                    ModelAbility.visualUnderStanding,
+                  if (!state!.client.model.abilities.contains(
+                    ModelAbility.visual,
                   )) {
                     continue;
                   }
-                  if (!state!.model.abilities.contains(
+                  if ( /*!state!.client.abilities.contains(
                     ApiAbility.supportsFilesApi,
-                  )) {
+                  )*/ true) {
+                    // 暂时fallback
                     //当不支持文件API的时候我们必须一个个上传
                     if (await (await attachedFile.getFile()).exists()) {
                       var base64 = base64Encode(
@@ -421,7 +399,8 @@ class AgentProvider extends StateNotifier<Agent?> {
                     }
                     break;
                   }
-                  var f = attachedFile.providerInfo[state!.model.providerName];
+                  var f =
+                      attachedFile.providerInfo[state!.client.provider.name];
                   if (f == null ||
                       !await (await attachedFile.getFile()).exists()) {
                     break;
@@ -429,7 +408,7 @@ class AgentProvider extends StateNotifier<Agent?> {
                   late String fid;
                   if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
                       !attachedFile.providerInfo.containsKey(
-                        state!.model.providerName,
+                        state!.client.provider.id,
                       )) {
                     var id = await fileUpload(
                       await attachedFile.getFile(),
@@ -454,9 +433,10 @@ class AgentProvider extends StateNotifier<Agent?> {
                   );
                   break;
                 case FileTypeDefine.pdf:
-                  if (!state!.model.abilities.contains(
+                  if ( /*!state!.model.abilities.contains(
                     ApiAbility.supportsFilesApi,
-                  )) {
+                  )*/ true) {
+                    // 暂时fallback
                     //当不支持文件API的时候我们必须一个个上传
                     if (await (await attachedFile.getFile()).exists()) {
                       var base64 = base64Encode(
@@ -474,7 +454,7 @@ class AgentProvider extends StateNotifier<Agent?> {
                     }
                     break;
                   }
-                  var f = attachedFile.providerInfo[state!.model.providerName];
+                  var f = attachedFile.providerInfo[state!.client.provider.id];
                   if (f == null ||
                       !await (await attachedFile.getFile()).exists()) {
                     break;
@@ -482,11 +462,11 @@ class AgentProvider extends StateNotifier<Agent?> {
                   late String fid;
                   if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
                       !attachedFile.providerInfo.containsKey(
-                        state!.model.providerName,
+                        state!.client.provider.id,
                       )) {
                     if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
                         !attachedFile.providerInfo.containsKey(
-                          state!.model.providerName,
+                          state!.client.provider.id,
                         )) {
                       var id = await fileUpload(
                         await attachedFile.getFile(),

@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/settings_page/about.dart';
-import 'package:uni_chat/settings_page/model_settings.dart';
 import 'package:uni_chat/utils/overlays.dart';
 
 import '../generated/l10n.dart';
 import '../main.dart';
 import '../theme_manager.dart';
 import '../utils/prebuilt_widgets.dart';
-import 'api_settings.dart';
+import 'api_configure.dart' show ApiSettings;
 
 /// “账户”设置页面的占位符
-class _GeneralSettings extends StatelessWidget {
+class _GeneralSettings extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: const EdgeInsets.all(24.0),
       children: [
@@ -26,6 +25,22 @@ class _GeneralSettings extends StatelessWidget {
         Text(S.of(context).language_settings, style: TextStyle(fontSize: 18)),
         const SizedBox(height: 20),
         LanguageSwitcher(),
+        const SizedBox(height: 20),
+        StdDropDown(
+          height: 55,
+          itemBuilder: (c, index, onTap) {
+            return StdListTile(
+              title: Text(ThemeManager.themes[index].name),
+              onTap: () {
+                ref
+                    .read(themeProvider.notifier)
+                    .updateTheme(theme: ThemeManager.themes[index].theme);
+                onTap(index);
+              },
+            );
+          },
+          itemCount: ThemeManager.themes.length,
+        ),
         const SizedBox(height: 20),
         Text(
           S.of(context).language_switch_restart_note,
@@ -109,17 +124,16 @@ class _SettingItem {
   });
 }
 
-class SettingsMenu extends ConsumerStatefulWidget {
-  // onClose 回调函数，用于在动画结束后通知父组件移除 OverlayEntry
-  final VoidCallback onClose;
+final settingsMenuKey = GlobalKey<SettingsMenuState>();
 
-  const SettingsMenu({super.key, required this.onClose});
+class SettingsMenu extends ConsumerStatefulWidget {
+  const SettingsMenu({super.key});
 
   @override
-  ConsumerState<SettingsMenu> createState() => _SettingsMenuState();
+  ConsumerState<SettingsMenu> createState() => SettingsMenuState();
 }
 
-class _SettingsMenuState extends ConsumerState<SettingsMenu>
+class SettingsMenuState extends ConsumerState<SettingsMenu>
     with SingleTickerProviderStateMixin {
   // 用于驱动进入和退出动画的控制器
   late final AnimationController _animationController;
@@ -127,7 +141,7 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
   late final Animation<double> _fadeAnimation;
 
   // 标记当前是否为最大化状态
-  bool _isMaximized = false;
+  bool isMaximized = false;
   bool _forceMaximize = false;
   int _selectedIndex = 0; // 新增：追踪当前选中的索引，默认为0
 
@@ -158,6 +172,12 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
       end: 1.0,
     ).animate(curvedAnimation);
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      OverlayWrapper.registerOnClose(context, () async {
+        await _animationController.reverse();
+        return true;
+      });
+    });
     // 启动进入动画
     _animationController.forward();
   }
@@ -171,20 +191,37 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
   // 处理关闭事件：先反向播放动画，动画结束后再调用父级的onClose方法
   void _handleClose() {
     _animationController.reverse().then((_) {
-      widget.onClose();
+      OverlayWrapper.removeOverlay(context);
     });
   }
 
   // 切换最大化/还原状态
-  void _toggleMaximize() {
+  void toggleMaximize() {
     setState(() {
-      _isMaximized = !_isMaximized;
+      isMaximized = !isMaximized;
     });
   }
 
   void _onSelectItem(int index) {
     setState(() {
       _selectedIndex = index;
+    });
+  }
+
+  Widget? _insertPage;
+  void Function()? onPagePop;
+  void insertPage(Widget page, {void Function()? onPop}) {
+    setState(() {
+      onPagePop = onPop;
+      _insertPage = page;
+    });
+  }
+
+  void popPage() {
+    onPagePop?.call();
+    setState(() {
+      onPagePop = null;
+      _insertPage = null;
     });
   }
 
@@ -196,13 +233,15 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
       _SettingItem(
         icon: Icons.network_check,
         title: S.of(context).api_settings,
-        contentWidget: ApiSettingsView(),
+        contentWidget: ApiSettings(),
       ),
+      /*
       _SettingItem(
         icon: Icons.model_training,
         title: S.of(context).model_management,
         contentWidget: ModelSettings(),
       ),
+       */
       _SettingItem(
         icon: Icons.settings_outlined,
         title: S.of(context).general_settings,
@@ -219,20 +258,20 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
     if (PlatForm().isMobile ||
         screenSize.height <= 800 ||
         screenSize.width <= 600) {
-      _isMaximized = true;
+      isMaximized = true;
       _forceMaximize = true;
     } else {
       _forceMaximize = false;
     }
     theme = ref.watch(themeProvider);
     // 根据是否最大化，计算菜单的目标尺寸
-    final double targetWidth = _isMaximized
+    final double targetWidth = isMaximized
         ? screenSize.width - 60
         : screenSize.width * 0.65;
-    final double targetHeight = _isMaximized
+    final double targetHeight = isMaximized
         ? screenSize.height - 48
         : screenSize.height * 0.75;
-    final double targetBorderRadius = _isMaximized ? 10 : 14;
+    final double targetBorderRadius = isMaximized ? 10 : 14;
 
     // FadeTransition 和 ScaleTransition 组合实现进入和退出动画
     return FadeTransition(
@@ -258,87 +297,104 @@ class _SettingsMenuState extends ConsumerState<SettingsMenu>
             ),
             // 使用ClipRRect来确保子内容不会溢出圆角
             clipBehavior: Clip.hardEdge,
-            //创建的overlay缺少了很多的属性，所以这里创建了一个新的Material
-            child: OverlayPortalScope(
-              child: Material(
-                color: theme.secondGradeColor,
-                child: Column(
-                  children: [
-                    // 标题栏
-                    Row(
+            child: Material(
+              color: theme.secondGradeColor,
+              child: Column(
+                children: [
+                  // 标题栏
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        if (!_forceMaximize)
-                          IconButton(
-                            tooltip: _isMaximized ? '还原' : '最大化',
-                            icon: Icon(
-                              _isMaximized
-                                  ? Icons.close_fullscreen
-                                  : Icons.open_in_full_sharp,
+                        if (_insertPage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8.0),
+                            child: StdIconButton(
+                              tooltip: '返回',
+                              icon: Icons.arrow_back_ios_new,
+                              onPressed: popPage,
                             ),
-                            onPressed: _toggleMaximize,
                           ),
-                        IconButton(
+                        Expanded(child: const SizedBox()),
+                        if (!_forceMaximize)
+                          StdIconButton(
+                            tooltip: isMaximized ? '还原' : '最大化',
+                            icon: isMaximized
+                                ? Icons.close_fullscreen
+                                : Icons.open_in_full_sharp,
+                            onPressed: toggleMaximize,
+                          ),
+                        StdIconButton(
                           tooltip: '关闭',
-                          icon: const Icon(Icons.close),
+                          icon: Icons.close,
                           onPressed: _handleClose,
                         ),
                       ],
                     ),
-                    // 内容区
-                    Expanded(
-                      child: Row(
-                        children: [
-                          // 左侧导航栏
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                  // 内容区
+                  Expanded(
+                    child: (_insertPage != null)
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: _insertPage!,
+                          )
+                        : Row(
                             children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0,
-                                ),
-                                child: Text(
-                                  S.of(context).preferences,
-                                  style: TextStyle(
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: SizedBox(
-                                  width: 230,
-                                  child: ClipRect(
-                                    child: ListView.builder(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16.0,
-                                        horizontal: 8.0,
+                              // 左侧导航栏
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0,
+                                    ),
+                                    child: Text(
+                                      S.of(context).preferences,
+                                      style: TextStyle(
+                                        fontSize: 30,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      itemCount: settingItems.length,
-                                      itemBuilder: (context, index) {
-                                        final item = settingItems[index];
-                                        return StdListTile(
-                                          leading: Icon(item.icon),
-                                          title: Text(item.title),
-                                          isSelected: _selectedIndex == index,
-                                          onTap: () => _onSelectItem(index),
-                                        );
-                                      },
                                     ),
                                   ),
-                                ),
+                                  Expanded(
+                                    child: SizedBox(
+                                      width: 230,
+                                      child: ClipRect(
+                                        child: ListView.builder(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16.0,
+                                            horizontal: 8.0,
+                                          ),
+                                          itemCount: settingItems.length,
+                                          itemBuilder: (context, index) {
+                                            final item = settingItems[index];
+                                            return StdListTile(
+                                              leading: Icon(item.icon),
+                                              title: Text(item.title),
+                                              isSelected:
+                                                  _selectedIndex == index,
+                                              onTap: () => _onSelectItem(index),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // 右侧内容区
+                              Expanded(
+                                child:
+                                    settingItems[_selectedIndex].contentWidget,
                               ),
                             ],
                           ),
-                          // 右侧内容区
-                          Expanded(
-                            child: settingItems[_selectedIndex].contentWidget,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

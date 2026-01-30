@@ -1,3 +1,4 @@
+/*
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -8,7 +9,6 @@ import 'package:flutter_riverpod/src/consumer.dart';
 import 'package:http/http.dart' as http;
 import 'package:uni_chat/Chat/panels/basic_pannel.dart';
 import 'package:uni_chat/Chat/panels/panel_data.dart';
-import 'package:uni_chat/llm_provider/image_gen.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 
 import '../../../generated/l10n.dart';
@@ -388,3 +388,4 @@ class _ImagePanelContentState extends ConsumerState<_ImagePanelContent> {
     );
   }
 }
+*/

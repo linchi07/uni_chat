@@ -10,14 +10,12 @@ import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_panel.dart';
 import 'package:uni_chat/Chat/inline_dynamic_fc_parser.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
-import 'package:uni_chat/RAG/rag_provider.dart';
-import 'package:uni_chat/llm_provider/api_service.dart';
 import 'package:uni_chat/promps.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uuid/uuid.dart';
 
-import '../llm_provider/pre_built_models.dart';
+import '../api_configs/api_models.dart';
 import 'chat_models.dart';
 
 const _uuid = Uuid();
@@ -323,12 +321,13 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     if (ChatFile.imageExtensions.contains(
           p.extension(file.path).toLowerCase(),
         ) &&
-        agentNotifier.state!.model.modelAbilities.contains(
-          ModelAbility.visualUnderStanding,
+        agentNotifier.state!.client.model.abilities.contains(
+          ModelAbility.visual,
         )) {
-      if (agentNotifier.state!.abilities.contains(
+      if ( /*agentNotifier.state!.abilities.contains(
         ApiAbility.supportsFilesApi,
-      )) {
+      )*/ false) {
+        // 暂时关闭
         r = await agentNotifier.fileUpload(
           file, // 使用拷贝后的文件
           ChatFile.getMimeType(p.extension(file.path)),
@@ -349,7 +348,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           file: ChatFile(
             name: id,
             providerInfo: {
-              agentNotifier.state!.model.providerName: (
+              agentNotifier.state!.client.provider.id: (
                 r,
                 DateTime.now().add(const Duration(hours: 47, minutes: 58)),
               ),
@@ -510,12 +509,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       ChatMessage? finalAiMessage;
       state = state.copyWith(isResponding: true);
       await for (final chunk in stream) {
-        try {
-          dynamicUIQLParser.parse(chunk.content);
-        } catch (e) {
-          dynamicUIQLParser.clear();
-          print("p $e");
-        }
         state.newContentBuffer.write(chunk.content);
         state.refreshFlag.value = !state.refreshFlag.value;
       }
@@ -531,12 +524,15 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       );
       lastMessage.childIds.add(finalAiMessage.id);
       lastMessage.enabledChild = (lastMessage.childIds.length - 1);
+      /*
       _ref
           .read(ragProvider)
           .onAgentRespondCompleteCallback(
             user: lastMessage,
             agent: finalAiMessage,
           );
+        
+       */
       state.messages[finalAiMessage.id] = finalAiMessage;
       state.messagesList.add(finalAiMessage);
       state = state.copyWith(isResponding: false);

@@ -96,9 +96,7 @@ class ChatMessage {
       id: map['id'],
       messageId: map['message_id'],
       parent: map['parent'],
-      childIds:
-          (jsonDecode(map['child_ids']) as List<dynamic>?)?.cast<String>() ??
-          [],
+      childIds: (map['child_ids'] as String?)?.split(",") ?? [],
       sender: MessageSenderExtension.fromString(
         (map['sender'] as String?) ?? 'internal',
       ),
@@ -115,7 +113,7 @@ class ChatMessage {
       'id': id,
       'message_id': messageId,
       'parent': parent,
-      'child_ids': jsonEncode(childIds),
+      'child_ids': childIds.join(','),
       'sender': sender.toString(),
       'content': content,
       'attachments': attachedFiles?.map((e) => e.toMap()).toList(),

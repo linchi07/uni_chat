@@ -72,88 +72,95 @@ class MainBanner extends ConsumerWidget {
       var endLength = activityLength + 200;
       var maxBannerWidgetWidth =
           (scWidth / 2 - max(startLength, endLength)) * 2;
-      stack = Stack(
-        alignment: Alignment.center,
-        children: [
-          //这个widget放在最下面，允许通过拖动顶部栏来移动窗口
-          MoveWindow(),
-          //为了允许文字也能被拖动，这里使用ignore pointer
-          Positioned(
-            left: 0,
-            top: 0,
-            height: 50,
-            width: startLength.toDouble(),
-            child: IgnorePointer(
-              ignoring: true,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(width: 21),
-                  if (scWidth >= 800)
-                    Text(
-                      S.of(context).title,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+      // this is essential
+      // the show desktop on windows will force the window to minimize to a unacceptable size (even if min window size is set)
+      // which throws constraint errors
+      if (scWidth <= 200) {
+        stack = SizedBox.shrink();
+      } else {
+        stack = Stack(
+          alignment: Alignment.center,
+          children: [
+            //这个widget放在最下面，允许通过拖动顶部栏来移动窗口
+            MoveWindow(),
+            //为了允许文字也能被拖动，这里使用ignore pointer
+            Positioned(
+              left: 0,
+              top: 0,
+              height: 50,
+              width: startLength.toDouble(),
+              child: IgnorePointer(
+                ignoring: true,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(width: 21),
+                    if (scWidth >= 800)
+                      Text(
+                        S.of(context).title,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              height: 50,
+              right: endLength.toDouble(),
+              width: max(maxBannerWidgetWidth, 10),
+              child: Center(child: bannerWidget ?? SizedBox()),
+            ),
+            Positioned(
+              right: 0,
+              height: 60,
+              child: Material(
+                color: Colors.transparent,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ActivityMonitor(maxWidth: activityLength.toDouble()),
+                    SizedBox(
+                      width: 50,
+                      height: 60,
+                      child: InkWell(
+                        child: MinimizeIcon(color: theme.primaryColor),
+                        onTap: () {
+                          appWindow.minimize();
+                        },
                       ),
                     ),
-                ],
+                    SizedBox(
+                      width: 50,
+                      height: 60,
+                      child: InkWell(
+                        child: MaximizeIcon(color: theme.primaryColor),
+                        onTap: () {
+                          appWindow.maximizeOrRestore();
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      width: 50,
+                      height: 60,
+                      child: InkWell(
+                        hoverColor: Colors.red,
+                        child: CloseIcon(color: theme.primaryColor),
+                        onTap: () {
+                          appWindow.close();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          Positioned(
-            height: 50,
-            right: endLength.toDouble(),
-            width: maxBannerWidgetWidth,
-            child: Center(child: bannerWidget ?? SizedBox()),
-          ),
-          Positioned(
-            right: 0,
-            height: 60,
-            child: Material(
-              color: Colors.transparent,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ActivityMonitor(maxWidth: activityLength.toDouble()),
-                  SizedBox(
-                    width: 50,
-                    height: 60,
-                    child: InkWell(
-                      child: MinimizeIcon(color: theme.primaryColor),
-                      onTap: () {
-                        appWindow.minimize();
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: 50,
-                    height: 60,
-                    child: InkWell(
-                      child: MaximizeIcon(color: theme.primaryColor),
-                      onTap: () {
-                        appWindow.maximize();
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: 50,
-                    height: 60,
-                    child: InkWell(
-                      hoverColor: Colors.red,
-                      child: CloseIcon(color: theme.primaryColor),
-                      onTap: () {
-                        appWindow.close();
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
+          ],
+        );
+      }
     } else {
       var startLength = (scWidth >= 800) ? 230 : 100;
       var maxBannerWidgetWidth = (scWidth / 2 - startLength) * 2;

@@ -13,6 +13,9 @@
       <excludeFolder url="file://$MODULE_DIR$/app/macos/Pods" />
       <excludeFolder url="file://$MODULE_DIR$/app/windows/flutter/ephemeral/.plugin_symlinks" />
       <excludeFolder url="file://$MODULE_DIR$/app/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/hotkey_manager-main/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/hotkey_manager-main/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/hotkey_manager-main/build" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

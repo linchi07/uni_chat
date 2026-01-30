@@ -40,15 +40,12 @@ class StdButton extends ConsumerWidget {
         onHover: (value) {},
         onTap: onPressed,
         onLongPress: onLongPress,
-        child: Padding(
-          padding: padding ?? const EdgeInsets.all(8.0),
-          child:
-              child ??
-              Text(
-                text ?? "",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: theme.getTextColor(c)),
-              ),
+        child: DefaultTextStyle(
+          style: TextStyle(color: theme.getTextColor(c)),
+          child: Padding(
+            padding: padding ?? const EdgeInsets.all(8.0),
+            child: child ?? Text(text ?? "", textAlign: TextAlign.center),
+          ),
         ),
       ),
     );
@@ -194,7 +191,7 @@ class StdTextFormField extends ConsumerWidget {
         ),
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return validateFailureText;
+            return validateFailureText ?? hintText;
           }
           return null;
         },
@@ -205,6 +202,69 @@ class StdTextFormField extends ConsumerWidget {
           onSubmitted?.call(controller.text);
         },
       ),
+    );
+  }
+}
+
+class StdTextFormFieldOutlined extends ConsumerWidget {
+  StdTextFormFieldOutlined({
+    super.key,
+    TextEditingController? controller,
+    this.hintText,
+    this.maxLines,
+    this.minLines,
+    this.validateFailureText,
+    this.showClearButton = false,
+    this.onChanged,
+    this.validator,
+    this.onSubmitted,
+    this.isExpanded,
+  }) {
+    this.controller = controller ?? TextEditingController();
+  }
+  late final TextEditingController controller;
+  final bool showClearButton;
+  final String? validateFailureText;
+  final String? hintText;
+  final int? maxLines;
+  final int? minLines;
+  final String? Function(String?)? validator;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final bool? isExpanded;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var theme = ref.watch(themeProvider);
+    return TextFormField(
+      maxLines: maxLines,
+      minLines: minLines,
+      controller: controller,
+      decoration: InputDecoration(
+        fillColor: theme.primaryColor,
+        focusColor: theme.primaryColor,
+        hintText: hintText,
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: theme.primaryColor, width: 2),
+        ),
+        border: const OutlineInputBorder(),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: theme.primaryColor, width: 1.0),
+        ),
+      ),
+      validator:
+          validator ??
+          (value) {
+            if (value == null || value.isEmpty) {
+              return validateFailureText ?? hintText;
+            }
+            return null;
+          },
+      onChanged: onChanged,
+      expands: isExpanded ?? false,
+      onEditingComplete: () {
+        //用on Submitted 一直出bug,只能这样的了
+        onSubmitted?.call(controller.text);
+      },
     );
   }
 }
@@ -242,6 +302,11 @@ class StdTextField extends ConsumerWidget {
         maxLines: maxLines,
         minLines: minLines,
         controller: controller,
+        onSubmitted: onSubmitted,
+        onTapOutside: (value) {
+          onSubmitted?.call(controller.text);
+          FocusScope.of(context).unfocus();
+        },
         decoration: InputDecoration(
           hintText: hintText,
           border: InputBorder.none,
@@ -253,10 +318,6 @@ class StdTextField extends ConsumerWidget {
             },
           ),
         ),
-        //用on Submitted 一直出bug,只能这样的了
-        onEditingComplete: () {
-          onSubmitted?.call(controller.text);
-        },
         onChanged: onChanged,
       ),
     );
@@ -293,9 +354,11 @@ class StdTextFieldOutlined extends ConsumerWidget {
       maxLines: (isExpanded ?? false) ? null : maxLines ?? 1,
       expands: isExpanded ?? false,
       onChanged: onChanged,
-      onEditingComplete: () {
+      onTapOutside: (focus) {
         onSubmitted?.call(controller.text);
+        FocusScope.of(context).unfocus();
       },
+      onSubmitted: onSubmitted,
       textAlignVertical: TextAlignVertical.top,
       decoration: InputDecoration(
         fillColor: theme.primaryColor,
@@ -681,11 +744,15 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
 class StdSearch extends StatefulWidget {
   const StdSearch({
     super.key,
+    this.isOutlined = false,
+    this.hintText,
     required this.searchItems,
     required this.itemBuilder,
     required this.noResultPage,
   });
   final List<String> searchItems;
+  final bool isOutlined;
+  final String? hintText;
   final Widget Function(BuildContext context, int index) itemBuilder;
   final Widget noResultPage;
   @override
@@ -718,33 +785,45 @@ class _StdSearchState extends State<StdSearch> {
     super.dispose();
   }
 
-  // 1. 新增的高级模糊匹配函数
-  /// 检查 [query] 中的字符是否按顺序出现在 [target] 中。
-  bool _fuzzyMatch(String query, String target) {
-    if (query.isEmpty) {
-      return true; // 空搜索默认为匹配所有
-    }
+  int _getFuzzyScore(String query, String target) {
+    if (query.isEmpty) return 0;
 
-    // 为了不区分大小写，统一转为小写
-    final lowerCaseQuery = query.toLowerCase();
-    final lowerCaseTarget = target.toLowerCase();
+    final q = query.toLowerCase();
+    final t = target.toLowerCase();
 
+    int score = 0;
     int queryIndex = 0;
     int targetIndex = 0;
+    int lastMatchIndex = -1;
 
-    // 当查询索引和目标索引都没有越界时循环
-    while (queryIndex < lowerCaseQuery.length &&
-        targetIndex < lowerCaseTarget.length) {
-      // 如果当前字符匹配，则移动查询索引以匹配下一个字符
-      if (lowerCaseQuery[queryIndex] == lowerCaseTarget[targetIndex]) {
+    while (queryIndex < q.length && targetIndex < t.length) {
+      if (q[queryIndex] == t[targetIndex]) {
+        // 基础分
+        score += 10;
+
+        // 连续匹配奖励：如果当前匹配紧跟上一个匹配
+        if (lastMatchIndex != -1 && targetIndex == lastMatchIndex + 1) {
+          score += 5;
+        }
+
+        // 靠前匹配奖励：如果是字符串开头匹配
+        if (targetIndex == 0) {
+          score += 8;
+        }
+
+        lastMatchIndex = targetIndex;
         queryIndex++;
       }
-      // 无论是否匹配，目标索引总是向前移动
       targetIndex++;
     }
 
-    // 如果查询索引等于查询字符串的长度，说明所有字符都按顺序找到了
-    return queryIndex == lowerCaseQuery.length;
+    // 如果没匹配完所有字符，返回 0
+    if (queryIndex != q.length) return 0;
+
+    // 长度惩罚：目标字符串越长，分数越低（密度越小）
+    score -= t.length;
+
+    return score;
   }
 
   void _filterItems(String query) {
@@ -755,16 +834,21 @@ class _StdSearchState extends State<StdSearch> {
       return;
     }
 
-    List<String> results = [];
+    // 存储带分数的结果
+    List<MapEntry<String, int>> scoredResults = [];
+
     for (var item in widget.searchItems) {
-      // 2. 使用新的模糊匹配函数替换 .contains()
-      if (_fuzzyMatch(query, item)) {
-        results.add(item);
+      int score = _getFuzzyScore(query, item);
+      if (score > 0) {
+        scoredResults.add(MapEntry(item, score));
       }
     }
 
+    // 根据分数从高到低排序
+    scoredResults.sort((a, b) => b.value.compareTo(a.value));
+
     setState(() {
-      _filteredItems = results;
+      _filteredItems = scoredResults.map((e) => e.key).toList();
     });
   }
 
@@ -774,13 +858,20 @@ class _StdSearchState extends State<StdSearch> {
       padding: const EdgeInsets.all(8.0),
       child: Column(
         children: [
-          // 3. 创建搜索框 UI
-          StdTextField(
-            controller: _searchController,
-            hintText: '搜索...',
-            // 每当文本改变时，调用过滤方法
-            onChanged: _filterItems,
-          ),
+          if (!widget.isOutlined)
+            StdTextField(
+              controller: _searchController,
+              hintText: widget.hintText,
+              // 每当文本改变时，调用过滤方法
+              onChanged: _filterItems,
+            ),
+          if (widget.isOutlined)
+            StdTextFieldOutlined(
+              controller: _searchController,
+              hintText: widget.hintText,
+              // 每当文本改变时，调用过滤方法
+              onChanged: _filterItems,
+            ),
           const SizedBox(height: 10),
 
           // 3. 创建用于显示结果的列表 UI
@@ -788,6 +879,7 @@ class _StdSearchState extends State<StdSearch> {
             child: (_filteredItems.isEmpty)
                 ? widget.noResultPage
                 : ListView.builder(
+                    prototypeItem: widget.itemBuilder(context, 0),
                     itemCount: _filteredItems.length,
                     itemBuilder: (context, index) {
                       //此处需要重新对应item的索引
@@ -1023,7 +1115,6 @@ class FileIcon extends StatelessWidget {
     } else {
       e = extension;
     }
-    ;
     return Container(
       height: size.height,
       width: size.width,
@@ -1043,6 +1134,37 @@ class FileIcon extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class StdIconButton extends StatelessWidget {
+  const StdIconButton({
+    super.key,
+    required this.icon,
+    required this.onPressed,
+    this.tooltip,
+    this.padding,
+    this.iconSize,
+    this.color,
+  });
+  final IconData icon;
+  final void Function() onPressed;
+  final EdgeInsets? padding;
+  final double? iconSize;
+  final Color? color;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      color: color,
+      padding: padding ?? EdgeInsets.all(4),
+      constraints: const BoxConstraints(),
+      onPressed: onPressed,
+      iconSize: iconSize ?? 20,
+      icon: Icon(icon),
     );
   }
 }

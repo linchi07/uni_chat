@@ -5,8 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
-import 'package:uni_chat/RAG/rag_settings.dart';
-import 'package:uni_chat/settings_page/api_settings.dart';
+import 'package:uni_chat/settings_page/api_configure.dart';
 import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/overlays.dart';
@@ -170,8 +169,6 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                                   "${S.of(context).got_it} (${S.of(context).long_press})",
                               onLongPress: () {
                                 OverlayPortalService.hide(context);
-                                ref.read(addApiState.notifier).state =
-                                    AddApiState();
                                 nextPage();
                               },
                             ),
@@ -197,18 +194,21 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            onPressed: () {
-              prevPage();
-            },
-            icon: Icon(Icons.arrow_back_ios_sharp),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  prevPage();
+                },
+                icon: Icon(Icons.arrow_back_ios_sharp),
+              ),
+            ],
           ),
           Expanded(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                SizedBox(
-                  width: 500,
+                Expanded(
                   child: StatefulBuilder(
                     builder: (context, setState) {
                       return Column(
@@ -242,7 +242,20 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                               text: S.of(context).next_step,
                               onPressed: () {
                                 if (_addPvChecked) {
-                                  nextPage();
+                                  OverlayPortalService.showDialog(
+                                    context,
+                                    width: 450,
+                                    height: 800,
+                                    child: ApiPresetSelect(
+                                      onClose: () async {
+                                        await OverlayPortalService.hide(
+                                          context,
+                                        );
+                                        nextPage();
+                                      },
+                                    ),
+                                    backGroundColor: theme.zeroGradeColor,
+                                  );
                                 }
                               },
                             ),
@@ -251,20 +264,19 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                     },
                   ),
                 ),
-                Container(
-                  width: 700,
-                  height: 600,
-                  clipBehavior: Clip.hardEdge,
-                  padding: const EdgeInsets.all(4),
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 20,
+                Expanded(
+                  child: Container(
+                    clipBehavior: Clip.hardEdge,
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 20,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: theme.zeroGradeColor,
+                    ),
+                    child: Webview(url: "http://localhost:3000/"),
                   ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: theme.zeroGradeColor,
-                  ),
-                  child: Webview(url: "http://localhost:3000/"),
                 ),
               ],
             ),
@@ -287,9 +299,13 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
             icon: Icon(Icons.arrow_back_ios_sharp),
           ),
           Expanded(
-            child: AddProvider(
-              exit: () {
-                nextPage();
+            child: ApiConfigurePage(
+              onExit: (f) {
+                if (!f) {
+                  prevPage();
+                } else {
+                  nextPage();
+                }
               },
             ),
           ),
@@ -314,8 +330,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                SizedBox(
-                  width: 500,
+                Expanded(
                   child: StatefulBuilder(
                     builder: (context, setState) {
                       return Column(
@@ -345,20 +360,20 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                     },
                   ),
                 ),
-                Container(
-                  width: 700,
-                  height: 600,
-                  clipBehavior: Clip.hardEdge,
-                  padding: const EdgeInsets.all(4),
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 20,
+                Expanded(
+                  child: Container(
+                    clipBehavior: Clip.hardEdge,
+                    padding: const EdgeInsets.all(4),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 20,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: theme.zeroGradeColor,
+                    ),
+                    child: Webview(url: "http://localhost:3000/"),
                   ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: theme.zeroGradeColor,
-                  ),
-                  child: Webview(url: "http://localhost:3000/"),
                 ),
               ],
             ),
@@ -377,10 +392,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
           Row(
             children: [
               IconButton(
-                onPressed: () {
-                  ref.read(addApiState.notifier).state = AddApiState();
-                  prevPage();
-                },
+                onPressed: () {},
                 icon: Icon(Icons.arrow_back_ios_sharp),
               ),
               const SizedBox(width: 5),
@@ -393,7 +405,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
           Expanded(
             child: AgentSetPage(
               onSaveReturn: () {
-                ref.read(ragEditState.notifier).newState();
+                //ref.read(ragEditState.notifier).newState();
                 nextPage();
               },
             ),
@@ -464,8 +476,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                SizedBox(
-                  width: 500,
+                Expanded(
                   child: StatefulBuilder(
                     builder: (context, setState) {
                       return Column(
@@ -528,9 +539,6 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
             children: [
               IconButton(
                 onPressed: () {
-                  ref.read(agentEditState.notifier).state = AgentEditState(
-                    id: Uuid().v7(),
-                  );
                   prevPage();
                 },
                 icon: Icon(Icons.arrow_back_ios_sharp),
@@ -544,6 +552,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
           ),
           Expanded(
             child: PersonaEditorContent(
+              isSetup: true,
               onSaveReturn: nextPage,
               persona: Persona(
                 id: Uuid().v7(),

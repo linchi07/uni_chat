@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Chat/session_selector.dart';
@@ -20,7 +21,6 @@ import 'package:uni_chat/top_banner.dart';
 import 'package:uni_chat/utils/overlays.dart';
 
 import 'Agent/agent_page.dart';
-import 'RAG/RAG_main_page.dart';
 import 'generated/l10n.dart';
 
 final Map<String, Locale> languages = const {
@@ -66,7 +66,8 @@ enum RunningPlatform { web, android, ios, ipadOS, macos, windows }
 
 class PlatForm {
   static final PlatForm _instance = PlatForm._internal();
-
+  bool get isWindows => platform == RunningPlatform.windows;
+  String? languageCode;
   // only enable haptic on ios and macos (since ipads don't have haptic engines)
   bool get enableHaptic =>
       platform == RunningPlatform.ios || platform == RunningPlatform.macos;
@@ -90,6 +91,7 @@ class UNIChat extends StatelessWidget {
   final bool isSetUp;
 
   // This widget is the root of your application.
+
   @override
   Widget build(BuildContext context) {
     Widget mainContent = MainCont(key: masterNavigatorKey);
@@ -119,6 +121,11 @@ class UNIChat extends StatelessWidget {
               builder: (context) {
                 if (locale != null) {
                   S.load(locale!);
+                  PlatForm().languageCode = locale!.languageCode;
+                } else {
+                  PlatForm().languageCode = Localizations.localeOf(
+                    context,
+                  ).languageCode;
                 }
                 if (PlatForm().platform == RunningPlatform.macos) {
                   mainContent = MacOSMenuBar(mainContent: mainContent);
@@ -131,20 +138,24 @@ class UNIChat extends StatelessWidget {
                 }
                 if (!isSetUp) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    var s = MediaQuery.of(context).size;
                     OverlayWrapper.showOverlay(
                       context,
-                      overlayContent: SizedBox(
-                        height: s.height,
-                        width: s.width,
-                        child: Padding(
-                          padding: const EdgeInsets.all(50.0),
-                          child: SetupAgent(),
-                        ),
+                      overlayContent: Padding(
+                        padding: const EdgeInsets.all(50.0),
+                        child: SetupAgent(),
                       ),
                       barrierDismissible: false,
                     );
                   });
+                }
+                if(PlatForm().isWindows){
+                  // windows will force the window to get too small when showing desktop even when window size is set
+                  // so we need to avoid the negative constrained error
+                  var mdof = MediaQuery.of(context);
+                  var s = mdof.size;
+                  if(s.height < 480|| s.width < 640) {
+                    return const SizedBox.shrink();
+                  }
                 }
                 return mainContent;
               },
@@ -166,34 +177,6 @@ class MacOSMenuBar extends ConsumerStatefulWidget {
 }
 
 class _MacOSMenuBarState extends ConsumerState<MacOSMenuBar> {
-  OverlayEntry? _overlayEntry;
-  void _showSettingsMenu(BuildContext context) {
-    if (_overlayEntry != null) {
-      return;
-    }
-    final overlay = Overlay.of(context);
-
-    _overlayEntry = OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          // 背景变暗和点击外部关闭
-          ModalBarrier(
-            color: Colors.black.withAlpha(80),
-            onDismiss: _hideSettingsMenu,
-          ),
-          SettingsMenu(onClose: _hideSettingsMenu),
-        ],
-      ),
-    );
-
-    overlay.insert(_overlayEntry!);
-  }
-
-  void _hideSettingsMenu() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-  }
-
   @override
   Widget build(BuildContext context) {
     return PlatformMenuBar(
@@ -210,7 +193,13 @@ class _MacOSMenuBarState extends ConsumerState<MacOSMenuBar> {
                     meta: true,
                   ),
                   onSelected: () {
-                    _showSettingsMenu(context);
+                    // make sure there's no settings menu open
+                    if (settingsMenuKey.currentState == null) {
+                      OverlayWrapper.showOverlay(
+                        context,
+                        overlayContent: SettingsMenu(key: settingsMenuKey),
+                      );
+                    }
                   },
                 ),
                 PlatformMenuItem(label: S.of(context).about, onSelected: () {}),
@@ -329,7 +318,8 @@ class MainContState extends ConsumerState<MainCont> {
       case Pages.agent:
         return AgentPage();
       case Pages.Rag:
-        return RagPage();
+        //return RagPage();
+        return Container();
     }
   }
 
@@ -397,7 +387,15 @@ class MainContState extends ConsumerState<MainCont> {
                       ),
                       Expanded(child: SizedBox()),
                       PersonaIndicator(),
-                      SettingsMenuButton(),
+                      IconButton(
+                        onPressed: () {
+                          OverlayWrapper.showOverlay(
+                            context,
+                            overlayContent: SettingsMenu(key: settingsMenuKey),
+                          );
+                        },
+                        icon: Icon(Icons.settings_outlined),
+                      ),
                       // to avoid the menu button being cut off
                       if (PlatForm().platform == RunningPlatform.ipadOS)
                         const SizedBox(height: 10),
@@ -420,51 +418,6 @@ class MainContState extends ConsumerState<MainCont> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class SettingsMenuButton extends StatefulWidget {
-  const SettingsMenuButton({super.key});
-
-  @override
-  State<SettingsMenuButton> createState() => _SettingsMenuButtonState();
-}
-
-class _SettingsMenuButtonState extends State<SettingsMenuButton> {
-  OverlayEntry? _overlayEntry;
-
-  void _showSettingsMenu(BuildContext context) {
-    final overlay = Overlay.of(context);
-
-    _overlayEntry = OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          // 背景变暗和点击外部关闭
-          ModalBarrier(
-            color: Colors.black.withAlpha(80),
-            onDismiss: _hideSettingsMenu,
-          ),
-          SettingsMenu(onClose: _hideSettingsMenu),
-        ],
-      ),
-    );
-
-    overlay.insert(_overlayEntry!);
-  }
-
-  void _hideSettingsMenu() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: () {
-        _showSettingsMenu(context);
-      },
-      icon: Icon(Icons.settings_outlined),
     );
   }
 }

@@ -2,50 +2,197 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show immutable;
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
-import 'package:uni_chat/llm_provider/pre_built_models.dart';
+import 'package:uni_chat/api_configs/api_database.dart';
+import 'package:uni_chat/api_configs/api_models.dart';
 
 import '../Chat/chat_models.dart';
+import 'api_key_resolver.dart';
 
-enum ApiAbility { supportsFilesApi }
-
-// 1. Abstract Base Class (Interface)
-abstract class LLMApiService {
-  abstract final Set<ApiAbility> abilities;
-  abstract final Set<ModelAbility> modelAbilities;
-  abstract final String apiKey;
-  abstract final String endPoint;
-  abstract final String modelName;
-  Future<String?> fileUpload(File file, String mime);
-  Stream<ChatResponse> getStreamingResponse(
-    ModelRequestContent modelRequestContent,
-  );
-  Future<List<List<double>>> embedding(List<String> input, int dims);
-  Future<String> imageCreation(String prompt, (int, int)? size);
-  Future<String> image2imageGeneration(String prompt, String base64Image);
-  abstract final String providerName;
+class _ApiResponse {
+  final ChatResponse? response;
+  final InvokeResult? invokeResult;
+  _ApiResponse({this.response, this.invokeResult});
 }
 
-// 2. Concrete Implementation for OpenAI
-class OpenAiApiService implements LLMApiService {
-  OpenAiApiService({
-    required this.apiKey,
-    required this.endPoint,
-    required this.abilities,
-    required this.modelName,
-    required this.providerName,
-    required this.modelAbilities,
-  });
-  @override
-  final String apiKey;
-  @override
-  final String endPoint;
-  @override
-  final String modelName;
-  @override
-  final String providerName;
 
+@immutable
+class InvokeResult {
+  final int statusCode;
+  final String? error;
+  final TokenUsage? usage;
+
+  const InvokeResult({required this.statusCode, this.error, this.usage});
+}
+
+typedef KeyInfo = ({GeneralApiKeyInvokeData invokeData, ApiKey key});
+
+class ApiClient {
+  late final BaseApiService service;
+  final Model model;
+  final ProviderModelConfig providerConfig;
+  final ApiProvider provider;
+  ApiClient({
+    required this.providerConfig,
+    required this.model,
+    required this.provider,
+  }) {
+    switch (provider.type) {
+      case ApiType.openaiResponses:
+        service = OpenAiApiService();
+        break;
+      case ApiType.openaiChatCompletions:
+        service = OpenAiCompletionService();
+        break;
+      case ApiType.google:
+        service = GeminiApiService();
+        break;
+    }
+  }
+
+  static Future<ApiClient> fromProviderAndModel(
+    ApiProvider provider,
+    Model model,
+  ) async {
+    var pmc = await ApiDatabase.instance.getProviderModelConfig(
+      provider.id,
+      model.id,
+    );
+    if (pmc == null) {
+      throw "The provider doesn't provide this model";
+    }
+    return ApiClient(providerConfig: pmc, model: model, provider: provider);
+  }
+
+  static Future<ApiClient> fromFactory(
+    String providerId,
+    String modelId,
+  ) async {
+    var provider = await ApiDatabase.instance.getProviderById(providerId);
+    var model = await ApiDatabase.instance.getModelById(modelId);
+    var providerConfig = await ApiDatabase.instance.getProviderModelConfig(
+      providerId,
+      modelId,
+    );
+    if (provider == null) {
+      throw "Provider not found";
+    }
+    if (model == null) {
+      throw "Model not found";
+    }
+    if (providerConfig == null) {
+      throw "The provider doesn't provide this model";
+    }
+    return ApiClient(
+      providerConfig: providerConfig,
+      model: model,
+      provider: provider,
+    );
+  }
+
+  Stream<ChatResponse> getStreamingResponse({
+    required ModelRequestContent modelRequestContent,
+    String? agentId,
+  }) async* {
+    while (true) {
+      var keysCandidate = ApiDatabase.instance.getAvailableApiKeys(provider.id);
+      var resolver = await BaseApiKeyResolver.getInstance(
+        keysCandidate,
+        apiProvider: provider,
+      );
+      var keyInfo = await resolver.resolveKey(model);
+      var s = service.getStreamingResponse(
+        this,
+        keyInfo,
+        modelRequestContent: modelRequestContent,
+      );
+      InvokeResult? invokeResult;
+      await for (final response in s) {
+        if (response.response != null) {
+          yield response.response!;
+        }
+        invokeResult = response.invokeResult;
+      }
+      if (invokeResult != null) {
+        await resolver.updateData(invokeResult);
+        if (invokeResult.statusCode == 200) break;
+      } else {
+        throw "A empty result returned from the server.";
+      }
+    }
+  }
+
+  Future<List<List<double>>> embedding({
+    required List<String> input,
+    required int dims,
+  }) async {
+    var key = await ApiDatabase.instance.getApiKeys("1");
+    var s = service.embedding(this, key.first, input: input, dims: dims);
+    return s;
+  }
+
+  Future<String> imageCreation({
+    required String prompt,
+    ({int width, int height})? size,
+  }) async {
+    var key = await ApiDatabase.instance.getApiKeys("1");
+    return service.imageCreation(this, key.first, prompt: prompt, size: size);
+  }
+
+  Future<String> image2imageGeneration({
+    required String prompt,
+    required String base64Image,
+  }) async {
+    var key = await ApiDatabase.instance.getApiKeys("1");
+    return service.image2imageGeneration(
+      this,
+      key.first,
+      prompt: prompt,
+      base64Image: base64Image,
+    );
+  }
+
+  Future<String?> fileUpload({required File file, required String mime}) async {
+    var key = await ApiDatabase.instance.getApiKeys("1");
+    return service.fileUpload(this, key.first, file: file, mime: mime);
+  }
+}
+
+abstract class BaseApiService {
+  Future<String?> fileUpload(
+    ApiClient client,
+    ApiKey apiKey, {
+    required File file,
+    required String mime,
+  }) => throw UnimplementedError();
+  Stream<_ApiResponse> getStreamingResponse(
+    ApiClient client,
+    ApiKey apiKey, {
+    required ModelRequestContent modelRequestContent,
+  }) => throw UnimplementedError();
+  Future<List<List<double>>> embedding(
+    ApiClient client,
+    ApiKey apiKey, {
+    required List<String> input,
+    required int dims,
+  }) => throw UnimplementedError();
+  Future<String> imageCreation(
+    ApiClient client,
+    ApiKey apiKey, {
+    required String prompt,
+    ({int width, int height})? size,
+  }) => throw UnimplementedError();
+  Future<String> image2imageGeneration(
+    ApiClient client,
+    ApiKey apiKey, {
+    required String prompt,
+    required String base64Image,
+  }) => throw UnimplementedError();
+}
+
+class OpenAiApiService extends BaseApiService {
   void toContent(
     List<FormattedChatMessage> i,
     List<Map<String, dynamic>> contents,
@@ -67,15 +214,20 @@ class OpenAiApiService implements LLMApiService {
   }
 
   @override
-  Stream<ChatResponse> getStreamingResponse(
-    ModelRequestContent modelRequestContent,
-  ) async* {
-    final client = http.Client();
-    final request = http.Request('POST', Uri.parse('$endPoint/v1/responses'));
+  Stream<_ApiResponse> getStreamingResponse(
+    ApiClient client,
+    ApiKey apiKey, {
+    required ModelRequestContent modelRequestContent,
+  }) async* {
+    final httpClient = http.Client();
+    final request = http.Request(
+      'POST',
+      Uri.parse('${client.provider.endpoint}/responses'),
+    );
 
     request.headers.addAll({
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $apiKey',
+      'Authorization': 'Bearer ${apiKey.key}',
     });
 
     // 构建输入内容
@@ -88,7 +240,7 @@ class OpenAiApiService implements LLMApiService {
     toContent(modelRequestContent.usrMessage, contents);
 
     final requestBody = {
-      'model': modelName,
+      'model': client.providerConfig.callName,
       'input': contents,
       'stream': true,
       'temperature': modelRequestContent.modelSpecifics.temperature,
@@ -100,7 +252,8 @@ class OpenAiApiService implements LLMApiService {
     request.body = jsonEncode(requestBody);
 
     try {
-      final response = await client.send(request);
+      final response = await httpClient.send(request);
+      TokenUsage? usg;
       if (response.statusCode == 200) {
         yield* response.stream
             .transform(utf8.decoder)
@@ -113,9 +266,9 @@ class OpenAiApiService implements LLMApiService {
               (json) => json['output'] != null && json['output'].isNotEmpty,
             )
             .expand((json) {
+              final List<_ApiResponse> responses = [];
               try {
                 final outputItems = json['output'] as List;
-                final List<ChatResponse> responses = [];
 
                 for (final item in outputItems) {
                   if (item['type'] == 'message' &&
@@ -126,40 +279,70 @@ class OpenAiApiService implements LLMApiService {
                       if (contentItem['type'] == 'output_text' &&
                           contentItem['text'] != null) {
                         responses.add(
-                          ChatResponse(
-                            type: ResponseType.text,
-                            content: contentItem['text'] as String,
+                          _ApiResponse(
+                            response: ChatResponse(
+                              type: ResponseType.text,
+                              content: contentItem['text'] as String,
+                            ),
                           ),
                         );
                       }
                     }
                   }
                 }
-                return responses;
+                final usage = json['usage'] as Map<String, dynamic>?;
+                if (usage != null) {
+                  usg = TokenUsage(
+                    promptTokens: usage['input_tokens'] as int? ?? 0,
+                    cachedTokens:
+                        usage['input_tokens_details']['cached_tokens']
+                            as int? ??
+                        0,
+                    completionTokens: usage['output_tokens'] as int? ?? 0,
+                    cotTokens:
+                        usage['output_tokens_details']['reasoning_tokens']
+                            as int? ??
+                        0,
+                  );
+                }
               } catch (e) {
-                // 忽略解析错误
-                return <ChatResponse>[];
+                print(e);
               }
+              return responses;
             });
+        yield _ApiResponse(
+          invokeResult: InvokeResult(
+            statusCode: response.statusCode,
+            usage: usg,
+          ),
+        );
       } else {
         final errorBody = await response.stream.bytesToString();
-        throw Exception(
-          'OpenAI API Error: ${response.statusCode} - $errorBody',
+        yield _ApiResponse(
+          invokeResult: InvokeResult(
+            statusCode: response.statusCode,
+            error: errorBody,
+          ),
         );
       }
     } finally {
-      client.close();
+      httpClient.close();
     }
   }
 
   @override
-  Future<String?> fileUpload(File file, String mime) async {
-    final client = http.Client();
+  Future<String?> fileUpload(
+    ApiClient client,
+    ApiKey apiKey, {
+    required File file,
+    required String mime,
+  }) async {
+    final httpClient = http.Client();
     try {
-      final uri = Uri.parse('$endPoint/files');
+      final uri = Uri.parse('${client.provider.endpoint}/files');
       final request = http.MultipartRequest('POST', uri);
 
-      request.headers.addAll({'Authorization': 'Bearer $apiKey'});
+      request.headers.addAll({'Authorization': 'Bearer ${apiKey.key}'});
 
       // 添加文件
       final multipartFile = await http.MultipartFile.fromPath(
@@ -178,7 +361,7 @@ class OpenAiApiService implements LLMApiService {
         'seconds': 172800,
       });
 
-      final response = await client.send(request);
+      final response = await httpClient.send(request);
       final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
@@ -192,30 +375,35 @@ class OpenAiApiService implements LLMApiService {
       // 发生异常，返回null
       return null;
     } finally {
-      client.close();
+      httpClient.close();
     }
   }
 
   @override
-  Future<String> imageCreation(String prompt, (int, int)? size) async {
-    final client = http.Client();
+  Future<String> imageCreation(
+    ApiClient client,
+    ApiKey apiKey, {
+    required String prompt,
+    ({int width, int height})? size,
+  }) async {
+    final httpClient = http.Client();
     try {
-      final uri = Uri.parse('$endPoint/images/generations');
+      final uri = Uri.parse('${client.provider.endpoint}/images/generations');
       final request = http.Request('POST', uri);
 
       request.headers.addAll({
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $apiKey',
+        'Authorization': 'Bearer ${apiKey.key}',
       });
 
       // 将尺寸转换为OpenAI API所需的格式
       String sizeString = '1024x1024'; // 默认尺寸
       if (size != null) {
-        sizeString = '${size.$1}x${size.$2}';
+        sizeString = '${size.width}x${size.height}';
       }
 
       final requestBody = {
-        'model': modelName, // 使用DALL-E 3模型，更符合实际API
+        'model': client.providerConfig.callName,
         'prompt': prompt,
         'n': 1,
         'size': sizeString,
@@ -226,7 +414,7 @@ class OpenAiApiService implements LLMApiService {
 
       // 注意：由于方法签名返回String，这里需要同步处理
       // 在实际应用中，可能需要修改方法签名以支持异步操作
-      final response = await client.send(request);
+      final response = await httpClient.send(request);
       if (response.statusCode == 200) {
         final responseBody = await response.stream.bytesToString();
         final jsonResponse = jsonDecode(responseBody);
@@ -239,23 +427,22 @@ class OpenAiApiService implements LLMApiService {
         );
       }
     } finally {
-      client.close();
+      httpClient.close();
     }
   }
 
   @override
-  Set<ApiAbility> abilities;
-
-  @override
   Future<String> image2imageGeneration(
-    String prompt,
-    String base64Image,
-  ) async {
-    var uri = Uri.parse("$endPoint/images/edits");
+    ApiClient client,
+    ApiKey apiKey, {
+    required String prompt,
+    required String base64Image,
+  }) async {
+    var uri = Uri.parse("${client.provider.endpoint}/images/edits");
 
     var request = http.MultipartRequest("POST", uri)
       ..headers['Authorization'] = 'Bearer $apiKey'
-      ..fields['model'] = modelName
+      ..fields['model'] = client.providerConfig.callName
       ..fields['prompt'] = prompt;
 
     // 把每张 base64 图片转成 MultipartFile
@@ -281,13 +468,15 @@ class OpenAiApiService implements LLMApiService {
   }
 
   @override
-  Set<ModelAbility> modelAbilities;
-
-  @override
-  Future<List<List<double>>> embedding(List<String> input, int dims) async {
-    final client = http.Client();
+  Future<List<List<double>>> embedding(
+    ApiClient client,
+    ApiKey apiKey, {
+    required List<String> input,
+    required int dims,
+  }) async {
+    final httpClient = http.Client();
     try {
-      final uri = Uri.parse('$endPoint/v1/embeddings');
+      final uri = Uri.parse('${client.provider.endpoint}/v1/embeddings');
       final request = http.Request('POST', uri);
 
       request.headers.addAll({
@@ -296,7 +485,7 @@ class OpenAiApiService implements LLMApiService {
       });
 
       final requestBody = {
-        'model': modelName,
+        'model': client.providerConfig.callName,
         'input': input,
         'encoding_format': 'float',
         'dimensions': dims,
@@ -304,7 +493,7 @@ class OpenAiApiService implements LLMApiService {
 
       request.body = jsonEncode(requestBody);
 
-      final response = await client.send(request);
+      final response = await httpClient.send(request);
       if (response.statusCode == 200) {
         final responseBody = await response.stream.bytesToString();
         final jsonResponse = jsonDecode(responseBody);
@@ -327,36 +516,19 @@ class OpenAiApiService implements LLMApiService {
         );
       }
     } finally {
-      client.close();
+      httpClient.close();
     }
   }
 }
 
-///适用于一些老的例如LMStudio这样的服务
-class OpenAiCompletionService implements LLMApiService {
-  OpenAiCompletionService({
-    required this.apiKey,
-    required this.endPoint,
-    required this.modelName,
-    required this.abilities,
-    required this.modelAbilities,
-    required this.providerName,
-  });
+class OpenAiCompletionService extends OpenAiApiService {
   @override
-  final String apiKey;
-  @override
-  final String endPoint;
-  @override
-  final String modelName;
-  @override
-  final Set<ApiAbility> abilities;
-  @override
-  final Set<ModelAbility> modelAbilities;
-  @override
-  final String providerName;
-
-  @override
-  Future<String?> fileUpload(File file, String mime) {
+  Future<String?> fileUpload(
+    ApiClient client,
+    ApiKey apiKey, {
+    required File file,
+    required String mime,
+  }) {
     throw UnimplementedError();
   }
 
@@ -373,6 +545,7 @@ class OpenAiCompletionService implements LLMApiService {
     }
   }
 
+  @override
   void toContent(
     List<FormattedChatMessage> i,
     List<Map<String, dynamic>> contents,
@@ -415,18 +588,20 @@ class OpenAiCompletionService implements LLMApiService {
   }
 
   @override
-  Stream<ChatResponse> getStreamingResponse(
-    ModelRequestContent modelRequestContent,
-  ) async* {
-    final client = http.Client();
+  Stream<_ApiResponse> getStreamingResponse(
+    ApiClient client,
+    ApiKey apiKey, {
+    required ModelRequestContent modelRequestContent,
+  }) async* {
+    final httpClient = http.Client();
     final request = http.Request(
       'POST',
-      Uri.parse('$endPoint/v1/chat/completions'),
+      Uri.parse('${client.provider.endpoint}/chat/completions'),
     );
 
     request.headers.addAll({
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $apiKey',
+      'Authorization': 'Bearer ${apiKey.key}',
     });
 
     // 构建输入内容
@@ -439,7 +614,7 @@ class OpenAiCompletionService implements LLMApiService {
     toContent(modelRequestContent.usrMessage, contents);
 
     final requestBody = {
-      'model': modelName,
+      'model': client.providerConfig.callName,
       'messages': contents,
       'stream': true,
       'frequency_penalty': modelRequestContent.modelSpecifics.frequencyPenalty,
@@ -451,8 +626,9 @@ class OpenAiCompletionService implements LLMApiService {
     request.body = jsonEncode(requestBody);
 
     try {
-      final response = await client.send(request);
+      final response = await httpClient.send(request);
       if (response.statusCode == 200) {
+        TokenUsage? usg;
         yield* response.stream
             .transform(utf8.decoder)
             .transform(const LineSplitter())
@@ -464,206 +640,81 @@ class OpenAiCompletionService implements LLMApiService {
               (json) => json['choices'] != null && json['choices'].isNotEmpty,
             )
             .expand((json) {
+              final List<_ApiResponse> responses = [];
               try {
                 final outputItems = json['choices'] as List;
-                final List<ChatResponse> responses = [];
 
                 for (final item in outputItems) {
-                  // 修改解析逻辑以适配官方OpenAI API格式
                   if (item['delta'] != null &&
                       item['delta']['content'] != null) {
                     // 流式响应格式
                     responses.add(
-                      ChatResponse(
-                        type: ResponseType.text,
-                        content: item['delta']['content'] as String,
+                      _ApiResponse(
+                        response: ChatResponse(
+                          type: ResponseType.text,
+                          content: item['delta']['content'] as String,
+                        ),
                       ),
                     );
                   }
                 }
-                return responses;
+                final usage = json['usage'] as Map<String, dynamic>?;
+                if (usage != null) {
+                  usg = TokenUsage(
+                    promptTokens: usage['prompt_tokens'] as int? ?? 0,
+                    completionTokens: usage['completion_tokens'] as int? ?? 0,
+                    cachedTokens:
+                        (usage['prompt_tokens_details']['cached_tokens']
+                            as int?) ??
+                        0,
+                    cotTokens:
+                        usage['completion_tokens_details']['reasoning_tokens']
+                            as int? ??
+                        0,
+                  );
+                }
               } catch (e) {
-                // 忽略解析错误
-                return <ChatResponse>[];
+                print(e);
               }
+              return responses;
             });
+        yield _ApiResponse(
+          invokeResult: InvokeResult(
+            statusCode: response.statusCode,
+            usage: usg,
+          ),
+        );
       } else {
         final errorBody = await response.stream.bytesToString();
-        throw Exception(
-          'OpenAI Completion API Error: ${response.statusCode} - $errorBody',
+        yield _ApiResponse(
+          invokeResult: InvokeResult(
+            statusCode: response.statusCode,
+            error: errorBody,
+          ),
         );
       }
     } finally {
-      client.close();
-    }
-  }
-
-  @override
-  Future<String> imageCreation(String prompt, (int, int)? size) async {
-    final client = http.Client();
-    try {
-      final uri = Uri.parse('$endPoint/images/generations');
-      final request = http.Request('POST', uri);
-
-      request.headers.addAll({
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $apiKey',
-      });
-
-      // 将尺寸转换为OpenAI API所需的格式
-      String sizeString = '1024x1024'; // 默认尺寸
-      if (size != null) {
-        sizeString = '${size.$1}x${size.$2}';
-      }
-
-      final requestBody = {
-        'model': modelName, // 使用DALL-E 3模型，更符合实际API
-        'prompt': prompt,
-        'n': 1,
-        'size': sizeString,
-        'response_format': 'b64_json', // 返回base64编码的图像数据
-      };
-
-      request.body = jsonEncode(requestBody);
-
-      // 注意：由于方法签名返回String，这里需要同步处理
-      // 在实际应用中，可能需要修改方法签名以支持异步操作
-      final response = await client.send(request);
-      if (response.statusCode == 200) {
-        final responseBody = await response.stream.bytesToString();
-        final jsonResponse = jsonDecode(responseBody);
-
-        // 返回base64编码的图像数据
-        return jsonResponse['data'][0]['b64_json'] as String;
-      } else {
-        throw Exception(
-          'Image creation failed with status: ${response.statusCode}',
-        );
-      }
-    } finally {
-      client.close();
-    }
-  }
-
-  @override
-  Future<String> image2imageGeneration(
-    String prompt,
-    String base64Image,
-  ) async {
-    var uri = Uri.parse("$endPoint/images/edits");
-
-    var request = http.MultipartRequest("POST", uri)
-      ..headers['Authorization'] = 'Bearer $apiKey'
-      ..fields['model'] = modelName
-      ..fields['prompt'] = prompt;
-
-    // 把每张 base64 图片转成 MultipartFile
-    Uint8List bytes = base64Decode(base64Image);
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'image[]', // 注意这里字段名必须是 image[]
-        bytes,
-        filename: 'image.png',
-      ),
-    );
-
-    var response = await request.send();
-    var responseBody = await response.stream.bytesToString();
-
-    if (response.statusCode == 200) {
-      var jsonResponse = jsonDecode(responseBody);
-      String b64Json = jsonResponse['data'][0]['b64_json'];
-      return b64Json; // 返回 base64 图片字符串（调用方可 decode 保存为文件）
-    } else {
-      throw Exception("Failed: ${response.statusCode}, body: $responseBody");
-    }
-  }
-
-  @override
-  Future<List<List<double>>> embedding(List<String> input, int dim) async {
-    final client = http.Client();
-    try {
-      final uri = Uri.parse('$endPoint/v1/embeddings');
-      final request = http.Request('POST', uri);
-
-      request.headers.addAll({
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $apiKey',
-      });
-
-      final requestBody = {
-        'model': modelName,
-        'input': input,
-        'encoding_format': 'float',
-        "dimensions": dim,
-      };
-
-      request.body = jsonEncode(requestBody);
-
-      final response = await client.send(request);
-      if (response.statusCode == 200) {
-        final responseBody = await response.stream.bytesToString();
-        final jsonResponse = jsonDecode(responseBody);
-
-        final List<List<double>> embeddings = [];
-        final dataList = jsonResponse['data'] as List;
-
-        for (var item in dataList) {
-          final embedding = (item['embedding'] as List)
-              .map((e) => (e as num).toDouble())
-              .toList();
-          embeddings.add(embedding);
-        }
-
-        return embeddings;
-      } else {
-        final errorBody = await response.stream.bytesToString();
-        throw Exception(
-          'Embedding API Error: ${response.statusCode} - $errorBody',
-        );
-      }
-    } finally {
-      client.close();
+      httpClient.close();
     }
   }
 }
 
-// 3. Concrete Implementation for Gemini
-class GeminiApiService implements LLMApiService {
-  GeminiApiService({
-    required this.apiKey,
-    required this.endPoint,
-    required this.modelName,
-    required this.abilities,
-    required this.modelAbilities,
-    required this.providerName,
-  });
+class GeminiApiService extends BaseApiService {
   @override
-  final String providerName;
-  @override
-  final String apiKey;
-  @override
-  final String endPoint;
-  @override
-  final String modelName;
-
-  String get _generateEndpoint {
-    return '$endPoint/v1beta/models/$modelName';
-  }
-
-  String get _uploadEndpoint {
-    //但愿谷歌不会再整出个v2出来，就属它家的api变得最多
-    return '$endPoint/upload/v1beta/files';
-  }
-
-  @override
-  Future<String?> fileUpload(File file, String mime) async {
-    final client = http.Client();
+  Future<String?> fileUpload(
+    ApiClient client,
+    ApiKey apiKey, {
+    required File file,
+    required String mime,
+  }) async {
+    final httpClient = http.Client();
     try {
       // 1. Start resumable upload session
       final startRequest = http.Request(
         'POST',
-        Uri.parse('$_uploadEndpoint?key=$apiKey'),
+        Uri.parse(
+          '${client.provider.endpoint}/upload/v1beta.files?key=${apiKey.key}',
+        ),
       );
       startRequest.headers.addAll({
         'X-Goog-Upload-Protocol': 'resumable',
@@ -676,7 +727,7 @@ class GeminiApiService implements LLMApiService {
         'file': {'display_name': p.basename(file.path)},
       });
 
-      final startResponse = await client.send(startRequest);
+      final startResponse = await httpClient.send(startRequest);
       final uploadUrl = startResponse.headers['x-goog-upload-url'];
 
       if (uploadUrl == null) {
@@ -692,7 +743,7 @@ class GeminiApiService implements LLMApiService {
       });
       uploadRequest.bodyBytes = await file.readAsBytes();
 
-      final uploadResponse = await client.send(uploadRequest);
+      final uploadResponse = await httpClient.send(uploadRequest);
       if (uploadResponse.statusCode != 200) {
         return null; // 上传失败，返回null
       }
@@ -706,7 +757,7 @@ class GeminiApiService implements LLMApiService {
       // 捕获异常并返回null
       return null;
     } finally {
-      client.close();
+      httpClient.close();
     }
   }
 
@@ -775,17 +826,25 @@ class GeminiApiService implements LLMApiService {
     }
   }
 
+  String getGenerateEndpoint(ApiClient client) {
+    return '${client.provider.endpoint}/models/${client.providerConfig.callName}';
+  }
+
   @override
-  Stream<ChatResponse> getStreamingResponse(
-    ModelRequestContent modelRequestContent,
-  ) async* {
-    final client = http.Client();
-    final uri = Uri.parse('$_generateEndpoint:streamGenerateContent?alt=sse');
+  Stream<_ApiResponse> getStreamingResponse(
+    ApiClient client,
+    ApiKey apiKey, {
+    required ModelRequestContent modelRequestContent,
+  }) async* {
+    final httpClient = http.Client();
+    final uri = Uri.parse(
+      '${getGenerateEndpoint(client)}:streamGenerateContent?alt=sse',
+    );
     final request = http.Request('POST', uri);
 
     request.headers.addAll({
       'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
+      'x-goog-api-key': apiKey.key,
     });
 
     // 构建消息历史
@@ -837,9 +896,10 @@ class GeminiApiService implements LLMApiService {
     });
 
     try {
-      final response = await client.send(request);
+      final response = await httpClient.send(request);
 
       if (response.statusCode == 200) {
+        TokenUsage? usg;
         yield* response.stream
             .transform(utf8.decoder)
             .transform(const LineSplitter())
@@ -851,80 +911,68 @@ class GeminiApiService implements LLMApiService {
                   json['candidates'] != null && json['candidates'].isNotEmpty,
             )
             .expand((json) {
+              var r = <_ApiResponse>[];
               try {
                 final text =
                     json['candidates'][0]['content']['parts'][0]['text']
                         as String?;
                 if (text != null) {
-                  print(json.toString());
-                  return [ChatResponse(type: ResponseType.text, content: text)];
+                  r.add(
+                    _ApiResponse(
+                      response: ChatResponse(
+                        type: ResponseType.text,
+                        content: text,
+                      ),
+                    ),
+                  );
+                }
+                final usage = json['usageMetadata'] as Map<String, dynamic>?;
+                if (usage != null) {
+                  usg = TokenUsage(
+                    promptTokens: usage['promptTokenCount'] as int? ?? 0,
+                    completionTokens: usage['candidateTokenCount'] as int? ?? 0,
+                    cachedTokens: usage['cachedTokenCount'] as int? ?? 0,
+                    cotTokens: usage['thoughtsTokenCount'] as int? ?? 0,
+                    otherTokens: usage['toolUsePromptTokenCount'] as int? ?? 0,
+                  );
                 }
               } catch (e) {
-                // Ignore parsing errors for this chunk
+                print(e);
               }
-              return <ChatResponse>[];
+              return r;
             });
+        yield _ApiResponse(
+          invokeResult: InvokeResult(
+            statusCode: response.statusCode,
+            usage: usg,
+          ),
+        );
       } else {
         final errorBody = await response.stream.bytesToString();
-        throw Exception(
-          'Gemini API Error: ${response.statusCode} - $errorBody',
+        yield _ApiResponse(
+          invokeResult: InvokeResult(
+            statusCode: response.statusCode,
+            error: errorBody,
+          ),
         );
       }
     } finally {
-      client.close();
+      httpClient.close();
     }
   }
-
-  @override
-  Future<String> imageCreation(String prompt, (int, int)? size) async {
-    final client = http.Client();
-    try {
-      final uri = Uri.parse('$_generateEndpoint:predict?key=$apiKey');
-      final request = http.Request('POST', uri);
-
-      request.headers.addAll({'Content-Type': 'application/json'});
-
-      // 构建请求体
-      final requestBody = {
-        'instances': [
-          {'prompt': prompt},
-        ],
-        'parameters': {
-          'sampleCount': 1, // 默认生成1张图片
-        },
-      };
-
-      request.body = jsonEncode(requestBody);
-
-      final response = await client.send(request);
-      if (response.statusCode == 200) {
-        final responseBody = await response.stream.bytesToString();
-        final jsonResponse = jsonDecode(responseBody);
-
-        // 返回第一张图片的base64编码数据
-        return jsonResponse['predictions'][0]['bytesBase64Encoded'] as String;
-      } else {
-        final errorBody = await response.stream.bytesToString();
-        throw Exception(
-          'Image creation failed with status: ${response.statusCode} - $errorBody',
-        );
-      }
-    } finally {
-      client.close();
-    }
-  }
-
-  @override
-  Set<ApiAbility> abilities;
 
   @override
   Future<String> image2imageGeneration(
-    String prompt,
-    String base64Image,
-  ) async {
-    final client = http.Client();
+    ApiClient client,
+    ApiKey apiKey, {
+    required String prompt,
+    required String base64Image,
+  }) async {
+    final httpClient = http.Client();
     try {
-      final uri = Uri.parse('$_generateEndpoint:predict?key=$apiKey');
+      final uri = Uri.parse(
+        '${getGenerateEndpoint(client)}:predict?key=${apiKey.key}',
+      );
       final request = http.Request('POST', uri);
 
       request.headers.addAll({'Content-Type': 'application/json'});
@@ -944,7 +992,7 @@ class GeminiApiService implements LLMApiService {
 
       request.body = jsonEncode(requestBody);
 
-      final response = await client.send(request);
+      final response = await httpClient.send(request);
       if (response.statusCode == 200) {
         final responseBody = await response.stream.bytesToString();
         final jsonResponse = jsonDecode(responseBody);
@@ -958,29 +1006,33 @@ class GeminiApiService implements LLMApiService {
         );
       }
     } finally {
-      client.close();
+      httpClient.close();
     }
   }
 
   @override
-  Set<ModelAbility> modelAbilities;
-
-  @override
-  Future<List<List<double>>> embedding(List<String> input, int dims) async {
-    final client = http.Client();
+  Future<List<List<double>>> embedding(
+    ApiClient client,
+    ApiKey apiKey, {
+    required List<String> input,
+    required int dims,
+  }) async {
+    final httpClient = http.Client();
     try {
       // 如果只有一个输入，使用 embedContent 端点；如果有多个输入，使用 batchEmbedContents 端点
       final uri = input.length == 1
-          ? Uri.parse('$_generateEndpoint:embedContent?key=$apiKey')
+          ? Uri.parse(
+              '${getGenerateEndpoint(client)}:embedContent?key=${apiKey.key}',
+            )
           : Uri.parse(
-              '$endPoint/v1beta/models/$modelName:batchEmbedContents?key=$apiKey',
+              '${getGenerateEndpoint(client)}:batchEmbedContents?key=${apiKey.key}',
             );
 
       final request = http.Request('POST', uri);
 
       request.headers.addAll({
         'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
+        'x-goog-api-key': apiKey.key,
       });
 
       late final Map<String, dynamic> requestBody;
@@ -988,7 +1040,7 @@ class GeminiApiService implements LLMApiService {
       if (input.length == 1) {
         // 单个文本嵌入
         requestBody = {
-          'model': 'models/$modelName',
+          'model': 'models/${client.providerConfig.callName}',
           "output_dimensionality": dims,
           'content': {
             'parts': [
@@ -1000,7 +1052,7 @@ class GeminiApiService implements LLMApiService {
         // 批量文本嵌入
         final requests = input.map((text) {
           return {
-            'model': 'models/$modelName',
+            'model': 'models/${client.providerConfig.callName}',
             "output_dimensionality": dims,
             'content': {
               'parts': [
@@ -1015,7 +1067,7 @@ class GeminiApiService implements LLMApiService {
 
       request.body = jsonEncode(requestBody);
 
-      final response = await client.send(request);
+      final response = await httpClient.send(request);
       if (response.statusCode == 200) {
         final responseBody = await response.stream.bytesToString();
         final jsonResponse = jsonDecode(responseBody);
@@ -1049,46 +1101,24 @@ class GeminiApiService implements LLMApiService {
         );
       }
     } finally {
-      client.close();
+      httpClient.close();
     }
   }
 }
 
-class StableDiffusion implements LLMApiService {
-  StableDiffusion({
-    required this.apiKey,
-    required this.endPoint,
-    required this.modelName,
-    required this.abilities,
-    required this.modelAbilities,
-    required this.providerName,
-  });
+class StableDiffusionApi extends BaseApiService {
   @override
-  final String apiKey;
-  @override
-  final String endPoint;
-  @override
-  final String modelName;
-  @override
-  final Set<ApiAbility> abilities;
-  @override
-  final String providerName;
-
-  @override
-  Future<String?> fileUpload(File file, String mime) {
-    throw Exception("Not supported by this Provider");
-  }
-
-  @override
-  Stream<ChatResponse> getStreamingResponse(ModelRequestContent request) {
-    throw Exception("Not supported by this Provider");
-  }
-
-  @override
-  Future<String> imageCreation(String prompt, (int, int)? size) async {
-    final client = http.Client();
+  Future<String> imageCreation(
+    ApiClient client,
+    ApiKey apiKey, {
+    required String prompt,
+    ({int width, int height})? size,
+  }) async {
+    final httpClient = http.Client();
     try {
-      final uri = Uri.parse('$endPoint/sdapi/v1/txt2img'); // 默认本地地址
+      final uri = Uri.parse(
+        '${client.provider.endpoint}/sdapi/v1/txt2img',
+      ); // 默认本地地址
       final request = http.Request('POST', uri);
 
       request.headers.addAll({'Content-Type': 'application/json'});
@@ -1097,8 +1127,8 @@ class StableDiffusion implements LLMApiService {
       int width = 512;
       int height = 512;
       if (size != null) {
-        width = size.$1;
-        height = size.$2;
+        width = size.width;
+        height = size.height;
       }
 
       // 构建请求体，使用你提供的API参数结构
@@ -1115,7 +1145,7 @@ class StableDiffusion implements LLMApiService {
 
       request.body = jsonEncode(requestBody);
 
-      final response = await client.send(request);
+      final response = await httpClient.send(request);
       if (response.statusCode == 200) {
         final responseBody = await response.stream.bytesToString();
         final jsonResponse = jsonDecode(responseBody);
@@ -1134,18 +1164,22 @@ class StableDiffusion implements LLMApiService {
         );
       }
     } finally {
-      client.close();
+      httpClient.close();
     }
   }
 
   @override
   Future<String> image2imageGeneration(
-    String prompt,
-    String base64Image,
-  ) async {
-    final client = http.Client();
+    ApiClient client,
+    ApiKey apiKey, {
+    required String prompt,
+    required String base64Image,
+  }) async {
+    final httpClient = http.Client();
     try {
-      final uri = Uri.parse('$endPoint/sdapi/v1/img2img'); // 默认本地地址
+      final uri = Uri.parse(
+        '${client.provider.endpoint}/sdapi/v1/img2img',
+      ); // 默认本地地址
       final request = http.Request('POST', uri);
 
       request.headers.addAll({'Content-Type': 'application/json'});
@@ -1163,7 +1197,7 @@ class StableDiffusion implements LLMApiService {
 
       request.body = jsonEncode(requestBody);
 
-      final response = await client.send(request);
+      final response = await httpClient.send(request);
       if (response.statusCode == 200) {
         final responseBody = await response.stream.bytesToString();
         final jsonResponse = jsonDecode(responseBody);
@@ -1182,15 +1216,7 @@ class StableDiffusion implements LLMApiService {
         );
       }
     } finally {
-      client.close();
+      httpClient.close();
     }
-  }
-
-  @override
-  Set<ModelAbility> modelAbilities;
-
-  @override
-  Future<List<List<double>>> embedding(List<String> input, int dims) {
-    throw UnimplementedError("Not supported by this Provider");
   }
 }

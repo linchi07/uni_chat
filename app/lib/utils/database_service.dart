@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uuid/uuid.dart';
@@ -16,7 +14,8 @@ class AgentData {
   // the version of agent settings
   final String id;
   final String name;
-  final String modelProviderConfigureId;
+  final String providerId;
+  final String modelId;
   final String? description;
   final String? systemPrompt;
   late final List<String> knowledgeBases;
@@ -28,7 +27,8 @@ class AgentData {
     required this.version,
     required this.id,
     required this.name,
-    required this.modelProviderConfigureId,
+    required this.providerId,
+    required this.modelId,
     required this.modelSpecifics,
     this.description,
     this.systemPrompt,
@@ -71,7 +71,8 @@ class AgentData {
   String _parameterToJson() {
     Map<String, dynamic> parameters = {
       'version': version,
-      'model_provider_configure_id': modelProviderConfigureId,
+      'provider_id': providerId,
+      'model_id': modelId,
       'system_prompt': systemPrompt,
       'knowledge_bases': knowledgeBases,
       'model_specifics': modelSpecifics.toJson(),
@@ -96,8 +97,8 @@ class AgentData {
       version: parameters['version'] as int,
       id: map['id'] as String,
       name: map['name'] as String,
-      modelProviderConfigureId:
-          parameters['model_provider_configure_id'] as String,
+      providerId: parameters['provider_id'] as String? ?? '',
+      modelId: parameters['model_id'] as String,
       modelSpecifics: ModelSpecifics.fromJson(parameters['model_specifics']),
       description: map['description'] as String?,
       systemPrompt: parameters['system_prompt'] as String?,
@@ -121,13 +122,7 @@ class DatabaseService {
   }
 
   Future<Database> _initDatabase() async {
-    final documentsDirectory = await getApplicationDocumentsDirectory();
-    final dbDirectory = p.join(documentsDirectory.path, 'chat');
-
-    // Ensure the directory exists
-    await Directory(dbDirectory).create(recursive: true);
-
-    final dbPath = p.join(dbDirectory, 'session_saves.db');
+    var dbPath = await PathProvider.getPath("chat/session_saves.db");
 
     return await openDatabase(
       dbPath,
@@ -652,11 +647,11 @@ WHERE
     final db = await database;
     final List<Map<String, dynamic>> messageMaps = await db.rawQuery(
       '''
- WITH RECURSIVE chat_tree AS (
-    -- 1. 仅定位关系表的根节点（不包含 message 信息）
+WITH RECURSIVE chat_tree AS (
+    -- 1. 定位根节点
     SELECT 
         id, 
-		message_id,
+        message_id,
         child_ids, 
         enabled_child_index,
         0 AS depth
@@ -665,18 +660,22 @@ WHERE
 
     UNION ALL
 
-    -- 2. 从第二层开始连接 messages 表
+    -- 2. 递归查找子节点：使用 substr 绝对定位
     SELECT 
         r.id,
-		r.message_id,
+        r.message_id,
         r.child_ids,
         r.enabled_child_index,
         ct.depth + 1
-    FROM message_relations r -- use "->>" to extract json without quotes
-    JOIN chat_tree ct ON r.id = (ct.child_ids ->> ('\$[' || ct.enabled_child_index || ']'))
+    FROM message_relations r
+    JOIN chat_tree ct ON r.id = substr(
+        ct.child_ids, 
+        (ct.enabled_child_index * 37) + 1, 
+        36
+    )
     WHERE r.session_id = ?
 )
--- 3. 最终结果连接 messages 表并过滤掉 depth = 0 的根节点
+-- 3. 最终结果
 SELECT 
     m.id AS message_id,
     m.sender,

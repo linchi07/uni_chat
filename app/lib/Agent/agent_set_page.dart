@@ -1,21 +1,19 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uni_chat/RAG/rag_databases.dart';
-import 'package:uni_chat/RAG/rag_settings.dart';
-import 'package:uni_chat/llm_provider/pre_built_models.dart';
+import 'package:uni_chat/api_configs/api_database.dart';
+import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/theme_manager.dart';
-import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/document_display.dart';
-import 'package:uni_chat/utils/llm_image_indexer.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
 import '../utils/file_utils.dart';
+import '../utils/llm_image_indexer.dart' show LLMImageIndexer;
 import '../utils/overlays.dart';
 import 'agentProvider.dart';
 
@@ -144,18 +142,13 @@ class AgentEditState {
   }
 
   Future<AgentData> toAgentData() async {
-    var modelConfig = await ApiDatabaseService.instance
-        .getProviderModelConfigsForModelWithProvider(model!.id, provider!.id);
-    if (modelConfig.firstOrNull == null) {
-      //TODO: handle this
-      throw Exception("模型配置不存在");
-    }
     return AgentData(
       version: 1,
       id: id,
       name: name!,
       description: description,
-      modelProviderConfigureId: modelConfig.first.id,
+      providerId: provider!.id,
+      modelId: model!.id,
       systemPrompt: systemPrompt,
       knowledgeBases: knowledgeBases.toList(),
       createdAt: createdAt,
@@ -163,16 +156,14 @@ class AgentEditState {
     );
   }
 
-  factory AgentEditState.fromAgentData(
-    AgentData agentData,
-    ApiProvider? provider,
-    Model? model,
-  ) {
+  static Future<AgentEditState> fromAgentData(AgentData agentData) async {
+    var pv = await ApiDatabase.instance.getProviderById(agentData.providerId);
+    var m = await ApiDatabase.instance.getModelById(agentData.modelId);
     return AgentEditState(
       id: agentData.id,
       name: agentData.name,
-      provider: provider,
-      model: model,
+      provider: pv,
+      model: m,
       description: agentData.description,
       systemPrompt: agentData.systemPrompt,
       knowledgeBases: agentData.knowledgeBases.toSet(),
@@ -817,7 +808,7 @@ class AgentEditDetails extends ConsumerWidget {
               .read(documentDisplayProvider.notifier)
               .setUrl("$websiteURL/docs/Agents/model_settings");
         });
-        return _AgentModelSettings(modelSpecifics: agentSet.modelSettings);
+        return _AgentModelSettings();
       case PropertyEditing.sysPrompt:
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref
@@ -828,12 +819,13 @@ class AgentEditDetails extends ConsumerWidget {
       case PropertyEditing.opening:
         return Opening();
       case PropertyEditing.knowledgeBase:
+        return SizedBox();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref
               .read(documentDisplayProvider.notifier)
               .setUrl("$websiteURL/docs/Agents/knowledge_base");
         });
-        return MemoryBase();
+      //return MemoryBase();
       case PropertyEditing.UIQL:
         return Uiql();
       default:
@@ -843,15 +835,13 @@ class AgentEditDetails extends ConsumerWidget {
 }
 
 class _AgentModelSettings extends ConsumerStatefulWidget {
-  const _AgentModelSettings({super.key, required this.modelSpecifics});
-  final ModelSpecifics modelSpecifics;
+  const _AgentModelSettings({super.key});
   @override
   ConsumerState<_AgentModelSettings> createState() =>
       _AgentModelSettingsState();
 }
 
 class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
-  ModelSpecifics get modelConf => widget.modelSpecifics;
   void _notifyListeners() {
     var n = ref.read(agentEditState.notifier);
     n.state = n.state.copyWith();
@@ -859,6 +849,14 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
 
   @override
   Widget build(BuildContext context) {
+    var edit = ref.watch(
+      agentEditState.select(
+        (e) =>
+            (model: e.model, settings: e.modelSettings, provider: e.provider),
+      ),
+    );
+    var modelConf = edit.settings;
+    var theme = ref.watch(themeProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -886,24 +884,78 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 S.of(context).model_select,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
+              if (edit.model == null || edit.provider == null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  child: StdButton(
+                    text: S.of(context).model_select,
+                    onPressed: () {
+                      OverlayPortalService.showDialog(
+                        context,
+                        height: 800,
+                        width: 450,
+                        child: ModelSelect(
+                          theme: theme,
+                          onSelect: (p, m) async {
+                            var n = ref.read(agentEditState.notifier);
+                            var ms = n.state.modelSettings;
+                            ms.maxContextTokens = m.contextLength ?? 4096;
+                            ms.maxGenerationTokens =
+                                m.maxCompletionTokens ?? 1024;
+                            n.state = n.state.copyWith(provider: p, model: m);
+                            await OverlayPortalService.hide(context);
+                          },
+                        ),
+                        backGroundColor: theme.zeroGradeColor,
+                      );
+                    },
+                  ),
                 ),
-                child: Row(children: [ModelDropDown()]),
-              ),
-              Text(
-                S.of(context).provider_select,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
+              if (edit.model != null && edit.provider != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  child: Row(
+                    children: [
+                      ModelSelect.buildPreview(
+                        context,
+                        30,
+                        EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        edit.provider!,
+                        edit.model!,
+                        () {
+                          OverlayPortalService.showDialog(
+                            context,
+                            height: 800,
+                            width: 450,
+                            child: ModelSelect(
+                              theme: theme,
+                              onSelect: (p, m) async {
+                                var n = ref.read(agentEditState.notifier);
+                                var ms = n.state.modelSettings;
+                                ms.maxContextTokens = m.contextLength ?? 4096;
+                                ms.maxGenerationTokens =
+                                    m.maxCompletionTokens ?? 1024;
+                                n.state = n.state.copyWith(
+                                  provider: p,
+                                  model: m,
+                                );
+                                await OverlayPortalService.hide(context);
+                              },
+                            ),
+                            backGroundColor: theme.zeroGradeColor,
+                          );
+                        },
+                        theme,
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(children: [_ProviderDropDown()]),
-              ),
               Text(
                 S.of(context).model_property,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -920,7 +972,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                   _notifyListeners();
                 },
                 min: 100,
-                max: 1145141919,
+                max: (edit.model?.contextLength ?? 1145141919).toDouble(),
               ),
               StdSlider(
                 label: S.of(context).model_maximum_generate_length,
@@ -934,7 +986,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                   _notifyListeners();
                 },
                 min: 100,
-                max: 1145141919,
+                max: (edit.model?.maxCompletionTokens ?? 1145141919).toDouble(),
               ),
               Text(
                 S.of(context).model_basic_info_pass_through_setting,
@@ -1021,430 +1073,210 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
   }
 }
 
-class ModelDropDown extends ConsumerStatefulWidget {
-  const ModelDropDown({super.key});
-  @override
-  ConsumerState<ModelDropDown> createState() => _ModelDropDownState();
-}
+class ModelSelect extends StatefulWidget {
+  const ModelSelect({super.key, required this.theme, required this.onSelect});
+  final ThemeConfig theme;
+  final void Function(ApiProvider provider, Model model) onSelect;
 
-class _ModelDropDownState extends ConsumerState<ModelDropDown>
-    with SingleTickerProviderStateMixin {
-  Model? selectedIndex;
-
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Interval(0.0, 0.7, curve: Curves.easeInOut), // 前半段时间执行
+  static Widget buildPreview(
+    BuildContext context,
+    double height,
+    EdgeInsets padding,
+    ApiProvider provider,
+    Model model,
+    VoidCallback? onTap,
+    ThemeConfig theme,
+  ) {
+    var imgP = LLMImageIndexer.tryGetImagePath(model.family);
+    return StdButton(
+      onPressed: onTap,
+      padding: padding,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (imgP != null)
+            StdAvatar(length: height, assetImage: AssetImage(imgP)),
+          const SizedBox(width: 10),
+          Text(
+            "${model.friendlyName} | ${provider.name}",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(width: 10),
+        ],
       ),
     );
-    selectedIndex = ref.read(agentEditState).model;
-  }
-
-  void onTap(Model model) {
-    if (model == selectedIndex) return;
-    setState(() {
-      selectedIndex = model;
-    });
-    var n = ref.read(agentEditState.notifier);
-    n.state.modelSettings.modelName = model.friendlyName;
-    var n2 = n.state.copyWith(model: model);
-    //此处在模型更改的时候需清除提供商
-    n2.provider = null;
-    n.state = n2;
-    // 注意：这里的key应该与show时使用的key一致
-    OverlayPortalService.hide(context);
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  State<ModelSelect> createState() => _ModelSelectState();
+}
 
-  @override
-  Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
-    return SizedBox(
-      height: 40,
-      width: 350,
-      child: Material(
-        clipBehavior: Clip.hardEdge,
-        color: theme.zeroGradeColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: InkWell(
-          onTap: () {
-            var rb = context.findRenderObject() as RenderBox;
-            OverlayPortalService.show(
-              context,
-              barrierVisible: false,
-              offset: rb.localToGlobal(Offset.zero),
-              // 这是你要求修改的部分
-              child: SizeTransition(
-                sizeFactor: _scaleAnimation,
-                child: SizedBox(
-                  width: rb.size.width + 4,
-                  height: rb.size.height * 7 + 3,
-                  child: Material(
-                    elevation: 4,
-                    color: theme.zeroGradeColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: FutureBuilder(
-                      future: ApiDatabaseService.instance.getAllModels(
-                        withAbilities: {ModelAbility.textGenerate},
-                        exceptAbilities: {ModelAbility.embedding},
-                      ),
-                      builder: (context, asyncSnapshot) {
-                        if (asyncSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (asyncSnapshot.data == null) {
-                          return Center(
-                            child: Text(S.of(context).error_occurred),
-                          );
-                        }
-                        return Column(
-                          children: [
-                            // 这个三元运算符可以简化
-                            if (selectedIndex != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(width: 16.0),
-                                    StdAvatar(
-                                      assetImage: AssetImage(
-                                        LLMImageIndexer.getImagePath(
-                                          selectedIndex!.family,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        selectedIndex!.friendlyName,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: theme.textColor,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            const Divider(),
-                            if (asyncSnapshot.data!.isEmpty)
-                              Center(child: Text(S.of(context).no_model)),
-                            //只是用来绘制inkwell
-                            Expanded(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: (_scaleAnimation.isCompleted)
-                                    ? SizedBox()
-                                    : ListView.builder(
-                                        itemCount: asyncSnapshot.data!.length,
-                                        itemBuilder: (context, index) {
-                                          return StdListTile(
-                                            onTap: () {
-                                              onTap(asyncSnapshot.data![index]);
-                                            },
-                                            title: Text(
-                                              asyncSnapshot
-                                                  .data![index]
-                                                  .friendlyName,
-                                            ),
-                                            subtitle: Text(
-                                              asyncSnapshot.data![index].family,
-                                            ),
-                                            leading: StdAvatar(
-                                              assetImage: AssetImage(
-                                                LLMImageIndexer.getImagePath(
-                                                  asyncSnapshot
-                                                      .data![index]
-                                                      .family,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
+class _ModelSelectState extends State<ModelSelect> {
+  Widget buildSearchResult(Model model) {
+    var imgP = LLMImageIndexer.tryGetImagePath(model.family);
+    return StdListTile(
+      onTap: () {
+        if (_selectedModel != model) {
+          setState(() {
+            _selectedModel = model;
+          });
+        }
+      },
+      leading: (imgP != null)
+          ? StdAvatar(length: 50, assetImage: AssetImage(imgP))
+          : null,
+      title: Text.rich(
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        TextSpan(
+          text: model.friendlyName,
+          children: [
+            TextSpan(
+              text: "  ${model.family}",
+              style: TextStyle(
+                color: widget.theme.darkTextColor.withAlpha(150),
+                fontSize: 14,
               ),
-            );
-            // 启动动画 (这个是必须的)
-            _controller.forward(from: 0.0);
-          },
-          child: (selectedIndex == null)
-              ? Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        S.of(context).select_model_hint,
-                        style: TextStyle(fontSize: 16, color: theme.textColor),
-                      ),
-                      Icon(Icons.keyboard_arrow_down, color: theme.textColor),
-                    ],
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(width: 16),
-                    StdAvatar(
-                      length: 26,
-                      assetImage: AssetImage(
-                        LLMImageIndexer.getImagePath(selectedIndex!.family),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        selectedIndex!.friendlyName,
-                        style: TextStyle(fontSize: 16, color: theme.textColor),
-                      ),
-                    ),
-                  ],
-                ),
+            ),
+          ],
+        ),
+      ),
+      subtitle: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: model.abilities.map((e) => getInfoTags(e)).toList(),
         ),
       ),
     );
   }
-}
 
-class _ProviderDropDown extends ConsumerStatefulWidget {
-  const _ProviderDropDown({super.key});
-  @override
-  ConsumerState<_ProviderDropDown> createState() => _ProviderDropDownState();
-}
-
-class _ProviderDropDownState extends ConsumerState<_ProviderDropDown>
-    with SingleTickerProviderStateMixin {
-  ApiProvider? selectedIndex;
-
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Interval(0.0, 0.7, curve: Curves.easeInOut), // 前半段时间执行
+  Widget getInfoTags(ModelAbility ability) {
+    return Container(
+      margin: const EdgeInsets.only(right: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      height: 25,
+      decoration: BoxDecoration(
+        color: widget.theme.primaryColor,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Center(
+        child: Text(
+          ability.name(context),
+          style: TextStyle(color: widget.theme.brightTextColor, fontSize: 12),
+        ),
       ),
     );
-    selectedIndex = ref.read(agentEditState).provider;
   }
 
-  void onTap(ApiProvider provider) {
-    setState(() {
-      selectedIndex = provider;
-    });
-    var n = ref.read(agentEditState.notifier);
-    n.state = n.state.copyWith(provider: provider);
-    // 注意：这里的key应该与show时使用的key一致
-    OverlayPortalService.hide(context);
+  Model? _selectedModel;
+  List<ApiProvider> _providers = [];
+  Widget selectProvider() {
+    return Column(
+      children: [
+        buildSearchResult(_selectedModel!),
+        const SizedBox(height: 8),
+        Text(
+          S.of(context).select_provider,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: FutureBuilder(
+            future: ApiDatabase.instance.getApiProviderByModelId(
+              _selectedModel!.id,
+            ),
+            builder: (context, pv) {
+              if (pv.hasData) {
+                _providers = pv.data!;
+                return ListView.builder(
+                  itemBuilder: (context, e) => buildProvider(_providers[e]),
+                  itemCount: _providers.length,
+                );
+              } else {
+                return SizedBox.shrink();
+              }
+            },
+          ),
+        ),
+      ],
+    );
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  Widget buildProvider(ApiProvider provider) {
+    var imgP = LLMImageIndexer.tryGetImagePath(provider.preset);
+    return StdListTile(
+      onTap: () {
+        if (_selectedModel != null) {
+          widget.onSelect(provider, _selectedModel!);
+        }
+      },
+      leading: (imgP != null)
+          ? StdAvatar(length: 40, assetImage: AssetImage(imgP))
+          : null,
+      title: Text(
+        provider.name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: widget.theme.bodyTextStyle,
+      ),
+    );
   }
 
+  Widget search() {
+    return FutureBuilder(
+      future: (_showAll)
+          ? ApiDatabase.instance.getAllModels()
+          : ApiDatabase.instance.getAvailableModels(),
+      builder: (context, model) {
+        if (model.hasData) {
+          _models = model.data!;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: StdSearch(
+                  key: ValueKey(_models.length),
+                  hintText: S.of(context).search_for_models,
+                  isOutlined: true,
+                  searchItems: _models.map((e) => e.friendlyName).toList(),
+                  itemBuilder: (context, e) => buildSearchResult(_models[e]),
+                  noResultPage: Center(
+                    child: Text(
+                      S.of(context).model_not_found,
+                      style: TextStyle(
+                        color: widget.theme.darkTextColor,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              StdButton(
+                text: (_showAll) ? "显示可用模型" : "显示所有模型",
+                onPressed: () {
+                  setState(() {
+                    _showAll = !_showAll;
+                  });
+                },
+              ),
+            ],
+          );
+        } else {
+          return SizedBox.shrink();
+        }
+      },
+    );
+  }
+
+  List<Model> _models = [];
+  bool _showAll = false;
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
-    var as = ref.watch(agentEditState);
-    if (as.model == null) {
-      return SizedBox();
+    if (_selectedModel != null) {
+      return selectProvider();
     }
-    ref.listen(agentEditState, (previous, next) {
-      if (previous != null &&
-          previous.provider != null &&
-          previous.model != next.model) {
-        selectedIndex = null;
-      }
-    });
-    return SizedBox(
-      height: 40,
-      width: 350,
-      child: Material(
-        clipBehavior: Clip.hardEdge,
-        color: theme.zeroGradeColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: InkWell(
-          onTap: () {
-            var rb = context.findRenderObject() as RenderBox;
-            OverlayPortalService.show(
-              context,
-              barrierVisible: false,
-              offset: rb.localToGlobal(Offset.zero),
-              // 这是你要求修改的部分
-              child: SizeTransition(
-                sizeFactor: _scaleAnimation,
-                child: SizedBox(
-                  width: rb.size.width + 4,
-                  height: rb.size.height * 7 + 3,
-                  child: Material(
-                    elevation: 4,
-                    color: theme.zeroGradeColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: FutureBuilder(
-                      future: ApiDatabaseService.instance.getProvidersByModel(
-                        as.model!.id,
-                      ),
-                      builder: (context, asyncSnapshot) {
-                        if (asyncSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (asyncSnapshot.data == null) {
-                          return Center(
-                            child: Text(S.of(context).error_occurred),
-                          );
-                        }
-                        return Column(
-                          children: [
-                            // 这个三元运算符可以简化
-                            if (selectedIndex != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(width: 16.0),
-                                    StdAvatar(
-                                      assetImage: AssetImage(
-                                        LLMImageIndexer.getImagePath(
-                                          selectedIndex!.name,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        selectedIndex!.name,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: theme.textColor,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            const Divider(),
-                            if (asyncSnapshot.data!.isEmpty)
-                              Center(child: Text(S.of(context).no_provider)),
-                            Expanded(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: (_scaleAnimation.isCompleted)
-                                    ? SizedBox()
-                                    : ListView.builder(
-                                        itemCount: asyncSnapshot.data!.length,
-                                        itemBuilder: (context, index) {
-                                          return StdListTile(
-                                            onTap: () {
-                                              onTap(asyncSnapshot.data![index]);
-                                            },
-                                            title: Text(
-                                              asyncSnapshot.data![index].name,
-                                            ),
-                                            leading: StdAvatar(
-                                              assetImage: AssetImage(
-                                                LLMImageIndexer.getImagePath(
-                                                  asyncSnapshot
-                                                      .data![index]
-                                                      .name,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            );
-            // 启动动画 (这个是必须的)
-            _controller.forward(from: 0.0);
-          },
-          child: (selectedIndex == null)
-              ? Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        S.of(context).plz_select_provider,
-                        style: TextStyle(fontSize: 16, color: theme.textColor),
-                      ),
-                      Icon(Icons.keyboard_arrow_down, color: theme.textColor),
-                    ],
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(width: 16),
-                    StdAvatar(
-                      length: 26,
-                      assetImage: AssetImage(
-                        LLMImageIndexer.getImagePath(selectedIndex!.name),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        selectedIndex!.name,
-                        style: TextStyle(fontSize: 16, color: theme.textColor),
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
+    return search();
   }
 }
 
@@ -1565,6 +1397,7 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
   }
 }
 
+/*
 class MemoryBase extends ConsumerStatefulWidget {
   const MemoryBase({super.key});
 
@@ -1661,7 +1494,7 @@ class _MemoryBaseState extends ConsumerState<MemoryBase> {
             ],
           ),
         ),
-        const SizedBox(height: 16),*/
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -1714,12 +1547,12 @@ class _MemoryBaseState extends ConsumerState<MemoryBase> {
               );
             },
           ),
-        ),
+        ),*/
       ],
     );
   }
 }
-
+*/
 class Opening extends ConsumerStatefulWidget {
   const Opening({super.key});
 

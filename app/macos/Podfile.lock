@@ -4,10 +4,6 @@ PODS:
   - FlutterMacOS (1.0.0)
   - irondash_engine_context (0.0.1):
     - FlutterMacOS
-  - ObjectBox (5.0.0)
-  - objectbox_flutter_libs (0.0.1):
-    - FlutterMacOS
-    - ObjectBox (= 5.0.0)
   - super_native_extensions (0.0.1):
     - FlutterMacOS
 
@@ -15,12 +11,7 @@ DEPENDENCIES:
   - bitsdojo_window_macos (from `Flutter/ephemeral/.symlinks/plugins/bitsdojo_window_macos/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - irondash_engine_context (from `Flutter/ephemeral/.symlinks/plugins/irondash_engine_context/macos`)
-  - objectbox_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/objectbox_flutter_libs/macos`)
   - super_native_extensions (from `Flutter/ephemeral/.symlinks/plugins/super_native_extensions/macos`)
-
-SPEC REPOS:
-  trunk:
-    - ObjectBox
 
 EXTERNAL SOURCES:
   bitsdojo_window_macos:
@@ -29,8 +20,6 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral
   irondash_engine_context:
     :path: Flutter/ephemeral/.symlinks/plugins/irondash_engine_context/macos
-  objectbox_flutter_libs:
-    :path: Flutter/ephemeral/.symlinks/plugins/objectbox_flutter_libs/macos
   super_native_extensions:
     :path: Flutter/ephemeral/.symlinks/plugins/super_native_extensions/macos
 
@@ -38,8 +27,6 @@ SPEC CHECKSUMS:
   bitsdojo_window_macos: 7959fb0ca65a3ccda30095c181ecb856fae48ea9
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   irondash_engine_context: 893c7d96d20ce361d7e996f39d360c4c2f9869ba
-  ObjectBox: a60820ec1c903702350585d8cc99c1268c99e688
-  objectbox_flutter_libs: 013bbc27a57c5120e1408c0b33386c78cd0b5847
   super_native_extensions: c2795d6d9aedf4a79fae25cb6160b71b50549189
 
 PODFILE CHECKSUM: 89b40013fd3aa1b6e3eddd84acfdcfd04d837fcb

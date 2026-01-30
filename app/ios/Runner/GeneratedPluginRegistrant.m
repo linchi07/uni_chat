@@ -24,12 +24,6 @@
 @import irondash_engine_context;
 #endif
 
-#if __has_include(<objectbox_flutter_libs/ObjectboxFlutterLibsPlugin.h>)
-#import <objectbox_flutter_libs/ObjectboxFlutterLibsPlugin.h>
-#else
-@import objectbox_flutter_libs;
-#endif
-
 #if __has_include(<path_provider_foundation/PathProviderPlugin.h>)
 #import <path_provider_foundation/PathProviderPlugin.h>
 #else
@@ -46,6 +40,12 @@
 #import <sqflite_darwin/SqflitePlugin.h>
 #else
 @import sqflite_darwin;
+#endif
+
+#if __has_include(<sqlite3_flutter_libs/Sqlite3FlutterLibsPlugin.h>)
+#import <sqlite3_flutter_libs/Sqlite3FlutterLibsPlugin.h>
+#else
+@import sqlite3_flutter_libs;
 #endif
 
 #if __has_include(<super_native_extensions/SuperNativeExtensionsPlugin.h>)
@@ -72,10 +72,10 @@
   [FPPDeviceInfoPlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPDeviceInfoPlusPlugin"]];
   [FilePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FilePickerPlugin"]];
   [IrondashEngineContextPlugin registerWithRegistrar:[registry registrarForPlugin:@"IrondashEngineContextPlugin"]];
-  [ObjectboxFlutterLibsPlugin registerWithRegistrar:[registry registrarForPlugin:@"ObjectboxFlutterLibsPlugin"]];
   [PathProviderPlugin registerWithRegistrar:[registry registrarForPlugin:@"PathProviderPlugin"]];
   [SharedPreferencesPlugin registerWithRegistrar:[registry registrarForPlugin:@"SharedPreferencesPlugin"]];
   [SqflitePlugin registerWithRegistrar:[registry registrarForPlugin:@"SqflitePlugin"]];
+  [Sqlite3FlutterLibsPlugin registerWithRegistrar:[registry registrarForPlugin:@"Sqlite3FlutterLibsPlugin"]];
   [SuperNativeExtensionsPlugin registerWithRegistrar:[registry registrarForPlugin:@"SuperNativeExtensionsPlugin"]];
   [URLLauncherPlugin registerWithRegistrar:[registry registrarForPlugin:@"URLLauncherPlugin"]];
   [WebViewFlutterPlugin registerWithRegistrar:[registry registrarForPlugin:@"WebViewFlutterPlugin"]];

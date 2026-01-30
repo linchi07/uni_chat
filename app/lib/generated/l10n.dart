@@ -589,6 +589,11 @@ class S {
     return Intl.message('Save', name: 'save', desc: '', args: []);
   }
 
+  /// `Please enter `
+  String get plz_enter {
+    return Intl.message('Please enter ', name: 'plz_enter', desc: '', args: []);
+  }
+
   /// `Add`
   String get add {
     return Intl.message('Add', name: 'add', desc: '', args: []);
@@ -2277,6 +2282,360 @@ class S {
   /// `Hide Docs`
   String get hide_document {
     return Intl.message('Hide Docs', name: 'hide_document', desc: '', args: []);
+  }
+
+  // skipped getter for the 'comment@forApiSettings' key
+
+  /// ` Are you sure to delete {provider}?\n All the records and key will be deleted as well.`
+  String provider_delete_warning(Object provider) {
+    return Intl.message(
+      ' Are you sure to delete $provider?\\n All the records and key will be deleted as well.',
+      name: 'provider_delete_warning',
+      desc: '',
+      args: [provider],
+    );
+  }
+
+  /// `Search provider`
+  String get search_provider {
+    return Intl.message(
+      'Search provider',
+      name: 'search_provider',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add other provider`
+  String get add_other_provider {
+    return Intl.message(
+      'Add other provider',
+      name: 'add_other_provider',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unnamed`
+  String get name_not_set {
+    return Intl.message('Unnamed', name: 'name_not_set', desc: '', args: []);
+  }
+
+  /// `Valid`
+  String get valid {
+    return Intl.message('Valid', name: 'valid', desc: '', args: []);
+  }
+
+  /// `Address might not be valid`
+  String get endPoint_might_not_valid {
+    return Intl.message(
+      'Address might not be valid',
+      name: 'endPoint_might_not_valid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `API end point not set`
+  String get endPoint_not_set {
+    return Intl.message(
+      'API end point not set',
+      name: 'endPoint_not_set',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `unknown`
+  String get unknown {
+    return Intl.message('unknown', name: 'unknown', desc: '', args: []);
+  }
+
+  /// `Basic configuration`
+  String get basic_configure {
+    return Intl.message(
+      'Basic configuration',
+      name: 'basic_configure',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Configured`
+  String get configure_all_set {
+    return Intl.message(
+      'Configured',
+      name: 'configure_all_set',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not configured`
+  String get configure_not_set {
+    return Intl.message(
+      'Not configured',
+      name: 'configure_not_set',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `API Keys configuration`
+  String get api_keys_configure {
+    return Intl.message(
+      'API Keys configuration',
+      name: 'api_keys_configure',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{num} API Keys added`
+  String api_keys_confiugured(Object num) {
+    return Intl.message(
+      '$num API Keys added',
+      name: 'api_keys_confiugured',
+      desc: '',
+      args: [num],
+    );
+  }
+
+  /// `Api Keys not added`
+  String get api_keys_not_set {
+    return Intl.message(
+      'Api Keys not added',
+      name: 'api_keys_not_set',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Model configuration`
+  String get model_configure {
+    return Intl.message(
+      'Model configuration',
+      name: 'model_configure',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Model not set`
+  String get model_configure_not_set {
+    return Intl.message(
+      'Model not set',
+      name: 'model_configure_not_set',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Added {num} models`
+  String model_configured(Object num) {
+    return Intl.message(
+      'Added $num models',
+      name: 'model_configured',
+      desc: '',
+      args: [num],
+    );
+  }
+
+  /// `Previous Step`
+  String get previous_step {
+    return Intl.message(
+      'Previous Step',
+      name: 'previous_step',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add version flags`
+  String get add_ver_flag {
+    return Intl.message(
+      'Add version flags',
+      name: 'add_ver_flag',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `API Type`
+  String get api_type {
+    return Intl.message('API Type', name: 'api_type', desc: '', args: []);
+  }
+
+  /// `API end point preview`
+  String get end_point_preview {
+    return Intl.message(
+      'API end point preview',
+      name: 'end_point_preview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confirm your delete.`
+  String get delete_confirm {
+    return Intl.message(
+      'Confirm your delete.',
+      name: 'delete_confirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Request per minute`
+  String get request_per_minute {
+    return Intl.message(
+      'Request per minute',
+      name: 'request_per_minute',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Request per day`
+  String get request_daily_limit {
+    return Intl.message(
+      'Request per day',
+      name: 'request_daily_limit',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Token limit per day`
+  String get token_daily_limit {
+    return Intl.message(
+      'Token limit per day',
+      name: 'token_daily_limit',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remark`
+  String get remark {
+    return Intl.message('Remark', name: 'remark', desc: '', args: []);
+  }
+
+  /// `Advance Settings`
+  String get advance_settings {
+    return Intl.message(
+      'Advance Settings',
+      name: 'advance_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter a digit`
+  String get plz_enter_digit {
+    return Intl.message(
+      'Enter a digit',
+      name: 'plz_enter_digit',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter a >0 number`
+  String get plz_enter_a_number_bigger_than_zero {
+    return Intl.message(
+      'Enter a >0 number',
+      name: 'plz_enter_a_number_bigger_than_zero',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add model`
+  String get add_model {
+    return Intl.message('Add model', name: 'add_model', desc: '', args: []);
+  }
+
+  /// `Search model`
+  String get search_for_models {
+    return Intl.message(
+      'Search model',
+      name: 'search_for_models',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Model not found , please check your spelling`
+  String get model_not_found {
+    return Intl.message(
+      'Model not found , please check your spelling',
+      name: 'model_not_found',
+      desc: '',
+      args: [],
+    );
+  }
+
+  // skipped getter for the 'comment@model_ability' key
+
+  /// `Text Generation`
+  String get textGenerate {
+    return Intl.message(
+      'Text Generation',
+      name: 'textGenerate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Image Generation`
+  String get imageGenerate {
+    return Intl.message(
+      'Image Generation',
+      name: 'imageGenerate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Image to Image Generation`
+  String get image2imageGenerate {
+    return Intl.message(
+      'Image to Image Generation',
+      name: 'image2imageGenerate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Visual Understanding`
+  String get visual {
+    return Intl.message(
+      'Visual Understanding',
+      name: 'visual',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `File`
+  String get file {
+    return Intl.message('File', name: 'file', desc: '', args: []);
+  }
+
+  /// `Embedding`
+  String get embedding {
+    return Intl.message('Embedding', name: 'embedding', desc: '', args: []);
+  }
+
+  /// `Audio`
+  String get audio {
+    return Intl.message('Audio', name: 'audio', desc: '', args: []);
+  }
+
+  /// `Video`
+  String get video {
+    return Intl.message('Video', name: 'video', desc: '', args: []);
   }
 }
 
