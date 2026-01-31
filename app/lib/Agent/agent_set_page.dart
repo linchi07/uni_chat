@@ -40,12 +40,7 @@ class AgentSetPage extends StatelessWidget {
         ),
         Expanded(
           flex: 3,
-          child: Expanded(
-            child: AgentEditConfigure(
-              onSaveReturn: onSaveReturn,
-              onBack: onBack,
-            ),
-          ),
+          child: AgentEditConfigure(onSaveReturn: onSaveReturn, onBack: onBack),
         ),
       ],
     );
@@ -331,7 +326,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
               ),
             ),
           ),
-          SizedBox(height: 180, child: EditPageTokenUsageStatistics()),
+          TokenStats(),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(
@@ -578,9 +573,23 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
   }
 }
 
-class EditPageTokenUsageStatistics extends ConsumerWidget {
-  // ignore: prefer_const_constructors_in_immutables
-  EditPageTokenUsageStatistics({super.key});
+
+class TokenStats extends ConsumerStatefulWidget {
+  const TokenStats({super.key});
+
+  @override
+  ConsumerState<TokenStats> createState() => _TokenStatsState();
+}
+
+class _TokenStatsState extends ConsumerState<TokenStats> {
+ late ThemeConfig theme;
+ 
+ @override
+  void initState() {
+  super.initState();
+  theme = ref.read(themeProvider);
+  }
+  
   static const double innerRadius = 15;
   late final List<(double, int)> percentages;
   void calcPercentage(AgentEditState state, WidgetRef ref) {
@@ -634,34 +643,22 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
   double width = 465;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    theme = ref.watch(themeProvider);
     var state = ref.watch(agentEditState);
     calcPercentage(state, ref);
-    return LayoutBuilder(
-      builder: (context, c) {
-        width = c.maxWidth;
-        return Row(
-          children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: PieChart(
-                PieChartData(
-                  startDegreeOffset: -90,
-                  sections: _getSections(context),
-                  centerSpaceRadius: 35,
-                  sectionsSpace: 2,
-                  pieTouchData: PieTouchData(
-                    touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                      // 处理触摸事件
-                    },
-                  ),
-                ),
-              ),
-            ),
-            _buildLegend(context),
-          ],
-        );
-      },
+    return _buildLine();
+  }
+
+  Widget _buildLine() {
+    return Container(
+      height: 10,
+      margin: EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: theme.zeroGradeColor,
+      ),
+      clipBehavior: Clip.hardEdge,
     );
   }
 
