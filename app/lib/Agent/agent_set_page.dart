@@ -1,4 +1,3 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
@@ -47,14 +46,75 @@ class AgentSetPage extends StatelessWidget {
   }
 }
 
-enum PropertyEditing {
-  sysPrompt,
-  model,
-  knowledgeBase,
-  UIQL,
-  USRIdentity,
-  opening,
-  sysAndEnvironmentVars,
+enum PropertyEditing { sysPrompt, model, USRIdentity, opening }
+
+@immutable
+class ModelConfigure {
+  final String modelId;
+
+  final int maxGenerationTokens;
+  final int maxContextTokens;
+
+  //parameters (such as temperature)
+  final List<ModelParameters> parameters;
+
+  // basic info pass
+  final bool enableTimeTelling;
+  final bool enableUsrLanguage;
+  final bool enableUsrSystemInformation;
+
+  const ModelConfigure({
+    this.modelId = "",
+    this.maxGenerationTokens = 2560,
+    this.maxContextTokens = 4096,
+    this.parameters = const [],
+    this.enableTimeTelling = true,
+    this.enableUsrLanguage = true,
+    this.enableUsrSystemInformation = true,
+  });
+
+  ModelConfigure copyWith({
+    String? modelId,
+    int? maxGenerationTokens,
+    int? maxContextTokens,
+    List<ModelParameters>? parameters,
+    bool? enableTimeTelling,
+    bool? enableUsrLanguage,
+    bool? enableUsrSystemInformation,
+  }) {
+    return ModelConfigure(
+      modelId: modelId ?? this.modelId,
+      maxGenerationTokens: maxGenerationTokens ?? this.maxGenerationTokens,
+      maxContextTokens: maxContextTokens ?? this.maxContextTokens,
+      parameters: parameters ?? this.parameters,
+      enableTimeTelling: enableTimeTelling ?? this.enableTimeTelling,
+      enableUsrLanguage: enableUsrLanguage ?? this.enableUsrLanguage,
+      enableUsrSystemInformation:
+          enableUsrSystemInformation ?? this.enableUsrSystemInformation,
+    );
+  }
+}
+
+@immutable
+class UserIdentityConfigure {
+  final String? defaultPersona;
+  final String? personaAdditionalInfo;
+
+  const UserIdentityConfigure({
+    this.defaultPersona,
+    this.personaAdditionalInfo,
+  });
+
+  UserIdentityConfigure copyWith({
+    String? defaultPersona,
+    String? personaAdditionalInfo,
+  }) {
+    return UserIdentityConfigure(
+      defaultPersona: defaultPersona ?? this.defaultPersona,
+      personaAdditionalInfo:
+          personaAdditionalInfo ?? this.personaAdditionalInfo,
+    );
+  }
 }
 
 class AgentEditState {
@@ -73,6 +133,7 @@ class AgentEditState {
   final bool enableUIQL;
   late final DateTime createdAt;
   bool autoCreateMDB;
+
   AgentEditState({
     String? id,
     this.isTokenEnough = true,
@@ -386,46 +447,6 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
                   const Divider(),
                   StdListTile(
                     title: Text(
-                      S.of(context).knowledge_base_and_contexts,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    isSelected:
-                        agentState.editing == PropertyEditing.knowledgeBase,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.knowledgeBase);
-                    },
-                  ),
-                  const Divider(),
-                  StdListTile(
-                    title: Text(
-                      S.of(context).ui_interaction_set,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    trailing: (Text(
-                      (agentState.enableUIQL)
-                          ? S.of(context).enable
-                          : S.of(context).disable,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: (agentState.editing == PropertyEditing.UIQL)
-                            ? theme.zeroGradeColor
-                            : theme.primaryColor,
-                      ),
-                    )),
-                    isSelected: agentState.editing == PropertyEditing.UIQL,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.UIQL);
-                    },
-                  ),
-                  const Divider(),
-                  StdListTile(
-                    title: Text(
                       S.of(context).usr_persona_set,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -573,7 +594,6 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
   }
 }
 
-
 class TokenStats extends ConsumerStatefulWidget {
   const TokenStats({super.key});
 
@@ -582,16 +602,15 @@ class TokenStats extends ConsumerStatefulWidget {
 }
 
 class _TokenStatsState extends ConsumerState<TokenStats> {
- late ThemeConfig theme;
- 
- @override
+  late ThemeConfig theme;
+
+  @override
   void initState() {
-  super.initState();
-  theme = ref.read(themeProvider);
+    super.initState();
+    theme = ref.read(themeProvider);
   }
-  
-  static const double innerRadius = 15;
-  late final List<(double, int)> percentages;
+
+  late List<(double, int)> percentages;
   void calcPercentage(AgentEditState state, WidgetRef ref) {
     var total = state.modelSettings.maxContextTokens;
     var interSysPrompt = 0;
@@ -607,11 +626,7 @@ class _TokenStatsState extends ConsumerState<TokenStats> {
     var sysPrompt = (state.systemPrompt == null
         ? 0
         : LLMTokenEstimator.estimateTokens(state.systemPrompt!));
-    var uIQL = (state.enableUIQL ? 1000 : 0);
-    var knowledgeBase = 1000;
-    var opening = 1000;
-    var left =
-        total - interSysPrompt - sysPrompt - uIQL - knowledgeBase - opening;
+    var left = total - interSysPrompt - sysPrompt;
     if (left < 0) {
       left = 0;
       if (state.isTokenEnough) {
@@ -633,9 +648,6 @@ class _TokenStatsState extends ConsumerState<TokenStats> {
       (0, total),
       (interSysPrompt / (total - left) * 360, interSysPrompt),
       (sysPrompt / (total - left) * 360, sysPrompt),
-      (knowledgeBase / (total - left) * 360, knowledgeBase),
-      (opening / (total - left) * 360, opening),
-      (uIQL / (total - left) * 360, uIQL),
       (left / (total - left) * 360, left),
     ];
   }
@@ -647,132 +659,74 @@ class _TokenStatsState extends ConsumerState<TokenStats> {
     theme = ref.watch(themeProvider);
     var state = ref.watch(agentEditState);
     calcPercentage(state, ref);
-    return _buildLine();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          (percentages[3].$2 == 0)
+              ? Text(
+                  S.of(context).enlarge_context_or_simplify_prompt,
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : Text(
+                  S.of(context).token_available_for_chat(percentages[3].$2),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+          const SizedBox(height: 2),
+          Text(
+            S.of(context).total_context_lim(percentages[0].$2),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          _buildLine(),
+          const SizedBox(height: 8),
+          _buildLegend(context),
+        ],
+      ),
+    );
+  }
+
+  Expanded _buildLineItem(String title, int value, Color color) {
+    return Expanded(
+      flex: value,
+      child: Container(color: color),
+    );
   }
 
   Widget _buildLine() {
     return Container(
       height: 10,
-      margin: EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: theme.zeroGradeColor,
       ),
-      clipBehavior: Clip.hardEdge,
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: [
+          _buildLineItem("", percentages[1].$2, theme.errorColor),
+          const SizedBox(width: 3),
+          _buildLineItem("", percentages[2].$2, theme.warningColor),
+        ],
+      ),
     );
   }
 
-  List<PieChartSectionData> _getSections(BuildContext context) {
-    return [
-      PieChartSectionData(
-        color: Colors.deepOrange,
-        value: percentages[1].$1,
-        showTitle: false,
-        title: "",
-        radius: innerRadius,
-        titleStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      PieChartSectionData(
-        color: Colors.orangeAccent,
-        value: percentages[2].$1,
-        title: S.of(context).sys_prompt,
-        showTitle: false,
-        radius: innerRadius,
-        titleStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      PieChartSectionData(
-        color: Colors.indigoAccent,
-        value: percentages[3].$1,
-        title: S.of(context).knowledge_base,
-        radius: innerRadius,
-        showTitle: false,
-        titleStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      PieChartSectionData(
-        color: Colors.green,
-        value: percentages[4].$1,
-        title: S.of(context).opening,
-        radius: innerRadius,
-        showTitle: false,
-        titleStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      PieChartSectionData(
-        color: Colors.purple,
-        value: percentages[5].$1,
-        title: S.of(context).ui_interactions,
-        radius: innerRadius,
-        showTitle: false,
-        titleStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-    ];
-  }
-
   Widget _buildLegend(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Wrap(
       children: [
-        (percentages[6].$2 == 0)
-            ? Text(
-                S.of(context).enlarge_context_or_simplify_prompt,
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              )
-            : Text(
-                (width >= 465)
-                    ? S.of(context).token_available_for_chat(percentages[6].$2)
-                    : "${percentages[6].$2}",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-        const SizedBox(height: 4),
-        Text(
-          (width >= 465)
-              ? S.of(context).total_context_lim(percentages[0].$2)
-              : "${percentages[0].$2}",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        SizedBox(height: 4),
         _buildLegendItem(
-          Colors.deepOrange,
+          theme.errorColor,
           S.of(context).system_internal_prompt(percentages[1].$2),
         ),
         _buildLegendItem(
-          Colors.orangeAccent,
+          theme.warningColor,
           S.of(context).system_prompt_tokens(percentages[2].$2),
-        ),
-        _buildLegendItem(
-          Colors.indigoAccent,
-          S.of(context).knowledge_base_tokens(percentages[3].$2),
-        ),
-        _buildLegendItem(
-          Colors.green,
-          S.of(context).longest_opening(percentages[4].$2),
-        ),
-        _buildLegendItem(
-          Colors.purple,
-          S.of(context).ui_interactions_tokens(percentages[5].$2),
         ),
       ],
     );
@@ -780,13 +734,13 @@ class _TokenStatsState extends ConsumerState<TokenStats> {
 
   Widget _buildLegendItem(Color color, String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 12, height: 12, color: color),
-          //节约空间，否则在文档打开的时候必定溢出
-          if (width >= 465) SizedBox(width: 10),
-          if (width >= 465) Text(text),
+          SizedBox(width: 12, height: 12, child: ColoredBox(color: color)),
+          const SizedBox(width: 4),
+          Text(text),
         ],
       ),
     );
@@ -815,16 +769,14 @@ class AgentEditDetails extends ConsumerWidget {
         return _SysPromptEdit();
       case PropertyEditing.opening:
         return Opening();
-      case PropertyEditing.knowledgeBase:
-        return SizedBox();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref
               .read(documentDisplayProvider.notifier)
               .setUrl("$websiteURL/docs/Agents/knowledge_base");
         });
       //return MemoryBase();
-      case PropertyEditing.UIQL:
-        return Uiql();
+      case PropertyEditing.USRIdentity:
+        return UserIdentity();
       default:
         return SizedBox();
     }
@@ -1605,66 +1557,7 @@ class _OpeningState extends ConsumerState<Opening> {
           ],
         ),
         const SizedBox(height: 16),
-        Text(
-          '更多知识请查看文档',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text("关于占位符的使用,请查看文档"),
-        const SizedBox(height: 16),
-        Expanded(
-          child: TextField(
-            controller: controller,
-            decoration: InputDecoration(
-              fillColor: theme.primaryColor,
-              focusColor: theme.primaryColor,
-              hintText: S.of(context).enter_opening_here,
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: (charCount <= s.modelSettings.maxContextTokens)
-                      ? theme.primaryColor
-                      : Colors.red,
-                  width: 1.0,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: (charCount <= s.modelSettings.maxContextTokens)
-                      ? theme.primaryColor
-                      : Colors.red,
-                  width: 2.5,
-                ),
-              ),
-              border: const OutlineInputBorder(),
-              // 添加计数器显示
-              counterStyle: TextStyle(
-                color: (charCount <= s.modelSettings.maxContextTokens)
-                    ? theme.primaryColor
-                    : Colors.red,
-                fontSize: 15.0,
-              ),
-              counterText: (charCount <= s.modelSettings.maxContextTokens)
-                  ? '$charCount/${s.modelSettings.maxContextTokens}'
-                  : S
-                        .of(context)
-                        .over_maximum_context_length_hint(
-                          charCount,
-                          s.modelSettings.maxContextTokens,
-                        ),
-            ),
-            // 监听文本变化更新计数
-            onChanged: (value) {
-              setState(() {
-                charCount = LLMTokenEstimator.estimateTokens(controller.text);
-              });
-              onSubmit(s);
-            },
-            expands: true,
-            maxLines: null,
-            textAlignVertical: TextAlignVertical.top,
-          ),
-        ),
-        const SizedBox(height: 16),
+        Text("coming soon", style: TextStyle(fontSize: 18)),
       ],
     );
   }
@@ -1705,5 +1598,14 @@ class Uiql extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+class UserIdentity extends ConsumerWidget {
+  const UserIdentity({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return const Placeholder();
   }
 }

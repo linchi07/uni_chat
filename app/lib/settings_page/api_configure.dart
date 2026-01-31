@@ -622,6 +622,7 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                                 );
                               },
                             ),
+                          if (showBasic) const Divider(),
                           StdListTile(
                             title: Text(S.of(context).api_keys_configure),
                             isSelected: page == 1 + indexShift,
@@ -641,6 +642,7 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                               );
                             },
                           ),
+                          const Divider(),
                           StdListTile(
                             isSelected: page == 2 + indexShift,
                             title: Text(S.of(context).model_configure),
@@ -832,7 +834,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
     name.text = ac.name ?? "";
     endpoint.text = ac.endpoint ?? "";
     endPointText.value = endpoint.text;
-    endpoint.addListener((){
+    endpoint.addListener(() {
       endPointText.value = endpoint.text;
     });
   }
