@@ -1434,6 +1434,26 @@ class S {
     );
   }
 
+  /// `Default persona for the agent`
+  String get select_agent_default_persona {
+    return Intl.message(
+      'Default persona for the agent',
+      name: 'select_agent_default_persona',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Additional information about the persona`
+  String get persona_additonal_information {
+    return Intl.message(
+      'Additional information about the persona',
+      name: 'persona_additonal_information',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Add persona`
   String get add_persona {
     return Intl.message('Add persona', name: 'add_persona', desc: '', args: []);

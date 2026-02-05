@@ -34,8 +34,11 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (io.Platform.isAndroid) {
     PlatForm().platform = RunningPlatform.android;
+    var di = await DeviceInfoPlugin().androidInfo;
+    PlatForm().platformInfo = "${di.model} running on ${di.version}";
   } else if (io.Platform.isIOS) {
     var di = await DeviceInfoPlugin().iosInfo;
+    PlatForm().platformInfo = "${di.modelName} running on IOS ${di.systemName}";
     // whether this is an ipad
     if (di.model.contains("iPad")) {
       PlatForm().platform = RunningPlatform.ipadOS;
@@ -45,9 +48,22 @@ Future<void> main() async {
   } else if (io.Platform.isMacOS) {
     PlatForm().platform = RunningPlatform.macos;
     await MacOSSpecificsSetting.setWindowStyle();
+    var di = await DeviceInfoPlugin().macOsInfo;
+    PlatForm().platformInfo =
+        "${di.modelName} running on MacOS ${di.majorVersion}";
   } else if (io.Platform.isWindows) {
     PlatForm().platform = RunningPlatform.windows;
     await WindowsSpecificsSetting.setWindowStyle();
+    var di = await DeviceInfoPlugin().windowsInfo;
+    var bn = di.buildNumber;
+    String sys = "Windows";
+    if(bn > 22000){
+      sys = "Windows 11 ${di.displayVersion}";
+    }else if(bn >= 10240){
+      sys = "Windows 10 ${di.displayVersion}";
+    } // else might be win 8.1 or 7 since flutter don run on xp
+    PlatForm().platformInfo =
+        "${di.computerName} running on $sys";
     //windows 下使用 ffi版本
     //我在考虑把macos 也切换到ffi版本，但是听说好像性能没有提升啥
     sqfliteFfiInit();

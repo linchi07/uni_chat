@@ -235,6 +235,8 @@
   "delete_long_press": "删除（长按）",
   "DEFAULT": "默认",
   "switch_persona": "切换人格",
+  "select_agent_default_persona": "使用Agent时的默认人格",
+  "persona_additonal_information": "额外人格信息",
   "add_persona": "添加人格",
   "edit_persona": "编辑人格",
   "give_up_edit_confirm": "确定放弃编辑吗？",

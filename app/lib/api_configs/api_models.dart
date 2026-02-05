@@ -171,7 +171,6 @@ class ApiKey implements Insertable<ApiKeysTableData> {
   }
 }
 
-
 @immutable
 class TokenUsage {
   final int promptTokens;
@@ -412,13 +411,7 @@ class Model implements Insertable<Model> {
     List<ModelParameters>? parameters;
     var pr = map['parameters'];
     if (pr != null) {
-      parameters = [];
-      for (var i in (pr as List)) {
-        var obj = ModelParameters.fromMap(i);
-        if (obj != null) {
-          parameters.add(obj);
-        }
-      }
+      parameters = ModelParameters.fromMap(pr);
       if (parameters.isEmpty) {
         parameters = null;
       }
@@ -775,19 +768,30 @@ abstract class ModelParameters {
 
   Map<String, dynamic> toMap();
 
-  static ModelParameters? fromMap(Map<String, dynamic> map) {
-    switch (map['name']) {
-      case 'temperature':
-        return Temperature.fromMap(map);
-      case 'top_p':
-        return TopP.fromMap(map);
-      case 'presence_penalty':
-        return PresencePenalty.fromMap(map);
-      case 'frequency_penalty':
-        return FrequencyPenalty.fromMap(map);
-      default:
-        return null;
+  static List<ModelParameters> fromMap(List<dynamic> maps) {
+    if (maps.isEmpty) {
+      return [];
     }
+    var list = <ModelParameters>[];
+    for (var map in maps) {
+      switch (map['name']) {
+        case 'temperature':
+          list.add(Temperature.fromMap(map));
+          continue;
+        case 'top_p':
+          list.add(TopP.fromMap(map));
+          continue;
+        case 'presence_penalty':
+          list.add(PresencePenalty.fromMap(map));
+          continue;
+        case 'frequency_penalty':
+          list.add(FrequencyPenalty.fromMap(map));
+          continue;
+        default:
+          continue;
+      }
+    }
+    return list;
   }
 }
 

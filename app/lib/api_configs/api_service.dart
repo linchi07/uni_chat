@@ -243,10 +243,10 @@ class OpenAiApiService extends BaseApiService {
       'model': client.providerConfig.callName,
       'input': contents,
       'stream': true,
-      'temperature': modelRequestContent.modelSpecifics.temperature,
-      'top_p': modelRequestContent.modelSpecifics.topP,
+      //'temperature': modelRequestContent.modelConfigure.temperature,
+      //'top_p': modelRequestContent.modelConfigure.topP,
       'max_output_tokens':
-          modelRequestContent.modelSpecifics.maxGenerationTokens,
+          modelRequestContent.modelConfigure.maxGenerationTokens,
     };
 
     request.body = jsonEncode(requestBody);
@@ -617,10 +617,10 @@ class OpenAiCompletionService extends OpenAiApiService {
       'model': client.providerConfig.callName,
       'messages': contents,
       'stream': true,
-      'frequency_penalty': modelRequestContent.modelSpecifics.frequencyPenalty,
-      'presence_penalty': modelRequestContent.modelSpecifics.presencePenalty,
-      'temperature': modelRequestContent.modelSpecifics.temperature,
-      'top_p': modelRequestContent.modelSpecifics.topP,
+      //'frequency_penalty': modelRequestContent.modelConfigure.frequencyPenalty,
+      //'presence_penalty': modelRequestContent.modelConfigure.presencePenalty,
+      //'temperature': modelRequestContent.modelConfigure.temperature,
+      //'top_p': modelRequestContent.modelConfigure.topP,
     };
 
     request.body = jsonEncode(requestBody);
@@ -884,10 +884,10 @@ class GeminiApiService extends BaseApiService {
         'parts': sysMsg,
       }, //根据api文档，role这里填什么都行
       "generationConfig": {
-        "temperature": modelRequestContent.modelSpecifics.temperature,
-        "topP": modelRequestContent.modelSpecifics.topP,
+        //"temperature": modelRequestContent.modelConfigure.temperature,
+        //"topP": modelRequestContent.modelConfigure.topP,
         "maxOutputTokens":
-            modelRequestContent.modelSpecifics.maxGenerationTokens,
+            modelRequestContent.modelConfigure.maxGenerationTokens,
         //"frequencyPenalty": modelRequestContent.modelSpecifics.frequencyPenalty,
         //google的逆天操作，2.5系列是不支持的，但是tm的Api文档上是有这个设置选择的，劳资难道给你正则匹配到2.5就禁用吗？
         //它家的api一团糟，还有各种不支持，这下知道openai 的好了。

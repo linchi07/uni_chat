@@ -5,108 +5,11 @@ import 'package:sqflite/sqflite.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../Agent/agent_models.dart';
 import '../Chat/chat_models.dart';
 import '../Persona/persona_provider.dart';
 import 'file_utils.dart';
 
-class AgentData {
-  final int version;
-  // the version of agent settings
-  final String id;
-  final String name;
-  final String providerId;
-  final String modelId;
-  final String? description;
-  final String? systemPrompt;
-  late final List<String> knowledgeBases;
-  final ModelSpecifics modelSpecifics;
-  final DateTime createdAt;
-  final bool isDefault;
-
-  AgentData({
-    required this.version,
-    required this.id,
-    required this.name,
-    required this.providerId,
-    required this.modelId,
-    required this.modelSpecifics,
-    this.description,
-    this.systemPrompt,
-    List<String>? knowledgeBases,
-    required this.createdAt,
-    this.isDefault = false,
-  }) {
-    this.knowledgeBases = knowledgeBases ?? [];
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'system_prompt': systemPrompt,
-      'created_at': createdAt.toIso8601String(),
-      'is_default': isDefault ? 1 : 0,
-    };
-  }
-
-  Future<File?> getAvatar() async {
-    var f = await PathProvider.getPath("chat/avatars/$id");
-    var f1 = File("$f.png");
-    if (await f1.exists()) {
-      return f1;
-    } else {
-      var f2 = File("$f.jpg");
-      if (await f2.exists()) {
-        return f2;
-      }
-      var f3 = File("$f.jpeg");
-      if (await f3.exists()) {
-        return f3;
-      }
-    }
-    return null;
-  }
-
-  String _parameterToJson() {
-    Map<String, dynamic> parameters = {
-      'version': version,
-      'provider_id': providerId,
-      'model_id': modelId,
-      'system_prompt': systemPrompt,
-      'knowledge_bases': knowledgeBases,
-      'model_specifics': modelSpecifics.toJson(),
-    };
-    return jsonEncode(parameters);
-  }
-
-  Map<String, dynamic> toDatabaseStorage() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'configure': _parameterToJson(),
-      'created_at': createdAt.toIso8601String(),
-      'is_default': isDefault ? 1 : 0,
-    };
-  }
-
-  factory AgentData.fromDatabaseStorage(Map<String, dynamic> map) {
-    var parameters = jsonDecode(map['configure']);
-    return AgentData(
-      version: parameters['version'] as int,
-      id: map['id'] as String,
-      name: map['name'] as String,
-      providerId: parameters['provider_id'] as String? ?? '',
-      modelId: parameters['model_id'] as String,
-      modelSpecifics: ModelSpecifics.fromJson(parameters['model_specifics']),
-      description: map['description'] as String?,
-      systemPrompt: parameters['system_prompt'] as String?,
-      createdAt: DateTime.parse(map['created_at']),
-      isDefault: map['is_default'] == 1,
-    );
-  }
-}
 
 class DatabaseService {
   static final DatabaseService instance = DatabaseService._privateConstructor();

@@ -321,6 +321,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "opening_set": MessageLookupByLibrary.simpleMessage("开场白设置"),
     "or_expand_window": MessageLookupByLibrary.simpleMessage("或请拉大窗口"),
     "over_maximum_context_length_hint": m10,
+    "persona_additonal_information": MessageLookupByLibrary.simpleMessage(
+      "额外人格信息",
+    ),
     "persona_description_hint": MessageLookupByLibrary.simpleMessage("请介绍一下自己"),
     "plz_enter": MessageLookupByLibrary.simpleMessage("请输入"),
     "plz_enter_a_number_bigger_than_zero": MessageLookupByLibrary.simpleMessage(
@@ -367,6 +370,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "正在检索知识库...",
     ),
     "select_agent": MessageLookupByLibrary.simpleMessage("选择Agent"),
+    "select_agent_default_persona": MessageLookupByLibrary.simpleMessage(
+      "使用Agent时的默认人格",
+    ),
     "select_api_type": MessageLookupByLibrary.simpleMessage("选择API类型"),
     "select_image_hint": MessageLookupByLibrary.simpleMessage("拖拽或单击选择图片"),
     "select_model_hint": MessageLookupByLibrary.simpleMessage("选择一个模型"),

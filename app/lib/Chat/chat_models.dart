@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
+import 'package:uni_chat/Agent/agent_models.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 
 class ChatSession {
@@ -218,14 +219,14 @@ class ModelRequestContent {
   List<FormattedChatMessage> chatHistory;
   List<FormattedChatMessage> usrMessage;
   List<FormattedChatMessage> ragMessages;
-  ModelSpecifics modelSpecifics;
+  ModelConfigure modelConfigure;
   ModelRequestContent({
     required this.staticSystemMessages,
     required this.dynamicSystemMessages,
     required this.uiMessages,
     required this.chatHistory,
     required this.usrMessage,
-    required this.modelSpecifics,
+    required this.modelConfigure,
     required this.ragMessages,
   });
 }

@@ -19,6 +19,7 @@ import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
+import '../Agent/agent_models.dart';
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/overlays.dart';

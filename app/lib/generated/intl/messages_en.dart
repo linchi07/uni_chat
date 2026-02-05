@@ -448,6 +448,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "or please make the window bigger",
     ),
     "over_maximum_context_length_hint": m10,
+    "persona_additonal_information": MessageLookupByLibrary.simpleMessage(
+      "Additional information about the persona",
+    ),
     "persona_description_hint": MessageLookupByLibrary.simpleMessage(
       "Describe yourself...",
     ),
@@ -518,6 +521,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Searching Knowledge Base...",
     ),
     "select_agent": MessageLookupByLibrary.simpleMessage("Select agent"),
+    "select_agent_default_persona": MessageLookupByLibrary.simpleMessage(
+      "Default persona for the agent",
+    ),
     "select_api_type": MessageLookupByLibrary.simpleMessage(
       "Select the type of the API",
     ),

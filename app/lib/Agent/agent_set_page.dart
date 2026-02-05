@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
@@ -15,6 +17,7 @@ import '../utils/file_utils.dart';
 import '../utils/llm_image_indexer.dart' show LLMImageIndexer;
 import '../utils/overlays.dart';
 import 'agentProvider.dart';
+import 'agent_models.dart';
 
 /// @param onSaveReturn 这个是在保存的时候调用的
 /// @param onBack 这个在取消的时候调用，如果保留空的话就不会有取消按钮（也就是给初始页面用的）
@@ -48,75 +51,6 @@ class AgentSetPage extends StatelessWidget {
 
 enum PropertyEditing { sysPrompt, model, USRIdentity, opening }
 
-@immutable
-class ModelConfigure {
-  final String modelId;
-
-  final int maxGenerationTokens;
-  final int maxContextTokens;
-
-  //parameters (such as temperature)
-  final List<ModelParameters> parameters;
-
-  // basic info pass
-  final bool enableTimeTelling;
-  final bool enableUsrLanguage;
-  final bool enableUsrSystemInformation;
-
-  const ModelConfigure({
-    this.modelId = "",
-    this.maxGenerationTokens = 2560,
-    this.maxContextTokens = 4096,
-    this.parameters = const [],
-    this.enableTimeTelling = true,
-    this.enableUsrLanguage = true,
-    this.enableUsrSystemInformation = true,
-  });
-
-  ModelConfigure copyWith({
-    String? modelId,
-    int? maxGenerationTokens,
-    int? maxContextTokens,
-    List<ModelParameters>? parameters,
-    bool? enableTimeTelling,
-    bool? enableUsrLanguage,
-    bool? enableUsrSystemInformation,
-  }) {
-    return ModelConfigure(
-      modelId: modelId ?? this.modelId,
-      maxGenerationTokens: maxGenerationTokens ?? this.maxGenerationTokens,
-      maxContextTokens: maxContextTokens ?? this.maxContextTokens,
-      parameters: parameters ?? this.parameters,
-      enableTimeTelling: enableTimeTelling ?? this.enableTimeTelling,
-      enableUsrLanguage: enableUsrLanguage ?? this.enableUsrLanguage,
-      enableUsrSystemInformation:
-          enableUsrSystemInformation ?? this.enableUsrSystemInformation,
-    );
-  }
-}
-
-@immutable
-class UserIdentityConfigure {
-  final String? defaultPersona;
-  final String? personaAdditionalInfo;
-
-  const UserIdentityConfigure({
-    this.defaultPersona,
-    this.personaAdditionalInfo,
-  });
-
-  UserIdentityConfigure copyWith({
-    String? defaultPersona,
-    String? personaAdditionalInfo,
-  }) {
-    return UserIdentityConfigure(
-      defaultPersona: defaultPersona ?? this.defaultPersona,
-      personaAdditionalInfo:
-          personaAdditionalInfo ?? this.personaAdditionalInfo,
-    );
-  }
-}
-
 class AgentEditState {
   late final String id;
   final bool isValidateMode;
@@ -133,6 +67,7 @@ class AgentEditState {
   final bool enableUIQL;
   late final DateTime createdAt;
   bool autoCreateMDB;
+  final PersonaConfigure userIdentity;
 
   AgentEditState({
     String? id,
@@ -150,6 +85,7 @@ class AgentEditState {
     Set<String>? knowledgeBases,
     DateTime? createdAt,
     this.autoCreateMDB = true,
+    this.userIdentity = const PersonaConfigure(),
   }) {
     this.knowledgeBases = knowledgeBases ?? <String>{};
     this.id = id ?? Uuid().v4();
@@ -173,6 +109,7 @@ class AgentEditState {
     bool? enableUIQL,
     ModelSpecifics? modelSettings,
     bool? autoCreateMDB,
+    PersonaConfigure? userIdentity,
   }) {
     return AgentEditState(
       id: id ?? this.id,
@@ -190,6 +127,7 @@ class AgentEditState {
       knowledgeBases: knowledgeBases ?? this.knowledgeBases,
       createdAt: createdAt ?? this.createdAt,
       autoCreateMDB: autoCreateMDB ?? this.autoCreateMDB,
+      userIdentity: userIdentity ?? this.userIdentity,
     );
   }
 
@@ -197,32 +135,49 @@ class AgentEditState {
     return name != null && isTokenEnough && provider != null && model != null;
   }
 
-  Future<AgentData> toAgentData() async {
+  ModelConfigure _toModelConfigure() {
+    return ModelConfigure(
+      modelId: model!.id,
+      providerId: provider!.id,
+      maxContextTokens: modelSettings.maxContextTokens,
+      maxGenerationTokens: modelSettings.maxGenerationTokens,
+      enableTimeTelling: modelSettings.enableTimeTelling,
+      enableUsrLanguage: modelSettings.enableUsrLanguage,
+      enableUsrSystemInformation: modelSettings.enableUsrSystemInformation,
+    );
+  }
+
+  AgentData toAgentData(){
     return AgentData(
       version: 1,
       id: id,
       name: name!,
       description: description,
-      providerId: provider!.id,
-      modelId: model!.id,
+      modelConfigure: _toModelConfigure(),
+      userIdentityConfigure: userIdentity,
       systemPrompt: systemPrompt,
       knowledgeBases: knowledgeBases.toList(),
       createdAt: createdAt,
-      modelSpecifics: modelSettings,
     );
   }
 
   static Future<AgentEditState> fromAgentData(AgentData agentData) async {
-    var pv = await ApiDatabase.instance.getProviderById(agentData.providerId);
-    var m = await ApiDatabase.instance.getModelById(agentData.modelId);
+    var pv = await ApiDatabase.instance.getProviderById(agentData.modelConfigure.providerId);
+    var m = await ApiDatabase.instance.getModelById(agentData.modelConfigure.modelId);
     return AgentEditState(
       id: agentData.id,
       name: agentData.name,
       provider: pv,
       model: m,
+      modelSettings: ModelSpecifics(
+        maxContextTokens: agentData.modelConfigure.maxContextTokens,
+        maxGenerationTokens: agentData.modelConfigure.maxGenerationTokens,
+        enableTimeTelling: agentData.modelConfigure.enableTimeTelling,
+        enableUsrLanguage: agentData.modelConfigure.enableUsrLanguage,
+        enableUsrSystemInformation: agentData.modelConfigure.enableUsrSystemInformation,
+      ),
       description: agentData.description,
       systemPrompt: agentData.systemPrompt,
-      knowledgeBases: agentData.knowledgeBases.toSet(),
       createdAt: agentData.createdAt,
     );
   }
@@ -1563,19 +1518,23 @@ class _OpeningState extends ConsumerState<Opening> {
   }
 }
 
-class Uiql extends ConsumerWidget {
-  const Uiql({super.key});
+class UserIdentity extends ConsumerWidget {
+  const UserIdentity({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var agent = ref.watch(agentEditState);
+    var uiden =
+        ref.watch(agentEditState.select((s) => s.userIdentity)) ??
+        PersonaConfigure();
+    var theme = ref.watch(themeProvider);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 16),
         Row(
           children: [
             Text(
-              S.of(context).ui_interaction_set,
+              S.of(context).usr_persona_set,
               style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
@@ -1584,28 +1543,135 @@ class Uiql extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          '该功能是一个实验功能，目前正在完善，更多相关信息请查看文档 \n This is a experimental feature, more information please see the documentation ',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          S.of(context).select_agent_default_persona,
+          style: TextStyle(fontSize: 18),
         ),
         const SizedBox(height: 16),
-        StdCheckbox(
-          value: agent.enableUIQL,
-          onChanged: (value) {
-            var n = ref.read(agentEditState.notifier);
-            n.state = agent.copyWith(enableUIQL: value);
+        StdButton(
+          onPressed: () {
+            OverlayPortalService.showDialog(
+              context,
+              height: 600,
+              width: 400,
+              child: personaSelector(context, ref),
+              backGroundColor: theme.zeroGradeColor,
+            );
           },
-          text: S.of(context).enable_ui_interactions,
+          text: S.of(context).select_agent_default_persona,
+          child: (uiden.defaultPersona == null)
+              ? null
+              : FutureBuilder(
+                  future: () async {
+                    var p = await DatabaseService.instance.getPersonaById(
+                      uiden.defaultPersona!,
+                    );
+                    if (p == null) {
+                      return null;
+                    } else {
+                      return (p, await p.getAvatar());
+                    }
+                  }.call(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data != null) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          StdAvatar(file: snapshot.data!.$2),
+                          const SizedBox(width: 8),
+                          Text(" ${snapshot.data!.$1.name}"),
+                        ],
+                      );
+                    } else {
+                      return Text(
+                        S.of(context).error_occurred,
+                        style: TextStyle(color: theme.errorColor),
+                      );
+                    }
+                  },
+                ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          S.of(context).persona_additonal_information,
+          style: TextStyle(fontSize: 18),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: StdTextFieldOutlined(
+            hintText:
+                S.of(context).plz_enter +
+                S.of(context).persona_additonal_information.toLowerCase(),
+            controller: TextEditingController(
+              text: uiden.personaAdditionalInfo,
+            ),
+            isExpanded: true,
+            onSubmitted: (value) {
+              var n = ref.read(agentEditState.notifier);
+              n.state = n.state.copyWith(
+                userIdentity: n.state.userIdentity.copyWith(
+                  personaAdditionalInfo: value,
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
   }
-}
 
-class UserIdentity extends ConsumerWidget {
-  const UserIdentity({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return const Placeholder();
+  Widget personaSelector(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          S.of(context).select_agent_default_persona,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        FutureBuilder(
+          future: DatabaseService.instance.getAllPersonas(),
+          builder: (context, asyncSnapshot) {
+            if (!asyncSnapshot.hasData) {
+              return SizedBox();
+            }
+            if (asyncSnapshot.hasError || asyncSnapshot.data == null) {
+              return Center(child: Text(S.of(context).error_occurred));
+            }
+            if (asyncSnapshot.data!.isEmpty) {
+              return Center(child: Text(S.of(context).no_persona));
+            }
+            return Expanded(
+              child: ListView.builder(
+                itemCount: asyncSnapshot.data!.length,
+                itemBuilder: (context, index) {
+                  return FutureBuilder(
+                    future: asyncSnapshot.data![index].getAvatar(),
+                    builder: (context, avt) {
+                      return StdListTile(
+                        leading:
+                            ((asyncSnapshot.hasError ||
+                                asyncSnapshot.data == null))
+                            ? null
+                            : StdAvatar(file: avt.data),
+                        title: Text(asyncSnapshot.data![index].name),
+                        onTap: () async {
+                          await OverlayPortalService.hide(context);
+                          var n = ref.read(agentEditState.notifier);
+                          n.state = n.state.copyWith(
+                            userIdentity: PersonaConfigure(
+                              defaultPersona: asyncSnapshot.data![index].id,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 }

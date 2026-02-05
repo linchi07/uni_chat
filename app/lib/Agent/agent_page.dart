@@ -8,6 +8,7 @@ import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/database_service.dart';
 import '../utils/prebuilt_widgets.dart';
+import 'agent_models.dart';
 import 'agent_set_page.dart';
 
 class AgentPage extends StatefulWidget {

@@ -14,6 +14,7 @@ import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
 import '../Agent/agentProvider.dart';
+import '../Agent/agent_models.dart';
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/database_service.dart';

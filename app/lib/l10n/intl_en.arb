@@ -235,6 +235,8 @@
   "delete_long_press":"Delete (LongPress)",
   "DEFAULT":"Default",
   "switch_persona":"Switch persona",
+  "select_agent_default_persona": "Default persona for the agent",
+  "persona_additonal_information": "Additional information about the persona",
   "add_persona":"Add persona",
   "edit_persona":"Edit persona",
   "give_up_edit_confirm":"Give up edit?",
