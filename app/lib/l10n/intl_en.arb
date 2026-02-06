@@ -108,6 +108,7 @@
   "front_page_hintLine_char1":"Use ",
   "front_page_hintLine_char2":" to chat with ",
   "front_page_hintLine_char3":"",
+  "generate_message": "Generate message",
   "drop_files_hint":"Drop files here",
   "send_a_message_hint":"Send a message",
   "ui_editing":"Editing UI",

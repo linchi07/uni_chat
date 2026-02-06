@@ -739,6 +739,16 @@ class S {
     );
   }
 
+  /// `Generate message`
+  String get generate_message {
+    return Intl.message(
+      'Generate message',
+      name: 'generate_message',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Drop files here`
   String get drop_files_hint {
     return Intl.message(

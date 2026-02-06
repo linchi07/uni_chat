@@ -616,8 +616,15 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
       });
     }
     var itemCount = chatState.isResponding
-        ? chatState.messages.length + 1
-        : chatState.messages.length;
+        ? chatState.messagesList.length + 1
+        : chatState.messagesList.length;
+    if (!chatState.isResponding &&
+        chatState.messagesList.isNotEmpty &&
+        chatState.messagesList.last.sender == MessageSender.user) {
+      // when the last message is from the user (this might happen when ai responses are terminated due to exceptions)
+      itemCount +=
+          1; // add a space for a button to ask the user to regenerate ai messages
+    }
     return Scaffold(
       backgroundColor: theme.secondGradeColor,
       body: LayoutBuilder(
@@ -708,6 +715,46 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                     return ChatMessageDynamicStream(
                                       contentBuffer: chatState.newContentBuffer,
                                       refreshFlag: chatState.refreshFlag,
+                                    );
+                                  }
+                                  if (index == itemCount - 1 &&
+                                      chatState.messagesList.isNotEmpty &&
+                                      chatState.messagesList.last.sender ==
+                                          MessageSender.user) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: StdButton(
+                                        onPressed: () {
+                                          ref
+                                              .read(chatStateProvider.notifier)
+                                              .sendRequest(
+                                                chatState.messagesList.sublist(
+                                                  0,
+                                                  chatState
+                                                          .messagesList
+                                                          .length -
+                                                      1,
+                                                ),
+                                                chatState.messagesList.last,
+                                              );
+                                        },
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.generating_tokens_outlined,
+                                              color: theme.brightTextColor,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              "Generate Response",
+                                              style: TextStyle(
+                                                color: theme.brightTextColor,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     );
                                   }
                                   return const SizedBox.shrink();

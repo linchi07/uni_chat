@@ -108,6 +108,7 @@
   "front_page_hintLine_char1": "以 ",
   "front_page_hintLine_char2": " 和 ",
   "front_page_hintLine_char3": " 开始聊天",
+  "generate_message": "生成消息",
   "drop_files_hint": "在这里拖放文件",
   "send_a_message_hint": "发送一条消息",
   "ui_editing": "正在编辑UI...",

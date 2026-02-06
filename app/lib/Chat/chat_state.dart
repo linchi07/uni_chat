@@ -500,10 +500,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         clear: pm.clear,
         select: pm.select,
       );
-      var historyContent = history.toList();
       final stream = agentNotifier.getStreamingResponse(
         state.session!,
-        historyContent,
+        history,
         lastMessage,
       );
       ChatMessage? finalAiMessage;

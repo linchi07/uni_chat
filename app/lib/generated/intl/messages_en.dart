@@ -274,6 +274,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "general_settings": MessageLookupByLibrary.simpleMessage(
       "General settings",
     ),
+    "generate_message": MessageLookupByLibrary.simpleMessage(
+      "Generate message",
+    ),
     "generate_title": MessageLookupByLibrary.simpleMessage("Generate title"),
     "generate_title_hint": MessageLookupByLibrary.simpleMessage(
       "Generate a title for this chat will overwrite the previous one",
