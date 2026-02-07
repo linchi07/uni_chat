@@ -1,15 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:sqflite/sqflite.dart';
-import 'package:uni_chat/Agent/agentProvider.dart';
+import 'package:uni_chat/error_handling.dart';
 import 'package:uuid/uuid.dart';
 
 import '../Agent/agent_models.dart';
 import '../Chat/chat_models.dart';
 import '../Persona/persona_provider.dart';
 import 'file_utils.dart';
-
 
 class DatabaseService {
   static final DatabaseService instance = DatabaseService._privateConstructor();
@@ -404,14 +402,14 @@ class DatabaseService {
         'session_id': sessionId,
         'message_id': message.messageId,
         'parent_id': message.parent,
-        'child_ids': jsonEncode(message.childIds),
+        'child_ids': message.childIds.join(','),
         'enabled_child_index': message.enabledChild,
       });
       if (modifiedParent != null) {
         await txn.update(
           'message_relations',
           {
-            'child_ids': jsonEncode(modifiedParent.childIds),
+            'child_ids': modifiedParent.childIds.join(','),
             'enabled_child_index': modifiedParent.enabledChild,
           },
           where: 'id = ?',
@@ -501,9 +499,8 @@ WHERE
   /// you should run a tree traversal on the root message to order all the messages
   ///
   /// to only get the enabled message list use [getMessageListForSession]  instead
-  Future<(ChatMessage?, Map<String, ChatMessage>)> getMessagesForSession(
-    String sessionId,
-  ) async {
+  Future<({ChatMessage? root, Map<String, ChatMessage> messages})>
+  getMessagesForSession(String sessionId) async {
     final db = await database;
     final List<Map<String, dynamic>> messageMaps = await db.rawQuery(
       '''SELECT
@@ -526,7 +523,7 @@ WHERE
       [sessionId],
     );
     if (messageMaps.isEmpty) {
-      return (null, <String, ChatMessage>{});
+      return (root: null, messages: <String, ChatMessage>{});
     }
     var result = <String, ChatMessage>{};
     ChatMessage? root;
@@ -540,7 +537,7 @@ WHERE
     if (root == null) {
       throw 'No root message found , data is corrupted';
     }
-    return (root, result);
+    return (root: root, messages: result);
   }
 
   /// Get the enabled branch of messages for a session
@@ -773,7 +770,7 @@ ORDER BY t.depth DESC;
 
       if (rowsAffected == 0) {
         // 可以在这里处理一个错误，比如要设置的 ID 不存在
-        throw Exception("Persona with ID $personaId not found.");
+        throw PersonaException(PersonaExceptionType.personaNotFound);
       }
     });
   }

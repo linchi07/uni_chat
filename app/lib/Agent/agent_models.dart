@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:uni_chat/error_handling.dart';
 
 import '../api_configs/api_models.dart';
 import '../utils/file_utils.dart';
@@ -86,10 +87,7 @@ class PersonaConfigure {
   final String? defaultPersona;
   final String? personaAdditionalInfo;
 
-  const PersonaConfigure({
-    this.defaultPersona,
-    this.personaAdditionalInfo,
-  });
+  const PersonaConfigure({this.defaultPersona, this.personaAdditionalInfo});
 
   PersonaConfigure copyWith({
     String? defaultPersona,
@@ -199,22 +197,26 @@ class AgentData {
   }
 
   factory AgentData.fromDatabaseStorage(Map<String, dynamic> map) {
-    var parameters = jsonDecode(map['configure']);
-    PersonaConfigure? uidc;
-    var uidcp = parameters['persona_configure'];
-    if(uidcp != null){
-      uidc = PersonaConfigure.fromMap(uidcp);
+    try {
+      var parameters = jsonDecode(map['configure']);
+      PersonaConfigure? uidc;
+      var uidcp = parameters['persona_configure'];
+      if (uidcp != null) {
+        uidc = PersonaConfigure.fromMap(uidcp);
+      }
+      return AgentData(
+        version: parameters['version'] as int,
+        id: map['id'] as String,
+        name: map['name'] as String,
+        description: map['description'] as String?,
+        systemPrompt: parameters['system_prompt'] as String?,
+        createdAt: DateTime.parse(map['created_at']),
+        isDefault: map['is_default'] == 1,
+        modelConfigure: ModelConfigure.fromMap(parameters['model_configure']),
+        userIdentityConfigure: uidc,
+      );
+    } catch (e) {
+      throw AgentException(AgentExceptionType.failLoadingAgent_ParseError);
     }
-    return AgentData(
-      version: parameters['version'] as int,
-      id: map['id'] as String,
-      name: map['name'] as String,
-      description: map['description'] as String?,
-      systemPrompt: parameters['system_prompt'] as String?,
-      createdAt: DateTime.parse(map['created_at']),
-      isDefault: map['is_default'] == 1,
-      modelConfigure: ModelConfigure.fromMap(parameters['model_configure']),
-      userIdentityConfigure: uidc,
-    );
   }
 }

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
+import 'package:uni_chat/error_handling.dart';
 
 import '../Chat/chat_models.dart';
 import 'api_key_resolver.dart';
@@ -16,7 +17,6 @@ class _ApiResponse {
   final InvokeResult? invokeResult;
   _ApiResponse({this.response, this.invokeResult});
 }
-
 
 @immutable
 class InvokeResult {
@@ -77,13 +77,13 @@ class ApiClient {
       modelId,
     );
     if (provider == null) {
-      throw "Provider not found";
+      throw ApiException(ApiExceptionType.providerNotFound);
     }
     if (model == null) {
-      throw "Model not found";
+      throw ApiException(ApiExceptionType.modelNotFound);
     }
     if (providerConfig == null) {
-      throw "The provider doesn't provide this model";
+      throw ApiException(ApiExceptionType.modelNotAvailableForProvider);
     }
     return ApiClient(
       providerConfig: providerConfig,
@@ -119,7 +119,7 @@ class ApiClient {
         await resolver.updateData(invokeResult);
         if (invokeResult.statusCode == 200) break;
       } else {
-        throw "A empty result returned from the server.";
+        throw ApiException(ApiExceptionType.request_emptyBody);
       }
     }
   }

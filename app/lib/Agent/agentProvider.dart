@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
+import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
 
@@ -99,7 +99,8 @@ class Agent {
       client: client,
       personaConfigure: agentData.userIdentityConfigure,
       modelConfigure: agentData.modelConfigure,
-      systemPrompt: agentData.systemPrompt, memoryBaseIds: [],
+      systemPrompt: agentData.systemPrompt,
+      memoryBaseIds: [],
     );
   }
 
@@ -149,16 +150,28 @@ class AgentProvider extends StateNotifier<Agent?> {
   }
 
   void loadDefaultAgent() async {
-    var agentData = await DatabaseService.instance.loadDefaultAgent();
     try {
-      state = await Agent.fromAgentData(agentData!);
-      if(state?.personaConfigure != null&&state?.personaConfigure?.defaultPersona != null){
-        await ref.read(personaProvider.notifier).loadPersonaById(state!.personaConfigure!.defaultPersona!);
+      var agentData = await DatabaseService.instance.loadDefaultAgent();
+      if (agentData == null) {
+        throw AgentException(AgentExceptionType.agentNotFound);
+      }
+      state = await Agent.fromAgentData(agentData);
+      if (state?.personaConfigure != null &&
+          state?.personaConfigure?.defaultPersona != null) {
+        await ref
+            .read(personaProvider.notifier)
+            .loadPersonaById(state!.personaConfigure!.defaultPersona!);
       }
     } catch (e) {
-      ref
-          .read(chatStateProvider.notifier)
-          .stateCopyWith(error: 'Failed to find agent.', isReady: false);
+      AppException ex;
+      if (e is Exception) {
+        if (e is AppException) {
+          ex = AgentException.fromAncestor(e);
+        } else {
+          ex = AgentException.fromException(e);
+        }
+        ref.read(chatStateProvider.notifier).stateCopyWith(error: ex);
+      }
     }
   }
 
@@ -166,16 +179,28 @@ class AgentProvider extends StateNotifier<Agent?> {
     if (state != null && state!.id == id && !forceReload) {
       return;
     }
-    var agentData = await DatabaseService.instance.getAgent(id);
     try {
-      state = await Agent.fromAgentData(agentData!);
-      if(state?.personaConfigure != null&&state?.personaConfigure?.defaultPersona != null){
-        await ref.read(personaProvider.notifier).loadPersonaById(state!.personaConfigure!.defaultPersona!);
+      var agentData = await DatabaseService.instance.getAgent(id);
+      if (agentData == null) {
+        throw AgentException(AgentExceptionType.agentNotFound);
+      }
+      state = await Agent.fromAgentData(agentData);
+      if (state?.personaConfigure != null &&
+          state?.personaConfigure?.defaultPersona != null) {
+        await ref
+            .read(personaProvider.notifier)
+            .loadPersonaById(state!.personaConfigure!.defaultPersona!);
       }
     } catch (e) {
-      ref
-          .read(chatStateProvider.notifier)
-          .stateCopyWith(error: 'Failed to find agent.', isReady: false);
+      AppException ex;
+      if (e is Exception) {
+        if (e is AppException) {
+          ex = AgentException.fromAncestor(e);
+        } else {
+          ex = AgentException.fromException(e);
+        }
+        ref.read(chatStateProvider.notifier).stateCopyWith(error: ex);
+      }
     }
   }
 
@@ -199,8 +224,7 @@ class AgentProvider extends StateNotifier<Agent?> {
       }
       return null;
     }
-    // 处理未初始化的情况
-    throw Exception("Agent not initialized");
+    throw AgentException(AgentExceptionType.agentNotLoaded);
   }
 
   Stream<ChatResponse> getStreamingResponse(
@@ -225,7 +249,7 @@ class AgentProvider extends StateNotifier<Agent?> {
         agentId: state!.id,
       );
     } else {
-      throw Exception("Agent not initialized");
+      throw AgentException(AgentExceptionType.agentNotLoaded);
     }
   }
 
@@ -246,7 +270,7 @@ class AgentProvider extends StateNotifier<Agent?> {
     ChatMessage? lastMessage,
   ) async {
     if (state == null) {
-      throw Exception("Agent not initialized");
+      throw AgentException(AgentExceptionType.agentNotLoaded);
     }
     ModelRequestContent rc = ModelRequestContent(
       staticSystemMessages: [],
@@ -277,7 +301,13 @@ class AgentProvider extends StateNotifier<Agent?> {
     }
     var personaMsg = ref.read(personaProvider).getPersonaMessage();
     if (personaMsg != null) {
-      rc.staticSystemMessages.add(personaMsg.copyWith(content: personaMsg.content + (state?.personaConfigure?.personaAdditionalInfo ?? "")));
+      rc.staticSystemMessages.add(
+        personaMsg.copyWith(
+          content:
+              personaMsg.content +
+              (state?.personaConfigure?.personaAdditionalInfo ?? ""),
+        ),
+      );
     }
     if (state!.modelConfigure.enableUsrLanguage) {
       //TODO: 获取用户语言
@@ -342,8 +372,7 @@ class AgentProvider extends StateNotifier<Agent?> {
     List<FormattedChatMessage> output,
   ) async {
     if (state == null) {
-      //TODO: 添加错误处理
-      throw Exception("Agent not initialized");
+      throw AgentException(AgentExceptionType.agentNotLoaded);
     }
     int totalTokens = 0;
     for (var i in message) {

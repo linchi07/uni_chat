@@ -13,6 +13,7 @@ import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Chat/chat_sidebar.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
+import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
@@ -71,17 +72,24 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
   }
 
   Future<(List<AgentData>, List<File?>, File?)> getAgentAndAvatars() async {
-    var agents = await DatabaseService.instance.getAllAgents();
-    var avatars = <File?>[];
-    File? selectedAvatar;
-    for (var agent in agents) {
-      var avatar = await agent.getAvatar();
-      if (agent.id == selectedIndex?.$1) {
-        selectedAvatar = avatar;
+    try {
+      var agents = await DatabaseService.instance.getAllAgents();
+      var avatars = <File?>[];
+      File? selectedAvatar;
+      for (var agent in agents) {
+        var avatar = await agent.getAvatar();
+        if (agent.id == selectedIndex?.$1) {
+          selectedAvatar = avatar;
+        }
+        avatars.add(avatar);
       }
-      avatars.add(avatar);
+      return (agents, avatars, selectedAvatar);
+    } catch (e) {
+      // or future builder won't catch the error
+      await Future.delayed(const Duration(milliseconds: 100));
+      // you need to wait for the future builder to actually attached to the future or it will not catch the error and the app will crash.
+      rethrow;
     }
-    return (agents, avatars, selectedAvatar);
   }
 
   @override
@@ -130,7 +138,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                             child: CircularProgressIndicator(),
                           );
                         }
-                        if (asyncSnapshot.data == null) {
+                        if (asyncSnapshot.hasError) {
                           return Center(
                             child: Text(S.of(context).error_occurred),
                           );
@@ -208,7 +216,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        S.of(context).plz_select_agent,
+                        S.of(context).select_agent,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                       Icon(Icons.keyboard_arrow_down, color: theme.textColor),
@@ -476,7 +484,7 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              "一起集思广益！",
+              S.of(context).front_page_titleSlogan,
               style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -610,11 +618,6 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
       session = chatState.session;
     }
     var theme = ref.watch(themeProvider);
-    if (!chatState.isReady) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(chatStateProvider.notifier).checkIfReady();
-      });
-    }
     var itemCount = chatState.isResponding
         ? chatState.messagesList.length + 1
         : chatState.messagesList.length;
@@ -927,8 +930,14 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             f.name ?? DateTime.now().toIso8601String(),
             f is NativeTextFile,
           );
-    } catch (e) {
-      //TODO: should display an error
+    } on Exception catch (e) {
+      ChatException ce;
+      if (e is AppException) {
+        ce = ChatException.fromAncestor(e);
+      } else {
+        ce = ChatException.fromException(e);
+      }
+      ref.read(chatStateProvider.notifier).stateCopyWith(error: ce);
       return;
     }
   }
@@ -939,17 +948,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   Widget build(BuildContext context) {
     chatState = ref.watch(chatStateProvider);
     final globalLoading = chatState.isLoading;
-    if (!chatState.isReady && _checkedTimes < 5) {
-      // wait some time before checking if ready (give the state sometime to prepare etc. load model), only check once
-      // after testing , 70ms seems to be enough (M4 MBP)
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await Future.delayed(const Duration(milliseconds: 70), () async {
-          if (!mounted) return;
-          ref.read(chatStateProvider.notifier).checkIfReady();
-          _checkedTimes++;
-        });
-      });
-    }
     theme = ref.watch(themeProvider);
     agent = ref.watch(agentProvider);
     late Widget childPanel;
@@ -1105,20 +1103,21 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (chatState.error?.isNotEmpty ?? false)
+        if (chatState.error != null)
           Container(
             margin: const EdgeInsets.only(bottom: 8),
             width: double.infinity,
             height: 35,
             decoration: BoxDecoration(
-              color: Colors.red[100],
+              color: theme.errorColor.withAlpha(80),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
               child: Text(
-                chatState.error!,
+                chatState.error!.unwrapAndGetMessage(context),
+                maxLines: 1,
                 style: TextStyle(
-                  color: Colors.red,
+                  color: theme.errorColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),

@@ -105,6 +105,7 @@
   "no_persona":"No persona",
   "plz_select_persona":"Please select a persona",
   "choose_agent_and_chat_hint":"Select an agent and start chatting",
+  "front_page_titleSlogan": "How can I help you?",
   "front_page_hintLine_char1":"Use ",
   "front_page_hintLine_char2":" to chat with ",
   "front_page_hintLine_char3":"",
@@ -360,8 +361,8 @@
   "configure_all_set": "Configured",
   "configure_not_set": "Not configured",
   "api_keys_configure": "API Keys configuration",
-  "api_keys_confiugured": "{num} API Keys added",
-  "@api_keys_confiugured": {
+  "api_keys_configured": "{num} API Keys added",
+  "@api_keys_configured": {
     "placeholders": {
       "num": {}
     }
@@ -398,5 +399,43 @@
   "file": "File",
   "embedding": "Embedding",
   "audio": "Audio",
-  "video": "Video"
+  "video": "Video",
+  "@comment:forErrors":"",
+  "chatEx_sessionNotFound": "session not found",
+  "chatEx_messageNotFound": "message not found",
+  "chatEx_failToSaveMessage": "fail to save message",
+  "chatEx_failToGenerateTitle": "fail to generate title",
+  "chatEx_unknownError": "unknown error",
+  "chatEx": "Chat error",
+  "chatEx_recursive_call": "chatting",
+  "agentEx_agentNotLoaded": "agent not loaded",
+  "agentEx_agentNotFound": "agent not found",
+  "agentEx_unknownError": "unknown error",
+  "agentEx_failLoading_parse_error": "agent data is corrupted",
+  "agentEx": "Agent error",
+  "agentEx_recursive_call": "loading agent",
+  "personaEX_personaNotFound": "persona not found",
+  "personaEX_unknownError": "unknown error",
+  "personaEx_failLoading_parse_error": "persona data is corrupted",
+  "personaEx": "Persona error",
+  "personaEx_recursive_call": " while loading persona",
+  "apiEx": "API error",
+  "apiEx_recursive_call": "calling api",
+  "apiEx_providerNotFound": "provider not found",
+  "apiEx_unknownError": "unknown error",
+  "apiEx_modelNotAvailableForProvider": "model not available for provider",
+  "apiEx_modelNotFound": "model not found",
+  "apiEx_request_timeout": "request timeout",
+  "apiEx_request_badRequest": "bad request",
+  "apiEx_request_emptyBody": "the api returns an empty response",
+  "apiEx_request_apiFail": "api failed to respond",
+  "apiEx_request_other": "api error ",
+  "apiEx_apikey_noAvailableKeys": "currently no keys are available for using",
+  "ex_while" : "while {condition}",
+  "@ex_while":{
+    "placeholders":{
+      "condition":{}
+    }
+  },
+  "ex_and": " and "
 }

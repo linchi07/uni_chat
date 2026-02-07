@@ -629,9 +629,7 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                             subtitle: _indicator(
                               ac.keys.isNotEmpty,
                               ValueKey("api key set"),
-                              S
-                                  .of(context)
-                                  .api_keys_confiugured(ac.keys.length),
+                              S.of(context).api_keys_configured(ac.keys.length),
                               S.of(context).api_keys_not_set,
                             ),
                             onTap: () {

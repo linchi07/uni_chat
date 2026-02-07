@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/utils/overlays.dart';
 
 import '../generated/l10n.dart';
@@ -101,6 +102,18 @@ class AgentSelector extends ConsumerWidget {
         return FutureBuilder(
           future: getAgentAndAvatars(),
           builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  (snapshot.error is AppException)
+                      ? (snapshot.error as AppException).unwrapAndGetMessage(
+                          context,
+                        )
+                      : S.of(context).error_occurred,
+                  style: TextStyle(color: theme.thirdGradeColor),
+                ),
+              );
+            }
             if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }

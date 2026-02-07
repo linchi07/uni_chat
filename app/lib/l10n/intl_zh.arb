@@ -104,6 +104,7 @@
   "plz_select_agent": "请选择Agent",
   "no_persona": "没有人格",
   "plz_select_persona": "请选择人格",
+   "front_page_titleSlogan": "一起集思广益！",
   "choose_agent_and_chat_hint": "选择一个Agent并开始聊天吧!",
   "front_page_hintLine_char1": "以 ",
   "front_page_hintLine_char2": " 和 ",
@@ -356,8 +357,8 @@
   "configure_all_set": "已配置完毕",
   "configure_not_set": "未完成配置",
   "api_keys_configure": "API密钥配置",
-  "api_keys_confiugured": "共{num}个密钥已配置",
-  "@api_keys_confiugured": {
+  "api_keys_configured": "共{num}个密钥已配置",
+  "@api_keys_configured": {
     "placeholders": {
       "num": {}
     }
@@ -394,5 +395,43 @@
   "file": "文件处理",
   "embedding": "嵌入模型",
   "audio": "音频",
-  "video": "视频"
+  "video": "视频",
+  "@comment:forErrors":"",
+  "chatEx_sessionNotFound": "未找到聊天会话",
+  "chatEx_messageNotFound": "该会话无消息",
+  "chatEx_failToSaveMessage": "储存聊天消息失败",
+  "chatEx_failToGenerateTitle": "自动生成标题失败",
+  "chatEx_unknownError": "未知错误",
+  "chatEx": "聊天系统错误",
+  "chatEx_recursive_call": "聊天",
+  "agentEx_agentNotLoaded": "Agent 未被加载",
+  "agentEx_agentNotFound": "Agent 未找到",
+  "agentEx_unknownError": "未知错误",
+  "agentEx_failLoading_parse_error": "Agent的数据无法被解析",
+  "agentEx": "Agent系统错误",
+  "agentEx_recursive_call": "加载Agent",
+  "personaEX_personaNotFound": "人格未找到",
+  "personaEX_unknownError": "未知错误",
+  "personaEx_failLoading_parse_error": "人格数据无法被解析",
+  "personaEx": "人格系统错误",
+  "personaEx_recursive_call": "加载新人格",
+  "apiEx": "API 错误",
+  "apiEx_recursive_call": "调用Api",
+  "apiEx_providerNotFound": "提供商未找到",
+  "apiEx_unknownError": "未知错误",
+  "apiEx_modelNotAvailableForProvider": "提供商不提供该模型",
+  "apiEx_modelNotFound": "模型未找到",
+  "apiEx_request_timeout": "请求超时",
+  "apiEx_request_badRequest": "请求错误",
+  "apiEx_request_emptyBody": "Api返回了一个空响应",
+  "apiEx_request_apiFail": "Api返回了一个错误响应",
+  "apiEx_request_other": "API发生错误",
+  "apiEx_apikey_noAvailableKeys": "没有可用的API密钥",
+  "ex_while" : "在{condition}时",
+  "@ex_while":{
+      "placeholders":{
+          "condition":{}
+      }
+  },
+  "ex_and": "并且"
 }

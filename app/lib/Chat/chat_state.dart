@@ -10,6 +10,7 @@ import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_panel.dart';
 import 'package:uni_chat/Chat/inline_dynamic_fc_parser.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
+import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/promps.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
 import 'package:uni_chat/utils/database_service.dart';
@@ -23,7 +24,7 @@ const _uuid = Uuid();
 // --- State Definitions ---
 class ChatState {
   bool isReady;
-  String? error;
+  AppException? error;
   ChatSession? session;
   final Map<String, ChatMessage> messages;
   final List<ChatMessage> messagesList;
@@ -65,7 +66,7 @@ class ChatState {
     ValueNotifier<bool>? refreshFlag,
     bool? isLoading,
     bool? isResponding,
-    String? error,
+    AppException? error,
   }) {
     return ChatState(
       isReady: isReady ?? this.isReady,
@@ -107,9 +108,12 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
 
   ChatStateNotifier(this._ref) : super(ChatState(session: null)) {
     agentNotifier = _ref.read(agentProvider.notifier);
-    if (agent != null) {
-      state = state.copyWith(isReady: true);
-    }
+    _ref.listen(agentProvider, (p, n) {
+      if (p != n) {
+        // auto refresh when the agent is ready
+        checkIfReady();
+      }
+    });
   }
 
   void stateCopyWith({
@@ -120,7 +124,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     List<ChatMessage>? roots,
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     bool? isLoading,
-    String? error,
+    AppException? error,
   }) {
     state = ChatState(
       isReady: isReady ?? state.isReady,
@@ -239,13 +243,13 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         // 1. Get Session
         var session = await _dbService.getSession(sessionId);
         if (session == null) {
-          throw Exception('Session not found');
+          throw ChatException(ChatExceptionType.sessionNotFound);
         }
         //TODO: 最好让这里的逻辑都放到agent_provider里面
         await _ref.read(agentProvider.notifier).loadAgentById(session.agentId);
         final msg = await _dbService.getMessagesForSession(sessionId);
-        if (msg.$1 == null || msg.$2.isEmpty) {
-          throw Exception('No messages found');
+        if (msg.root == null || msg.messages.isEmpty) {
+          throw ChatException(ChatExceptionType.messageNotFound);
         }
         // if the session has a persona, load it
         if (session.persona != null) {
@@ -254,11 +258,11 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
               .read(personaProvider.notifier)
               .loadPersonaById(session.persona!);
         }
-        var formed = formMessageTree(msg.$1!, msg.$2);
+        var formed = formMessageTree(msg.root!, msg.messages);
         state = state.copyWith(
           isReady: agent != null,
           session: session,
-          messages: msg.$2,
+          messages: msg.messages,
           messagesList: formed,
           isLoading: false,
         );
@@ -272,11 +276,11 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         _ref.read(panelManager).clear();
       }
        */
-    } catch (e) {
+    } on Exception catch (e) {
       state = state.copyWith(
         isLoading: false,
         isReady: false,
-        error: e.toString(),
+        error: (e is AppException) ? e : ChatException.fromException(e),
       );
     }
   }
@@ -462,21 +466,19 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     // --- Database Integration ---
     try {
       if (currentSessionId == null) {
-        throw Exception('No session selected');
+        throw ChatException(ChatExceptionType.sessionNotFound);
       }
       await _dbService.addMessage(
         currentSessionId!,
         userMessage,
         modifiedParent: history.lastOrNull,
       );
-      /*
-      var l = _ref.read(panelManager).saveToJson();
-      if (l != null) {
-        await _dbService.writeLayout(state.session!.id, l);
-      }
-      */
-    } catch (e) {
-      print("Error saving user message to DB: $e");
+    } on Exception catch (e) {
+      state = state.copyWith(
+        error: (e is AppException)
+            ? e
+            : ChatException(ChatExceptionType.failToSaveMessage),
+      );
       // Decide if we want to stop or continue if DB save fails. For now, continue.
     }
     // --- End Database Integration ---
@@ -523,15 +525,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       );
       lastMessage.childIds.add(finalAiMessage.id);
       lastMessage.enabledChild = (lastMessage.childIds.length - 1);
-      /*
-      _ref
-          .read(ragProvider)
-          .onAgentRespondCompleteCallback(
-            user: lastMessage,
-            agent: finalAiMessage,
-          );
-        
-       */
       state.messages[finalAiMessage.id] = finalAiMessage;
       state.messagesList.add(finalAiMessage);
       state = state.copyWith(isResponding: false);
@@ -621,8 +614,12 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       }
       state.session!.name = title;
       await _dbService.updateSessionTitle(state.session!.id, title);
-    } catch (e) {
-      print(e);
+    } on Exception catch (e) {
+      state = state.copyWith(
+        error: (e is AppException)
+            ? e
+            : ChatException(ChatExceptionType.failToGenerateTitle),
+      );
     } finally {
       state = state.copyWith(isLoading: false, isResponding: false);
     }
@@ -634,6 +631,5 @@ final chatStateProvider = StateNotifierProvider<ChatStateNotifier, ChatState>((
   ref,
 ) {
   final notifier = ChatStateNotifier(ref);
-  notifier.checkIfReady();
   return notifier;
 });

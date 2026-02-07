@@ -709,6 +709,16 @@ class S {
     );
   }
 
+  /// `How can I help you?`
+  String get front_page_titleSlogan {
+    return Intl.message(
+      'How can I help you?',
+      name: 'front_page_titleSlogan',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Use `
   String get front_page_hintLine_char1 {
     return Intl.message(
@@ -2422,10 +2432,10 @@ class S {
   }
 
   /// `{num} API Keys added`
-  String api_keys_confiugured(Object num) {
+  String api_keys_configured(Object num) {
     return Intl.message(
       '$num API Keys added',
-      name: 'api_keys_confiugured',
+      name: 'api_keys_configured',
       desc: '',
       args: [num],
     );
@@ -2666,6 +2676,301 @@ class S {
   /// `Video`
   String get video {
     return Intl.message('Video', name: 'video', desc: '', args: []);
+  }
+
+  /// `session not found`
+  String get chatEx_sessionNotFound {
+    return Intl.message(
+      'session not found',
+      name: 'chatEx_sessionNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `message not found`
+  String get chatEx_messageNotFound {
+    return Intl.message(
+      'message not found',
+      name: 'chatEx_messageNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `fail to save message`
+  String get chatEx_failToSaveMessage {
+    return Intl.message(
+      'fail to save message',
+      name: 'chatEx_failToSaveMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `fail to generate title`
+  String get chatEx_failToGenerateTitle {
+    return Intl.message(
+      'fail to generate title',
+      name: 'chatEx_failToGenerateTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `unknown error`
+  String get chatEx_unknownError {
+    return Intl.message(
+      'unknown error',
+      name: 'chatEx_unknownError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Chat error`
+  String get chatEx {
+    return Intl.message('Chat error', name: 'chatEx', desc: '', args: []);
+  }
+
+  /// `chatting`
+  String get chatEx_recursive_call {
+    return Intl.message(
+      'chatting',
+      name: 'chatEx_recursive_call',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `agent not loaded`
+  String get agentEx_agentNotLoaded {
+    return Intl.message(
+      'agent not loaded',
+      name: 'agentEx_agentNotLoaded',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `agent not found`
+  String get agentEx_agentNotFound {
+    return Intl.message(
+      'agent not found',
+      name: 'agentEx_agentNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `unknown error`
+  String get agentEx_unknownError {
+    return Intl.message(
+      'unknown error',
+      name: 'agentEx_unknownError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `agent data is corrupted`
+  String get agentEx_failLoading_parse_error {
+    return Intl.message(
+      'agent data is corrupted',
+      name: 'agentEx_failLoading_parse_error',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Agent error`
+  String get agentEx {
+    return Intl.message('Agent error', name: 'agentEx', desc: '', args: []);
+  }
+
+  /// `loading agent`
+  String get agentEx_recursive_call {
+    return Intl.message(
+      'loading agent',
+      name: 'agentEx_recursive_call',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `persona not found`
+  String get personaEX_personaNotFound {
+    return Intl.message(
+      'persona not found',
+      name: 'personaEX_personaNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `unknown error`
+  String get personaEX_unknownError {
+    return Intl.message(
+      'unknown error',
+      name: 'personaEX_unknownError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `persona data is corrupted`
+  String get personaEx_failLoading_parse_error {
+    return Intl.message(
+      'persona data is corrupted',
+      name: 'personaEx_failLoading_parse_error',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Persona error`
+  String get personaEx {
+    return Intl.message('Persona error', name: 'personaEx', desc: '', args: []);
+  }
+
+  /// ` while loading persona`
+  String get personaEx_recursive_call {
+    return Intl.message(
+      ' while loading persona',
+      name: 'personaEx_recursive_call',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `API error`
+  String get apiEx {
+    return Intl.message('API error', name: 'apiEx', desc: '', args: []);
+  }
+
+  /// `calling api`
+  String get apiEx_recursive_call {
+    return Intl.message(
+      'calling api',
+      name: 'apiEx_recursive_call',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `provider not found`
+  String get apiEx_providerNotFound {
+    return Intl.message(
+      'provider not found',
+      name: 'apiEx_providerNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `unknown error`
+  String get apiEx_unknownError {
+    return Intl.message(
+      'unknown error',
+      name: 'apiEx_unknownError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `model not available for provider`
+  String get apiEx_modelNotAvailableForProvider {
+    return Intl.message(
+      'model not available for provider',
+      name: 'apiEx_modelNotAvailableForProvider',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `model not found`
+  String get apiEx_modelNotFound {
+    return Intl.message(
+      'model not found',
+      name: 'apiEx_modelNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `request timeout`
+  String get apiEx_request_timeout {
+    return Intl.message(
+      'request timeout',
+      name: 'apiEx_request_timeout',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `bad request`
+  String get apiEx_request_badRequest {
+    return Intl.message(
+      'bad request',
+      name: 'apiEx_request_badRequest',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `the api returns an empty response`
+  String get apiEx_request_emptyBody {
+    return Intl.message(
+      'the api returns an empty response',
+      name: 'apiEx_request_emptyBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `api failed to respond`
+  String get apiEx_request_apiFail {
+    return Intl.message(
+      'api failed to respond',
+      name: 'apiEx_request_apiFail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `api error `
+  String get apiEx_request_other {
+    return Intl.message(
+      'api error ',
+      name: 'apiEx_request_other',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `currently no keys are available for using`
+  String get apiEx_apikey_noAvailableKeys {
+    return Intl.message(
+      'currently no keys are available for using',
+      name: 'apiEx_apikey_noAvailableKeys',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `while {condition}`
+  String ex_while(Object condition) {
+    return Intl.message(
+      'while $condition',
+      name: 'ex_while',
+      desc: '',
+      args: [condition],
+    );
+  }
+
+  /// ` and `
+  String get ex_and {
+    return Intl.message(' and ', name: 'ex_and', desc: '', args: []);
   }
 }
 
