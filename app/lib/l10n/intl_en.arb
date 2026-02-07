@@ -110,24 +110,15 @@
   "front_page_hintLine_char2":" to chat with ",
   "front_page_hintLine_char3":"",
   "generate_message": "Generate message",
+  "message_no_content": "Something went wrong , the model returns a message without content.",
   "drop_files_hint":"Drop files here",
   "send_a_message_hint":"Send a message",
   "ui_editing":"Editing UI",
   "ui_edited":"Edited UI",
   "show_source_code":"Show source code",
   "hide_source_code":"Hide source code",
-  "reasoning":"Thinking...{sec}s",
-  "@reasoning": {
-    "placeholders": {
-      "sec": {}
-    }
-  },
-  "reasoned":"Thought {sec}s",
-  "@reasoned": {
-    "placeholders": {
-      "sec": {}
-    }
-  },
+  "reasoning":"Thinking...",
+  "reasoned":"Thought for a moment",
   "show_cot":"Show thoughts",
   "hide_cot":"Hide  thoughts",
   "searching_knowledge_base":"Searching Knowledge Base...",

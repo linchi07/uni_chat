@@ -377,7 +377,6 @@ class DatabaseService {
     String sessionId,
     ChatMessage message, {
     ChatMessage? modifiedParent,
-    Map<String, dynamic>? chatData,
   }) async {
     final db = await database;
     await db.transaction((txn) async {
@@ -388,6 +387,7 @@ class DatabaseService {
         'id': message.messageId,
         'sender': message.sender.name, // 'message.contentSender.user' -> 'user'
         'content': message.content,
+        'data': (message.data != null) ? jsonEncode(message.data!) : null,
         'timestamp': message.timestamp.microsecondsSinceEpoch,
         'attachments':
             (message.attachedFiles != null && message.attachedFiles!.isNotEmpty)
@@ -415,9 +415,6 @@ class DatabaseService {
           where: 'id = ?',
           whereArgs: [modifiedParent.id],
         );
-      }
-      if (chatData != null) {
-        await txn.insert('chat_data', {'id': message.id, 'data': chatData});
       }
       await txn.update(
         'sessions',

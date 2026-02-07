@@ -48,23 +48,19 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m12(provider) =>
       " Are you sure to delete ${provider}?\\n All the records and key will be deleted as well.";
 
-  static String m13(sec) => "Thought ${sec}s";
+  static String m13(num) => "${num} selected";
 
-  static String m14(sec) => "Thinking...${sec}s";
+  static String m14(token) => "System internal prompt(${token}Tokens)";
 
-  static String m15(num) => "${num} selected";
+  static String m15(token) => "System prompt(${token}Tokens)";
 
-  static String m16(token) => "System internal prompt(${token}Tokens)";
+  static String m16(token) => "${token} Tokens available for chat";
 
-  static String m17(token) => "System prompt(${token}Tokens)";
+  static String m17(lim) => "${lim} Tokens available for total context";
 
-  static String m18(token) => "${token} Tokens available for chat";
+  static String m18(type) => "Type : ${type}";
 
-  static String m19(lim) => "${lim} Tokens available for total context";
-
-  static String m20(type) => "Type : ${type}";
-
-  static String m21(token) => "UI interactions(${token}Tokens)";
+  static String m19(token) => "UI interactions(${token}Tokens)";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -409,6 +405,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "memory_name_waring": MessageLookupByLibrary.simpleMessage(
       "Memory name cannot be empty",
     ),
+    "message_no_content": MessageLookupByLibrary.simpleMessage(
+      "Something went wrong , the model returns a message without content.",
+    ),
     "model": MessageLookupByLibrary.simpleMessage("Model"),
     "model_ability": MessageLookupByLibrary.simpleMessage("Model ability"),
     "model_advance_properties": MessageLookupByLibrary.simpleMessage(
@@ -576,8 +575,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "Select the provider",
     ),
     "quit": MessageLookupByLibrary.simpleMessage("Quit"),
-    "reasoned": m13,
-    "reasoning": m14,
+    "reasoned": MessageLookupByLibrary.simpleMessage("Thought for a moment"),
+    "reasoning": MessageLookupByLibrary.simpleMessage("Thinking..."),
     "regex_index": MessageLookupByLibrary.simpleMessage("Regex index"),
     "regex_index_hint": MessageLookupByLibrary.simpleMessage(
       "When message matches any regex, the whole content will be sent",
@@ -621,7 +620,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Select or add a memory",
     ),
     "select_provider": MessageLookupByLibrary.simpleMessage("Select provider"),
-    "selected_agent": m15,
+    "selected_agent": m13,
     "send_a_message_hint": MessageLookupByLibrary.simpleMessage(
       "Send a message",
     ),
@@ -695,28 +694,28 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "switch_persona": MessageLookupByLibrary.simpleMessage("Switch persona"),
     "sys_prompt": MessageLookupByLibrary.simpleMessage("System prompt"),
-    "system_internal_prompt": m16,
-    "system_prompt_tokens": m17,
+    "system_internal_prompt": m14,
+    "system_prompt_tokens": m15,
     "temperature": MessageLookupByLibrary.simpleMessage("Temperature"),
     "textGenerate": MessageLookupByLibrary.simpleMessage("Text Generation"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat"),
     "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
       "Toggle session selector",
     ),
-    "token_available_for_chat": m18,
+    "token_available_for_chat": m16,
     "token_daily_limit": MessageLookupByLibrary.simpleMessage(
       "Token limit per day",
     ),
     "top_p": MessageLookupByLibrary.simpleMessage("Top P"),
-    "total_context_lim": m19,
-    "type_with_holder": m20,
+    "total_context_lim": m17,
+    "type_with_holder": m18,
     "ui_edited": MessageLookupByLibrary.simpleMessage("Edited UI"),
     "ui_editing": MessageLookupByLibrary.simpleMessage("Editing UI"),
     "ui_interaction_set": MessageLookupByLibrary.simpleMessage(
       "UI interaction (BETA) settings",
     ),
     "ui_interactions": MessageLookupByLibrary.simpleMessage("UI interactions"),
-    "ui_interactions_tokens": m21,
+    "ui_interactions_tokens": m19,
     "unknown": MessageLookupByLibrary.simpleMessage("unknown"),
     "unsupported_format": MessageLookupByLibrary.simpleMessage(
       "Unsupported format",

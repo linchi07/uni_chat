@@ -942,7 +942,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     }
   }
 
-  int _checkedTimes = 0;
   late Agent? agent;
   @override
   Widget build(BuildContext context) {
@@ -1125,7 +1124,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           ),
         if (chatState.uploadedFilesStash.isNotEmpty) _buildAttachmentPreview(),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 2),
           child: TextField(
             autofocus: true,
             focusNode: _focusNode,
@@ -1151,12 +1150,48 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             textCapitalization: TextCapitalization.sentences,
           ),
         ),
+        const SizedBox(height: 6),
         Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.attach_file),
-              onPressed: _pickFile,
-              tooltip: 'Attach File',
+            SizedBox(
+              height: 35,
+              width: 35,
+              child: StdButtonOutlined(
+                onPressed: _pickFile,
+                child: const Icon(Icons.attach_file),
+              ),
+            ),
+            const SizedBox(width: 6),
+            SizedBox(
+              height: 35,
+              width: 35,
+              child: Builder(
+                builder: (context) {
+                  return StdButtonOutlined(
+                    onPressed: () {
+                      var rb = context.findRenderObject() as RenderBox;
+                      OverlayPortalService.show(
+                        context,
+                        offset: rb
+                            .localToGlobal(Offset.zero)
+                            .translate(-52.5, -210),
+                        barrierVisible: false,
+                        child: SizedBox(
+                          width: 150,
+                          height: 200,
+                          child: Material(
+                            color: theme.zeroGradeColor,
+                            borderRadius: BorderRadius.circular(8),
+                            elevation: 2,
+                          ),
+                        ),
+                      );
+                    },
+                    color: theme.warningColor,
+                    child: const Icon(Icons.lightbulb_outline),
+                  );
+                },
+              ),
             ),
             const Spacer(),
             if (agent != null)

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/main.dart';
@@ -688,6 +689,13 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                     if (page == 2 + indexShift) {
                       if (ac.getIfValid()) {
                         await ac.save();
+                        var ag = ref.read(agentProvider);
+                        if (ag?.client.provider.id == ac.id) {
+                          //force reload agent to apply changes
+                          await ref
+                              .read(agentProvider.notifier)
+                              .loadAgentById(ag!.id, forceReload: true);
+                        }
                         widget.onExit(true);
                       }
                     } else {

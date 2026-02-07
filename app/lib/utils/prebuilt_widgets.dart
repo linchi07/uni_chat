@@ -52,6 +52,51 @@ class StdButton extends ConsumerWidget {
   }
 }
 
+class StdButtonOutlined extends ConsumerWidget {
+  const StdButtonOutlined({
+    super.key,
+    this.color,
+    this.child,
+    this.onPressed,
+    this.padding,
+    this.onLongPress,
+    this.enabled = false,
+  });
+  final bool enabled;
+  final VoidCallback? onLongPress;
+  final Color? color;
+  final Widget? child;
+  final EdgeInsets? padding;
+  final VoidCallback? onPressed;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var theme = ref.watch(themeProvider);
+    var c = color ?? theme.primaryColor;
+    return Material(
+      color: (enabled) ? c : c.withAlpha(20),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: c, width: 1.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onHover: (value) {},
+        splashColor: c.withAlpha(50),
+        onTap: onPressed,
+        onLongPress: onLongPress,
+        child: IconTheme(
+          data: IconThemeData(
+            color: (enabled) ? theme.getTextColor(c) : c,
+            size: 20,
+            weight: 300,
+          ),
+          child: Center(child: child),
+        ),
+      ),
+    );
+  }
+}
+
 class StdListTile extends ConsumerWidget {
   const StdListTile({
     super.key,

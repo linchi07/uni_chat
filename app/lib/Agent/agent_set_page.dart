@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
@@ -147,7 +145,7 @@ class AgentEditState {
     );
   }
 
-  AgentData toAgentData(){
+  AgentData toAgentData() {
     return AgentData(
       version: 1,
       id: id,
@@ -162,8 +160,12 @@ class AgentEditState {
   }
 
   static Future<AgentEditState> fromAgentData(AgentData agentData) async {
-    var pv = await ApiDatabase.instance.getProviderById(agentData.modelConfigure.providerId);
-    var m = await ApiDatabase.instance.getModelById(agentData.modelConfigure.modelId);
+    var pv = await ApiDatabase.instance.getProviderById(
+      agentData.modelConfigure.providerId,
+    );
+    var m = await ApiDatabase.instance.getModelById(
+      agentData.modelConfigure.modelId,
+    );
     return AgentEditState(
       id: agentData.id,
       name: agentData.name,
@@ -174,7 +176,8 @@ class AgentEditState {
         maxGenerationTokens: agentData.modelConfigure.maxGenerationTokens,
         enableTimeTelling: agentData.modelConfigure.enableTimeTelling,
         enableUsrLanguage: agentData.modelConfigure.enableUsrLanguage,
-        enableUsrSystemInformation: agentData.modelConfigure.enableUsrSystemInformation,
+        enableUsrSystemInformation:
+            agentData.modelConfigure.enableUsrSystemInformation,
       ),
       description: agentData.description,
       systemPrompt: agentData.systemPrompt,

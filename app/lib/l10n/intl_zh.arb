@@ -110,24 +110,15 @@
   "front_page_hintLine_char2": " 和 ",
   "front_page_hintLine_char3": " 开始聊天",
   "generate_message": "生成消息",
+  "message_no_content": "发生错误，模型返回了一条空消息",
   "drop_files_hint": "在这里拖放文件",
   "send_a_message_hint": "发送一条消息",
   "ui_editing": "正在编辑UI...",
   "ui_edited": "编辑了UI",
   "show_source_code": "显示源码",
   "hide_source_code": "隐藏源码",
-  "reasoning": "正在思考... {sec}秒",
-  "@reasoning": {
-    "placeholders": {
-      "sec": {}
-    }
-  },
-  "reasoned": "思考了{sec}秒",
-  "@reasoned": {
-    "placeholders": {
-      "sec": {}
-    }
-  },
+  "reasoning": "正在思考...",
+  "reasoned": "思考了一会儿",
   "show_cot": "显示思维链",
   "hide_cot": "隐藏思维链",
   "searching_knowledge_base": "正在检索知识库...",

@@ -759,6 +759,16 @@ class S {
     );
   }
 
+  /// `Something went wrong , the model returns a message without content.`
+  String get message_no_content {
+    return Intl.message(
+      'Something went wrong , the model returns a message without content.',
+      name: 'message_no_content',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Drop files here`
   String get drop_files_hint {
     return Intl.message(
@@ -809,23 +819,18 @@ class S {
     );
   }
 
-  /// `Thinking...{sec}s`
-  String reasoning(Object sec) {
-    return Intl.message(
-      'Thinking...${sec}s',
-      name: 'reasoning',
-      desc: '',
-      args: [sec],
-    );
+  /// `Thinking...`
+  String get reasoning {
+    return Intl.message('Thinking...', name: 'reasoning', desc: '', args: []);
   }
 
-  /// `Thought {sec}s`
-  String reasoned(Object sec) {
+  /// `Thought for a moment`
+  String get reasoned {
     return Intl.message(
-      'Thought ${sec}s',
+      'Thought for a moment',
       name: 'reasoned',
       desc: '',
-      args: [sec],
+      args: [],
     );
   }
 

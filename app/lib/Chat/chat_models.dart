@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Agent/agent_models.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 
@@ -63,6 +62,8 @@ class ChatMessage {
   //refers to the messageId of the database table.The ID of the "message"(not the relations)
   final String? parent;
   final List<String> childIds;
+  final Map<String, dynamic>?
+  data; // store other data from the chat (the data should be json serializable objects)
   int enabledChild; //当前启用的变体。注意：这里的是指的是children list的index
   final MessageSender sender;
   final String content; // a raw string
@@ -77,6 +78,7 @@ class ChatMessage {
     required this.sender,
     required this.content,
     this.attachedFiles,
+    this.data,
     required this.timestamp,
     required this.enabledChild,
   });
@@ -93,6 +95,11 @@ class ChatMessage {
         }
       }
     }
+    var data = map['data'];
+    Map<String, dynamic>? decData;
+    if (data != null) {
+      decData = jsonDecode(data);
+    }
     return ChatMessage(
       id: map['id'],
       messageId: map['message_id'],
@@ -101,6 +108,7 @@ class ChatMessage {
       sender: MessageSenderExtension.fromString(
         (map['sender'] as String?) ?? 'internal',
       ),
+      data: decData,
       attachedFiles: attachments,
       content: map['content'] ?? '',
       timestamp: DateTime.fromMicrosecondsSinceEpoch(
@@ -116,6 +124,7 @@ class ChatMessage {
       'parent': parent,
       'child_ids': childIds.join(','),
       'sender': sender.toString(),
+      'data': data,
       'content': content,
       'attachments': attachedFiles?.map((e) => e.toMap()).toList(),
       'timestamp': timestamp.microsecondsSinceEpoch,

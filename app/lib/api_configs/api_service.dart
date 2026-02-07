@@ -645,17 +645,31 @@ class OpenAiCompletionService extends OpenAiApiService {
                 final outputItems = json['choices'] as List;
 
                 for (final item in outputItems) {
-                  if (item['delta'] != null &&
-                      item['delta']['content'] != null) {
-                    // 流式响应格式
-                    responses.add(
-                      _ApiResponse(
-                        response: ChatResponse(
-                          type: ResponseType.text,
-                          content: item['delta']['content'] as String,
+                  if (item['delta'] != null) {
+                    if (item['delta']['reasoning_content'] != null) {
+                      // 流式响应格式
+                      responses.add(
+                        _ApiResponse(
+                          response: ChatResponse(
+                            type: ResponseType.thinking,
+                            content:
+                                item['delta']['reasoning_content'] as String,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                      print(item['delta']['reasoning_content']);
+                    }
+                    if (item['delta']['content'] != null) {
+                      // 流式响应格式
+                      responses.add(
+                        _ApiResponse(
+                          response: ChatResponse(
+                            type: ResponseType.text,
+                            content: item['delta']['content'] as String,
+                          ),
+                        ),
+                      );
+                    }
                   }
                 }
                 final usage = json['usage'] as Map<String, dynamic>?;

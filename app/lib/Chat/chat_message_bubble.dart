@@ -169,6 +169,14 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
               ],
             ),
           ],
+          if (widget.message.content.isEmpty)
+            Text(
+              S.of(context).message_no_content,
+              style: TextStyle(
+                color: theme.warningColor.withAlpha(180),
+                fontSize: 16,
+              ),
+            ),
           ...BlockParser.parseStaticBlock(widget.message.content),
         ],
       );
@@ -664,7 +672,10 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
                   });
                 }
                 if (blocksToDisplay.isEmpty) return const _Loading();
-                return Column(children: blocksToDisplay);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: blocksToDisplay,
+                );
               },
             ),
           ),
@@ -849,18 +860,17 @@ class _ErrorBlock extends StatelessWidget {
   }
 }
 
-class _ReasonBlock extends StatefulWidget {
+class _ReasonBlock extends ConsumerStatefulWidget {
   const _ReasonBlock({super.key, required this.isComplete, this.content});
   final bool isComplete;
   final String? content;
+
   @override
-  State<_ReasonBlock> createState() => _ReasonBlockState();
+  ConsumerState<_ReasonBlock> createState() => _ReasonBlockState();
 }
 
-class _ReasonBlockState extends State<_ReasonBlock>
+class _ReasonBlockState extends ConsumerState<_ReasonBlock>
     with SingleTickerProviderStateMixin {
-  double elapsedTime = 0; // 添加这一行
-  Timer? timer; // 添加计时器
   bool isTimerSet = false;
   bool isShowing = false;
   bool animatedDirection = true;
@@ -885,13 +895,13 @@ class _ReasonBlockState extends State<_ReasonBlock>
           status == AnimationStatus.dismissed) {
         if (animatedDirection) {
           Future.delayed(
-            const Duration(milliseconds: 500),
+            const Duration(milliseconds: 400),
             () => _animationController.reverse(),
           );
           animatedDirection = !animatedDirection;
         } else {
           Future.delayed(
-            const Duration(milliseconds: 500),
+            const Duration(milliseconds: 400),
             () => _animationController.forward(),
           );
           animatedDirection = !animatedDirection;
@@ -904,31 +914,27 @@ class _ReasonBlockState extends State<_ReasonBlock>
 
   @override
   void dispose() {
-    timer?.cancel(); // 取消计时器
     _animationController.removeStatusListener(listener);
     _animationController.dispose();
     super.dispose();
   }
 
-  void startTimer(dynamic setState) {
-    timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (!widget.isComplete && mounted) {
-        isTimerSet = true;
-        setState(() {
-          elapsedTime += 0.1;
-        });
-      } else {
-        timer.cancel();
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    var theme = ref.watch(themeProvider);
     final card = Container(
+      margin: const EdgeInsets.only(top: 10, bottom: 20),
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(60),
+            spreadRadius: 2,
+            offset: const Offset(0, 2),
+            blurRadius: 4,
+          ),
+        ],
+        color: theme.zeroGradeColor,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Shimmer(
@@ -952,31 +958,20 @@ class _ReasonBlockState extends State<_ReasonBlock>
                   widget.isComplete
                       ? Icons.check_circle
                       : Icons.lightbulb_outline,
-                  color: widget.isComplete
-                      ? Colors.green
-                      : Theme.of(context).primaryColor,
+                  color: widget.isComplete ? Colors.green : theme.darkTextColor,
                 ),
               ),
               const SizedBox(width: 12),
-              Flexible(
-                child: StatefulBuilder(
-                  builder: (context, setState) {
-                    if (!widget.isComplete && !isTimerSet) {
-                      startTimer(setState);
-                    }
-                    return Text(
-                      widget.isComplete
-                          ? S
-                                .of(context)
-                                .reasoned(elapsedTime.toStringAsFixed(1))
-                          : S
-                                .of(context)
-                                .reasoning(elapsedTime.toStringAsFixed(1)),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    );
-                  },
+              Text(
+                widget.isComplete
+                    ? S.of(context).reasoned
+                    : S.of(context).reasoning,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: theme.darkTextColor,
                 ),
               ),
+              const SizedBox(width: 10),
               if (widget.isComplete)
                 TextButton(
                   onPressed: () {

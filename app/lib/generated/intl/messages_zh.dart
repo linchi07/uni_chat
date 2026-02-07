@@ -47,23 +47,19 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m12(provider) => " 确定删除提供商${provider}吗？\\n 一切记录和Key都会被一同删除";
 
-  static String m13(sec) => "思考了${sec}秒";
+  static String m13(num) => "选择了${num}个Agent";
 
-  static String m14(sec) => "正在思考... ${sec}秒";
+  static String m14(token) => "内建提示词（${token}Tokens）";
 
-  static String m15(num) => "选择了${num}个Agent";
+  static String m15(token) => "系统提示词（${token}Tokens）";
 
-  static String m16(token) => "内建提示词（${token}Tokens）";
+  static String m16(token) => "可用于对话的Token：${token}";
 
-  static String m17(token) => "系统提示词（${token}Tokens）";
+  static String m17(lim) => "总上下文上限：${lim}";
 
-  static String m18(token) => "可用于对话的Token：${token}";
+  static String m18(type) => "类型:${type}";
 
-  static String m19(lim) => "总上下文上限：${lim}";
-
-  static String m20(type) => "类型:${type}";
-
-  static String m21(token) => "UI交互提示词（${token}Tokens）";
+  static String m19(token) => "UI交互提示词（${token}Tokens）";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -290,6 +286,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "memory_name_waring": MessageLookupByLibrary.simpleMessage(
       "没有设置名称的记忆不会被添加",
     ),
+    "message_no_content": MessageLookupByLibrary.simpleMessage(
+      "发生错误，模型返回了一条空消息",
+    ),
     "model": MessageLookupByLibrary.simpleMessage("模型"),
     "model_ability": MessageLookupByLibrary.simpleMessage("模型能力"),
     "model_advance_properties": MessageLookupByLibrary.simpleMessage("模型高级设置"),
@@ -403,8 +402,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "provider_delete_warning": m12,
     "provider_select": MessageLookupByLibrary.simpleMessage("提供商选择"),
     "quit": MessageLookupByLibrary.simpleMessage("退出"),
-    "reasoned": m13,
-    "reasoning": m14,
+    "reasoned": MessageLookupByLibrary.simpleMessage("思考了一会儿"),
+    "reasoning": MessageLookupByLibrary.simpleMessage("正在思考..."),
     "regex_index": MessageLookupByLibrary.simpleMessage("正则索引"),
     "regex_index_hint": MessageLookupByLibrary.simpleMessage(
       "当对话中的内容匹配正则表达式时，整个内容被发送给模型",
@@ -432,7 +431,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "select_model_hint": MessageLookupByLibrary.simpleMessage("选择一个模型"),
     "select_or_add_memory": MessageLookupByLibrary.simpleMessage("选择或添加记忆"),
     "select_provider": MessageLookupByLibrary.simpleMessage("选择提供商"),
-    "selected_agent": m15,
+    "selected_agent": m13,
     "send_a_message_hint": MessageLookupByLibrary.simpleMessage("发送一条消息"),
     "set_as_default": MessageLookupByLibrary.simpleMessage("设为默认"),
     "setup_add_agent": MessageLookupByLibrary.simpleMessage("接着，我们来添加一个Agent"),
@@ -484,24 +483,24 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "switch_persona": MessageLookupByLibrary.simpleMessage("切换人格"),
     "sys_prompt": MessageLookupByLibrary.simpleMessage("系统提示词"),
-    "system_internal_prompt": m16,
-    "system_prompt_tokens": m17,
+    "system_internal_prompt": m14,
+    "system_prompt_tokens": m15,
     "temperature": MessageLookupByLibrary.simpleMessage("温度"),
     "textGenerate": MessageLookupByLibrary.simpleMessage("文本生成"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat 通聊"),
     "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
       "打开会话选择器菜单",
     ),
-    "token_available_for_chat": m18,
+    "token_available_for_chat": m16,
     "token_daily_limit": MessageLookupByLibrary.simpleMessage("每日Token上限"),
     "top_p": MessageLookupByLibrary.simpleMessage("Top P"),
-    "total_context_lim": m19,
-    "type_with_holder": m20,
+    "total_context_lim": m17,
+    "type_with_holder": m18,
     "ui_edited": MessageLookupByLibrary.simpleMessage("编辑了UI"),
     "ui_editing": MessageLookupByLibrary.simpleMessage("正在编辑UI..."),
     "ui_interaction_set": MessageLookupByLibrary.simpleMessage("UI交互(BETA)设置"),
     "ui_interactions": MessageLookupByLibrary.simpleMessage("UI操作"),
-    "ui_interactions_tokens": m21,
+    "ui_interactions_tokens": m19,
     "unknown": MessageLookupByLibrary.simpleMessage("未知"),
     "unsupported_format": MessageLookupByLibrary.simpleMessage("不支持的文件格式"),
     "user": MessageLookupByLibrary.simpleMessage("用户"),
