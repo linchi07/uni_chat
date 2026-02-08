@@ -8,7 +8,6 @@ import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/document_display.dart';
 import 'package:uni_chat/utils/file_utils.dart';
-import 'package:uni_chat/utils/llm_image_indexer.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
@@ -38,6 +37,7 @@ class _PersonaIndicatorState extends State<PersonaIndicator> {
         children: [
           ModalBarrier(color: Colors.transparent, onDismiss: hide),
           PersonaSwitcherContainer(
+            baseContext: this.context,
             onClose: hide,
             key: _overlayKey,
             initialSize: rb.size.longestSide,
@@ -107,7 +107,9 @@ class PersonaSwitcherContainer extends StatefulWidget {
     required this.initialSize,
     required this.initPos,
     required this.onClose,
+    required this.baseContext,
   });
+  final BuildContext baseContext;
   final double initialSize;
   final Offset initPos;
   final dynamic onClose;
@@ -221,7 +223,10 @@ class _PersonaSwitcherContainerState extends State<PersonaSwitcherContainer>
                   child: (_opacityAnimation.value >= 0.7)
                       ? Opacity(
                           opacity: _opacityAnimation.value,
-                          child: PersonaSwitcher(onClose: widget.onClose),
+                          child: PersonaSwitcher(
+                            onClose: widget.onClose,
+                            baseContext: widget.baseContext,
+                          ),
                         )
                       : SizedBox.shrink(),
                 ),
@@ -235,46 +240,29 @@ class _PersonaSwitcherContainerState extends State<PersonaSwitcherContainer>
 }
 
 class PersonaSwitcher extends ConsumerStatefulWidget {
-  const PersonaSwitcher({super.key, required this.onClose});
+  const PersonaSwitcher({
+    super.key,
+    required this.baseContext,
+    required this.onClose,
+  });
   final dynamic onClose;
+  final BuildContext baseContext;
 
   @override
   ConsumerState<PersonaSwitcher> createState() => _PersonaSwitcherState();
 }
 
 class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
-  OverlayEntry? _overlayEntry;
   final GlobalKey<_PersonaEditorAnimationState> _personaSwitcherKey =
       GlobalKey<_PersonaEditorAnimationState>();
-  void _showEditor(BuildContext context, {Persona? persona}) {
-    final overlay = Overlay.of(context);
-
-    _overlayEntry = OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          // 背景变暗和点击外部关闭
-          ModalBarrier(
-            color: Colors.black.withAlpha(80),
-            onDismiss: () {
-              _personaSwitcherKey.currentState?.handleClose();
-            },
-          ),
-          OverlayPortalScope(
-            child: PersonaEditorAnimation(
-              persona: persona,
-              key: _personaSwitcherKey,
-              goBack: handleClose,
-            ),
-          ),
-        ],
+  void _showEditor({Persona? persona}) {
+    OverlayWrapper.showOverlay(
+      widget.baseContext,
+      overlayContent: PersonaEditorAnimation(
+        persona: persona,
+        key: _personaSwitcherKey,
       ),
     );
-    overlay.insert(_overlayEntry!);
-  }
-
-  void handleClose() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
   }
 
   late ThemeConfig theme;
@@ -313,7 +301,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
               leading: Icon(Icons.edit),
               title: Text(S.of(context).edit),
               onTap: () {
-                _showEditor(context, persona: persona);
+                _showEditor(persona: persona);
                 OverlayPortalService.hide(context);
                 widget.onClose();
               },
@@ -525,7 +513,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
                         text: S.of(context).add_persona,
                         onPressed: () {
                           widget.onClose();
-                          _showEditor(context);
+                          _showEditor();
                         },
                       ),
                     ),
@@ -541,8 +529,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
 }
 
 class PersonaEditorAnimation extends StatefulWidget {
-  const PersonaEditorAnimation({super.key, required this.goBack, this.persona});
-  final dynamic goBack;
+  const PersonaEditorAnimation({super.key, this.persona});
   final Persona? persona;
   @override
   State<PersonaEditorAnimation> createState() => _PersonaEditorAnimationState();
@@ -596,6 +583,15 @@ class _PersonaEditorAnimationState extends State<PersonaEditorAnimation>
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    OverlayReference.of(context)?.overlayState.onClose = () async {
+      handleClose();
+      return false;
+    };
+  }
+
   late Persona persona;
 
   @override
@@ -606,58 +602,37 @@ class _PersonaEditorAnimationState extends State<PersonaEditorAnimation>
 
   // 处理关闭事件：先反向播放动画，动画结束后再调用父级的onClose方法
   void handleClose() {
-    OverlayPortalService.show(
+    OverlayPortalService.showDialog(
       context,
-      child: SizedBox(
-        width: 300,
-        height: 200,
-        child: Material(
-          color: theme.zeroGradeColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                const SizedBox(height: 50),
-                Expanded(
-                  child: Text(
-                    S.of(context).give_up_edit_confirm,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    StdButton(
-                      color: theme.thirdGradeColor,
-                      onPressed: () {
-                        OverlayPortalService.hide(context);
-                      },
-                      text: S.of(context).cancel,
-                    ),
-                    const SizedBox(width: 16),
-                    StdButton(
-                      color: Colors.red,
-                      onPressed: () async {
-                        close();
-                      },
-                      text: S.of(context).confirm,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
+      child: Text(
+        S.of(context).give_up_edit_confirm,
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
       ),
+      backGroundColor: theme.zeroGradeColor,
+      actions: [
+        StdButton(
+          color: theme.thirdGradeColor,
+          onPressed: () {
+            OverlayPortalService.hide(context);
+          },
+          text: S.of(context).cancel,
+        ),
+        const SizedBox(width: 16),
+        StdButton(
+          color: theme.errorColor,
+          onPressed: () {
+            close();
+            OverlayPortalService.hide(context);
+          },
+          text: S.of(context).confirm,
+        ),
+      ],
     );
   }
 
   void close() {
     _animationController.reverse().then((_) {
-      widget.goBack.call();
+      OverlayReference.of(context)?.overlayState.removeOverlay();
     });
   }
 
@@ -695,7 +670,7 @@ class _PersonaEditorAnimationState extends State<PersonaEditorAnimation>
                       child: PersonaEditorContent(
                         onSaveReturn: close,
                         persona: persona,
-                        onBack: close,
+                        onBack: handleClose,
                       ),
                     ),
                   ),
@@ -739,6 +714,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
     super.initState();
     _nameController.text = widget.persona.name;
     _descriptionController.text = widget.persona.content;
+
     personaData = widget.persona.data.values.toList();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
@@ -971,13 +947,11 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                                     );
                                   }
                                   return StdAvatarPicker(
+                                    initialWidget: const Icon(
+                                      Icons.person,
+                                      size: 150,
+                                    ),
                                     initialImageFile: asyncSnapshot.data,
-                                    initialAssetImagePath:
-                                        (asyncSnapshot.data == null)
-                                        ? LLMImageIndexer.getImagePath(
-                                            'unknown.png',
-                                          )
-                                        : null,
                                     onImageChanged: (s, setImage) async {
                                       var f = await s.copyTo(
                                         await PathProvider.getPath(

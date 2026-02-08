@@ -1193,6 +1193,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 },
               ),
             ),
+            const SizedBox(width: 6),
             const Spacer(),
             if (agent != null)
               ModelSelect.buildPreview(

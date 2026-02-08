@@ -14,6 +14,8 @@ import 'api_configure.dart' show ApiSettings;
 class _GeneralSettings extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    var theme = ref.watch(themeProvider);
+    var idx = ThemeManager.themes.indexWhere((e) => e.theme == theme);
     return ListView(
       padding: const EdgeInsets.all(24.0),
       children: [
@@ -28,10 +30,13 @@ class _GeneralSettings extends ConsumerWidget {
         const SizedBox(height: 20),
         StdDropDown(
           height: 55,
+          initialIndex: (idx == -1) ? null : idx,
           itemBuilder: (c, index, onTap) {
             return StdListTile(
               title: Text(ThemeManager.themes[index].name),
-              onTap: () {
+              onTap: () async {
+                var p = await SharedPreferences.getInstance();
+                await p.setString("theme", ThemeManager.themes[index].name);
                 ref
                     .read(themeProvider.notifier)
                     .updateTheme(theme: ThemeManager.themes[index].theme);

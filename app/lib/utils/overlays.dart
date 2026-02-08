@@ -43,7 +43,7 @@ class OverlayPortalService {
     required Widget child,
     bool barrierVisible = true,
     bool animate = false,
-    bool autoAvoidSoftKeyboard = true,
+    bool autoAvoidSoftKeyboard = false,
     Offset? offset,
   }) {
     final scopeState = context
@@ -106,7 +106,12 @@ class OverlayPortalService {
         child: Padding(padding: padding, child: c),
       ),
     );
-    OverlayPortalService.show(context, child: child, animate: true);
+    OverlayPortalService.show(
+      context,
+      child: child,
+      animate: true,
+      autoAvoidSoftKeyboard: true,
+    );
   }
 
   /// 隐藏指定 context 下的对话框。
@@ -367,7 +372,7 @@ class OverlayWrapperState extends State<OverlayWrapper> {
               color: Colors.black.withAlpha(90),
               dismissible: barrierDismissible,
               onDismiss: () {
-                removeOverlay();
+                closeOverlay();
               },
             ),
             Center(
@@ -386,13 +391,20 @@ class OverlayWrapperState extends State<OverlayWrapper> {
   }
 
   /// 移除 OverlayEntry
-  void removeOverlay() async {
+  /// onClose不会被调用
+  void removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  /// 关闭 Overlay
+  /// 如果onClose返回false，则不会关闭
+  void closeOverlay() async {
     if (_overlayEntry == null) return;
     if (!(await onClose?.call() ?? true)) {
       return;
     }
-    _overlayEntry?.remove();
-    _overlayEntry = null;
+    removeOverlay();
   }
 
   @override

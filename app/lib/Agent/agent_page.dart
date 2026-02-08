@@ -173,7 +173,7 @@ class AgentSelector extends ConsumerWidget {
                               await AgentEditState.fromAgentData(agent);
                           onEdit();
                         },
-                        icon: Icon(Icons.edit),
+                        icon: Icon(Icons.edit_outlined),
                       ),
                       IconButton(
                         onPressed: () {
@@ -196,7 +196,7 @@ class AgentSelector extends ConsumerWidget {
                               ),
                               const SizedBox(width: 16),
                               StdButton(
-                                color: Colors.red,
+                                color: theme.errorColor,
                                 onLongPress: () async {
                                   await OverlayPortalService.hide(context);
                                   await DatabaseService.instance.deleteAgent(
@@ -210,7 +210,7 @@ class AgentSelector extends ConsumerWidget {
                             backGroundColor: theme.zeroGradeColor,
                           );
                         },
-                        icon: Icon(Icons.delete),
+                        icon: Icon(Icons.delete_outline),
                       ),
                     ],
                   ),

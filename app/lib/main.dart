@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Chat/session_selector.dart';
@@ -57,13 +56,12 @@ Future<void> main() async {
     var di = await DeviceInfoPlugin().windowsInfo;
     var bn = di.buildNumber;
     String sys = "Windows";
-    if(bn > 22000){
+    if (bn > 22000) {
       sys = "Windows 11 ${di.displayVersion}";
-    }else if(bn >= 10240){
+    } else if (bn >= 10240) {
       sys = "Windows 10 ${di.displayVersion}";
     } // else might be win 8.1 or 7 since flutter don run on xp
-    PlatForm().platformInfo =
-        "${di.computerName} running on $sys";
+    PlatForm().platformInfo = "${di.computerName} running on $sys";
     //windows 下使用 ffi版本
     //我在考虑把macos 也切换到ffi版本，但是听说好像性能没有提升啥
     sqfliteFfiInit();
@@ -73,7 +71,8 @@ Future<void> main() async {
   var l = prefs.getString("language");
   var local = languages[l];
   var isSu = prefs.getBool("isSetUp") ?? false;
-  runApp(UNIChat(locale: local, isSetUp: isSu));
+  var theme = prefs.getString("theme");
+  runApp(UNIChat(locale: local, isSetUp: isSu, themeName: theme));
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -102,8 +101,14 @@ class PlatForm {
 final GlobalKey<MainContState> masterNavigatorKey = GlobalKey<MainContState>();
 
 class UNIChat extends StatelessWidget {
-  const UNIChat({super.key, this.locale, required this.isSetUp});
+  const UNIChat({
+    super.key,
+    this.locale,
+    required this.isSetUp,
+    this.themeName,
+  });
   final Locale? locale;
+  final String? themeName;
   final bool isSetUp;
 
   // This widget is the root of your application.
@@ -111,8 +116,20 @@ class UNIChat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget mainContent = MainCont(key: masterNavigatorKey);
-
+    List<Override>? ovr;
+    if (themeName != null) {
+      var theme = ThemeManager.themes.firstWhere(
+        (element) => element.name == themeName,
+        orElse: () => (name: 'light', theme: ThemeManager.light),
+      );
+      ovr = [
+        themeProvider.overrideWith((ref) {
+          return ThemeManager(theme.theme);
+        }),
+      ];
+    }
     return ProviderScope(
+      overrides: ovr ?? [],
       child: MaterialApp(
         localizationsDelegates: [
           S.delegate,
@@ -147,9 +164,14 @@ class UNIChat extends StatelessWidget {
                   mainContent = MacOSMenuBar(mainContent: mainContent);
                 }
                 if (PlatForm().isMobile) {
-                  mainContent = Scaffold(
-                    backgroundColor: Colors.white,
-                    body: SafeArea(bottom: false, child: mainContent),
+                  mainContent = Consumer(
+                    builder: (context, ref, child) {
+                      var theme = ref.watch(themeProvider);
+                      return Scaffold(
+                        backgroundColor: theme.zeroGradeColor,
+                        body: SafeArea(bottom: false, child: mainContent),
+                      );
+                    },
                   );
                 }
                 if (!isSetUp) {
@@ -164,12 +186,12 @@ class UNIChat extends StatelessWidget {
                     );
                   });
                 }
-                if(PlatForm().isWindows){
+                if (PlatForm().isWindows) {
                   // windows will force the window to get too small when showing desktop even when window size is set
                   // so we need to avoid the negative constrained error
                   var mdof = MediaQuery.of(context);
                   var s = mdof.size;
-                  if(s.height < 480|| s.width < 640) {
+                  if (s.height < 480 || s.width < 640) {
                     return const SizedBox.shrink();
                   }
                 }
