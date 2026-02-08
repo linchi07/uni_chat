@@ -164,14 +164,9 @@ class UNIChat extends StatelessWidget {
                   mainContent = MacOSMenuBar(mainContent: mainContent);
                 }
                 if (PlatForm().isMobile) {
-                  mainContent = Consumer(
-                    builder: (context, ref, child) {
-                      var theme = ref.watch(themeProvider);
-                      return Scaffold(
-                        backgroundColor: theme.zeroGradeColor,
-                        body: SafeArea(bottom: false, child: mainContent),
-                      );
-                    },
+                  mainContent = Scaffold(
+                    backgroundColor: Colors.white,
+                    body: SafeArea(bottom: false, child: mainContent),
                   );
                 }
                 if (!isSetUp) {

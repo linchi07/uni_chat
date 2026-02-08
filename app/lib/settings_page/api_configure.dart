@@ -952,17 +952,15 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
           height: 50,
           width: 500,
           initialIndex: selected?.index,
-          onChanged: (index) {
-            ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
-              apiType: selected,
-            );
-          },
           itemBuilder: (context, index, onTap) {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: StdListTile(
                 title: Text(ApiType.values[index].getFriendlyName()),
                 onTap: () {
+                  ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
+                    apiType: ApiType.values[index],
+                  );
                   onTap(index);
                 },
               ),
