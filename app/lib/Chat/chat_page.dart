@@ -471,6 +471,16 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
   }
 }
 
+class ChatPage extends ConsumerWidget {
+  const ChatPage({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var currentSession = ref.watch(chatStateProvider.select((p) => p.session));
+    if (currentSession == null) return ChatPanelWhenNoSession();
+    return ChatPanel();
+  }
+}
+
 class ChatPanelWhenNoSession extends ConsumerWidget {
   const ChatPanelWhenNoSession({super.key});
 

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
@@ -14,6 +13,7 @@ import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
+import '../utils/color.dart' show ColorParser;
 import '../utils/overlays.dart';
 
 class PersonaIndicator extends StatefulWidget {

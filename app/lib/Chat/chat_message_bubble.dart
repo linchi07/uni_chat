@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
-import 'package:uni_chat/Chat/chat_panel.dart';
+import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
@@ -731,101 +731,6 @@ class _TextBlock extends StatelessWidget {
   }
 }
 
-class _UiqlBlock extends StatefulWidget {
-  const _UiqlBlock({super.key, required this.isComplete, this.content});
-  final bool isComplete;
-  final String? content;
-  @override
-  State<_UiqlBlock> createState() => _UiqlBlockState();
-}
-
-class _UiqlBlockState extends State<_UiqlBlock> {
-  bool isShowingSource = false;
-  @override
-  Widget build(BuildContext context) {
-    final card = Container(
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Shimmer(
-        enabled: !widget.isComplete,
-        duration: const Duration(seconds: 3),
-        interval: const Duration(seconds: 0),
-        colorOpacity: 0.8,
-        child: Container(
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                widget.isComplete ? Icons.check_circle : Icons.code,
-                color: widget.isComplete
-                    ? Colors.green
-                    : Theme.of(context).primaryColor,
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  widget.isComplete
-                      ? S.of(context).ui_edited
-                      : S.of(context).ui_editing,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-              if (widget.isComplete)
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      isShowingSource = !isShowingSource;
-                    });
-                  },
-                  child: Text(
-                    isShowingSource
-                        ? S.of(context).hide_source_code
-                        : S.of(context).show_source_code,
-                  ),
-                ),
-              if (!widget.isComplete) const SizedBox(width: 12),
-              if (!widget.isComplete)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator.adaptive(strokeWidth: 2),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        card,
-        if (isShowingSource && widget.isComplete) ...[
-          const SizedBox(height: 8),
-          _buildSourceCodeView(widget.content),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildSourceCodeView(String? source) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      child: GptMarkdown(
-        '```xml\n<uiql>$source</uiql>\n```',
-        style: const TextStyle(color: Colors.white, fontSize: 14),
-      ),
-    );
-  }
-}
-
 class _ErrorBlock extends StatelessWidget {
   const _ErrorBlock({super.key, required this.content});
   final String content;
@@ -1170,9 +1075,6 @@ class _RagBlockState extends State<_RagBlock>
 
 class BlockParser {
   static Map<String, dynamic> targetXMLs = {
-    'UIQL': (b, content) {
-      return _UiqlBlock(isComplete: b, content: content);
-    },
     'error': (b, content) {
       return _ErrorBlock(content: content);
     },

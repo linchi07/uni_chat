@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:uni_chat/Chat/chat_page_main.dart';
+import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Chat/session_selector.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
@@ -352,7 +352,7 @@ class MainContState extends ConsumerState<MainCont> {
   Widget _bodyWidget() {
     switch (page) {
       case Pages.chat:
-        return ChatPageMain();
+        return ChatPage();
       case Pages.agent:
         return AgentPage();
       case Pages.Rag:

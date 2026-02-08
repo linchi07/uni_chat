@@ -5,12 +5,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
+import 'color.dart';
 
 class StdButton extends ConsumerWidget {
   const StdButton({

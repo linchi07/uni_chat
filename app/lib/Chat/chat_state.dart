@@ -6,9 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agentProvider.dart';
-import 'package:uni_chat/Chat/chat_page_main.dart';
-import 'package:uni_chat/Chat/chat_panel.dart';
-import 'package:uni_chat/Chat/inline_dynamic_fc_parser.dart';
+import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/promps.dart';
@@ -493,15 +491,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   /// it is the user's input.Yet, it can also be a message that needs to be regenerated (eg. branch new variant)
   void sendRequest(List<ChatMessage> history, ChatMessage lastMessage) async {
     try {
-      var pm = _ref.read(panelManager);
-      var dynamicUIQLParser = InlineDynamicParser(
-        create: pm.create,
-        update: pm.update,
-        drop: pm.drop,
-        bind: pm.bind,
-        clear: pm.clear,
-        select: pm.select,
-      );
       final stream = agentNotifier.getStreamingResponse(
         state.session!,
         history,
@@ -538,10 +527,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         finalAiMessage,
         modifiedParent: lastMessage,
       );
-      var l = _ref.read(panelManager).saveToJson();
-      if (l != null) {
-        await _dbService.writeLayout(state.session!.id, l);
-      }
       if (state.session!.name == "New Chat") {
         generateTitle();
       }
