@@ -89,6 +89,7 @@ class DatabaseService {
       CREATE TABLE messages (
         id TEXT PRIMARY KEY,
         sender TEXT NOT NULL,
+        sender_id TEXT NOT NULL,
         content TEXT NOT NULL,
         data TEXT,
         persistent_data_pointer TEXT, -- 对话消息级别的持久化储存（只储存指针，数据在persistent_data表中）
@@ -386,6 +387,7 @@ class DatabaseService {
         //however in the relations table , the id(column) is the id(object),the messageId is the messageID (object)
         'id': message.messageId,
         'sender': message.sender.name, // 'message.contentSender.user' -> 'user'
+        'sender_id': message.senderId,
         'content': message.content,
         'data': (message.data != null) ? jsonEncode(message.data!) : null,
         'timestamp': message.timestamp.microsecondsSinceEpoch,
@@ -506,6 +508,7 @@ WHERE
     T1.sender,
     T1.content,
     T1.timestamp,
+    T1.data,
     T1.attachments,
     T2.parent_id,
     T2.child_ids,
@@ -592,51 +595,6 @@ ORDER BY t.depth DESC;
     return messageMaps.map((e) => ChatMessage.fromMap(e)).toList();
   }
 
-  Future<void> writeLayout(String sessionId, String layoutInfo) async {
-    final db = await database;
-
-    // 检查是否已存在对应 session_id 的记录
-    final List<Map<String, dynamic>> existingRecords = await db.query(
-      'panelLayout',
-      where: 'session_id = ?',
-      whereArgs: [sessionId],
-      limit: 1,
-    );
-
-    if (existingRecords.isNotEmpty) {
-      // 如果存在记录，则更新 layout_info
-      await db.update(
-        'panelLayout',
-        {'layout_info': layoutInfo},
-        where: 'session_id = ?',
-        whereArgs: [sessionId],
-      );
-    } else {
-      // 如果不存在记录，则创建新记录
-      await db.insert('panelLayout', {
-        'id': _uuid.v4(), // 生成新的 UUID 作为主键
-        'session_id': sessionId,
-        'layout_info': layoutInfo,
-      });
-    }
-  }
-
-  Future<String?> readLayout(String sessionId) async {
-    final db = await database;
-    final List<Map<String, dynamic>> records = await db.query(
-      'panelLayout',
-      where: 'session_id = ?',
-      whereArgs: [sessionId],
-      limit: 1,
-    );
-
-    if (records.isNotEmpty) {
-      return records.first['layout_info'] as String?;
-    } else {
-      return null;
-    }
-  }
-
   // --- 1. Create (创建) ---
   Future<void> createOrUpdatePersona(Persona persona) async {
     final db = await database;
@@ -683,6 +641,7 @@ ORDER BY t.depth DESC;
       }
     });
   }
+
 
   // --- 2. Read (读取所有) ---
   Future<List<Persona>> getAllPersonas() async {

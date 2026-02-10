@@ -2703,6 +2703,16 @@ class S {
     );
   }
 
+  /// `fail to parse message`
+  String get chatEx_failParsingMessage {
+    return Intl.message(
+      'fail to parse message',
+      name: 'chatEx_failParsingMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `fail to save message`
   String get chatEx_failToSaveMessage {
     return Intl.message(

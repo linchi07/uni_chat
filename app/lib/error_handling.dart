@@ -2,10 +2,13 @@ import 'package:flutter/widgets.dart';
 
 import 'generated/l10n.dart';
 
+
 abstract class AppException implements Exception {
   final AppException? ancestor;
   const AppException({this.ancestor});
+
   String unwrapAndGetMessage(BuildContext context);
+
 
   List<String> onRecursiveUnwrapAndGetMessage(BuildContext context);
 }
@@ -13,9 +16,10 @@ abstract class AppException implements Exception {
 enum ChatExceptionType {
   sessionNotFound,
   messageNotFound,
-
   failToSaveMessage,
   failToGenerateTitle,
+
+  failParsingMessage,
 
   unknownError,
 }
@@ -33,6 +37,8 @@ extension ChatExceptionTypeExt on ChatExceptionType {
         return S.of(context).chatEx_unknownError;
       case ChatExceptionType.failToGenerateTitle:
         return S.of(context).chatEx_failToGenerateTitle;
+      case ChatExceptionType.failParsingMessage:
+        return S.of(context).chatEx_failParsingMessage;
     }
   }
 }

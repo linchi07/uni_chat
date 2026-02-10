@@ -10,6 +10,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
+import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 
@@ -158,7 +159,8 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
       }
     } else {
       content = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (widget.prevMessage != null) _toolbar(),
           if (files.isNotEmpty) ...[
@@ -177,7 +179,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                 fontSize: 16,
               ),
             ),
-          ...BlockParser.parseStaticBlock(widget.message.content),
+          ..._buildMessageBody(),
         ],
       );
     }
@@ -215,6 +217,65 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
       );
     }
     return box;
+  }
+
+  Widget typeMatch(MessageBlock block) {
+    switch (block.chunkType) {
+      case MessageChunkType.text:
+        return _TextBlock(
+          color: widget.theme.darkTextColor,
+          content: block.content,
+        );
+      case MessageChunkType.image:
+        throw UnimplementedError();
+      case MessageChunkType.reasoning:
+        return _ReasonBlock(content: block.content, isComplete: true);
+      case MessageChunkType.functionCalling:
+        throw UnimplementedError();
+      case MessageChunkType.error:
+        return _ErrorBlock(theme: widget.theme, content: block.content);
+    }
+  }
+
+  List<Widget> _buildMessageBody() {
+    var wm = widget.message;
+    if (wm.data?.containsKey("msg_blocks") ?? false) {
+      var w = <Widget>[];
+      try {
+        List<MessageBlock> d = ((wm.data!["msg_blocks"])
+            .map<MessageBlock>((e) => MessageBlock.fromMap(e))
+            .toList());
+        int pt = 0;
+        for (var i in d) {
+          var s = wm.content.substring(pt, i.anchor);
+          if (s.isNotEmpty) {
+            w.add(_TextBlock(content: s, color: theme.darkTextColor));
+          }
+          w.add(typeMatch(i));
+          pt = i.anchor;
+        }
+        if(pt < wm.content.length){
+          w.add(_TextBlock(
+            content: wm.content.substring(pt),
+            color: theme.darkTextColor,
+          ));
+        }
+      } on Exception catch (e) {
+        w.add(
+          _ErrorBlock(
+            content: (e is AppException)
+                ? e.unwrapAndGetMessage(context)
+                : ChatException(
+                    ChatExceptionType.failParsingMessage,
+                  ).unwrapAndGetMessage(context),
+            theme: theme,
+          ),
+        );
+      }
+      return w;
+    } else {
+      return [_TextBlock(content: wm.content, color: theme.darkTextColor)];
+    }
   }
 
   bool isCopied = false;
@@ -393,7 +454,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                       snapshot.hasData) {
                     return Image.file(snapshot.data!, fit: BoxFit.cover);
                   } else if (snapshot.hasError) {
-                    return Icon(Icons.error);
+                    return Icon(Icons.error_outline, color: theme.errorColor);
                   } else {
                     return CircularProgressIndicator();
                   }
@@ -623,11 +684,11 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
 class ChatMessageDynamicStream extends StatefulWidget {
   const ChatMessageDynamicStream({
     super.key,
-    required this.contentBuffer,
-    required this.refreshFlag,
+    required this.responses,
+    required this.theme,
   });
-  final ValueListenable<bool> refreshFlag;
-  final ChunkedStringBuffer contentBuffer;
+  final ValueListenable<List<ChatResponse>?> responses;
+  final ThemeConfig theme;
   @override
   State<ChatMessageDynamicStream> createState() =>
       _ChatMessageDynamicStreamState();
@@ -635,13 +696,10 @@ class ChatMessageDynamicStream extends StatefulWidget {
 
 class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
   Timer? _timer; // 添加定时器
-  int charDisplayed = 0;
   bool _isAnimating = false; // 添加动画状态标志
-  late BlockParser parser;
   @override
   void initState() {
     super.initState();
-    parser = BlockParser(widget.contentBuffer);
   }
 
   @override
@@ -650,55 +708,155 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
     super.dispose();
   }
 
+  int displayedLength = 0;
+  int currentlyAnimating = 0;
+  int charDisplayed = 0;
+
+  void updateDisplayed(List<ChatResponse> r) {
+    MessageChunkType? lastType;
+    for (var i = r.length - 1; i > currentlyAnimating; i--) {
+      if (lastType != r[i].type ||
+          !(r[i].type == MessageChunkType.text ||
+              r[i].type == MessageChunkType.reasoning)) {
+        if (i + 1 < r.length) {
+          displayedLength = i + 1;
+          currentlyAnimating = i + 1;
+          charDisplayed = 0;
+        }
+        break;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: widget.refreshFlag,
-      builder: (context, value, child) {
-        // 当flag变化且contentBuffer有内容时开始动画
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
-            child: StatefulBuilder(
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+        child: ValueListenableBuilder(
+          valueListenable: widget.responses,
+          builder: (context, value, child) {
+            if (value == null || value.isEmpty) {
+              return _Loading(color: widget.theme.primaryColor);
+            }
+            updateDisplayed(value);
+            var l = value.sublist(0, displayedLength);
+            List<Widget> blocksDisplayed = [];
+            for (int i = 0; i < l.length; i++) {
+              blocksDisplayed.add(typeMatch(l[i], i));
+            }
+            return StatefulBuilder(
               builder: (context, setState) {
-                if (widget.contentBuffer.length > charDisplayed &&
-                    !_isAnimating) {
+                if (!_isAnimating &&
+                    (value.length >= currentlyAnimating ||
+                        value[currentlyAnimating].content.length >
+                            charDisplayed)) {
                   //此处的set state只会激活 StatefulBuilder中的setState
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     enableAnimation(setState);
                   });
                 }
-                if (blocksToDisplay.isEmpty) return const _Loading();
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: blocksToDisplay,
+                  children: [...blocksDisplayed, ...blocksToDisplay],
                 );
               },
-            ),
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 
+  Widget typeMatch(ChatResponse response, int order) {
+    switch (response.type) {
+      case MessageChunkType.text:
+        return _TextBlock(
+          key: ValueKey(order),
+          color: widget.theme.darkTextColor,
+          content: response.content,
+        );
+      case MessageChunkType.image:
+        throw UnimplementedError();
+      case MessageChunkType.reasoning:
+        return _ReasonBlock(
+          key: ValueKey(order),
+          content: response.content,
+          isComplete: true,
+        );
+      case MessageChunkType.functionCalling:
+        throw UnimplementedError();
+      case MessageChunkType.error:
+        return _ErrorBlock(
+          key: ValueKey(order),
+          theme: widget.theme,
+          content: response.content,
+        );
+    }
+  }
+
+  List<Widget> blocksDisplayed = [];
   List<Widget> blocksToDisplay = [];
 
   void enableAnimation(dynamic setState) {
     const charactersPerSecond = 80; // 每秒字符数
     _isAnimating = true;
     // 每秒刷新 charactersPerSecond 次，每次只添加一个字符
-    const interval = Duration(microseconds: 1000000 ~/ charactersPerSecond);
+    const interval = Duration(milliseconds: 1000 ~/ charactersPerSecond);
     _timer = Timer.periodic(interval, (timer) {
+      blocksToDisplay.clear();
       setState(() {
-        if (charDisplayed < widget.contentBuffer.length) {
-          blocksToDisplay = parser.parseDynamicBlockWithLimit(++charDisplayed);
-        } else {
+        var rv = widget.responses.value!;
+        if (currentlyAnimating >= rv.length) {
           // 显示完成，停止定时器
           _timer?.cancel();
           _isAnimating = false;
+          return;
+        }
+        var cr = rv[currentlyAnimating];
+        if (charDisplayed < cr.content.length) {
+          if (cr.type == MessageChunkType.text) {
+            blocksToDisplay.add(
+              _TextBlock(
+                key: ValueKey(currentlyAnimating),
+                color: widget.theme.darkTextColor,
+                content: "${cr.content.substring(0, charDisplayed)}▍",
+              ),
+            );
+          } else if (cr.type == MessageChunkType.reasoning) {
+            blocksToDisplay.add(
+              _ReasonBlock(
+                key: ValueKey(currentlyAnimating),
+                content: "${cr.content.substring(0, charDisplayed)}▍",
+                isComplete: false,
+              ),
+            );
+          }
+          charDisplayed++;
+        } else if (currentlyAnimating == rv.length - 1) {
+          if (cr.type == MessageChunkType.text) {
+            blocksToDisplay.add(
+              _TextBlock(
+                color: widget.theme.darkTextColor,
+                content: "${cr.content.substring(0, charDisplayed)}▍",
+              ),
+            );
+          } else if (cr.type == MessageChunkType.reasoning) {
+            blocksToDisplay.add(
+              _ReasonBlock(
+                key: ValueKey(currentlyAnimating),
+                content: "${cr.content.substring(0, charDisplayed)}▍",
+                isComplete: false,
+              ),
+            );
+          }
+        } else if (currentlyAnimating < rv.length - 1) {
+          displayedLength++;
+          charDisplayed = 0;
+          currentlyAnimating++;
         }
       });
     });
@@ -706,21 +864,23 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
 }
 
 class _Loading extends StatelessWidget {
-  const _Loading({super.key});
+  const _Loading({super.key, required this.color});
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 20,
       height: 20,
-      child: CircularProgressIndicator(color: Colors.black),
+      child: CircularProgressIndicator(color: color),
     );
   }
 }
 
 class _TextBlock extends StatelessWidget {
-  const _TextBlock({super.key, required this.content});
+  const _TextBlock({super.key, required this.content, required this.color});
   final String content;
+  final Color color;
   @override
   Widget build(BuildContext context) {
     return GptMarkdown(
@@ -732,14 +892,15 @@ class _TextBlock extends StatelessWidget {
 }
 
 class _ErrorBlock extends StatelessWidget {
-  const _ErrorBlock({super.key, required this.content});
+  const _ErrorBlock({super.key, required this.content, required this.theme});
   final String content;
+  final ThemeConfig theme;
   @override
   Widget build(BuildContext context) {
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: Colors.red[100],
+        color: theme.errorColor.withAlpha(80),
         borderRadius: BorderRadius.circular(12),
       ),
       width: double.infinity,
@@ -748,14 +909,14 @@ class _ErrorBlock extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, color: Colors.red),
+          Icon(Icons.error_outline, color: theme.errorColor),
           const SizedBox(width: 12),
           Flexible(
             child: Text(
               S.of(context).error_occurred_with_error(content),
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.red,
+                color: theme.errorColor,
               ),
             ),
           ),
@@ -778,6 +939,7 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
     with SingleTickerProviderStateMixin {
   bool isTimerSet = false;
   bool isShowing = false;
+  bool isDisposed = false;
   bool animatedDirection = true;
   late AnimationController _animationController;
   late Animation<double> _opacity;
@@ -793,24 +955,21 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     listener = (status) {
-      if (widget.isComplete && animatedDirection) {
+      if (widget.isComplete && !isDisposed && animatedDirection) {
         _animationController.removeStatusListener(listener);
       }
       if (status == AnimationStatus.completed ||
           status == AnimationStatus.dismissed) {
-        if (animatedDirection) {
-          Future.delayed(
-            const Duration(milliseconds: 400),
-            () => _animationController.reverse(),
-          );
-          animatedDirection = !animatedDirection;
-        } else {
-          Future.delayed(
-            const Duration(milliseconds: 400),
-            () => _animationController.forward(),
-          );
-          animatedDirection = !animatedDirection;
-        }
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (!isDisposed) {
+            if (animatedDirection) {
+              _animationController.reverse();
+            } else {
+              _animationController.forward();
+            }
+            animatedDirection = !animatedDirection;
+          }
+        });
       }
     };
     _animationController.addStatusListener(listener);
@@ -819,6 +978,7 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
 
   @override
   void dispose() {
+    isDisposed = true;
     _animationController.removeStatusListener(listener);
     _animationController.dispose();
     super.dispose();
@@ -1071,291 +1231,4 @@ class _RagBlockState extends State<_RagBlock>
       ),
     );
   }
-}
-
-class BlockParser {
-  static Map<String, dynamic> targetXMLs = {
-    'error': (b, content) {
-      return _ErrorBlock(content: content);
-    },
-    'think': (b, content) {
-      return _ReasonBlock(isComplete: b, content: content);
-    },
-    'rag': (b, content) {
-      return _RagBlock(isComplete: b, content: content);
-    },
-  };
-
-  static List<Widget> parseStaticBlock(String content) {
-    final List<Widget> blocks = [];
-
-    // 如果内容为空或目标map为空，直接返回
-    if (content.isEmpty) {
-      return blocks;
-    }
-    if (targetXMLs.isEmpty) {
-      blocks.add(_TextBlock(content: content));
-      return blocks;
-    }
-
-    // 1. 动态构建一个能匹配所有目标标签的正则表达式
-    final tagNames = targetXMLs.keys.join('|');
-    //    正则表达式解释:
-    //    - <($tagNames)>: 匹配一个开标签，并将标签名(如 UIQL)捕获到分组1
-    //    - (.*?): 非贪婪地匹配标签内的所有内容，并捕获到分组2
-    //    - <\/\\1>: 匹配一个闭标签，\\1 是反向引用，确保闭标签和开标签同名
-    final RegExp regExp = RegExp('<($tagNames)>(.*?)</\\1>', dotAll: true);
-
-    int currentIndex = 0;
-    final Iterable<RegExpMatch> matches = regExp.allMatches(content);
-
-    // 2. 遍历所有匹配到的标签
-    for (final match in matches) {
-      // 添加匹配标签之前的文本部分
-      if (match.start > currentIndex) {
-        final textContent = content.substring(currentIndex, match.start);
-        if (textContent.trim().isNotEmpty) {
-          blocks.add(_TextBlock(content: textContent));
-        }
-      }
-
-      // 3. 处理并添加匹配到的XML Block
-      final tagName = match.group(1)!; // 分组1: 标签名
-      final tagContent = match.group(2) ?? ''; // 分组2: 标签内容
-
-      // 从map中找到对应的构造函数并创建Widget
-      final blockFactory = targetXMLs[tagName]!;
-      blocks.add(blockFactory(true, tagContent));
-
-      // 更新当前处理位置
-      currentIndex = match.end;
-    }
-
-    // 4. 添加最后一个匹配标签之后剩余的文本
-    if (currentIndex < content.length) {
-      final remainingText = content.substring(currentIndex);
-      if (remainingText.trim().isNotEmpty) {
-        blocks.add(_TextBlock(content: remainingText));
-      }
-    }
-
-    // 如果没有任何匹配，将全部内容视为一个文本块
-    if (blocks.isEmpty && content.trim().isNotEmpty) {
-      blocks.add(_TextBlock(content: content));
-    }
-
-    return blocks;
-  }
-
-  _ParseState state = _ParseState.findingTagStartMark;
-  String tagName = '';
-  String endTagName = '';
-  ChunkedStringBuffer fullBuffer;
-  var blockStartPointer = 0;
-  late ChunkedStringBuffer parseBuffer;
-  BlockParser(this.fullBuffer) {
-    parseBuffer = fullBuffer.clone();
-  }
-  List<Widget> blocksCached = [];
-
-  ///当时设计解析器的时候忘记考虑到这一点了
-  ///只能打补丁了
-  List<Widget> parseDynamicBlockWithLimit(int charLimit) {
-    parseBuffer = fullBuffer.subBuffer(parseBuffer.toMasterIndex(0), charLimit);
-    return parseDynamicBlock();
-  }
-
-  /// 动态解析
-  /// 从缓冲区中直接解析，无需输入内容
-  List<Widget> parseDynamicBlock() {
-    //这里分为三个步骤，第一个是已经固化的内容，这部分只存在于blocks cached中
-    //第二是buffer，这里是所有没有固化的内容
-    //第三是tmp buffer 这里每次都会重创建，然后内部通过消费缓冲区的内容，生成block
-    //例如第二个缓冲中假如有了 <UIQ ,此时第三个缓冲区会先消费掉所有的内容生成一个文本块
-    //当下一次流更新的时候 假如buffer变为了<UIQL> 那么就可以生成UIQL块，否则假如是 <UIQD>比如说，那么就会生成一个文本块
-    //这就是三个buffer的意义
-    List<Widget> blocks = [];
-    var tmpBuffer = parseBuffer.clone();
-    //还有为了能够让两个缓冲区的索引同步，所有的索引都是通过master index（他两共有）来计算，并且转换到对应的local 索引中的
-    var pointer = tmpBuffer.toMasterIndex(0);
-    while (tmpBuffer.length > 0) {
-      switch (state) {
-        // 寻找标签的开始
-        case _ParseState.findingTagStartMark:
-          bool breakFlag = false;
-          var forLim = tmpBuffer.toMasterIndex(tmpBuffer.length);
-          for (var i = pointer; i < forLim; i++) {
-            if (tmpBuffer[tmpBuffer.fromMasterIndex(i)] == '<') {
-              state = _ParseState.inStartTag;
-              pointer = i;
-              breakFlag = true;
-              break;
-            }
-          }
-          //当找到了<，则进入下一个状态，直接漏进去，不用break
-          if (!breakFlag) {
-            //当没有找到<，则将缓冲区中的所有内容作为文本块添加到结果中
-            if (tmpBuffer.length > 0) {
-              blocks.add(
-                _TextBlock(content: tmpBuffer.toStringWithTrailing("▍")),
-              );
-              tmpBuffer.pop(tmpBuffer.length);
-              break;
-            }
-          }
-        case _ParseState.inStartTag:
-          //当我们在标签开始的时候，我们开始寻找标签的结束
-          //即使没有找到结束，我们也需要将所有的内容作为文本块添加到结果中
-          bool breakFlag = false;
-          var forLim = tmpBuffer.toMasterIndex(tmpBuffer.length);
-          //寻找标签的结束
-          for (var i = pointer; i < forLim; i++) {
-            if (tmpBuffer[tmpBuffer.fromMasterIndex(i)] == '>') {
-              var l = tmpBuffer.fromMasterIndex(pointer) + 1;
-              var l2 = tmpBuffer.fromMasterIndex(i) + 1;
-              if (tmpBuffer.length > l && tmpBuffer.length > l2) {
-                //防止出界
-                //当找到标签的结束，首先记下标签
-                tagName = tmpBuffer.substring(
-                  tmpBuffer.fromMasterIndex(pointer + 1),
-                  tmpBuffer.fromMasterIndex(i),
-                );
-              } else {
-                break;
-              }
-              endTagName = '</$tagName>';
-              //如果该标签在目标XMLs中，则将标签前的所有东西固化为一个文本块，并添加到结果中
-              //这里可以直接忽略固化的东西，也就是将buffer被添加到文本块中的内容给pop掉
-              if (targetXMLs.containsKey(tagName)) {
-                blocksCached.add(
-                  _TextBlock(
-                    content: tmpBuffer.substring(
-                      0,
-                      tmpBuffer.fromMasterIndex(pointer),
-                    ),
-                  ),
-                );
-                parseBuffer.popToIndex(parseBuffer.fromMasterIndex(i));
-                tmpBuffer.popToIndex(tmpBuffer.fromMasterIndex(i));
-                state = _ParseState.matchingEndTagMark;
-                blockStartPointer = i + 1;
-                pointer = i + 1;
-                breakFlag = true;
-                break;
-              } else {
-                state = _ParseState.findingTagStartMark;
-                pointer = i;
-                breakFlag = true;
-                break;
-              }
-            }
-          }
-          //如果寻找到完整的起始标签依然只是一层break,漏到下一层
-          if (!breakFlag) {
-            //当没有找到>，则将缓冲区中的所有内容作为文本块添加到结果中
-            if (tmpBuffer.length > 0) {
-              blocks.add(
-                _TextBlock(content: tmpBuffer.toStringWithTrailing("▍")),
-              );
-              tmpBuffer.pop(tmpBuffer.length);
-              break;
-            }
-          }
-        case _ParseState.matchingEndTagMark:
-          //不断的寻找结束标签的开始（这TM怎么这么绕）
-          bool breakFlag = false;
-          var forLim = tmpBuffer.toMasterIndex(tmpBuffer.length);
-          for (var i = pointer; i < forLim; i++) {
-            if (tmpBuffer[tmpBuffer.fromMasterIndex(i)] == '<') {
-              state = _ParseState.matchingEndTag;
-              pointer = i;
-              //注意此时还不能固化，因为这个结束标签可能是无效的也就是不match开始标签
-              breakFlag = true;
-              break;
-            }
-          }
-          //如果还没结束也就是没有找到<，那么就继续添加到文本块中
-          if (!breakFlag) {
-            if (tmpBuffer.length == 0) {
-              break;
-            }
-            blocks.add(
-              targetXMLs[tagName]!(
-                false,
-                tmpBuffer.substring(
-                  tmpBuffer.fromMasterIndex(blockStartPointer),
-                ),
-              ),
-            );
-            tmpBuffer.pop(tmpBuffer.length);
-            break;
-          }
-        case _ParseState.matchingEndTag:
-          //采用状态机器完全匹配end tag
-          if (tmpBuffer.length <
-              endTagName.length + tmpBuffer.fromMasterIndex(pointer)) {
-            //当缓冲区长度小于endTagName长度，则end tag肯定不全（也有可能是完全不是）
-            //此时直接全部添加到文本块中
-            blocks.add(
-              targetXMLs[tagName]!(
-                false,
-                tmpBuffer.substring(
-                  tmpBuffer.fromMasterIndex(blockStartPointer),
-                ),
-              ),
-            );
-            tmpBuffer.pop(tmpBuffer.length);
-            break;
-          }
-          bool notFound = false;
-          //当缓冲区长度大于等于endTagName长度，则开始匹配
-          var forLim = endTagName.length + pointer;
-          for (var i = pointer; i < forLim; i++) {
-            if (tmpBuffer[tmpBuffer.fromMasterIndex(i)] !=
-                endTagName[i - pointer]) {
-              pointer = i;
-              //如果任意状态匹配失败，则将状态machine重置为matchingEndTagMark
-              //这个时候那边会将多余的字符串给塞到block中，这里就不需要处理了
-              state = _ParseState.matchingEndTagMark;
-              notFound = true;
-              break;
-            }
-          }
-          if (notFound) {
-            //需要连续break两次才能跳回循环
-            break;
-          }
-          //如果匹配成功就固化
-          if (blocks.isNotEmpty) {
-            //gpt强烈要求我边界保护，其实我觉得没必要，因为逻辑上来讲，这里不可能为空
-            //但是我的逻辑水平，我还是相信gpt吧
-            blocks.removeLast();
-          }
-          blocksCached.add(
-            targetXMLs[tagName]!(
-              true,
-              tmpBuffer.substring(0, tmpBuffer.fromMasterIndex(pointer)),
-            ),
-          );
-          parseBuffer.popToIndex(
-            parseBuffer.fromMasterIndex(pointer + endTagName.length - 1),
-          );
-          tmpBuffer.popToIndex(
-            tmpBuffer.fromMasterIndex(pointer + endTagName.length - 1),
-          );
-          pointer = pointer + endTagName.length;
-          state = _ParseState.findingTagStartMark;
-        //此时会跳回start，由那边把缓冲区中的剩余内容给添加到文本块中（或者开始新一轮匹配）
-      }
-    }
-    blocks = [...blocksCached, ...blocks];
-    return blocks;
-  }
-}
-
-enum _ParseState {
-  findingTagStartMark,
-  inStartTag,
-  matchingEndTagMark,
-  matchingEndTag,
 }

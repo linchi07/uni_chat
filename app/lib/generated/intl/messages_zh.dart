@@ -141,6 +141,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "cancel_long_press": MessageLookupByLibrary.simpleMessage("取消（长按）"),
     "chat": MessageLookupByLibrary.simpleMessage("聊天"),
     "chatEx": MessageLookupByLibrary.simpleMessage("聊天系统错误"),
+    "chatEx_failParsingMessage": MessageLookupByLibrary.simpleMessage(
+      "解析聊天消息失败",
+    ),
     "chatEx_failToGenerateTitle": MessageLookupByLibrary.simpleMessage(
       "自动生成标题失败",
     ),

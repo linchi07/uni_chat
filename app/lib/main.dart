@@ -100,7 +100,7 @@ class PlatForm {
 
 final GlobalKey<MainContState> masterNavigatorKey = GlobalKey<MainContState>();
 
-class UNIChat extends StatelessWidget {
+class UNIChat extends StatefulWidget {
   const UNIChat({
     super.key,
     this.locale,
@@ -111,15 +111,25 @@ class UNIChat extends StatelessWidget {
   final String? themeName;
   final bool isSetUp;
 
-  // This widget is the root of your application.
+  @override
+  State<UNIChat> createState() => _UNIChatState();
+}
 
+class _UNIChatState extends State<UNIChat> {
+  late bool isSetUp;
+  @override
+  void initState() {
+    super.initState();
+    isSetUp = widget.isSetUp;
+  }
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     Widget mainContent = MainCont(key: masterNavigatorKey);
     List<Override>? ovr;
-    if (themeName != null) {
+    if (widget.themeName != null) {
       var theme = ThemeManager.themes.firstWhere(
-        (element) => element.name == themeName,
+        (element) => element.name == widget.themeName,
         orElse: () => (name: 'light', theme: ThemeManager.light),
       );
       ovr = [
@@ -146,15 +156,17 @@ class UNIChat extends StatelessWidget {
             ? const ScrollBehavior().copyWith(physics: const IOSScrollPhysics())
             : null,
         theme: ThemeData(
+          fontFamilyFallback: (PlatForm().isWindows)?["DengXian"]:null,
+          // fix the font glitches in windows when displaying SC
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
         home: OverlayWrapper(
           child: OverlayPortalScope(
             child: Builder(
               builder: (context) {
-                if (locale != null) {
-                  S.load(locale!);
-                  PlatForm().languageCode = locale!.languageCode;
+                if (widget.locale != null) {
+                  S.load(widget.locale!);
+                  PlatForm().languageCode = widget.locale!.languageCode;
                 } else {
                   PlatForm().languageCode = Localizations.localeOf(
                     context,
@@ -169,7 +181,7 @@ class UNIChat extends StatelessWidget {
                     body: SafeArea(bottom: false, child: mainContent),
                   );
                 }
-                if (!isSetUp) {
+                if (!widget.isSetUp) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     OverlayWrapper.showOverlay(
                       context,
@@ -180,6 +192,7 @@ class UNIChat extends StatelessWidget {
                       barrierDismissible: false,
                     );
                   });
+                  isSetUp = true; // or the setup menu will re-popout when you resize the window
                 }
                 if (PlatForm().isWindows) {
                   // windows will force the window to get too small when showing desktop even when window size is set

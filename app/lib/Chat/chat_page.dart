@@ -477,7 +477,7 @@ class ChatPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     var currentSession = ref.watch(chatStateProvider.select((p) => p.session));
     if (currentSession == null) return ChatPanelWhenNoSession();
-    return ChatPanel();
+    return ChatPanel(key: chatPanel,);
   }
 }
 
@@ -673,8 +673,7 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                 }
                                 if (!autoScroll &&
                                     (scrollController.position.maxScrollExtent -
-                                                scrollController.offset)
-                                            .abs() < // the abs is essential since we got the bouncing scroll physics
+                                            scrollController.offset) <
                                         30) {
                                   autoScroll = true;
                                   if (chatState.isResponding) {
@@ -726,14 +725,15 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                   if (chatState.isResponding &&
                                       index == itemCount - 1) {
                                     return ChatMessageDynamicStream(
-                                      contentBuffer: chatState.newContentBuffer,
-                                      refreshFlag: chatState.refreshFlag,
+                                      theme: theme,
+                                      responses: chatState.responses,
                                     );
                                   }
                                   if (index == itemCount - 1 &&
                                       chatState.messagesList.isNotEmpty &&
                                       chatState.messagesList.last.sender ==
-                                          MessageSender.user) {
+                                          MessageSender.user &&
+                                      !chatState.isLoading) {
                                     return Padding(
                                       padding: const EdgeInsets.all(8.0),
                                       child: StdButton(
@@ -760,7 +760,7 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                             ),
                                             const SizedBox(width: 8),
                                             Text(
-                                              "Generate Response",
+                                              S.of(context).generate_message,
                                               style: TextStyle(
                                                 color: theme.brightTextColor,
                                               ),
@@ -795,7 +795,8 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                 duration: const Duration(milliseconds: 150),
                                 curve: Curves.easeInSine,
                               );
-                              autoScrollFunc();
+                               autoScroll = true;
+                               autoScrollFunc();
                             }
                           },
                         ),

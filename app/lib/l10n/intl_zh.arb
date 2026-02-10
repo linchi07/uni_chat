@@ -390,6 +390,7 @@
   "@comment:forErrors":"",
   "chatEx_sessionNotFound": "未找到聊天会话",
   "chatEx_messageNotFound": "该会话无消息",
+  "chatEx_failParsingMessage": "解析聊天消息失败",
   "chatEx_failToSaveMessage": "储存聊天消息失败",
   "chatEx_failToGenerateTitle": "自动生成标题失败",
   "chatEx_unknownError": "未知错误",

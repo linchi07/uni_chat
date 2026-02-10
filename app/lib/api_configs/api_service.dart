@@ -281,7 +281,7 @@ class OpenAiApiService extends BaseApiService {
                         responses.add(
                           _ApiResponse(
                             response: ChatResponse(
-                              type: ResponseType.text,
+                              type: MessageChunkType.text,
                               content: contentItem['text'] as String,
                             ),
                           ),
@@ -651,7 +651,7 @@ class OpenAiCompletionService extends OpenAiApiService {
                       responses.add(
                         _ApiResponse(
                           response: ChatResponse(
-                            type: ResponseType.thinking,
+                            type: MessageChunkType.reasoning,
                             content:
                                 item['delta']['reasoning_content'] as String,
                           ),
@@ -664,7 +664,7 @@ class OpenAiCompletionService extends OpenAiApiService {
                       responses.add(
                         _ApiResponse(
                           response: ChatResponse(
-                            type: ResponseType.text,
+                            type: MessageChunkType.text,
                             content: item['delta']['content'] as String,
                           ),
                         ),
@@ -934,7 +934,7 @@ class GeminiApiService extends BaseApiService {
                   r.add(
                     _ApiResponse(
                       response: ChatResponse(
-                        type: ResponseType.text,
+                        type: MessageChunkType.text,
                         content: text,
                       ),
                     ),

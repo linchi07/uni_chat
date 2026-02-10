@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agentProvider.dart';
+import 'package:uni_chat/Chat/chat_message_bubble.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/error_handling.dart';
@@ -16,6 +17,7 @@ import 'package:uuid/uuid.dart';
 
 import '../api_configs/api_models.dart';
 import 'chat_models.dart';
+import 'input_parser.dart' show InputParser;
 
 const _uuid = Uuid();
 
@@ -32,6 +34,7 @@ class ChatState {
   late final ValueNotifier<bool> refreshFlag;
   final bool isLoading;
   final bool isResponding;
+  late final ValueNotifier<List<ChatResponse>?> responses;
 
   ChatState({
     this.isReady = false,
@@ -39,12 +42,14 @@ class ChatState {
     this.messages = const {},
     this.messagesList = const [],
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
+    ValueNotifier<List<ChatResponse>?>? responses,
     ChunkedStringBuffer? newContentBuffer,
     ValueNotifier<bool>? refreshFlag,
     this.isLoading = false,
     this.isResponding = false,
     this.error,
   }) {
+    this.responses = responses ?? ValueNotifier(null);
     this.uploadedFilesStash = uploadedFilesStash ?? {};
     this.newContentBuffer = newContentBuffer ?? ChunkedStringBuffer();
     this.refreshFlag = refreshFlag ?? ValueNotifier(false);
@@ -65,8 +70,10 @@ class ChatState {
     bool? isLoading,
     bool? isResponding,
     AppException? error,
+    ValueNotifier<List<ChatResponse>?>? responses,
   }) {
     return ChatState(
+      responses: responses ?? this.responses,
       isReady: isReady ?? this.isReady,
       session: session ?? this.session,
       messages: messages ?? this.messages,
@@ -89,6 +96,7 @@ class ChatState {
       uploadedFilesStash: {},
       isLoading: false,
       error: null,
+      responses: ValueNotifier(null),
     );
   }
 }
@@ -98,7 +106,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   final Ref _ref;
   late AgentProvider agentNotifier;
   Agent? get agent => agentNotifier.state;
-
+  Persona? get persona => _ref.read(personaProvider);
   // --- Database Integration ---
   final DatabaseService _dbService = DatabaseService.instance;
   String? get currentSessionId => state.session?.id;
@@ -224,6 +232,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           parent: null,
           childIds: [],
           sender: MessageSender.internal,
+          senderId: "internal",
           content: '',
           timestamp: DateTime.now(),
           enabledChild: 0,
@@ -440,6 +449,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       id: _uuid.v7(),
       messageId: _uuid.v7(),
       sender: MessageSender.user,
+      senderId: persona?.id ?? 'user',
       content: text,
       attachedFiles: attach, // 转换为附件文件对象列表
       timestamp: DateTime.now(),
@@ -497,66 +507,80 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         lastMessage,
       );
       ChatMessage? finalAiMessage;
+      var buffer = ChunkedStringBuffer();
+      var parser = InputParser(buffer);
       state = state.copyWith(isResponding: true);
-      await for (final chunk in stream) {
-        state.newContentBuffer.write(chunk.content);
-        state.refreshFlag.value = !state.refreshFlag.value;
+      state.responses.value = null;
+      try {
+        await for (final chunk in stream) {
+          List<ChatResponse>? newBlock;
+          if (chunk.type == MessageChunkType.text) {
+            buffer.write(chunk.content);
+            newBlock = parser.parseDynamicBlock();
+          } else if (chunk.type == parser.blocksCached.lastOrNull?.type) {
+            parser.blocksCached.last = ChatResponse(
+              type: chunk.type,
+              content: parser.blocksCached.last.content + chunk.content,
+            );
+          } else {
+            parser.blocksCached.add(chunk);
+          }
+          state.responses.value = [...parser.blocksCached, ...?newBlock];
+        }
+      } on Exception catch (e) {
+        /*
+        state.responses.value = [
+          ...parser.blocksCached,
+          ChatResponse(
+            type: MessageChunkType.error,
+            content: "",
+            error: ((e is! AppException) ? ChatException.fromException(e) : e),
+          ),
+        ];
+         */
+        state = state.copyWith(
+          error: (e is AppException) ? e : ChatException.fromException(e),
+        );
+        // yes we should have a better way to handle this
+        // however it's super annoying to store this in the database (the AppException is a nested class and we need the buildContext to get the error string)
+        // so just leave it be for a while
+        // and for now just use the error handling in the state object
+        //TODO: handle this
       }
-      finalAiMessage = ChatMessage(
-        id: _uuid.v7(),
-        messageId: _uuid.v7(),
-        sender: MessageSender.ai,
-        content: state.newContentBuffer.toString(),
-        timestamp: DateTime.now(),
-        parent: lastMessage.id,
-        childIds: [],
-        enabledChild: 0,
-      );
-      lastMessage.childIds.add(finalAiMessage.id);
-      lastMessage.enabledChild = (lastMessage.childIds.length - 1);
-      state.messages[finalAiMessage.id] = finalAiMessage;
-      state.messagesList.add(finalAiMessage);
-      state = state.copyWith(isResponding: false);
-      state.newContentBuffer.clear();
-      // --- Database Integration ---
-      if (currentSessionId == null) {
-        throw Exception('No session selected');
+      if (state.responses.value != null) {
+        var c = MessageBlock.fromChatResponse(state.responses.value!);
+        finalAiMessage = ChatMessage(
+          id: _uuid.v7(),
+          messageId: _uuid.v7(),
+          sender: MessageSender.ai,
+          senderId: agent!.client.model.id,
+          content: c.mainContent,
+          data: (c.blocks != null && c.blocks!.isNotEmpty)
+              ? {"msg_blocks": c.blocks!.map((e) => e.toMap()).toList()}
+              : null,
+          timestamp: DateTime.now(),
+          parent: lastMessage.id,
+          childIds: [],
+          enabledChild: 0,
+        );
+        lastMessage.childIds.add(finalAiMessage.id);
+        lastMessage.enabledChild = (lastMessage.childIds.length - 1);
+        state.messages[finalAiMessage.id] = finalAiMessage;
+        state.messagesList.add(finalAiMessage);
+        if (currentSessionId == null) {
+          throw Exception('No session selected');
+        }
+        await _dbService.addMessage(
+          currentSessionId!,
+          finalAiMessage,
+          modifiedParent: lastMessage,
+        );
+        if (state.session!.name == "New Chat") {
+          generateTitle();
+        }
       }
-      await _dbService.addMessage(
-        currentSessionId!,
-        finalAiMessage,
-        modifiedParent: lastMessage,
-      );
-      if (state.session!.name == "New Chat") {
-        generateTitle();
-      }
-      // --- End Database Integration ---
-    } catch (e) {
-      state.newContentBuffer.clear();
-      state.newContentBuffer.write("<error>${e.toString()}</error>");
-      print(e);
-      // well I think it's ugly to leave an error message in the chat history
-      // so let's not save it to the base
-      /*
-      var msg = ChatMessage(
-        id: _uuid.v7(),
-        sender: MessageSender.ai,
-        content: state.newContentBuffer.toString(),
-        timestamp: DateTime.now(),
-      );
-      state = state.copyWith(messages: [...state.messages, msgD]);
-      state.refreshFlag.value = !state.refreshFlag.value;
-      await _dbService.addMessage(
-        currentSessionId!,
-        state.messages.length - 1,
-        msgD,
-        state.uploadedFiles,
-      );
-      var l = _ref.read(panelManager).saveToJson();
-      if (l != null) {
-        await _dbService.writeLayout(state.session!.id, l);
-      }
-      */
+    } on Exception catch (e) {
+      state.error = (e is AppException) ? e : ChatException.fromException(e);
     } finally {
       state = state.copyWith(isLoading: false, isResponding: false);
     }
@@ -585,6 +609,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         content: Prompts.generateTitle(sb.toString()),
         timestamp: DateTime.now(),
         parent: null,
+        senderId: "nan",
         childIds: [],
         enabledChild: 0,
       );

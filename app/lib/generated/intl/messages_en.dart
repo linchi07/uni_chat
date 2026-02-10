@@ -183,6 +183,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "chat": MessageLookupByLibrary.simpleMessage("Chat"),
     "chatEx": MessageLookupByLibrary.simpleMessage("Chat error"),
+    "chatEx_failParsingMessage": MessageLookupByLibrary.simpleMessage(
+      "fail to parse message",
+    ),
     "chatEx_failToGenerateTitle": MessageLookupByLibrary.simpleMessage(
       "fail to generate title",
     ),

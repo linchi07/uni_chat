@@ -411,7 +411,7 @@ class ApiConfigure {
     return ApiProvider(
       id: id,
       name: name!,
-      endpoint: (showVerFlags) ? endpoint! + apiType!.vFlag : endpoint!,
+      endpoint: (showVerFlags && !endpoint!.endsWith(apiType!.vFlag)) ? endpoint! + apiType!.vFlag : endpoint!,
       type: apiType!,
       preset: providerPreset?.id,
     );
@@ -489,7 +489,7 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
             var endPointValid =
                 endpoint && (Uri.tryParse(ac.endpoint!)?.isAbsolute ?? false);
             String? endPointT = (ac.endpoint != null && ac.apiType != null)
-                ? (ac.showVerFlags)
+                ? (ac.showVerFlags && !(ac.endpoint!.endsWith(ac.apiType!.vFlag)))
                       ? ac.endpoint! + ac.apiType!.vFlag
                       : ac.endpoint
                 : null;
@@ -994,7 +994,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
                       Text(S.of(context).end_point_preview, style: tStyle),
                       const SizedBox(height: 10),
                       ...selected!.getEndPointInfo(
-                        (ac.showVerFlags) ? (text + ac.apiType!.vFlag) : text,
+                        (ac.showVerFlags && !text.endsWith(ac.apiType!.vFlag)) ? (text + ac.apiType!.vFlag) : text,
                       ),
                       const SizedBox(height: 10),
                     ],
