@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
@@ -1389,6 +1390,9 @@ class _ApiKeyEditMenuState extends State<ApiKeyEditMenu> {
             hintText: S.of(context).fill_in_api_key,
             controller: _apiKeyController,
             validateFailureText: S.of(context).fill_in_api_key,
+            inputFormat: [
+              FilteringTextInputFormatter.allow(RegExp(r"[\x00-\x7F]")),
+            ],
           ),
           const SizedBox(height: 10),
           Text(S.of(context).remark, style: ts),

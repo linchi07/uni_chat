@@ -195,6 +195,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "chatEx_messageNotFound": MessageLookupByLibrary.simpleMessage(
       "message not found",
     ),
+    "chatEx_modelNotSupportFileType": MessageLookupByLibrary.simpleMessage(
+      "The model does not support this type of file",
+    ),
     "chatEx_recursive_call": MessageLookupByLibrary.simpleMessage("chatting"),
     "chatEx_sessionNotFound": MessageLookupByLibrary.simpleMessage(
       "session not found",

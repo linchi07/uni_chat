@@ -462,6 +462,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
               ),
             )
           : Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.all(8),
               height: 50,
               width: 130,

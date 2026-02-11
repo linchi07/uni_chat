@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'dart:math';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
@@ -14,6 +14,7 @@ import 'package:uni_chat/Chat/chat_sidebar.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
 import 'package:uni_chat/error_handling.dart';
+import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
@@ -27,6 +28,7 @@ import '../utils/overlays.dart';
 import 'chat_message_bubble.dart';
 import 'chat_models.dart';
 import 'chat_state.dart';
+import 'package:uni_chat/main.dart' as m;
 
 class _AgentDropDown extends ConsumerStatefulWidget {
   const _AgentDropDown({super.key});
@@ -477,7 +479,7 @@ class ChatPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     var currentSession = ref.watch(chatStateProvider.select((p) => p.session));
     if (currentSession == null) return ChatPanelWhenNoSession();
-    return ChatPanel(key: chatPanel,);
+    return ChatPanel(key: chatPanel);
   }
 }
 
@@ -738,24 +740,23 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                       padding: const EdgeInsets.all(8.0),
                                       child: StdButton(
                                         onPressed: () {
-                                          ref
-                                              .read(chatStateProvider.notifier)
-                                              .sendRequest(
-                                                chatState.messagesList.sublist(
-                                                  0,
-                                                  chatState
-                                                          .messagesList
-                                                          .length -
-                                                      1,
-                                                ),
-                                                chatState.messagesList.last,
-                                              );
+                                          var n = ref.read(
+                                            chatStateProvider.notifier,
+                                          );
+                                          n.stateCopyWith(isLoading: true);
+                                          n.sendRequest(
+                                            chatState.messagesList.sublist(
+                                              0,
+                                              chatState.messagesList.length - 1,
+                                            ),
+                                            chatState.messagesList.last,
+                                          );
                                         },
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Icon(
-                                              Icons.generating_tokens_outlined,
+                                              Icons.arrow_forward,
                                               color: theme.brightTextColor,
                                             ),
                                             const SizedBox(width: 8),
@@ -795,8 +796,8 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                 duration: const Duration(milliseconds: 150),
                                 curve: Curves.easeInSine,
                               );
-                               autoScroll = true;
-                               autoScrollFunc();
+                              autoScroll = true;
+                              autoScrollFunc();
                             }
                           },
                         ),
@@ -888,17 +889,18 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           final actualFile = File(file.path!);
           final previewId = _uuid.v7();
           // 添加预览ID到附件列表
-          final appDocDir = await getApplicationDocumentsDirectory();
-          final sessionFilesDir = Directory(
-            '${appDocDir.path}/chat/session_files',
-          );
-          if (!await sessionFilesDir.exists()) {
-            await sessionFilesDir.create(recursive: true);
-          }
-
+          final path = await PathProvider.getPath("chat/session_files");
           // 使用UUID生成新的文件名
-          final newFileName = previewId + p.extension(actualFile.path);
-          final newFilePath = '${sessionFilesDir.path}/$newFileName';
+          String newFileName;
+          if (PlatForm().platform == RunningPlatform.ios ||
+              PlatForm().platform == RunningPlatform.ipadOS) {
+            newFileName =
+                previewId +
+                (PathProvider.iosCommonExtensions[file.identifier ?? ""] ?? "");
+          } else {
+            newFileName = previewId + p.extension(actualFile.path);
+          }
+          final newFilePath = '$path/$newFileName';
           // 拷贝文件到新位置
           final copiedFile = await actualFile.copy(newFilePath);
           // Trigger the upload via the notifier
@@ -1040,11 +1042,24 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
 
   late final _focusNode = FocusNode(
     onKeyEvent: (FocusNode node, KeyEvent evt) {
-      if (HardwareKeyboard.instance.isMetaPressed && evt.character == 'v') {
-        if (evt is KeyDownEvent) {
-          readClipboard();
-          // this is a synchronous operation, no await future
-          return KeyEventResult.handled;
+      if (m.PlatForm().isWindows) {
+        if (HardwareKeyboard.instance.isControlPressed &&
+            HardwareKeyboard.instance.isLogicalKeyPressed(
+              LogicalKeyboardKey.keyV,
+            )) {
+          if (evt is KeyDownEvent) {
+            readClipboard();
+            // this is a synchronous operation, no await future
+            return KeyEventResult.handled;
+          }
+        }
+      } else {
+        if (HardwareKeyboard.instance.isMetaPressed && evt.character == 'v') {
+          if (evt is KeyDownEvent) {
+            readClipboard();
+            // this is a synchronous operation, no await future
+            return KeyEventResult.handled;
+          }
         }
       }
       if (HardwareKeyboard.instance.isShiftPressed &&
@@ -1052,7 +1067,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         if (evt is KeyDownEvent) {
           final value = _textController.value;
           final selection = value.selection;
-
           // 2. 在光标位置插入换行符
           final newText = value.text.replaceRange(
             selection.start,
@@ -1069,8 +1083,11 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
 
           var boxSize =
               ((context.findRenderObject() as RenderBox).size -
-                      Offset(4, 12)) // minus the padding
+                      Offset(4, 47)) // minus the padding
                   as Size;
+          if (chatState.error != null) {
+            boxSize = Size(boxSize.width, boxSize.height - 35);
+          }
           // we have to control the scroll by ourselves
           // damn flutter wont expose the base of editable text (///▽///)
           // 我tm花了整整6个小时尝试去调用editable text的内置方法，最后发现还是得自己算最方便
@@ -1096,9 +1113,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             // the same (40 is 2x height of cursor)
             _inputScrollController.jumpTo(
               min(
-                current + delta - boxSize.height + 40 + 6,
-                _inputScrollController.position.maxScrollExtent,
-              ),
+                    current + delta - boxSize.height + 40 + 6 + 10,
+                    _inputScrollController.position.maxScrollExtent,
+                  ) +
+                  (m.PlatForm().isWindows ? 20 : 0),
             ); //6 is a magic number……
           }
           return KeyEventResult.handled;
@@ -1117,20 +1135,40 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           Container(
             margin: const EdgeInsets.only(bottom: 8),
             width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             height: 35,
             decoration: BoxDecoration(
               color: theme.errorColor.withAlpha(80),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Center(
-              child: Text(
-                chatState.error!.unwrapAndGetMessage(context),
-                maxLines: 1,
-                style: TextStyle(
-                  color: theme.errorColor,
-                  fontWeight: FontWeight.bold,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 30),
+                  child: Text(
+                    chatState.error!.unwrapAndGetMessage(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: theme.errorColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+                Positioned(
+                  right: 2,
+                  child: StdIconButton(
+                    color: theme.errorColor,
+                    icon: Icons.cancel_outlined,
+                    onPressed: () {
+                      var n = ref.read(chatStateProvider.notifier);
+                      n.state.error = null;
+                      n.stateCopyWith();
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         if (chatState.uploadedFilesStash.isNotEmpty) _buildAttachmentPreview(),
@@ -1144,7 +1182,11 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 ref.read(chatStateProvider.notifier).checkIfReady();
               }
             },
-            textInputAction: TextInputAction.send,
+            textInputAction:
+                (m.PlatForm().platform == m.RunningPlatform.android ||
+                    m.PlatForm().platform == m.RunningPlatform.ios)
+                ? TextInputAction.newline
+                : TextInputAction.send,
             maxLines: 8,
             minLines: 2,
             onSubmitted: (text) {
@@ -1172,6 +1214,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 child: const Icon(Icons.attach_file),
               ),
             ),
+            /*
             const SizedBox(width: 6),
             SizedBox(
               height: 35,
@@ -1204,6 +1247,8 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 },
               ),
             ),
+
+             */
             const SizedBox(width: 6),
             const Spacer(),
             if (agent != null)
@@ -1344,7 +1389,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           // 基础预览内容
           Builder(
             builder: (context) {
-              if (status == UploadStatus.uploaded && chatFile != null) {
+              if (chatFile != null) {
                 if (chatFile.type == FileTypeDefine.image) {
                   return ClipRRect(
                     borderRadius: BorderRadius.circular(8),
@@ -1360,7 +1405,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                             height: 50,
                           );
                         } else if (snapshot.hasError) {
-                          return Icon(Icons.error, size: 24);
+                          return Icon(Icons.error_outline, size: 24);
                         } else {
                           return Container(
                             width: 50,
@@ -1429,7 +1474,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               }
             },
           ),
-
           // 状态覆盖层
           if (status == UploadStatus.uploading)
             Container(
@@ -1476,10 +1520,9 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               onTap: () {
                 setState(() {
                   if (chatFile != null) {
-                    ref
-                        .read(chatStateProvider)
-                        .uploadedFilesStash
-                        .remove(chatFile.name);
+                    var n = ref.read(chatStateProvider.notifier);
+                    n.state.uploadedFilesStash.remove(chatFile.name);
+                    n.stateCopyWith();
                   }
                 });
               },

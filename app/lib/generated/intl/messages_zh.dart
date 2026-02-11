@@ -151,6 +151,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "储存聊天消息失败",
     ),
     "chatEx_messageNotFound": MessageLookupByLibrary.simpleMessage("该会话无消息"),
+    "chatEx_modelNotSupportFileType": MessageLookupByLibrary.simpleMessage(
+      "模型不支持这类文件",
+    ),
     "chatEx_recursive_call": MessageLookupByLibrary.simpleMessage("聊天"),
     "chatEx_sessionNotFound": MessageLookupByLibrary.simpleMessage("未找到聊天会话"),
     "chatEx_unknownError": MessageLookupByLibrary.simpleMessage("未知错误"),

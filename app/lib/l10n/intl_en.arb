@@ -397,6 +397,7 @@
   "chatEx_failParsingMessage": "fail to parse message",
   "chatEx_failToSaveMessage": "fail to save message",
   "chatEx_failToGenerateTitle": "fail to generate title",
+  "chatEx_modelNotSupportFileType": "The model does not support this type of file",
   "chatEx_unknownError": "unknown error",
   "chatEx": "Chat error",
   "chatEx_recursive_call": "chatting",

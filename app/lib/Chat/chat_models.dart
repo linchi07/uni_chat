@@ -6,7 +6,10 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uni_chat/Agent/agent_models.dart';
 import 'package:uni_chat/error_handling.dart';
+import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
+
+import '../utils/paste_and_drop/src/file_semantic_map.g.dart' show EXT_INDEX;
 
 class ChatSession {
   final String id;
@@ -113,7 +116,7 @@ class ChatMessage {
         (map['sender'] as String?) ?? 'internal',
       ),
       data: decData,
-      senderId: map['sender_id'],
+      senderId: map['sender_id'] ?? "",
       attachedFiles: attachments,
       content: map['content'] ?? '',
       timestamp: DateTime.fromMicrosecondsSinceEpoch(
@@ -357,7 +360,7 @@ class ChatFile {
       return _file!;
     } else {
       _file = File(
-        "${(await getApplicationDocumentsDirectory()).path}/chat/session_files/$name$extension",
+        await PathProvider.getPath("chat/session_files/$name$extension"),
       );
       return _file!;
     }
@@ -401,6 +404,7 @@ class ChatFile {
     type = getFileType(extension);
     mimeType = getMimeType(extension); // 修改这里，使用专门的方法获取 MIME 类型
   }
+
 
   // 添加 copyWith 方法
   ChatFile copyWith({
@@ -470,10 +474,10 @@ class ChatFile {
     extension = extension.toLowerCase();
     if (imageExtensions.contains(extension)) {
       return FileTypeDefine.image;
-    } else if (textExtensions.contains(extension)) {
-      return FileTypeDefine.text;
     } else if (extension == '.pdf') {
       return FileTypeDefine.pdf;
+    } else if (textExtensions.contains(extension)||EXT_INDEX.containsKey(extension.substring(1))) {//ignore the . of  extension
+      return FileTypeDefine.text;
     } else {
       return FileTypeDefine.unknown;
     }

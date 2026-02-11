@@ -2733,6 +2733,16 @@ class S {
     );
   }
 
+  /// `The model does not support this type of file`
+  String get chatEx_modelNotSupportFileType {
+    return Intl.message(
+      'The model does not support this type of file',
+      name: 'chatEx_modelNotSupportFileType',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `unknown error`
   String get chatEx_unknownError {
     return Intl.message(

@@ -78,6 +78,19 @@ class FileUtils {
 }
 
 class PathProvider {
+  static Map<String, String> iosCommonExtensions = {
+    "public.jpeg": ".jpg",
+    "public.png": ".png",
+    "public.plain-text": ".txt",
+    "public.utf8-plain-text": ".txt",
+    "public.text": ".txt",
+    "com.adobe.pdf": ".pdf",
+    "public.html": ".html",
+    "public.markdown": ".md", // Generic markdown
+    "net.daringfireball.markdown": ".md", // Official Markdown
+  };
+
+
   static Future<String> getPath(String relativePath) async {
     relativePath = "/$relativePath";
     late String docPath;
@@ -86,11 +99,10 @@ class PathProvider {
       relativePath = relativePath.replaceAll(RegExp(r'/'), r'\');
       //win下不能用doc作为路径，那个是系统的文档文件夹，而且是全局的。
       docPath = (await getApplicationSupportDirectory()).path;
-    }else{
+    } else {
       docPath = (await getApplicationDocumentsDirectory()).path;
     }
-    var finalPath =
-        "$docPath$relativePath";
+    var finalPath = "$docPath$relativePath";
     var dir = Directory(p.dirname(finalPath));
     if (!(await dir.exists())) {
       await dir.create(recursive: true);

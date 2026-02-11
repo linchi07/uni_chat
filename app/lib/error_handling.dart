@@ -19,6 +19,8 @@ enum ChatExceptionType {
   failToSaveMessage,
   failToGenerateTitle,
 
+  modelNotSupportFileType,
+
   failParsingMessage,
 
   unknownError,
@@ -39,6 +41,8 @@ extension ChatExceptionTypeExt on ChatExceptionType {
         return S.of(context).chatEx_failToGenerateTitle;
       case ChatExceptionType.failParsingMessage:
         return S.of(context).chatEx_failParsingMessage;
+        case ChatExceptionType.modelNotSupportFileType:
+          return S.of(context).chatEx_modelNotSupportFileType;
     }
   }
 }

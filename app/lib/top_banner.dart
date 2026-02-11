@@ -69,7 +69,7 @@ class MainBanner extends ConsumerWidget {
     } else if (PlatForm().platform == RunningPlatform.windows) {
       var startLength = (scWidth >= 800) ? 230 : 100;
       var activityLength = (scWidth >= 800) ? 100 : 30;
-      var endLength = activityLength + 200;
+      var endLength = activityLength + 150;
       var maxBannerWidgetWidth =
           (scWidth / 2 - max(startLength, endLength)) * 2;
       // this is essential
@@ -162,9 +162,9 @@ class MainBanner extends ConsumerWidget {
         );
       }
     } else {
-      var startLength = (scWidth >= 800) ? 230 : 100;
-      var maxBannerWidgetWidth = (scWidth / 2 - startLength) * 2;
+      var startLength = (scWidth >= 800) ? 230 : 30;
       var endLength = (scWidth >= 800) ? 100 : 30;
+      var maxBannerWidgetWidth = (scWidth / 2 - max(startLength, endLength)) * 2;
       stack = Stack(
         alignment: Alignment.center,
         children: [

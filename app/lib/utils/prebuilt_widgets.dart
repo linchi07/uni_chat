@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/utils/overlays.dart';
@@ -264,10 +265,12 @@ class StdTextFormFieldOutlined extends ConsumerWidget {
     this.validator,
     this.onSubmitted,
     this.isExpanded,
+    this.inputFormat,
   }) {
     this.controller = controller ?? TextEditingController();
   }
   late final TextEditingController controller;
+  final List<TextInputFormatter>? inputFormat;
   final bool showClearButton;
   final String? validateFailureText;
   final String? hintText;
@@ -284,6 +287,7 @@ class StdTextFormFieldOutlined extends ConsumerWidget {
       maxLines: maxLines,
       minLines: minLines,
       controller: controller,
+      inputFormatters: inputFormat,
       decoration: InputDecoration(
         fillColor: theme.primaryColor,
         focusColor: theme.primaryColor,

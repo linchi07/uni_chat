@@ -282,7 +282,7 @@ extension XModelAlibity on ModelAbility {
       case ModelAbility.file:
         return 'pdfUnderstanding';
       case ModelAbility.visual:
-        return 'visualUnderstanding';
+        return 'visual';
       case ModelAbility.embedding:
         return 'embedding';
       case ModelAbility.audio:

@@ -506,6 +506,7 @@ WHERE
     T2.id,
     T1.id AS message_id,
     T1.sender,
+    T1.sender_id,
     T1.content,
     T1.timestamp,
     T1.data,
@@ -579,6 +580,7 @@ WITH RECURSIVE chat_tree AS (
 SELECT 
     m.id AS message_id,
     m.sender,
+    m.sender_id,
     m.content,
     m.timestamp,
     m.attachments,

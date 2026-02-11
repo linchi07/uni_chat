@@ -330,11 +330,25 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     );
     state = state.copyWith(isLoading: true);
     if (ChatFile.imageExtensions.contains(
-          p.extension(file.path).toLowerCase(),
-        ) &&
-        agentNotifier.state!.client.model.abilities.contains(
-          ModelAbility.visual,
-        )) {
+      p.extension(file.path).toLowerCase(),
+    )) {
+      if (!agentNotifier.state!.client.model.abilities.contains(
+        ModelAbility.visual,
+      )) {
+        state.uploadedFilesStash[id] = (
+          file: ChatFile(
+            name: id,
+            originalName: name,
+            uploadTime: DateTime.now(),
+          ),
+          status: UploadStatus.failed,
+        );
+        state = state.copyWith(
+          isLoading: false,
+          error: ChatException(ChatExceptionType.modelNotSupportFileType),
+        );
+        return;
+      }
       if ( /*agentNotifier.state!.abilities.contains(
         ApiAbility.supportsFilesApi,
       )*/ false) {
@@ -618,7 +632,19 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       await for (final chunk in stream) {
         sb.write(chunk.content);
       }
-      var title = jsonDecode(sb.toString())["title"];
+      String? title;
+      try {
+        title = jsonDecode(sb.toString())["title"];
+      } catch (e) {
+        if (e is FormatException) {
+          var s = sb.toString();
+          // remove <think> tags
+          // or the thought of cot models will break the json decode
+          s = s.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
+          s.trim();
+          title = jsonDecode(s)["title"];
+        }
+      }
       if (title == null) {
         return;
       }

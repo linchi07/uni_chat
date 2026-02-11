@@ -393,6 +393,7 @@
   "chatEx_failParsingMessage": "解析聊天消息失败",
   "chatEx_failToSaveMessage": "储存聊天消息失败",
   "chatEx_failToGenerateTitle": "自动生成标题失败",
+  "chatEx_modelNotSupportFileType": "模型不支持这类文件",
   "chatEx_unknownError": "未知错误",
   "chatEx": "聊天系统错误",
   "chatEx_recursive_call": "聊天",

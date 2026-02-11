@@ -2,22 +2,26 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:super_native_extensions/raw_clipboard.dart' as raw;
+import 'package:uni_chat/main.dart';
 
 import 'models.dart';
 import 'resolver.dart';
 
 class NativeClipboard {
   /// 读取剪切板内容
-  static Future<NativeDataReader?> read(
-      {Set<FileFormat>? supportedFormats}) async {
+  static Future<NativeDataReader?> read({
+    Set<FileFormat>? supportedFormats,
+  }) async {
     final reader = await raw.ClipboardReader.instance.newClipboardReader();
 
     // 获取 Items (raw.DataReaderItem)
     final items = await reader.getItems();
 
     // 解析
-    final resolvedItems =
-        await NativeTypeResolver.resolveItems(items, supportedFormats);
+    final resolvedItems = await NativeTypeResolver.resolveItems(
+      items,
+      supportedFormats,
+    );
 
     return NativeDataReader(resolvedItems);
   }
@@ -31,22 +35,40 @@ class NativeClipboard {
 
       // 处理文本
       for (var text in item._texts) {
-        representations.add(raw.DataRepresentation.simple(
-          format: "public.utf8-plain-text", // Mac/iOS
-          data: text,
-        ));
-        representations.add(raw.DataRepresentation.simple(
-          format: "text/plain", // Web/Android
-          data: text,
-        ));
+        if (PlatForm().platform == RunningPlatform.ios ||
+            PlatForm().platform == RunningPlatform.macos ||
+            PlatForm().platform == RunningPlatform.ipadOS) {
+          representations.add(
+            raw.DataRepresentation.simple(
+              format: "public.utf8-plain-text", // Mac/iOS
+              data: text,
+            ),
+          );
+        }else if(PlatForm().isWindows){
+          representations.add(
+            raw.DataRepresentation.simple(
+              format: "NativeShell_CF_13", // Windows
+              data: text,
+            ),
+          );
+        }else{
+          representations.add(
+          raw.DataRepresentation.simple(
+            format: "text/plain", // Web/Android
+            data: text,
+          ),
+        );
+        }
       }
 
       // 处理文件/二进制
       for (var fileData in item._files) {
-        representations.add(raw.DataRepresentation.simple(
-          format: fileData.format,
-          data: fileData.data,
-        ));
+        representations.add(
+          raw.DataRepresentation.simple(
+            format: fileData.format,
+            data: fileData.data,
+          ),
+        );
       }
 
       final provider = raw.DataProvider(

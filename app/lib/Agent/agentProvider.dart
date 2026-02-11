@@ -523,7 +523,6 @@ class AgentProvider extends StateNotifier<Agent?> {
                   break;
               }
             }
-            totalTokens += output.last.tokens;
           }
           if (i.content.isNotEmpty) {
             output.add(

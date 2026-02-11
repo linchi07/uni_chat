@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   bitsdojo_window_windows
+  file_selector_windows
   irondash_engine_context
   sqlite3_flutter_libs
   super_native_extensions
