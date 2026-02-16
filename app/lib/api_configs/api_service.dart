@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
+import 'package:uni_chat/error_handling.dart';
 
 import '../Chat/chat_models.dart';
 import 'api_key_resolver.dart';
@@ -16,7 +17,6 @@ class _ApiResponse {
   final InvokeResult? invokeResult;
   _ApiResponse({this.response, this.invokeResult});
 }
-
 
 @immutable
 class InvokeResult {
@@ -77,13 +77,13 @@ class ApiClient {
       modelId,
     );
     if (provider == null) {
-      throw "Provider not found";
+      throw ApiException(ApiExceptionType.providerNotFound);
     }
     if (model == null) {
-      throw "Model not found";
+      throw ApiException(ApiExceptionType.modelNotFound);
     }
     if (providerConfig == null) {
-      throw "The provider doesn't provide this model";
+      throw ApiException(ApiExceptionType.modelNotAvailableForProvider);
     }
     return ApiClient(
       providerConfig: providerConfig,
@@ -119,7 +119,7 @@ class ApiClient {
         await resolver.updateData(invokeResult);
         if (invokeResult.statusCode == 200) break;
       } else {
-        throw "A empty result returned from the server.";
+        throw ApiException(ApiExceptionType.request_emptyBody);
       }
     }
   }
@@ -243,10 +243,10 @@ class OpenAiApiService extends BaseApiService {
       'model': client.providerConfig.callName,
       'input': contents,
       'stream': true,
-      'temperature': modelRequestContent.modelSpecifics.temperature,
-      'top_p': modelRequestContent.modelSpecifics.topP,
+      //'temperature': modelRequestContent.modelConfigure.temperature,
+      //'top_p': modelRequestContent.modelConfigure.topP,
       'max_output_tokens':
-          modelRequestContent.modelSpecifics.maxGenerationTokens,
+          modelRequestContent.modelConfigure.maxGenerationTokens,
     };
 
     request.body = jsonEncode(requestBody);
@@ -281,7 +281,7 @@ class OpenAiApiService extends BaseApiService {
                         responses.add(
                           _ApiResponse(
                             response: ChatResponse(
-                              type: ResponseType.text,
+                              type: MessageChunkType.text,
                               content: contentItem['text'] as String,
                             ),
                           ),
@@ -617,10 +617,10 @@ class OpenAiCompletionService extends OpenAiApiService {
       'model': client.providerConfig.callName,
       'messages': contents,
       'stream': true,
-      'frequency_penalty': modelRequestContent.modelSpecifics.frequencyPenalty,
-      'presence_penalty': modelRequestContent.modelSpecifics.presencePenalty,
-      'temperature': modelRequestContent.modelSpecifics.temperature,
-      'top_p': modelRequestContent.modelSpecifics.topP,
+      //'frequency_penalty': modelRequestContent.modelConfigure.frequencyPenalty,
+      //'presence_penalty': modelRequestContent.modelConfigure.presencePenalty,
+      //'temperature': modelRequestContent.modelConfigure.temperature,
+      //'top_p': modelRequestContent.modelConfigure.topP,
     };
 
     request.body = jsonEncode(requestBody);
@@ -645,17 +645,31 @@ class OpenAiCompletionService extends OpenAiApiService {
                 final outputItems = json['choices'] as List;
 
                 for (final item in outputItems) {
-                  if (item['delta'] != null &&
-                      item['delta']['content'] != null) {
-                    // 流式响应格式
-                    responses.add(
-                      _ApiResponse(
-                        response: ChatResponse(
-                          type: ResponseType.text,
-                          content: item['delta']['content'] as String,
+                  if (item['delta'] != null) {
+                    if (item['delta']['reasoning_content'] != null) {
+                      // 流式响应格式
+                      responses.add(
+                        _ApiResponse(
+                          response: ChatResponse(
+                            type: MessageChunkType.reasoning,
+                            content:
+                                item['delta']['reasoning_content'] as String,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                      print(item['delta']['reasoning_content']);
+                    }
+                    if (item['delta']['content'] != null) {
+                      // 流式响应格式
+                      responses.add(
+                        _ApiResponse(
+                          response: ChatResponse(
+                            type: MessageChunkType.text,
+                            content: item['delta']['content'] as String,
+                          ),
+                        ),
+                      );
+                    }
                   }
                 }
                 final usage = json['usage'] as Map<String, dynamic>?;
@@ -884,10 +898,10 @@ class GeminiApiService extends BaseApiService {
         'parts': sysMsg,
       }, //根据api文档，role这里填什么都行
       "generationConfig": {
-        "temperature": modelRequestContent.modelSpecifics.temperature,
-        "topP": modelRequestContent.modelSpecifics.topP,
+        //"temperature": modelRequestContent.modelConfigure.temperature,
+        //"topP": modelRequestContent.modelConfigure.topP,
         "maxOutputTokens":
-            modelRequestContent.modelSpecifics.maxGenerationTokens,
+            modelRequestContent.modelConfigure.maxGenerationTokens,
         //"frequencyPenalty": modelRequestContent.modelSpecifics.frequencyPenalty,
         //google的逆天操作，2.5系列是不支持的，但是tm的Api文档上是有这个设置选择的，劳资难道给你正则匹配到2.5就禁用吗？
         //它家的api一团糟，还有各种不支持，这下知道openai 的好了。
@@ -920,7 +934,7 @@ class GeminiApiService extends BaseApiService {
                   r.add(
                     _ApiResponse(
                       response: ChatResponse(
-                        type: ResponseType.text,
+                        type: MessageChunkType.text,
                         content: text,
                       ),
                     ),

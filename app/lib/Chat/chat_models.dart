@@ -1,10 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show immutable;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:uni_chat/Agent/agentProvider.dart';
+import 'package:uni_chat/Agent/agent_models.dart';
+import 'package:uni_chat/error_handling.dart';
+import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
+
+import '../utils/paste_and_drop/src/file_semantic_map.g.dart' show EXT_INDEX;
 
 class ChatSession {
   final String id;
@@ -62,8 +67,11 @@ class ChatMessage {
   //refers to the messageId of the database table.The ID of the "message"(not the relations)
   final String? parent;
   final List<String> childIds;
+  final Map<String, dynamic>?
+  data; // store other data from the chat (the data should be json serializable objects)
   int enabledChild; //当前启用的变体。注意：这里的是指的是children list的index
   final MessageSender sender;
+  final String senderId;
   final String content; // a raw string
   final List<ChatFile>? attachedFiles; // 改为存储附件文件对象列表
   final DateTime timestamp;
@@ -71,11 +79,13 @@ class ChatMessage {
   ChatMessage({
     required this.id,
     this.messageId,
+    required this.senderId,
     required this.parent,
     required this.childIds,
     required this.sender,
     required this.content,
     this.attachedFiles,
+    this.data,
     required this.timestamp,
     required this.enabledChild,
   });
@@ -92,6 +102,11 @@ class ChatMessage {
         }
       }
     }
+    var data = map['data'];
+    Map<String, dynamic>? decData;
+    if (data != null) {
+      decData = jsonDecode(data);
+    }
     return ChatMessage(
       id: map['id'],
       messageId: map['message_id'],
@@ -100,6 +115,8 @@ class ChatMessage {
       sender: MessageSenderExtension.fromString(
         (map['sender'] as String?) ?? 'internal',
       ),
+      data: decData,
+      senderId: map['sender_id'] ?? "",
       attachedFiles: attachments,
       content: map['content'] ?? '',
       timestamp: DateTime.fromMicrosecondsSinceEpoch(
@@ -115,6 +132,8 @@ class ChatMessage {
       'parent': parent,
       'child_ids': childIds.join(','),
       'sender': sender.toString(),
+      'data': data,
+      'sender_id': senderId,
       'content': content,
       'attachments': attachedFiles?.map((e) => e.toMap()).toList(),
       'timestamp': timestamp.microsecondsSinceEpoch,
@@ -218,48 +237,107 @@ class ModelRequestContent {
   List<FormattedChatMessage> chatHistory;
   List<FormattedChatMessage> usrMessage;
   List<FormattedChatMessage> ragMessages;
-  ModelSpecifics modelSpecifics;
+  ModelConfigure modelConfigure;
   ModelRequestContent({
     required this.staticSystemMessages,
     required this.dynamicSystemMessages,
     required this.uiMessages,
     required this.chatHistory,
     required this.usrMessage,
-    required this.modelSpecifics,
+    required this.modelConfigure,
     required this.ragMessages,
   });
 }
 
-enum ResponseType { text, image, thinking, functionCalling, error }
+enum MessageChunkType { text, image, reasoning, functionCalling, error }
+
+extension XMessageChunkType on MessageChunkType {
+  String get name {
+    switch (this) {
+      case MessageChunkType.text:
+        return 'text';
+      case MessageChunkType.image:
+        return 'image';
+      case MessageChunkType.reasoning:
+        return 'reasoning';
+      case MessageChunkType.functionCalling:
+        return 'functionCalling';
+      case MessageChunkType.error:
+        return 'error';
+    }
+  }
+
+  static MessageChunkType fromString(String name) {
+    switch (name) {
+      case 'text':
+        return MessageChunkType.text;
+      case 'image':
+        return MessageChunkType.image;
+      case 'reasoning':
+        return MessageChunkType.reasoning;
+      case 'functionCalling':
+        return MessageChunkType.functionCalling;
+      case 'error':
+        return MessageChunkType.error;
+      default:
+        return MessageChunkType.text;
+    }
+  }
+}
 
 class ChatResponse {
-  final ResponseType type;
+  final MessageChunkType type;
   final String content;
-  final String? functionName;
-  final String? functionArguments;
-  final String? error;
+  final AppException? error;
 
-  ChatResponse({
-    required this.type,
+  ChatResponse({required this.type, required this.content, this.error});
+}
+
+@immutable
+class MessageBlock {
+  final String content;
+  final int anchor;
+  final MessageChunkType chunkType;
+
+  const MessageBlock({
     required this.content,
-    this.functionName,
-    this.functionArguments,
-    this.error,
+    required this.anchor,
+    required this.chunkType,
   });
 
-  String toContentString() {
-    switch (type) {
-      case ResponseType.text:
-        return content;
-      case ResponseType.image:
-        return '![Image]($content)';
-      case ResponseType.thinking:
-        return '▍';
-      case ResponseType.functionCalling:
-        return 'Function Calling: $functionName($functionArguments)';
-      case ResponseType.error:
-        return 'Error: $error';
+  Map<String, dynamic> toMap() {
+    return {
+      'content': content,
+      'anchor': anchor,
+      'chunkType': chunkType.name,
+    };
+  }
+
+  factory MessageBlock.fromMap(Map<String, dynamic> map) {
+    return MessageBlock(
+      content: map['content'],
+      anchor: map['anchor'],
+      chunkType: XMessageChunkType.fromString(map['chunkType']),
+    );
+  }
+
+  static ({String mainContent,List<MessageBlock>? blocks}) fromChatResponse(List<ChatResponse> responses){
+    List<String> mainContent = [];
+    var blocks = <MessageBlock>[];
+    int pt = 0;
+    for(var response in responses){
+      if(response.type == MessageChunkType.text){
+        mainContent.add(response.content);
+        pt += response.content.length;
+      }else{
+        blocks.add(MessageBlock(
+          content: response.content,
+          anchor: pt,
+          chunkType: response.type,
+        ));
+      }
     }
+    return (mainContent: mainContent.join(), blocks: blocks);
   }
 }
 
@@ -282,7 +360,7 @@ class ChatFile {
       return _file!;
     } else {
       _file = File(
-        "${(await getApplicationDocumentsDirectory()).path}/chat/session_files/$name$extension",
+        await PathProvider.getPath("chat/session_files/$name$extension"),
       );
       return _file!;
     }
@@ -326,6 +404,7 @@ class ChatFile {
     type = getFileType(extension);
     mimeType = getMimeType(extension); // 修改这里，使用专门的方法获取 MIME 类型
   }
+
 
   // 添加 copyWith 方法
   ChatFile copyWith({
@@ -395,10 +474,10 @@ class ChatFile {
     extension = extension.toLowerCase();
     if (imageExtensions.contains(extension)) {
       return FileTypeDefine.image;
-    } else if (textExtensions.contains(extension)) {
-      return FileTypeDefine.text;
     } else if (extension == '.pdf') {
       return FileTypeDefine.pdf;
+    } else if (textExtensions.contains(extension)||EXT_INDEX.containsKey(extension.substring(1))) {//ignore the . of  extension
+      return FileTypeDefine.text;
     } else {
       return FileTypeDefine.unknown;
     }

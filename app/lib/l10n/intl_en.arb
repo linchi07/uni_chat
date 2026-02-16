@@ -105,27 +105,20 @@
   "no_persona":"No persona",
   "plz_select_persona":"Please select a persona",
   "choose_agent_and_chat_hint":"Select an agent and start chatting",
+  "front_page_titleSlogan": "How can I help you?",
   "front_page_hintLine_char1":"Use ",
   "front_page_hintLine_char2":" to chat with ",
   "front_page_hintLine_char3":"",
+  "generate_message": "Generate message",
+  "message_no_content": "Something went wrong , the model returns a message without content.",
   "drop_files_hint":"Drop files here",
   "send_a_message_hint":"Send a message",
   "ui_editing":"Editing UI",
   "ui_edited":"Edited UI",
   "show_source_code":"Show source code",
   "hide_source_code":"Hide source code",
-  "reasoning":"Thinking...{sec}s",
-  "@reasoning": {
-    "placeholders": {
-      "sec": {}
-    }
-  },
-  "reasoned":"Thought {sec}s",
-  "@reasoned": {
-    "placeholders": {
-      "sec": {}
-    }
-  },
+  "reasoning":"Thinking...",
+  "reasoned":"Thought for a moment",
   "show_cot":"Show thoughts",
   "hide_cot":"Hide  thoughts",
   "searching_knowledge_base":"Searching Knowledge Base...",
@@ -235,6 +228,8 @@
   "delete_long_press":"Delete (LongPress)",
   "DEFAULT":"Default",
   "switch_persona":"Switch persona",
+  "select_agent_default_persona": "Default persona for the agent",
+  "persona_additonal_information": "Additional information about the persona",
   "add_persona":"Add persona",
   "edit_persona":"Edit persona",
   "give_up_edit_confirm":"Give up edit?",
@@ -357,8 +352,8 @@
   "configure_all_set": "Configured",
   "configure_not_set": "Not configured",
   "api_keys_configure": "API Keys configuration",
-  "api_keys_confiugured": "{num} API Keys added",
-  "@api_keys_confiugured": {
+  "api_keys_configured": "{num} API Keys added",
+  "@api_keys_configured": {
     "placeholders": {
       "num": {}
     }
@@ -395,5 +390,45 @@
   "file": "File",
   "embedding": "Embedding",
   "audio": "Audio",
-  "video": "Video"
+  "video": "Video",
+  "@comment:forErrors":"",
+  "chatEx_sessionNotFound": "session not found",
+  "chatEx_messageNotFound": "message not found",
+  "chatEx_failParsingMessage": "fail to parse message",
+  "chatEx_failToSaveMessage": "fail to save message",
+  "chatEx_failToGenerateTitle": "fail to generate title",
+  "chatEx_modelNotSupportFileType": "The model does not support this type of file",
+  "chatEx_unknownError": "unknown error",
+  "chatEx": "Chat error",
+  "chatEx_recursive_call": "chatting",
+  "agentEx_agentNotLoaded": "agent not loaded",
+  "agentEx_agentNotFound": "agent not found",
+  "agentEx_unknownError": "unknown error",
+  "agentEx_failLoading_parse_error": "agent data is corrupted",
+  "agentEx": "Agent error",
+  "agentEx_recursive_call": "loading agent",
+  "personaEX_personaNotFound": "persona not found",
+  "personaEX_unknownError": "unknown error",
+  "personaEx_failLoading_parse_error": "persona data is corrupted",
+  "personaEx": "Persona error",
+  "personaEx_recursive_call": " while loading persona",
+  "apiEx": "API error",
+  "apiEx_recursive_call": "calling api",
+  "apiEx_providerNotFound": "provider not found",
+  "apiEx_unknownError": "unknown error",
+  "apiEx_modelNotAvailableForProvider": "model not available for provider",
+  "apiEx_modelNotFound": "model not found",
+  "apiEx_request_timeout": "request timeout",
+  "apiEx_request_badRequest": "bad request",
+  "apiEx_request_emptyBody": "the api returns an empty response",
+  "apiEx_request_apiFail": "api failed to respond",
+  "apiEx_request_other": "api error ",
+  "apiEx_apikey_noAvailableKeys": "currently no keys are available for using",
+  "ex_while" : "while {condition}",
+  "@ex_while":{
+    "placeholders":{
+      "condition":{}
+    }
+  },
+  "ex_and": " and "
 }

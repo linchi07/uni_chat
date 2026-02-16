@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/utils/overlays.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/database_service.dart';
 import '../utils/prebuilt_widgets.dart';
+import 'agent_models.dart';
 import 'agent_set_page.dart';
 
 class AgentPage extends StatefulWidget {
@@ -44,7 +46,7 @@ class _AgentPageState extends State<AgentPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(width: 60),
+              const SizedBox(width: 20),
               Text(
                 S.of(context).agent_manage,
                 style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold),
@@ -70,7 +72,7 @@ class _AgentPageState extends State<AgentPage> {
         ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+            padding: const EdgeInsets.fromLTRB(10, 10, 5, 10),
             child: AgentSelector(onEdit: onEdit),
           ),
         ),
@@ -100,6 +102,18 @@ class AgentSelector extends ConsumerWidget {
         return FutureBuilder(
           future: getAgentAndAvatars(),
           builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  (snapshot.error is AppException)
+                      ? (snapshot.error as AppException).unwrapAndGetMessage(
+                          context,
+                        )
+                      : S.of(context).error_occurred,
+                  style: TextStyle(color: theme.thirdGradeColor),
+                ),
+              );
+            }
             if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -159,7 +173,7 @@ class AgentSelector extends ConsumerWidget {
                               await AgentEditState.fromAgentData(agent);
                           onEdit();
                         },
-                        icon: Icon(Icons.edit),
+                        icon: Icon(Icons.edit_outlined),
                       ),
                       IconButton(
                         onPressed: () {
@@ -182,7 +196,7 @@ class AgentSelector extends ConsumerWidget {
                               ),
                               const SizedBox(width: 16),
                               StdButton(
-                                color: Colors.red,
+                                color: theme.errorColor,
                                 onLongPress: () async {
                                   await OverlayPortalService.hide(context);
                                   await DatabaseService.instance.deleteAgent(
@@ -196,7 +210,7 @@ class AgentSelector extends ConsumerWidget {
                             backGroundColor: theme.zeroGradeColor,
                           );
                         },
-                        icon: Icon(Icons.delete),
+                        icon: Icon(Icons.delete_outline),
                       ),
                     ],
                   ),

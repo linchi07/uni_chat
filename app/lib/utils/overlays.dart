@@ -12,15 +12,19 @@ class _Portal {
 }
 
 class _PortalData {
+  String ovlId;
   Widget? child;
   Offset? offset;
   bool barrierVisible;
   bool autoAvoidSoftKeyboard;
+  bool noBarrier;
   bool animate;
   _PortalData({
+    required this.ovlId,
     this.child,
     this.offset,
     this.barrierVisible = true,
+    this.noBarrier = false,
     this.autoAvoidSoftKeyboard = true,
     this.animate = false,
   });
@@ -42,8 +46,9 @@ class OverlayPortalService {
     BuildContext context, {
     required Widget child,
     bool barrierVisible = true,
+    bool noBarrier = false,
     bool animate = false,
-    bool autoAvoidSoftKeyboard = true,
+    bool autoAvoidSoftKeyboard = false,
     Offset? offset,
   }) {
     final scopeState = context
@@ -55,7 +60,9 @@ class OverlayPortalService {
     final portal = scopeState._portalData;
 
     portal.dataNotifier.value = _PortalData(
+      ovlId: UniqueKey().toString(),
       child: child,
+      noBarrier: noBarrier,
       offset: offset,
       barrierVisible: barrierVisible,
       autoAvoidSoftKeyboard: autoAvoidSoftKeyboard,
@@ -106,7 +113,12 @@ class OverlayPortalService {
         child: Padding(padding: padding, child: c),
       ),
     );
-    OverlayPortalService.show(context, child: child, animate: true);
+    OverlayPortalService.show(
+      context,
+      child: child,
+      animate: true,
+      autoAvoidSoftKeyboard: true,
+    );
   }
 
   /// 隐藏指定 context 下的对话框。
@@ -161,7 +173,7 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
       end: 1.0,
     ).animate(curvedAnimation);
     _scaleAnim = Tween<double>(begin: 0.9, end: 1.0).animate(curvedAnimation);
-    if (PlatForm().isMobile) {
+    if (PlatForm().isMobilePlatform) {
       WidgetsBinding.instance.addObserver(this);
     }
   }
@@ -184,7 +196,7 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
     _portalData.animationController.dispose();
     // 释放新增的通知器
     _portalData.dataNotifier.dispose();
-    if (PlatForm().isMobile) {
+    if (PlatForm().isMobilePlatform) {
       WidgetsBinding.instance.removeObserver(this);
     }
     super.dispose();
@@ -214,12 +226,14 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
             // 监听遮罩可见性变化
             // 监听大小变化
             Widget content = data.child!;
-            if (PlatForm().isMobile) {
-              content = SingleChildScrollView(
-                // enlarge the scroll area
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: content,
+            if (PlatForm().isMobilePlatform) {
+              content = SafeArea(
+                child: SingleChildScrollView(
+                  // enlarge the scroll area
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: content,
+                  ),
                 ),
               );
             }
@@ -227,7 +241,11 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
             Widget positionedContent;
             if (data.offset != null) {
               positionedContent = AnimatedPositioned(
-                left: data.offset!.dx,
+                left:
+                    data.offset!.dx -
+                    ((PlatForm().isMobilePlatform)
+                        ? 20
+                        : 0), // to fix the left offset
                 top: max(
                   0,
                   data.offset!.dy -
@@ -248,18 +266,20 @@ class _OverlayPortalScopeState extends State<OverlayPortalScope>
               );
             }
             var w = Stack(
+              key: ValueKey(data.ovlId),
               alignment: Alignment.center,
               children: [
                 // 背景遮罩，点击时可以关闭对话框
-                ModalBarrier(
-                  color: (data.barrierVisible)
-                      ? Colors.black.withAlpha(90)
-                      : Colors.transparent,
-                  dismissible: true,
-                  onDismiss: () {
-                    OverlayPortalService.hide(context);
-                  },
-                ),
+                if (!data.noBarrier)
+                  ModalBarrier(
+                    color: (data.barrierVisible)
+                        ? Colors.black.withAlpha(90)
+                        : Colors.transparent,
+                    dismissible: true,
+                    onDismiss: () {
+                      OverlayPortalService.hide(context);
+                    },
+                  ),
                 // 将内容居中显示并添加动画效果
                 (data.animate)
                     ? ScaleTransition(
@@ -305,6 +325,7 @@ class OverlayWrapper extends StatefulWidget {
       throw Exception('No OverlayWrapper found in context');
     }
     scopeState.insertOverlay(
+      ovlId: UniqueKey().toString(),
       overlayContent: overlayContent,
       barrierDismissible: barrierDismissible,
       onClose: onClose,
@@ -351,23 +372,28 @@ class OverlayWrapperState extends State<OverlayWrapper> {
 
   /// 插入 OverlayEntry 到 OverlayState
   void insertOverlay({
+    required String ovlId,
     required Widget overlayContent,
     Future<bool> Function()? onClose,
     bool barrierDismissible = true,
   }) {
     if (_overlayEntry != null) return; // 避免重复插入
     this.onClose = onClose;
+    if (PlatForm().isMobile) {
+      overlayContent = SafeArea(child: overlayContent);
+    }
     _overlayEntry = OverlayEntry(
       builder: (context) {
         // 这里的浮层内容通常需要定位 (如 Positioned, Align 或 Center)
         // 这是一个简单的居中定位示例
         return Stack(
+          key: ValueKey(ovlId),
           children: [
             ModalBarrier(
               color: Colors.black.withAlpha(90),
               dismissible: barrierDismissible,
               onDismiss: () {
-                removeOverlay();
+                closeOverlay();
               },
             ),
             Center(
@@ -386,13 +412,20 @@ class OverlayWrapperState extends State<OverlayWrapper> {
   }
 
   /// 移除 OverlayEntry
-  void removeOverlay() async {
+  /// onClose不会被调用
+  void removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  /// 关闭 Overlay
+  /// 如果onClose返回false，则不会关闭
+  void closeOverlay() async {
     if (_overlayEntry == null) return;
     if (!(await onClose?.call() ?? true)) {
       return;
     }
-    _overlayEntry?.remove();
-    _overlayEntry = null;
+    removeOverlay();
   }
 
   @override

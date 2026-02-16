@@ -75,11 +75,11 @@ class ThemeConfig {
 
 // 使用 StateNotifier 管理主题状态
 class ThemeManager extends StateNotifier<ThemeConfig> {
-  ThemeManager() : super(solarized);
+  ThemeManager(super.config);
 
   static List<({String name, ThemeConfig theme})> themes = [
     (name: 'light', theme: light),
-    (name: 'dark', theme: dark),
+    //(name: 'dark', theme: dark), the dart isn't ready yet
     (name: 'solarized', theme: solarized),
   ];
 
@@ -119,12 +119,15 @@ class ThemeManager extends StateNotifier<ThemeConfig> {
     errorColor: const Color(0xffe3674b),
   );
   // 更新主题颜色的方法
-  void updateTheme({ThemeConfig? theme}) {
+  void updateTheme({ThemeConfig? theme, String? name}) {
+    if (name != null) {
+      theme = themes.firstWhere((element) => element.name == name).theme;
+    }
     state = theme ?? state.copyWith();
   }
 }
 
 // 创建 StateNotifierProvider
 final themeProvider = StateNotifierProvider<ThemeManager, ThemeConfig>((ref) {
-  return ThemeManager();
+  return ThemeManager(ThemeManager.light);
 });

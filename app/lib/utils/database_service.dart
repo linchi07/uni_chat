@@ -1,112 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:sqflite/sqflite.dart';
-import 'package:uni_chat/Agent/agentProvider.dart';
+import 'package:uni_chat/error_handling.dart';
 import 'package:uuid/uuid.dart';
 
+import '../Agent/agent_models.dart';
 import '../Chat/chat_models.dart';
 import '../Persona/persona_provider.dart';
 import 'file_utils.dart';
-
-class AgentData {
-  final int version;
-  // the version of agent settings
-  final String id;
-  final String name;
-  final String providerId;
-  final String modelId;
-  final String? description;
-  final String? systemPrompt;
-  late final List<String> knowledgeBases;
-  final ModelSpecifics modelSpecifics;
-  final DateTime createdAt;
-  final bool isDefault;
-
-  AgentData({
-    required this.version,
-    required this.id,
-    required this.name,
-    required this.providerId,
-    required this.modelId,
-    required this.modelSpecifics,
-    this.description,
-    this.systemPrompt,
-    List<String>? knowledgeBases,
-    required this.createdAt,
-    this.isDefault = false,
-  }) {
-    this.knowledgeBases = knowledgeBases ?? [];
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'system_prompt': systemPrompt,
-      'created_at': createdAt.toIso8601String(),
-      'is_default': isDefault ? 1 : 0,
-    };
-  }
-
-  Future<File?> getAvatar() async {
-    var f = await PathProvider.getPath("chat/avatars/$id");
-    var f1 = File("$f.png");
-    if (await f1.exists()) {
-      return f1;
-    } else {
-      var f2 = File("$f.jpg");
-      if (await f2.exists()) {
-        return f2;
-      }
-      var f3 = File("$f.jpeg");
-      if (await f3.exists()) {
-        return f3;
-      }
-    }
-    return null;
-  }
-
-  String _parameterToJson() {
-    Map<String, dynamic> parameters = {
-      'version': version,
-      'provider_id': providerId,
-      'model_id': modelId,
-      'system_prompt': systemPrompt,
-      'knowledge_bases': knowledgeBases,
-      'model_specifics': modelSpecifics.toJson(),
-    };
-    return jsonEncode(parameters);
-  }
-
-  Map<String, dynamic> toDatabaseStorage() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'configure': _parameterToJson(),
-      'created_at': createdAt.toIso8601String(),
-      'is_default': isDefault ? 1 : 0,
-    };
-  }
-
-  factory AgentData.fromDatabaseStorage(Map<String, dynamic> map) {
-    var parameters = jsonDecode(map['configure']);
-    return AgentData(
-      version: parameters['version'] as int,
-      id: map['id'] as String,
-      name: map['name'] as String,
-      providerId: parameters['provider_id'] as String? ?? '',
-      modelId: parameters['model_id'] as String,
-      modelSpecifics: ModelSpecifics.fromJson(parameters['model_specifics']),
-      description: map['description'] as String?,
-      systemPrompt: parameters['system_prompt'] as String?,
-      createdAt: DateTime.parse(map['created_at']),
-      isDefault: map['is_default'] == 1,
-    );
-  }
-}
 
 class DatabaseService {
   static final DatabaseService instance = DatabaseService._privateConstructor();
@@ -188,6 +89,7 @@ class DatabaseService {
       CREATE TABLE messages (
         id TEXT PRIMARY KEY,
         sender TEXT NOT NULL,
+        sender_id TEXT NOT NULL,
         content TEXT NOT NULL,
         data TEXT,
         persistent_data_pointer TEXT, -- 对话消息级别的持久化储存（只储存指针，数据在persistent_data表中）
@@ -476,7 +378,6 @@ class DatabaseService {
     String sessionId,
     ChatMessage message, {
     ChatMessage? modifiedParent,
-    Map<String, dynamic>? chatData,
   }) async {
     final db = await database;
     await db.transaction((txn) async {
@@ -486,7 +387,9 @@ class DatabaseService {
         //however in the relations table , the id(column) is the id(object),the messageId is the messageID (object)
         'id': message.messageId,
         'sender': message.sender.name, // 'message.contentSender.user' -> 'user'
+        'sender_id': message.senderId,
         'content': message.content,
+        'data': (message.data != null) ? jsonEncode(message.data!) : null,
         'timestamp': message.timestamp.microsecondsSinceEpoch,
         'attachments':
             (message.attachedFiles != null && message.attachedFiles!.isNotEmpty)
@@ -501,22 +404,19 @@ class DatabaseService {
         'session_id': sessionId,
         'message_id': message.messageId,
         'parent_id': message.parent,
-        'child_ids': jsonEncode(message.childIds),
+        'child_ids': message.childIds.join(','),
         'enabled_child_index': message.enabledChild,
       });
       if (modifiedParent != null) {
         await txn.update(
           'message_relations',
           {
-            'child_ids': jsonEncode(modifiedParent.childIds),
+            'child_ids': modifiedParent.childIds.join(','),
             'enabled_child_index': modifiedParent.enabledChild,
           },
           where: 'id = ?',
           whereArgs: [modifiedParent.id],
         );
-      }
-      if (chatData != null) {
-        await txn.insert('chat_data', {'id': message.id, 'data': chatData});
       }
       await txn.update(
         'sessions',
@@ -598,17 +498,18 @@ WHERE
   /// you should run a tree traversal on the root message to order all the messages
   ///
   /// to only get the enabled message list use [getMessageListForSession]  instead
-  Future<(ChatMessage?, Map<String, ChatMessage>)> getMessagesForSession(
-    String sessionId,
-  ) async {
+  Future<({ChatMessage? root, Map<String, ChatMessage> messages})>
+  getMessagesForSession(String sessionId) async {
     final db = await database;
     final List<Map<String, dynamic>> messageMaps = await db.rawQuery(
       '''SELECT
     T2.id,
     T1.id AS message_id,
     T1.sender,
+    T1.sender_id,
     T1.content,
     T1.timestamp,
+    T1.data,
     T1.attachments,
     T2.parent_id,
     T2.child_ids,
@@ -623,7 +524,7 @@ WHERE
       [sessionId],
     );
     if (messageMaps.isEmpty) {
-      return (null, <String, ChatMessage>{});
+      return (root: null, messages: <String, ChatMessage>{});
     }
     var result = <String, ChatMessage>{};
     ChatMessage? root;
@@ -637,7 +538,7 @@ WHERE
     if (root == null) {
       throw 'No root message found , data is corrupted';
     }
-    return (root, result);
+    return (root: root, messages: result);
   }
 
   /// Get the enabled branch of messages for a session
@@ -679,6 +580,7 @@ WITH RECURSIVE chat_tree AS (
 SELECT 
     m.id AS message_id,
     m.sender,
+    m.sender_id,
     m.content,
     m.timestamp,
     m.attachments,
@@ -693,51 +595,6 @@ ORDER BY t.depth DESC;
       [sessionId, sessionId],
     );
     return messageMaps.map((e) => ChatMessage.fromMap(e)).toList();
-  }
-
-  Future<void> writeLayout(String sessionId, String layoutInfo) async {
-    final db = await database;
-
-    // 检查是否已存在对应 session_id 的记录
-    final List<Map<String, dynamic>> existingRecords = await db.query(
-      'panelLayout',
-      where: 'session_id = ?',
-      whereArgs: [sessionId],
-      limit: 1,
-    );
-
-    if (existingRecords.isNotEmpty) {
-      // 如果存在记录，则更新 layout_info
-      await db.update(
-        'panelLayout',
-        {'layout_info': layoutInfo},
-        where: 'session_id = ?',
-        whereArgs: [sessionId],
-      );
-    } else {
-      // 如果不存在记录，则创建新记录
-      await db.insert('panelLayout', {
-        'id': _uuid.v4(), // 生成新的 UUID 作为主键
-        'session_id': sessionId,
-        'layout_info': layoutInfo,
-      });
-    }
-  }
-
-  Future<String?> readLayout(String sessionId) async {
-    final db = await database;
-    final List<Map<String, dynamic>> records = await db.query(
-      'panelLayout',
-      where: 'session_id = ?',
-      whereArgs: [sessionId],
-      limit: 1,
-    );
-
-    if (records.isNotEmpty) {
-      return records.first['layout_info'] as String?;
-    } else {
-      return null;
-    }
   }
 
   // --- 1. Create (创建) ---
@@ -786,6 +643,7 @@ ORDER BY t.depth DESC;
       }
     });
   }
+
 
   // --- 2. Read (读取所有) ---
   Future<List<Persona>> getAllPersonas() async {
@@ -870,7 +728,7 @@ ORDER BY t.depth DESC;
 
       if (rowsAffected == 0) {
         // 可以在这里处理一个错误，比如要设置的 ID 不存在
-        throw Exception("Persona with ID $personaId not found.");
+        throw PersonaException(PersonaExceptionType.personaNotFound);
       }
     });
   }

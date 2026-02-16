@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:flutter/widgets.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
-import 'package:uni_chat/api_configs/database_models.dart';
 
 import '../generated/l10n.dart' show S;
 
@@ -171,7 +170,6 @@ class ApiKey implements Insertable<ApiKeysTableData> {
   }
 }
 
-
 @immutable
 class TokenUsage {
   final int promptTokens;
@@ -283,7 +281,7 @@ extension XModelAlibity on ModelAbility {
       case ModelAbility.file:
         return 'pdfUnderstanding';
       case ModelAbility.visual:
-        return 'visualUnderstanding';
+        return 'visual';
       case ModelAbility.embedding:
         return 'embedding';
       case ModelAbility.audio:
@@ -412,13 +410,7 @@ class Model implements Insertable<Model> {
     List<ModelParameters>? parameters;
     var pr = map['parameters'];
     if (pr != null) {
-      parameters = [];
-      for (var i in (pr as List)) {
-        var obj = ModelParameters.fromMap(i);
-        if (obj != null) {
-          parameters.add(obj);
-        }
-      }
+      parameters = ModelParameters.fromMap(pr);
       if (parameters.isEmpty) {
         parameters = null;
       }
@@ -646,13 +638,14 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
     ProviderPreset(
       id: "lmstudio",
       i18nName: {'en': "LM Studio"},
-      endpoint: "http://localehost:1234",
+      endpoint: "http://localhost:1234",
       type: ProviderPresetType.typeSetMultiInstanceWithoutKey,
       apiType: ApiType.openaiChatCompletions,
     ),
     ProviderPreset(
       id: 'deepseek',
       i18nName: {'en': "DeepSeek", 'zh': "深度求索"},
+      endpoint: "https://api.deepseek.com",
       type: ProviderPresetType.singleInstance,
       apiType: ApiType.openaiChatCompletions,
       models: [
@@ -665,6 +658,45 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
           providerId: 'deepseek',
           modelId: '@official-a8c6da93-45af-5030-bbbd-b415bfa11e66',
           callName: 'deepseek/deepseek-v3.2',
+        ),
+      ],
+    ),
+    ProviderPreset(
+      id: 'model_scope',
+      i18nName: {'en': "Model Scope", 'zh': "魔搭"},
+      endpoint: "https://api-inference.modelscope.cn/v1",
+      type: ProviderPresetType.singleInstance,
+      apiType: ApiType.openaiChatCompletions,
+      models: [
+        ProviderModelConfig(
+          providerId: 'model_scope',
+          modelId: '@official-464a9745-faf7-5e9c-813d-dc230998fed4',
+          callName: 'deepseek-ai/DeepSeek-R1',
+        ),
+        ProviderModelConfig(
+          providerId: 'model_scope',
+          modelId: '@official-a8c6da93-45af-5030-bbbd-b415bfa11e66',
+          callName: 'deepseek-ai/DeepSeek-V3.2',
+        ),
+        ProviderModelConfig(
+          providerId: 'model_scope',
+          modelId: '@official-0183feea-f111-5cf9-92e3-54cd841fc327',
+          callName: 'Qwen/Qwen3-235B-A22B',
+        ),
+        ProviderModelConfig(
+          providerId: 'model_scope',
+          modelId: '@official-2072efd3-d486-55de-ba05-b9679d3ef907',
+          callName: 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
+        ),
+        ProviderModelConfig(
+          providerId: 'model_scope',
+          modelId: '@official-e9e2fac4-7690-5a57-b663-7fa104870b06',
+          callName: 'Qwen/QwQ-32B',
+        ),
+        ProviderModelConfig(
+          providerId: 'model_scope',
+          modelId: '@official-c5c0d0c5-b0a7-5c0c-b0a7-c5c0d0c5b0a7',
+          callName: 'Qwen/Qwen3-Coder-7B-A35B',
         ),
       ],
     ),
@@ -775,19 +807,30 @@ abstract class ModelParameters {
 
   Map<String, dynamic> toMap();
 
-  static ModelParameters? fromMap(Map<String, dynamic> map) {
-    switch (map['name']) {
-      case 'temperature':
-        return Temperature.fromMap(map);
-      case 'top_p':
-        return TopP.fromMap(map);
-      case 'presence_penalty':
-        return PresencePenalty.fromMap(map);
-      case 'frequency_penalty':
-        return FrequencyPenalty.fromMap(map);
-      default:
-        return null;
+  static List<ModelParameters> fromMap(List<dynamic> maps) {
+    if (maps.isEmpty) {
+      return [];
     }
+    var list = <ModelParameters>[];
+    for (var map in maps) {
+      switch (map['name']) {
+        case 'temperature':
+          list.add(Temperature.fromMap(map));
+          continue;
+        case 'top_p':
+          list.add(TopP.fromMap(map));
+          continue;
+        case 'presence_penalty':
+          list.add(PresencePenalty.fromMap(map));
+          continue;
+        case 'frequency_penalty':
+          list.add(FrequencyPenalty.fromMap(map));
+          continue;
+        default:
+          continue;
+      }
+    }
+    return list;
   }
 }
 

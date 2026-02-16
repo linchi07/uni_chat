@@ -316,13 +316,7 @@ class _ApiDb extends _$_ApiDb {
         List<ModelParameters>? parameters;
         var pr = map['parameters'];
         if (pr != null) {
-          parameters = [];
-          for (var i in (pr as List)) {
-            var obj = ModelParameters.fromMap(i);
-            if (obj != null) {
-              parameters.add(obj);
-            }
-          }
+          parameters = ModelParameters.fromMap(pr);
           if (parameters.isEmpty) {
             parameters = null;
           }

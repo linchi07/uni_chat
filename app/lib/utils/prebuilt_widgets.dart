@@ -3,14 +3,15 @@ import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:uni_chat/Chat/panels/constant_value_indexer.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
+import 'color.dart';
 
 class StdButton extends ConsumerWidget {
   const StdButton({
@@ -46,6 +47,51 @@ class StdButton extends ConsumerWidget {
             padding: padding ?? const EdgeInsets.all(8.0),
             child: child ?? Text(text ?? "", textAlign: TextAlign.center),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class StdButtonOutlined extends ConsumerWidget {
+  const StdButtonOutlined({
+    super.key,
+    this.color,
+    this.child,
+    this.onPressed,
+    this.padding,
+    this.onLongPress,
+    this.enabled = false,
+  });
+  final bool enabled;
+  final VoidCallback? onLongPress;
+  final Color? color;
+  final Widget? child;
+  final EdgeInsets? padding;
+  final VoidCallback? onPressed;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var theme = ref.watch(themeProvider);
+    var c = color ?? theme.primaryColor;
+    return Material(
+      color: (enabled) ? c : c.withAlpha(20),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: c, width: 1.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onHover: (value) {},
+        splashColor: c.withAlpha(50),
+        onTap: onPressed,
+        onLongPress: onLongPress,
+        child: IconTheme(
+          data: IconThemeData(
+            color: (enabled) ? theme.getTextColor(c) : c,
+            size: 20,
+            weight: 300,
+          ),
+          child: Center(child: child),
         ),
       ),
     );
@@ -175,6 +221,10 @@ class StdTextFormField extends ConsumerWidget {
       child: TextFormField(
         maxLines: maxLines,
         minLines: minLines,
+        onTapOutside: (value) {
+          onSubmitted?.call(controller.text);
+          FocusScope.of(context).unfocus();
+        },
         controller: controller,
         decoration: InputDecoration(
           hintText: hintText,
@@ -219,10 +269,12 @@ class StdTextFormFieldOutlined extends ConsumerWidget {
     this.validator,
     this.onSubmitted,
     this.isExpanded,
+    this.inputFormat,
   }) {
     this.controller = controller ?? TextEditingController();
   }
   late final TextEditingController controller;
+  final List<TextInputFormatter>? inputFormat;
   final bool showClearButton;
   final String? validateFailureText;
   final String? hintText;
@@ -239,6 +291,11 @@ class StdTextFormFieldOutlined extends ConsumerWidget {
       maxLines: maxLines,
       minLines: minLines,
       controller: controller,
+      inputFormatters: inputFormat,
+      onTapOutside: (value) {
+        onSubmitted?.call(controller.text);
+        FocusScope.of(context).unfocus();
+      },
       decoration: InputDecoration(
         fillColor: theme.primaryColor,
         focusColor: theme.primaryColor,

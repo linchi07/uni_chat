@@ -6,19 +6,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Chat/chat_sidebar.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
+import 'package:uni_chat/error_handling.dart';
+import 'package:uni_chat/main.dart' as m;
+import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
+import '../Agent/agent_models.dart';
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/overlays.dart';
@@ -70,17 +73,24 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
   }
 
   Future<(List<AgentData>, List<File?>, File?)> getAgentAndAvatars() async {
-    var agents = await DatabaseService.instance.getAllAgents();
-    var avatars = <File?>[];
-    File? selectedAvatar;
-    for (var agent in agents) {
-      var avatar = await agent.getAvatar();
-      if (agent.id == selectedIndex?.$1) {
-        selectedAvatar = avatar;
+    try {
+      var agents = await DatabaseService.instance.getAllAgents();
+      var avatars = <File?>[];
+      File? selectedAvatar;
+      for (var agent in agents) {
+        var avatar = await agent.getAvatar();
+        if (agent.id == selectedIndex?.$1) {
+          selectedAvatar = avatar;
+        }
+        avatars.add(avatar);
       }
-      avatars.add(avatar);
+      return (agents, avatars, selectedAvatar);
+    } catch (e) {
+      // or future builder won't catch the error
+      await Future.delayed(const Duration(milliseconds: 100));
+      // you need to wait for the future builder to actually attached to the future or it will not catch the error and the app will crash.
+      rethrow;
     }
-    return (agents, avatars, selectedAvatar);
   }
 
   @override
@@ -129,7 +139,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                             child: CircularProgressIndicator(),
                           );
                         }
-                        if (asyncSnapshot.data == null) {
+                        if (asyncSnapshot.hasError) {
                           return Center(
                             child: Text(S.of(context).error_occurred),
                           );
@@ -207,7 +217,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        S.of(context).plz_select_agent,
+                        S.of(context).select_agent,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
                       Icon(Icons.keyboard_arrow_down, color: theme.textColor),
@@ -462,6 +472,16 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
   }
 }
 
+class ChatPage extends ConsumerWidget {
+  const ChatPage({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var currentSession = ref.watch(chatStateProvider.select((p) => p.session));
+    if (currentSession == null) return ChatPanelWhenNoSession();
+    return ChatPanel(key: chatPanel);
+  }
+}
+
 class ChatPanelWhenNoSession extends ConsumerWidget {
   const ChatPanelWhenNoSession({super.key});
 
@@ -475,17 +495,22 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              "一起集思广益！",
+              S.of(context).front_page_titleSlogan,
+              textAlign: TextAlign.center,
               style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               S.of(context).choose_agent_and_chat_hint,
+              textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16, color: theme.thirdGradeColor),
             ),
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              runAlignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              runSpacing: 10,
               children: [
                 Text(
                   S.of(context).front_page_hintLine_char1,
@@ -566,7 +591,8 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
   }
 
   void jumpToBottom() {
-    if (scrollController.offset < scrollController.position.maxScrollExtent) {
+    if (scrollController.offset < scrollController.position.maxScrollExtent &&
+        scrollController.hasClients) {
       scrollController.position.moveTo(
         (scrollController.position.maxScrollExtent),
       );
@@ -609,14 +635,16 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
       session = chatState.session;
     }
     var theme = ref.watch(themeProvider);
-    if (!chatState.isReady) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(chatStateProvider.notifier).checkIfReady();
-      });
-    }
     var itemCount = chatState.isResponding
-        ? chatState.messages.length + 1
-        : chatState.messages.length;
+        ? chatState.messagesList.length + 1
+        : chatState.messagesList.length;
+    if (!chatState.isResponding &&
+        chatState.messagesList.isNotEmpty &&
+        chatState.messagesList.last.sender == MessageSender.user) {
+      // when the last message is from the user (this might happen when ai responses are terminated due to exceptions)
+      itemCount +=
+          1; // add a space for a button to ask the user to regenerate ai messages
+    }
     return Scaffold(
       backgroundColor: theme.secondGradeColor,
       body: LayoutBuilder(
@@ -652,8 +680,7 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                 }
                                 if (!autoScroll &&
                                     (scrollController.position.maxScrollExtent -
-                                                scrollController.offset)
-                                            .abs() < // the abs is essential since we got the bouncing scroll physics
+                                            scrollController.offset) <
                                         30) {
                                   autoScroll = true;
                                   if (chatState.isResponding) {
@@ -705,8 +732,48 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                   if (chatState.isResponding &&
                                       index == itemCount - 1) {
                                     return ChatMessageDynamicStream(
-                                      contentBuffer: chatState.newContentBuffer,
-                                      refreshFlag: chatState.refreshFlag,
+                                      theme: theme,
+                                      responses: chatState.responses,
+                                    );
+                                  }
+                                  if (index == itemCount - 1 &&
+                                      chatState.messagesList.isNotEmpty &&
+                                      chatState.messagesList.last.sender ==
+                                          MessageSender.user &&
+                                      !chatState.isLoading) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: StdButton(
+                                        onPressed: () {
+                                          var n = ref.read(
+                                            chatStateProvider.notifier,
+                                          );
+                                          n.stateCopyWith(isLoading: true);
+                                          n.sendRequest(
+                                            chatState.messagesList.sublist(
+                                              0,
+                                              chatState.messagesList.length - 1,
+                                            ),
+                                            chatState.messagesList.last,
+                                          );
+                                        },
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.arrow_forward,
+                                              color: theme.brightTextColor,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              S.of(context).generate_message,
+                                              style: TextStyle(
+                                                color: theme.brightTextColor,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     );
                                   }
                                   return const SizedBox.shrink();
@@ -734,6 +801,7 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                 duration: const Duration(milliseconds: 150),
                                 curve: Curves.easeInSine,
                               );
+                              autoScroll = true;
                               autoScrollFunc();
                             }
                           },
@@ -826,17 +894,18 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           final actualFile = File(file.path!);
           final previewId = _uuid.v7();
           // 添加预览ID到附件列表
-          final appDocDir = await getApplicationDocumentsDirectory();
-          final sessionFilesDir = Directory(
-            '${appDocDir.path}/chat/session_files',
-          );
-          if (!await sessionFilesDir.exists()) {
-            await sessionFilesDir.create(recursive: true);
-          }
-
+          final path = await PathProvider.getPath("chat/session_files");
           // 使用UUID生成新的文件名
-          final newFileName = previewId + p.extension(actualFile.path);
-          final newFilePath = '${sessionFilesDir.path}/$newFileName';
+          String newFileName;
+          if (PlatForm().platform == RunningPlatform.ios ||
+              PlatForm().platform == RunningPlatform.ipadOS) {
+            newFileName =
+                previewId +
+                (PathProvider.iosCommonExtensions[file.identifier ?? ""] ?? "");
+          } else {
+            newFileName = previewId + p.extension(actualFile.path);
+          }
+          final newFilePath = '$path/$newFileName';
           // 拷贝文件到新位置
           final copiedFile = await actualFile.copy(newFilePath);
           // Trigger the upload via the notifier
@@ -879,29 +948,23 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             f.name ?? DateTime.now().toIso8601String(),
             f is NativeTextFile,
           );
-    } catch (e) {
-      //TODO: should display an error
+    } on Exception catch (e) {
+      ChatException ce;
+      if (e is AppException) {
+        ce = ChatException.fromAncestor(e);
+      } else {
+        ce = ChatException.fromException(e);
+      }
+      ref.read(chatStateProvider.notifier).stateCopyWith(error: ce);
       return;
     }
   }
 
-  int _checkedTimes = 0;
   late Agent? agent;
   @override
   Widget build(BuildContext context) {
     chatState = ref.watch(chatStateProvider);
     final globalLoading = chatState.isLoading;
-    if (!chatState.isReady && _checkedTimes < 5) {
-      // wait some time before checking if ready (give the state sometime to prepare etc. load model), only check once
-      // after testing , 70ms seems to be enough (M4 MBP)
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await Future.delayed(const Duration(milliseconds: 70), () async {
-          if (!mounted) return;
-          ref.read(chatStateProvider.notifier).checkIfReady();
-          _checkedTimes++;
-        });
-      });
-    }
     theme = ref.watch(themeProvider);
     agent = ref.watch(agentProvider);
     late Widget childPanel;
@@ -984,11 +1047,24 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
 
   late final _focusNode = FocusNode(
     onKeyEvent: (FocusNode node, KeyEvent evt) {
-      if (HardwareKeyboard.instance.isMetaPressed && evt.character == 'v') {
-        if (evt is KeyDownEvent) {
-          readClipboard();
-          // this is a synchronous operation, no await future
-          return KeyEventResult.handled;
+      if (m.PlatForm().isWindows) {
+        if (HardwareKeyboard.instance.isControlPressed &&
+            HardwareKeyboard.instance.isLogicalKeyPressed(
+              LogicalKeyboardKey.keyV,
+            )) {
+          if (evt is KeyDownEvent) {
+            readClipboard();
+            // this is a synchronous operation, no await future
+            return KeyEventResult.handled;
+          }
+        }
+      } else {
+        if (HardwareKeyboard.instance.isMetaPressed && evt.character == 'v') {
+          if (evt is KeyDownEvent) {
+            readClipboard();
+            // this is a synchronous operation, no await future
+            return KeyEventResult.handled;
+          }
         }
       }
       if (HardwareKeyboard.instance.isShiftPressed &&
@@ -996,7 +1072,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         if (evt is KeyDownEvent) {
           final value = _textController.value;
           final selection = value.selection;
-
           // 2. 在光标位置插入换行符
           final newText = value.text.replaceRange(
             selection.start,
@@ -1013,8 +1088,11 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
 
           var boxSize =
               ((context.findRenderObject() as RenderBox).size -
-                      Offset(4, 12)) // minus the padding
+                      Offset(4, 47)) // minus the padding
                   as Size;
+          if (chatState.error != null) {
+            boxSize = Size(boxSize.width, boxSize.height - 35);
+          }
           // we have to control the scroll by ourselves
           // damn flutter wont expose the base of editable text (///▽///)
           // 我tm花了整整6个小时尝试去调用editable text的内置方法，最后发现还是得自己算最方便
@@ -1040,9 +1118,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             // the same (40 is 2x height of cursor)
             _inputScrollController.jumpTo(
               min(
-                current + delta - boxSize.height + 40 + 6,
-                _inputScrollController.position.maxScrollExtent,
-              ),
+                    current + delta - boxSize.height + 40 + 6 + 10,
+                    _inputScrollController.position.maxScrollExtent,
+                  ) +
+                  25,
             ); //6 is a magic number……
           }
           return KeyEventResult.handled;
@@ -1055,39 +1134,67 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   Widget _buildChatPanel(bool isSendButtonLoading) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (chatState.error?.isNotEmpty ?? false)
+        if (chatState.error != null)
           Container(
             margin: const EdgeInsets.only(bottom: 8),
             width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             height: 35,
             decoration: BoxDecoration(
-              color: Colors.red[100],
+              color: theme.errorColor.withAlpha(80),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Center(
-              child: Text(
-                chatState.error!,
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 30),
+                  child: Text(
+                    chatState.error!.unwrapAndGetMessage(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: theme.errorColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+                Positioned(
+                  right: 2,
+                  child: StdIconButton(
+                    color: theme.errorColor,
+                    icon: Icons.cancel_outlined,
+                    onPressed: () {
+                      var n = ref.read(chatStateProvider.notifier);
+                      n.state.error = null;
+                      n.stateCopyWith();
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         if (chatState.uploadedFilesStash.isNotEmpty) _buildAttachmentPreview(),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 2),
           child: TextField(
-            autofocus: true,
+            onTapOutside: (event) {
+              _focusNode.unfocus();
+            },
+            autofocus: !m.PlatForm().isMobilePlatform,
             focusNode: _focusNode,
             onTap: () {
               if (!chatState.isReady) {
                 ref.read(chatStateProvider.notifier).checkIfReady();
               }
             },
-            textInputAction: TextInputAction.send,
+            textInputAction:
+                (m.PlatForm().platform == m.RunningPlatform.android ||
+                    m.PlatForm().platform == m.RunningPlatform.ios)
+                ? TextInputAction.newline
+                : TextInputAction.send,
             maxLines: 8,
             minLines: 2,
             onSubmitted: (text) {
@@ -1104,112 +1211,161 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             textCapitalization: TextCapitalization.sentences,
           ),
         ),
-        Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.attach_file),
-              onPressed: _pickFile,
-              tooltip: 'Attach File',
-            ),
-            const Spacer(),
-            if (agent != null)
-              ModelSelect.buildPreview(
-                context,
-                26,
-                EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-                agent!.client.provider,
-                agent!.client.model,
-                () {
-                  OverlayPortalService.showDialog(
-                    context,
-                    height: 500,
-                    width: 450,
-                    child: ModelSelect(
-                      theme: theme,
-                      onSelect: (p, m) async {
-                        agent?.client = await ApiClient.fromProviderAndModel(
-                          p,
-                          m,
+        const SizedBox(height: 6),
+        SizedBox(
+          height: 35,
+          child: Stack(
+            children: [
+              Positioned(
+                left: 0,
+                child: SizedBox(
+                  height: 35,
+                  width: 35,
+                  child: StdButtonOutlined(
+                    onPressed: _pickFile,
+                    child: const Icon(Icons.attach_file),
+                  ),
+                ),
+              ),
+              /*
+                  const SizedBox(width: 6),
+                  SizedBox(
+                    height: 35,
+                    width: 35,
+                    child: Builder(
+                      builder: (context) {
+                        return StdButtonOutlined(
+                          onPressed: () {
+                            var rb = context.findRenderObject() as RenderBox;
+                            OverlayPortalService.show(
+                              context,
+                              offset: rb
+                                  .localToGlobal(Offset.zero)
+                                  .translate(-52.5, -210),
+                              barrierVisible: false,
+                              child: SizedBox(
+                                width: 150,
+                                height: 200,
+                                child: Material(
+                                  color: theme.zeroGradeColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                  elevation: 2,
+                                ),
+                              ),
+                            );
+                          },
+                          color: theme.warningColor,
+                          child: const Icon(Icons.lightbulb_outline),
                         );
-                        ref.read(agentProvider.notifier).state = agent
-                            ?.copyWith();
-                        await OverlayPortalService.hide(context);
                       },
                     ),
-                    backGroundColor: theme.zeroGradeColor,
-                  );
-                },
-                theme,
-              ),
-            const SizedBox(width: 4),
-            if (widget.cancelCallback != null)
-              Container(
-                height: 35,
-                width: 35,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                child: Material(
-                  clipBehavior: Clip.hardEdge,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
                   ),
-                  color: theme.thirdGradeColor,
-                  child: InkWell(
-                    splashColor: Colors.grey,
-                    onTap: widget.cancelCallback,
-                    child: Icon(
-                      Icons.close,
-                      color: theme.primaryColor,
-                      size: 20,
+                   */
+              if (agent != null)
+                Positioned(
+                  left: 42,
+                  right: (widget.cancelCallback != null) ? 84 : 42,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: ModelSelect.buildPreview(
+                      context,
+                      26,
+                      EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                      agent!.client.provider,
+                      agent!.client.model,
+                      () {
+                        OverlayPortalService.showDialog(
+                          context,
+                          height: 500,
+                          width: 450,
+                          child: ModelSelect(
+                            theme: theme,
+                            onSelect: (p, m) async {
+                              agent?.client =
+                                  await ApiClient.fromProviderAndModel(p, m);
+                              ref.read(agentProvider.notifier).state = agent
+                                  ?.copyWith();
+                              await OverlayPortalService.hide(context);
+                            },
+                          ),
+                          backGroundColor: theme.zeroGradeColor,
+                        );
+                      },
+                      theme,
+                    ),
+                  ),
+                ),
+              if (widget.cancelCallback != null)
+                Positioned(
+                  right: 42,
+                  child: SizedBox(
+                    height: 35,
+                    width: 35,
+                    child: Material(
+                      clipBehavior: Clip.hardEdge,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      color: theme.thirdGradeColor,
+                      child: InkWell(
+                        splashColor: Colors.grey,
+                        onTap: widget.cancelCallback,
+                        child: Icon(
+                          Icons.close,
+                          color: theme.primaryColor,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                right: 0,
+                child: SizedBox(
+                  height: 35,
+                  width: 35,
+                  child: Material(
+                    clipBehavior: Clip.hardEdge,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    color: (isSendButtonLoading || !chatState.isReady)
+                        ? Colors.grey[600]
+                        : theme.primaryColor,
+                    child: InkWell(
+                      splashColor: Colors.grey,
+                      onTap: (isSendButtonLoading || !chatState.isReady)
+                          ? null
+                          : _sendMessage,
+                      child: isSendButtonLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Padding(
+                                padding: EdgeInsets.all(7.0),
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 3,
+                                ),
+                              ),
+                            )
+                          : (chatState.isReady)
+                          ? const Icon(
+                              Icons.arrow_forward_sharp,
+                              color: Colors.white,
+                              size: 20,
+                            )
+                          : const Icon(
+                              Icons.do_not_disturb_alt_sharp,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                     ),
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: SizedBox(
-                height: 35,
-                width: 35,
-                child: Material(
-                  clipBehavior: Clip.hardEdge,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  color: (isSendButtonLoading || !chatState.isReady)
-                      ? Colors.grey[600]
-                      : theme.primaryColor,
-                  child: InkWell(
-                    splashColor: Colors.grey,
-                    onTap: (isSendButtonLoading || !chatState.isReady)
-                        ? null
-                        : _sendMessage,
-                    child: isSendButtonLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: Padding(
-                              padding: EdgeInsets.all(7.0),
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 3,
-                              ),
-                            ),
-                          )
-                        : (chatState.isReady)
-                        ? const Icon(
-                            Icons.arrow_forward_sharp,
-                            color: Colors.white,
-                            size: 20,
-                          )
-                        : const Icon(
-                            Icons.do_not_disturb_alt_sharp,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -1250,7 +1406,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           // 基础预览内容
           Builder(
             builder: (context) {
-              if (status == UploadStatus.uploaded && chatFile != null) {
+              if (chatFile != null) {
                 if (chatFile.type == FileTypeDefine.image) {
                   return ClipRRect(
                     borderRadius: BorderRadius.circular(8),
@@ -1266,7 +1422,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                             height: 50,
                           );
                         } else if (snapshot.hasError) {
-                          return Icon(Icons.error, size: 24);
+                          return Icon(Icons.error_outline, size: 24);
                         } else {
                           return Container(
                             width: 50,
@@ -1335,7 +1491,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               }
             },
           ),
-
           // 状态覆盖层
           if (status == UploadStatus.uploading)
             Container(
@@ -1382,10 +1537,9 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               onTap: () {
                 setState(() {
                   if (chatFile != null) {
-                    ref
-                        .read(chatStateProvider)
-                        .uploadedFilesStash
-                        .remove(chatFile.name);
+                    var n = ref.read(chatStateProvider.notifier);
+                    n.state.uploadedFilesStash.remove(chatFile.name);
+                    n.stateCopyWith();
                   }
                 });
               },

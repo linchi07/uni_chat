@@ -32,36 +32,34 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m5(error) => "发生错误:${error}";
 
-  static String m6(token) => "知识库（${token}Tokens）";
+  static String m6(condition) => "在${condition}时";
 
-  static String m7(errorContent) => "加载错误${errorContent}";
+  static String m7(token) => "知识库（${token}Tokens）";
 
-  static String m8(token) => "最长的开场白（${token}Tokens）";
+  static String m8(errorContent) => "加载错误${errorContent}";
 
-  static String m9(num) => "已配置${num}个模型";
+  static String m9(token) => "最长的开场白（${token}Tokens）";
 
-  static String m10(charCount, maxCount) =>
+  static String m10(num) => "已配置${num}个模型";
+
+  static String m11(charCount, maxCount) =>
       "你已超出最大系统提示词上限，多余部分将会被截断，请增大模型上下文或者精简提示词${charCount}/${maxCount}";
 
-  static String m11(provider) => " 确定删除提供商${provider}吗？\\n 一切记录和Key都会被一同删除";
+  static String m12(provider) => " 确定删除提供商${provider}吗？\\n 一切记录和Key都会被一同删除";
 
-  static String m12(sec) => "思考了${sec}秒";
+  static String m13(num) => "选择了${num}个Agent";
 
-  static String m13(sec) => "正在思考... ${sec}秒";
+  static String m14(token) => "内建提示词（${token}Tokens）";
 
-  static String m14(num) => "选择了${num}个Agent";
+  static String m15(token) => "系统提示词（${token}Tokens）";
 
-  static String m15(token) => "内建提示词（${token}Tokens）";
+  static String m16(token) => "可用于对话的Token：${token}";
 
-  static String m16(token) => "系统提示词（${token}Tokens）";
+  static String m17(lim) => "总上下文上限：${lim}";
 
-  static String m17(token) => "可用于对话的Token：${token}";
+  static String m18(type) => "类型:${type}";
 
-  static String m18(lim) => "总上下文上限：${lim}";
-
-  static String m19(type) => "类型:${type}";
-
-  static String m20(token) => "UI交互提示词（${token}Tokens）";
+  static String m19(token) => "UI交互提示词（${token}Tokens）";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -81,6 +79,16 @@ class MessageLookup extends MessageLookupByLibrary {
     "add_provider": MessageLookupByLibrary.simpleMessage("添加提供商"),
     "add_ver_flag": MessageLookupByLibrary.simpleMessage("添加版本号"),
     "advance_settings": MessageLookupByLibrary.simpleMessage("高级设置"),
+    "agentEx": MessageLookupByLibrary.simpleMessage("Agent系统错误"),
+    "agentEx_agentNotFound": MessageLookupByLibrary.simpleMessage("Agent 未找到"),
+    "agentEx_agentNotLoaded": MessageLookupByLibrary.simpleMessage(
+      "Agent 未被加载",
+    ),
+    "agentEx_failLoading_parse_error": MessageLookupByLibrary.simpleMessage(
+      "Agent的数据无法被解析",
+    ),
+    "agentEx_recursive_call": MessageLookupByLibrary.simpleMessage("加载Agent"),
+    "agentEx_unknownError": MessageLookupByLibrary.simpleMessage("未知错误"),
     "agent_delete_confirm": MessageLookupByLibrary.simpleMessage(
       "确定要删除此Agent吗？\n 删除后所有和此Agent关联的聊天记录将会一并删除",
     ),
@@ -90,11 +98,31 @@ class MessageLookup extends MessageLookupByLibrary {
     "agent_sets": MessageLookupByLibrary.simpleMessage("Agent设置"),
     "ai": MessageLookupByLibrary.simpleMessage("AI"),
     "any": MessageLookupByLibrary.simpleMessage("任何人"),
+    "apiEx": MessageLookupByLibrary.simpleMessage("API 错误"),
+    "apiEx_apikey_noAvailableKeys": MessageLookupByLibrary.simpleMessage(
+      "没有可用的API密钥",
+    ),
+    "apiEx_modelNotAvailableForProvider": MessageLookupByLibrary.simpleMessage(
+      "提供商不提供该模型",
+    ),
+    "apiEx_modelNotFound": MessageLookupByLibrary.simpleMessage("模型未找到"),
+    "apiEx_providerNotFound": MessageLookupByLibrary.simpleMessage("提供商未找到"),
+    "apiEx_recursive_call": MessageLookupByLibrary.simpleMessage("调用Api"),
+    "apiEx_request_apiFail": MessageLookupByLibrary.simpleMessage(
+      "Api返回了一个错误响应",
+    ),
+    "apiEx_request_badRequest": MessageLookupByLibrary.simpleMessage("请求错误"),
+    "apiEx_request_emptyBody": MessageLookupByLibrary.simpleMessage(
+      "Api返回了一个空响应",
+    ),
+    "apiEx_request_other": MessageLookupByLibrary.simpleMessage("API发生错误"),
+    "apiEx_request_timeout": MessageLookupByLibrary.simpleMessage("请求超时"),
+    "apiEx_unknownError": MessageLookupByLibrary.simpleMessage("未知错误"),
     "api_key": MessageLookupByLibrary.simpleMessage("API密钥"),
     "api_key_set": MessageLookupByLibrary.simpleMessage("API密钥已设置"),
     "api_key_total": m0,
     "api_keys_configure": MessageLookupByLibrary.simpleMessage("API密钥配置"),
-    "api_keys_confiugured": m1,
+    "api_keys_configured": m1,
     "api_keys_not_set": MessageLookupByLibrary.simpleMessage("未配置密钥"),
     "api_settings": MessageLookupByLibrary.simpleMessage("API设置"),
     "api_type": MessageLookupByLibrary.simpleMessage("API类型"),
@@ -112,6 +140,23 @@ class MessageLookup extends MessageLookupByLibrary {
     "cancel": MessageLookupByLibrary.simpleMessage("取消"),
     "cancel_long_press": MessageLookupByLibrary.simpleMessage("取消（长按）"),
     "chat": MessageLookupByLibrary.simpleMessage("聊天"),
+    "chatEx": MessageLookupByLibrary.simpleMessage("聊天系统错误"),
+    "chatEx_failParsingMessage": MessageLookupByLibrary.simpleMessage(
+      "解析聊天消息失败",
+    ),
+    "chatEx_failToGenerateTitle": MessageLookupByLibrary.simpleMessage(
+      "自动生成标题失败",
+    ),
+    "chatEx_failToSaveMessage": MessageLookupByLibrary.simpleMessage(
+      "储存聊天消息失败",
+    ),
+    "chatEx_messageNotFound": MessageLookupByLibrary.simpleMessage("该会话无消息"),
+    "chatEx_modelNotSupportFileType": MessageLookupByLibrary.simpleMessage(
+      "模型不支持这类文件",
+    ),
+    "chatEx_recursive_call": MessageLookupByLibrary.simpleMessage("聊天"),
+    "chatEx_sessionNotFound": MessageLookupByLibrary.simpleMessage("未找到聊天会话"),
+    "chatEx_unknownError": MessageLookupByLibrary.simpleMessage("未知错误"),
     "check_manual": MessageLookupByLibrary.simpleMessage("查看帮助文档"),
     "choose_agent_and_chat_hint": MessageLookupByLibrary.simpleMessage(
       "选择一个Agent并开始聊天吧!",
@@ -185,6 +230,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "enter_sys_prompt_here": MessageLookupByLibrary.simpleMessage("在这里输入系统提示词"),
     "error_occurred": MessageLookupByLibrary.simpleMessage("发生错误"),
     "error_occurred_with_error": m5,
+    "ex_and": MessageLookupByLibrary.simpleMessage("并且"),
+    "ex_while": m6,
     "file": MessageLookupByLibrary.simpleMessage("文件处理"),
     "file_manage": MessageLookupByLibrary.simpleMessage("文件管理"),
     "fill_in_api_key": MessageLookupByLibrary.simpleMessage("填写API密钥"),
@@ -197,7 +244,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "front_page_hintLine_char1": MessageLookupByLibrary.simpleMessage("以 "),
     "front_page_hintLine_char2": MessageLookupByLibrary.simpleMessage(" 和 "),
     "front_page_hintLine_char3": MessageLookupByLibrary.simpleMessage(" 开始聊天"),
+    "front_page_titleSlogan": MessageLookupByLibrary.simpleMessage("一起集思广益！"),
     "general_settings": MessageLookupByLibrary.simpleMessage("通用设置"),
+    "generate_message": MessageLookupByLibrary.simpleMessage("生成消息"),
     "generate_title": MessageLookupByLibrary.simpleMessage("生成标题"),
     "generate_title_hint": MessageLookupByLibrary.simpleMessage("重新生成会覆盖旧标题"),
     "give_up_edit_confirm": MessageLookupByLibrary.simpleMessage("确定放弃编辑吗？"),
@@ -225,15 +274,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "knowledge_base_and_contexts": MessageLookupByLibrary.simpleMessage(
       "知识库&上下文检索",
     ),
-    "knowledge_base_tokens": m6,
+    "knowledge_base_tokens": m7,
     "language_select": MessageLookupByLibrary.simpleMessage("选择语言"),
     "language_settings": MessageLookupByLibrary.simpleMessage("语言设置"),
     "language_switch_restart_note": MessageLookupByLibrary.simpleMessage(
       "部分更改需要重启App来生效",
     ),
-    "loading_error": m7,
+    "loading_error": m8,
     "long_press": MessageLookupByLibrary.simpleMessage("长按"),
-    "longest_opening": m8,
+    "longest_opening": m9,
     "memory_content": MessageLookupByLibrary.simpleMessage("记忆内容"),
     "memory_content_waring": MessageLookupByLibrary.simpleMessage(
       "没有内容的记忆不会被添加",
@@ -242,6 +291,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "memory_name": MessageLookupByLibrary.simpleMessage("记忆名称"),
     "memory_name_waring": MessageLookupByLibrary.simpleMessage(
       "没有设置名称的记忆不会被添加",
+    ),
+    "message_no_content": MessageLookupByLibrary.simpleMessage(
+      "发生错误，模型返回了一条空消息",
     ),
     "model": MessageLookupByLibrary.simpleMessage("模型"),
     "model_ability": MessageLookupByLibrary.simpleMessage("模型能力"),
@@ -253,7 +305,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "model_configure": MessageLookupByLibrary.simpleMessage("模型配置"),
     "model_configure_not_set": MessageLookupByLibrary.simpleMessage("未配置模型"),
-    "model_configured": m9,
+    "model_configured": m10,
     "model_context_not_enough": MessageLookupByLibrary.simpleMessage("模型上下文不足"),
     "model_delete_confirm": MessageLookupByLibrary.simpleMessage(
       "确定要删除此模型吗？\n 删除后所有提供此模型的提供者将无法使用此模型。",
@@ -320,7 +372,17 @@ class MessageLookup extends MessageLookupByLibrary {
     "opening": MessageLookupByLibrary.simpleMessage("开场白"),
     "opening_set": MessageLookupByLibrary.simpleMessage("开场白设置"),
     "or_expand_window": MessageLookupByLibrary.simpleMessage("或请拉大窗口"),
-    "over_maximum_context_length_hint": m10,
+    "over_maximum_context_length_hint": m11,
+    "personaEX_personaNotFound": MessageLookupByLibrary.simpleMessage("人格未找到"),
+    "personaEX_unknownError": MessageLookupByLibrary.simpleMessage("未知错误"),
+    "personaEx": MessageLookupByLibrary.simpleMessage("人格系统错误"),
+    "personaEx_failLoading_parse_error": MessageLookupByLibrary.simpleMessage(
+      "人格数据无法被解析",
+    ),
+    "personaEx_recursive_call": MessageLookupByLibrary.simpleMessage("加载新人格"),
+    "persona_additonal_information": MessageLookupByLibrary.simpleMessage(
+      "额外人格信息",
+    ),
     "persona_description_hint": MessageLookupByLibrary.simpleMessage("请介绍一下自己"),
     "plz_enter": MessageLookupByLibrary.simpleMessage("请输入"),
     "plz_enter_a_number_bigger_than_zero": MessageLookupByLibrary.simpleMessage(
@@ -343,11 +405,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "pres_penalty": MessageLookupByLibrary.simpleMessage("存在惩罚"),
     "preview_session": MessageLookupByLibrary.simpleMessage("预览会话"),
     "previous_step": MessageLookupByLibrary.simpleMessage("上一步"),
-    "provider_delete_warning": m11,
+    "provider_delete_warning": m12,
     "provider_select": MessageLookupByLibrary.simpleMessage("提供商选择"),
     "quit": MessageLookupByLibrary.simpleMessage("退出"),
-    "reasoned": m12,
-    "reasoning": m13,
+    "reasoned": MessageLookupByLibrary.simpleMessage("思考了一会儿"),
+    "reasoning": MessageLookupByLibrary.simpleMessage("正在思考..."),
     "regex_index": MessageLookupByLibrary.simpleMessage("正则索引"),
     "regex_index_hint": MessageLookupByLibrary.simpleMessage(
       "当对话中的内容匹配正则表达式时，整个内容被发送给模型",
@@ -367,12 +429,15 @@ class MessageLookup extends MessageLookupByLibrary {
       "正在检索知识库...",
     ),
     "select_agent": MessageLookupByLibrary.simpleMessage("选择Agent"),
+    "select_agent_default_persona": MessageLookupByLibrary.simpleMessage(
+      "使用Agent时的默认人格",
+    ),
     "select_api_type": MessageLookupByLibrary.simpleMessage("选择API类型"),
     "select_image_hint": MessageLookupByLibrary.simpleMessage("拖拽或单击选择图片"),
     "select_model_hint": MessageLookupByLibrary.simpleMessage("选择一个模型"),
     "select_or_add_memory": MessageLookupByLibrary.simpleMessage("选择或添加记忆"),
     "select_provider": MessageLookupByLibrary.simpleMessage("选择提供商"),
-    "selected_agent": m14,
+    "selected_agent": m13,
     "send_a_message_hint": MessageLookupByLibrary.simpleMessage("发送一条消息"),
     "set_as_default": MessageLookupByLibrary.simpleMessage("设为默认"),
     "setup_add_agent": MessageLookupByLibrary.simpleMessage("接着，我们来添加一个Agent"),
@@ -424,24 +489,24 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "switch_persona": MessageLookupByLibrary.simpleMessage("切换人格"),
     "sys_prompt": MessageLookupByLibrary.simpleMessage("系统提示词"),
-    "system_internal_prompt": m15,
-    "system_prompt_tokens": m16,
+    "system_internal_prompt": m14,
+    "system_prompt_tokens": m15,
     "temperature": MessageLookupByLibrary.simpleMessage("温度"),
     "textGenerate": MessageLookupByLibrary.simpleMessage("文本生成"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat 通聊"),
     "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
       "打开会话选择器菜单",
     ),
-    "token_available_for_chat": m17,
+    "token_available_for_chat": m16,
     "token_daily_limit": MessageLookupByLibrary.simpleMessage("每日Token上限"),
     "top_p": MessageLookupByLibrary.simpleMessage("Top P"),
-    "total_context_lim": m18,
-    "type_with_holder": m19,
+    "total_context_lim": m17,
+    "type_with_holder": m18,
     "ui_edited": MessageLookupByLibrary.simpleMessage("编辑了UI"),
     "ui_editing": MessageLookupByLibrary.simpleMessage("正在编辑UI..."),
     "ui_interaction_set": MessageLookupByLibrary.simpleMessage("UI交互(BETA)设置"),
     "ui_interactions": MessageLookupByLibrary.simpleMessage("UI操作"),
-    "ui_interactions_tokens": m20,
+    "ui_interactions_tokens": m19,
     "unknown": MessageLookupByLibrary.simpleMessage("未知"),
     "unsupported_format": MessageLookupByLibrary.simpleMessage("不支持的文件格式"),
     "user": MessageLookupByLibrary.simpleMessage("用户"),

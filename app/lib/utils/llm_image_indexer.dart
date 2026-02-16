@@ -18,6 +18,8 @@ class LLMImageIndexer {
     'qwen': 'resources/provider_model_icons/qwen.png',
     '通义千问': 'resources/provider_model_icons/qwen.png',
 
+    "model_scope": 'resources/provider_model_icons/modelscope.png',
+
     // DeepSeek
     'deepseek': 'resources/provider_model_icons/deepseek.png',
 

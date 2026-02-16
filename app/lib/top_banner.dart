@@ -20,7 +20,7 @@ class MainBanner extends ConsumerWidget {
     var scWidth = MediaQuery.of(context).size.width;
     Widget stack;
     if (PlatForm().platform == RunningPlatform.macos) {
-      var startLength = (scWidth >= 800) ? 230 : 100;
+      var startLength = (scWidth >= 800) ? 230 : 90;
       var maxBannerWidgetWidth = (scWidth / 2 - startLength) * 2;
       var endLength = (scWidth >= 800) ? 100 : 30;
       //macOS 下，首先红绿灯在左边，ui布局需要特殊处理
@@ -37,11 +37,16 @@ class MainBanner extends ConsumerWidget {
                 const SizedBox(width: 21),
                 //这里解释一下，因为macOS的标题栏有3个点，所以这里要绘制3个点，我们的那个包默认下是在窗口失去焦点的时候直接不显示红绿灯，所以这里直接画一个上去
                 CustomPaint(size: Size(50, 50), painter: ThreeDotsPainter()),
-                const SizedBox(width: 21),
                 if (scWidth >= 800)
-                  Text(
-                    S.of(context).title,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 21),
+                    child: Text(
+                      S.of(context).title,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -69,7 +74,7 @@ class MainBanner extends ConsumerWidget {
     } else if (PlatForm().platform == RunningPlatform.windows) {
       var startLength = (scWidth >= 800) ? 230 : 100;
       var activityLength = (scWidth >= 800) ? 100 : 30;
-      var endLength = activityLength + 200;
+      var endLength = activityLength + 150;
       var maxBannerWidgetWidth =
           (scWidth / 2 - max(startLength, endLength)) * 2;
       // this is essential
@@ -162,9 +167,10 @@ class MainBanner extends ConsumerWidget {
         );
       }
     } else {
-      var startLength = (scWidth >= 800) ? 230 : 100;
-      var maxBannerWidgetWidth = (scWidth / 2 - startLength) * 2;
+      var startLength = (scWidth >= 800) ? 230 : 30;
       var endLength = (scWidth >= 800) ? 100 : 30;
+      var maxBannerWidgetWidth =
+          (scWidth / 2 - max(startLength, endLength)) * 2;
       stack = Stack(
         alignment: Alignment.center,
         children: [

@@ -8,8 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:uni_chat/Agent/agent_set_page.dart';
-import 'package:uni_chat/Chat/chat_page_main.dart';
+import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Chat/session_selector.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
@@ -34,8 +33,11 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (io.Platform.isAndroid) {
     PlatForm().platform = RunningPlatform.android;
+    var di = await DeviceInfoPlugin().androidInfo;
+    PlatForm().platformInfo = "${di.model} running on ${di.version}";
   } else if (io.Platform.isIOS) {
     var di = await DeviceInfoPlugin().iosInfo;
+    PlatForm().platformInfo = "${di.modelName} running on IOS ${di.systemName}";
     // whether this is an ipad
     if (di.model.contains("iPad")) {
       PlatForm().platform = RunningPlatform.ipadOS;
@@ -45,9 +47,21 @@ Future<void> main() async {
   } else if (io.Platform.isMacOS) {
     PlatForm().platform = RunningPlatform.macos;
     await MacOSSpecificsSetting.setWindowStyle();
+    var di = await DeviceInfoPlugin().macOsInfo;
+    PlatForm().platformInfo =
+        "${di.modelName} running on MacOS ${di.majorVersion}";
   } else if (io.Platform.isWindows) {
     PlatForm().platform = RunningPlatform.windows;
     await WindowsSpecificsSetting.setWindowStyle();
+    var di = await DeviceInfoPlugin().windowsInfo;
+    var bn = di.buildNumber;
+    String sys = "Windows";
+    if (bn > 22000) {
+      sys = "Windows 11 ${di.displayVersion}";
+    } else if (bn >= 10240) {
+      sys = "Windows 10 ${di.displayVersion}";
+    } // else might be win 8.1 or 7 since flutter don run on xp
+    PlatForm().platformInfo = "${di.computerName} running on $sys";
     //windows 下使用 ffi版本
     //我在考虑把macos 也切换到ffi版本，但是听说好像性能没有提升啥
     sqfliteFfiInit();
@@ -57,7 +71,8 @@ Future<void> main() async {
   var l = prefs.getString("language");
   var local = languages[l];
   var isSu = prefs.getBool("isSetUp") ?? false;
-  runApp(UNIChat(locale: local, isSetUp: isSu));
+  var theme = prefs.getString("theme");
+  runApp(UNIChat(locale: local, isSetUp: isSu, themeName: theme));
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -72,10 +87,12 @@ class PlatForm {
   bool get enableHaptic =>
       platform == RunningPlatform.ios || platform == RunningPlatform.macos;
   RunningPlatform platform = RunningPlatform.web;
-  bool get isMobile =>
+  bool get isMobilePlatform =>
       platform == RunningPlatform.android ||
       platform == RunningPlatform.ios ||
       platform == RunningPlatform.ipadOS;
+  bool get isMobile =>
+      platform == RunningPlatform.ios || platform == RunningPlatform.android;
   String platformInfo = '';
   String location = '';
   factory PlatForm() => _instance;
@@ -85,18 +102,52 @@ class PlatForm {
 
 final GlobalKey<MainContState> masterNavigatorKey = GlobalKey<MainContState>();
 
-class UNIChat extends StatelessWidget {
-  const UNIChat({super.key, this.locale, required this.isSetUp});
+class UNIChat extends StatefulWidget {
+  const UNIChat({
+    super.key,
+    this.locale,
+    required this.isSetUp,
+    this.themeName,
+  });
   final Locale? locale;
+  final String? themeName;
   final bool isSetUp;
 
-  // This widget is the root of your application.
+  @override
+  State<UNIChat> createState() => _UNIChatState();
+}
 
+class _UNIChatState extends State<UNIChat> {
+  late bool isSetUp;
+  @override
+  void initState() {
+    super.initState();
+    isSetUp = widget.isSetUp;
+  }
+
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     Widget mainContent = MainCont(key: masterNavigatorKey);
-
+    List<Override> ovr;
+    late ThemeConfig theme;
+    if (widget.themeName != null) {
+      theme = ThemeManager.themes
+          .firstWhere(
+            (element) => element.name == widget.themeName,
+            orElse: () => (name: 'light', theme: ThemeManager.light),
+          )
+          .theme;
+    } else {
+      theme = ThemeManager.light;
+    }
+    ovr = [
+      themeProvider.overrideWith((ref) {
+        return ThemeManager(theme);
+      }),
+    ];
     return ProviderScope(
+      overrides: ovr,
       child: MaterialApp(
         localizationsDelegates: [
           S.delegate,
@@ -113,15 +164,17 @@ class UNIChat extends StatelessWidget {
             ? const ScrollBehavior().copyWith(physics: const IOSScrollPhysics())
             : null,
         theme: ThemeData(
+          fontFamilyFallback: (PlatForm().isWindows) ? ["DengXian"] : null,
+          // fix the font glitches in windows when displaying SC
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
         home: OverlayWrapper(
           child: OverlayPortalScope(
             child: Builder(
               builder: (context) {
-                if (locale != null) {
-                  S.load(locale!);
-                  PlatForm().languageCode = locale!.languageCode;
+                if (widget.locale != null) {
+                  S.load(widget.locale!);
+                  PlatForm().languageCode = widget.locale!.languageCode;
                 } else {
                   PlatForm().languageCode = Localizations.localeOf(
                     context,
@@ -130,34 +183,44 @@ class UNIChat extends StatelessWidget {
                 if (PlatForm().platform == RunningPlatform.macos) {
                   mainContent = MacOSMenuBar(mainContent: mainContent);
                 }
-                if (PlatForm().isMobile) {
+                if (PlatForm().isMobilePlatform) {
                   mainContent = Scaffold(
-                    backgroundColor: Colors.white,
-                    body: SafeArea(bottom: false, child: mainContent),
+                    backgroundColor: theme.zeroGradeColor,
+                    body: SafeArea(
+                      bottom: PlatForm().platform != RunningPlatform.ipadOS,
+                      child: mainContent,
+                    ),
                   );
                 }
-                if (!isSetUp) {
+                if (!widget.isSetUp) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     OverlayWrapper.showOverlay(
                       context,
                       overlayContent: Padding(
-                        padding: const EdgeInsets.all(50.0),
+                        padding: (PlatForm().isMobile)
+                            ? const EdgeInsets.all(10.0)
+                            : const EdgeInsets.all(50.0),
                         child: SetupAgent(),
                       ),
                       barrierDismissible: false,
                     );
                   });
+                  isSetUp =
+                      true; // or the setup menu will re-popout when you resize the window
                 }
-                if(PlatForm().isWindows){
+                if (PlatForm().isWindows) {
                   // windows will force the window to get too small when showing desktop even when window size is set
                   // so we need to avoid the negative constrained error
                   var mdof = MediaQuery.of(context);
                   var s = mdof.size;
-                  if(s.height < 480|| s.width < 640) {
+                  if (s.height < 480 || s.width < 640) {
                     return const SizedBox.shrink();
                   }
                 }
-                return mainContent;
+                return AppBarTheme(
+                  scrolledUnderElevation: 0,
+                  child: mainContent,
+                );
               },
             ),
           ),
@@ -314,7 +377,7 @@ class MainContState extends ConsumerState<MainCont> {
   Widget _bodyWidget() {
     switch (page) {
       case Pages.chat:
-        return ChatPageMain();
+        return ChatPage();
       case Pages.agent:
         return AgentPage();
       case Pages.Rag:
@@ -332,44 +395,31 @@ class MainContState extends ConsumerState<MainCont> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
-    return Scaffold(
-      backgroundColor: theme.zeroGradeColor,
-      body: Column(
-        children: [
-          MainBanner(bannerWidget: _bannerWidget()),
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  decoration: BoxDecoration(color: theme.zeroGradeColor),
-                  child: Column(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          if (page == Pages.chat) {
-                            return;
-                          }
-                          setState(() {
-                            page = Pages.chat;
-                          });
-                        },
-                        icon: Icon(Icons.chat_bubble_outline),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          if (page == Pages.agent) {
-                            return;
-                          }
-                          setState(() {
-                            page = Pages.agent;
-                          });
-                        },
-                        icon: Icon(Icons.groups_outlined),
-                      ),
+  List<Widget> _buildMenuItems() {
+    return [
+      IconButton(
+        onPressed: () {
+          if (page == Pages.chat) {
+            return;
+          }
+          setState(() {
+            page = Pages.chat;
+          });
+        },
+        icon: Icon(Icons.chat_bubble_outline),
+      ),
+      IconButton(
+        onPressed: () {
+          if (page == Pages.agent) {
+            return;
+          }
+          setState(() {
+            page = Pages.agent;
+          });
+        },
+        icon: Icon(Icons.groups_outlined),
+      ),
+      /*
                       IconButton(
                         onPressed: () {
                           if (page == Pages.Rag) {
@@ -385,25 +435,83 @@ class MainContState extends ConsumerState<MainCont> {
                         onPressed: () {},
                         icon: Icon(Icons.mode_edit_outline_outlined),
                       ),
-                      Expanded(child: SizedBox()),
-                      PersonaIndicator(),
-                      IconButton(
-                        onPressed: () {
-                          OverlayWrapper.showOverlay(
-                            context,
-                            overlayContent: SettingsMenu(key: settingsMenuKey),
-                          );
-                        },
-                        icon: Icon(Icons.settings_outlined),
-                      ),
-                      // to avoid the menu button being cut off
-                      if (PlatForm().platform == RunningPlatform.ipadOS)
-                        const SizedBox(height: 10),
-                    ],
-                  ),
+                       */
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var s = MediaQuery.of(context).size;
+    var theme = ref.watch(themeProvider);
+    var bnw = _bannerWidget();
+    return Scaffold(
+      backgroundColor: theme.zeroGradeColor,
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      floatingActionButton: (s.width >= 500 || page != Pages.chat)
+          ? null
+          : Container(
+              height: 48,
+              width: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: theme.zeroGradeColor,
+              ),
+              child: PersonaIndicator(isFloatingAction: true),
+            ),
+      bottomNavigationBar: (s.width >= 500)
+          ? null
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ..._buildMenuItems(),
+                IconButton(
+                  onPressed: () {
+                    OverlayWrapper.showOverlay(
+                      context,
+                      overlayContent: SettingsMenu(key: settingsMenuKey),
+                    );
+                  },
+                  icon: Icon(Icons.settings_outlined),
                 ),
+              ],
+            ),
+      body: Column(
+        children: [
+          if (!(PlatForm().isMobile && bnw == null))
+            MainBanner(bannerWidget: bnw),
+          Expanded(
+            child: Row(
+              children: [
+                if (s.width >= 500)
+                  Container(
+                    width: 50,
+                    decoration: BoxDecoration(color: theme.zeroGradeColor),
+                    child: Column(
+                      children: [
+                        ..._buildMenuItems(),
+                        const Spacer(),
+                        PersonaIndicator(),
+                        IconButton(
+                          onPressed: () {
+                            OverlayWrapper.showOverlay(
+                              context,
+                              overlayContent: SettingsMenu(
+                                key: settingsMenuKey,
+                              ),
+                            );
+                          },
+                          icon: Icon(Icons.settings_outlined),
+                        ),
+                        // to avoid the menu button being cut off
+                        if (PlatForm().platform == RunningPlatform.ipadOS)
+                          const SizedBox(height: 10),
+                      ],
+                    ),
+                  ),
+                if (s.width < 500) const SizedBox(width: 4),
                 Expanded(
                   child: Container(
+                    key: ValueKey("mainContentWidget"),
                     margin: EdgeInsets.only(right: 4, bottom: 4),
                     clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(

@@ -1,12 +1,12 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
-import 'package:uni_chat/main.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/document_display.dart';
+import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
@@ -16,185 +16,25 @@ import '../utils/file_utils.dart';
 import '../utils/llm_image_indexer.dart' show LLMImageIndexer;
 import '../utils/overlays.dart';
 import 'agentProvider.dart';
+import 'agent_models.dart';
 
 /// @param onSaveReturn 这个是在保存的时候调用的
 /// @param onBack 这个在取消的时候调用，如果保留空的话就不会有取消按钮（也就是给初始页面用的）
-class AgentSetPage extends StatelessWidget {
+class AgentSetPage extends ConsumerStatefulWidget {
   const AgentSetPage({super.key, required this.onSaveReturn, this.onBack});
   final dynamic onSaveReturn;
   final void Function()? onBack;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        const SizedBox(width: 15),
-        DocumentDisplay(),
-        Expanded(
-          flex: 5,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: AgentEditDetails(),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Expanded(
-            child: AgentEditConfigure(
-              onSaveReturn: onSaveReturn,
-              onBack: onBack,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  ConsumerState<AgentSetPage> createState() => _AgentSetPageState();
 }
 
-enum PropertyEditing {
-  sysPrompt,
-  model,
-  knowledgeBase,
-  UIQL,
-  USRIdentity,
-  opening,
-  sysAndEnvironmentVars,
-}
-
-class AgentEditState {
-  late final String id;
-  final bool isValidateMode;
-  final bool isTokenEnough;
-  final PropertyEditing editing;
-  final String? name;
-  final String? description;
-  ApiProvider? provider;
-  final Model? model;
-  late final ModelSpecifics modelSettings;
-  final String? systemPrompt;
-  final String? configure;
-  late final Set<String> knowledgeBases;
-  final bool enableUIQL;
-  late final DateTime createdAt;
-  bool autoCreateMDB;
-  AgentEditState({
-    String? id,
-    this.isTokenEnough = true,
-    this.isValidateMode = false,
-    this.editing = PropertyEditing.sysPrompt,
-    ModelSpecifics? modelSettings,
-    this.name,
-    this.provider,
-    this.model,
-    this.enableUIQL = true,
-    this.description,
-    this.systemPrompt,
-    this.configure,
-    Set<String>? knowledgeBases,
-    DateTime? createdAt,
-    this.autoCreateMDB = true,
-  }) {
-    this.knowledgeBases = knowledgeBases ?? <String>{};
-    this.id = id ?? Uuid().v4();
-    this.createdAt = createdAt ?? DateTime.now();
-    this.modelSettings = modelSettings ?? ModelSpecifics();
-  }
-
-  AgentEditState copyWith({
-    String? id,
-    bool? isTokenEnough,
-    bool? isValidateMode,
-    PropertyEditing? editing,
-    String? name,
-    String? description,
-    String? systemPrompt,
-    String? configure,
-    Set<String>? knowledgeBases,
-    DateTime? createdAt,
-    ApiProvider? provider,
-    Model? model,
-    bool? enableUIQL,
-    ModelSpecifics? modelSettings,
-    bool? autoCreateMDB,
-  }) {
-    return AgentEditState(
-      id: id ?? this.id,
-      isTokenEnough: isTokenEnough ?? this.isTokenEnough,
-      isValidateMode: isValidateMode ?? this.isValidateMode,
-      modelSettings: modelSettings ?? this.modelSettings,
-      enableUIQL: enableUIQL ?? this.enableUIQL,
-      provider: provider ?? this.provider,
-      model: model ?? this.model,
-      editing: editing ?? this.editing,
-      name: name ?? this.name,
-      description: description ?? this.description,
-      systemPrompt: systemPrompt ?? this.systemPrompt,
-      configure: configure ?? this.configure,
-      knowledgeBases: knowledgeBases ?? this.knowledgeBases,
-      createdAt: createdAt ?? this.createdAt,
-      autoCreateMDB: autoCreateMDB ?? this.autoCreateMDB,
-    );
-  }
-
-  bool valid() {
-    return name != null && isTokenEnough && provider != null && model != null;
-  }
-
-  Future<AgentData> toAgentData() async {
-    return AgentData(
-      version: 1,
-      id: id,
-      name: name!,
-      description: description,
-      providerId: provider!.id,
-      modelId: model!.id,
-      systemPrompt: systemPrompt,
-      knowledgeBases: knowledgeBases.toList(),
-      createdAt: createdAt,
-      modelSpecifics: modelSettings,
-    );
-  }
-
-  static Future<AgentEditState> fromAgentData(AgentData agentData) async {
-    var pv = await ApiDatabase.instance.getProviderById(agentData.providerId);
-    var m = await ApiDatabase.instance.getModelById(agentData.modelId);
-    return AgentEditState(
-      id: agentData.id,
-      name: agentData.name,
-      provider: pv,
-      model: m,
-      description: agentData.description,
-      systemPrompt: agentData.systemPrompt,
-      knowledgeBases: agentData.knowledgeBases.toSet(),
-      createdAt: agentData.createdAt,
-    );
-  }
-}
-
-final agentEditState = StateProvider((ref) => AgentEditState());
-
-class AgentEditConfigure extends ConsumerStatefulWidget {
-  const AgentEditConfigure({
-    super.key,
-    required this.onSaveReturn,
-    this.onBack,
-  });
-  final dynamic onSaveReturn;
-  final void Function()? onBack;
-  @override
-  ConsumerState<AgentEditConfigure> createState() => _AgentEditConfigureState();
-}
-
-class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
-    with SingleTickerProviderStateMixin {
+class _AgentSetPageState extends ConsumerState<AgentSetPage> {
+  late SplitViewController spc;
   TextEditingController nameController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
-
-  void _onPropertySelect(PropertyEditing propertyEdit) {
-    var n = ref.read(agentEditState.notifier);
-    n.state = n.state.copyWith(editing: propertyEdit);
-  }
+  PropertyEditing? get editing => editingNotifier.value;
+  ValueNotifier<PropertyEditing?> editingNotifier = ValueNotifier(null);
 
   Widget? _buildModelSelectIndicator() {
     if (agentState.isValidateMode &&
@@ -218,7 +58,7 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
         ? Container(
             padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             decoration: BoxDecoration(
-              color: (agentState.editing == PropertyEditing.model)
+              color: (editing == PropertyEditing.model)
                   ? theme.zeroGradeColor
                   : theme.thirdGradeColor,
               borderRadius: BorderRadius.all(Radius.circular(5)),
@@ -235,279 +75,369 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
   late AgentEditState agentState;
   late ThemeConfig theme;
   @override
+  void initState() {
+    super.initState();
+    spc = SplitViewController(
+      onPop: () {
+        if (editing != null) {
+          editingNotifier.value = null;
+        }
+      },
+    );
+    agentState = ref.read(agentEditState);
+    theme = ref.read(themeProvider);
+    if (agentState.name != null) {
+      nameController.text = agentState.name!;
+    }
+    if (agentState.description != null) {
+      descriptionController.text = agentState.description!;
+    }
+    editingNotifier.addListener(() {
+      if (mounted) {
+        if (editing == null) {
+          spc.pop();
+        } else {
+          spc.push(
+            Material(
+              color: theme.secondGradeColor,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: _pg(editing!),
+              ),
+            ),
+            topBar: _topBar(),
+          );
+        }
+      }
+    });
+  }
+
+  Widget _pg(PropertyEditing pe) {
+    switch (pe) {
+      case PropertyEditing.model:
+        return _AgentModelSettings();
+      case PropertyEditing.sysPrompt:
+        return _SysPromptEdit();
+      case PropertyEditing.opening:
+        return Opening();
+      //return MemoryBase();
+      case PropertyEditing.USRIdentity:
+        return UserIdentity();
+    }
+  }
+
+  Widget _topBar() {
+    return ValueListenableBuilder(
+      valueListenable: editingNotifier,
+      builder: (context, value, child) {
+        Widget title;
+        switch (value) {
+          case null:
+            title = const SizedBox();
+          case PropertyEditing.sysPrompt:
+            title =
+                (agentState.systemPrompt != null &&
+                    agentState.systemPrompt!.isNotEmpty)
+                ? (Text(
+                    "${LLMTokenEstimator.estimateTokens(agentState.systemPrompt!)}tokens",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: (editing == PropertyEditing.sysPrompt)
+                          ? theme.zeroGradeColor
+                          : theme.primaryColor,
+                    ),
+                  ))
+                : const SizedBox();
+          case PropertyEditing.model:
+            title = _buildModelSelectIndicator() ?? const SizedBox();
+          case PropertyEditing.USRIdentity:
+            title = const SizedBox();
+          case PropertyEditing.opening:
+            title = const SizedBox();
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: AppBar(
+            primary: false,
+            scrolledUnderElevation: 0,
+            title: DefaultTextStyle(
+              style: TextStyle(fontSize: 15, color: theme.brightTextColor),
+              child: title,
+            ),
+            backgroundColor: theme.secondGradeColor,
+            leading: StdIconButton(
+              icon: Icons.arrow_back_ios_sharp,
+              onPressed: () {
+                spc.pop();
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    agentState = ref.watch(agentEditState);
     theme = ref.watch(themeProvider);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
-            child: SizedBox(
-              height: 80,
-              child: Row(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: theme.zeroGradeColor,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(60),
-                          offset: Offset(0, 1),
-                          blurRadius: 3,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: StdAvatarPicker(
-                      initialWidget: Center(
-                        child: Text(
-                          S.of(context).select_image_hint,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      onImageChanged: (s, setImage) async {
-                        var f = await s.copyTo(
-                          await PathProvider.getPath("chat/avatars"),
-                          rename: agentState.id,
-                          replaceIfExist: true,
-                          createDirIfNotExist: true,
-                        );
-                        setImage(f.path);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          controller: nameController,
-                          decoration: InputDecoration(
-                            isDense: true,
-                            hintText: S.of(context).agent_name_hint,
-                            border: InputBorder.none,
-                            hintStyle:
-                                (agentState.name == null &&
-                                    agentState.isValidateMode)
-                                ? TextStyle(fontSize: 20, color: Colors.red)
-                                : null,
-                          ),
-                          onChanged: (value) {
-                            var n = ref.read(agentEditState.notifier);
-                            n.state = n.state.copyWith(name: value);
-                          },
-                        ),
-                        const SizedBox(height: 3),
-                        TextField(
-                          style: const TextStyle(fontSize: 15),
-                          controller: descriptionController,
-                          minLines: 2,
-                          maxLines: 2,
-                          decoration: InputDecoration(
-                            isDense: true,
-                            hintText: S.of(context).agent_desc_hint,
-                            border: InputBorder.none,
-                          ),
-                          onChanged: (value) {
-                            var n = ref.read(agentEditState.notifier);
-                            n.state = n.state.copyWith(description: value);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    agentState = ref.watch(agentEditState);
+    spc.defaultRight = _SysPromptEdit();
+    return KeyboardDismisser(
+      child: Material(
+        color: theme.secondGradeColor,
+        child: SplitView(
+          onLayout: (p, c, f) {
+            if (p == SplitViewStatus.collapsedWithLeft &&
+                c == SplitViewStatus.expanded) {
+              editingNotifier.value = PropertyEditing.sysPrompt;
+            }
+            if (f && c == SplitViewStatus.expanded) {
+              editingNotifier.value = PropertyEditing.sysPrompt;
+            }
+          },
+          key: ValueKey("ageSV"),
+          controller: spc,
+          leftPercent: 0.375,
+          left: Padding(
+            padding: const EdgeInsets.only(left: 15),
+            child: buildSidebar(context),
           ),
-          SizedBox(height: 180, child: EditPageTokenUsageStatistics()),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(
-              S.of(context).agent_sets,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: Material(
-              color: Colors.transparent,
-              clipBehavior: Clip.hardEdge,
-              child: ListView(
-                children: [
-                  StdListTile(
-                    title: Text(
-                      S.of(context).model_sets,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    trailing: _buildModelSelectIndicator(),
-                    isSelected: agentState.editing == PropertyEditing.model,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.model);
-                    },
-                  ),
-                  const Divider(),
-                  StdListTile(
-                    title: Text(
-                      S.of(context).sys_prompt,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    trailing:
-                        (agentState.systemPrompt != null &&
-                            agentState.systemPrompt!.isNotEmpty)
-                        ? (Text(
-                            "${LLMTokenEstimator.estimateTokens(agentState.systemPrompt!)}tokens",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color:
-                                  (agentState.editing ==
-                                      PropertyEditing.sysPrompt)
-                                  ? theme.zeroGradeColor
-                                  : theme.primaryColor,
-                            ),
-                          ))
-                        : null,
-                    isSelected: agentState.editing == PropertyEditing.sysPrompt,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.sysPrompt);
-                    },
-                  ),
-                  const Divider(),
-                  StdListTile(
-                    title: Text(
-                      S.of(context).knowledge_base_and_contexts,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    isSelected:
-                        agentState.editing == PropertyEditing.knowledgeBase,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.knowledgeBase);
-                    },
-                  ),
-                  const Divider(),
-                  StdListTile(
-                    title: Text(
-                      S.of(context).ui_interaction_set,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    trailing: (Text(
-                      (agentState.enableUIQL)
-                          ? S.of(context).enable
-                          : S.of(context).disable,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: (agentState.editing == PropertyEditing.UIQL)
-                            ? theme.zeroGradeColor
-                            : theme.primaryColor,
-                      ),
-                    )),
-                    isSelected: agentState.editing == PropertyEditing.UIQL,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.UIQL);
-                    },
-                  ),
-                  const Divider(),
-                  StdListTile(
-                    title: Text(
-                      S.of(context).usr_persona_set,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    isSelected:
-                        agentState.editing == PropertyEditing.USRIdentity,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.USRIdentity);
-                    },
-                  ),
-                  const Divider(),
-                  StdListTile(
-                    title: Text(
-                      S.of(context).opening_set,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    trailing:
-                        (agentState.systemPrompt != null &&
-                            agentState.systemPrompt!.isNotEmpty)
-                        ? (Text(
-                            "${agentState.systemPrompt!.length}tokens",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color:
-                                  (agentState.editing ==
-                                      PropertyEditing.sysPrompt)
-                                  ? theme.zeroGradeColor
-                                  : theme.primaryColor,
-                            ),
-                          ))
-                        : null,
-                    isSelected: agentState.editing == PropertyEditing.opening,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.opening);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Row(
-              children: [
-                if (widget.onBack != null)
-                  Expanded(
-                    child: StdButton(
-                      text: S.of(context).cancel_long_press,
-                      color: theme.thirdGradeColor,
-                      onPressed: () {},
-                      onLongPress: () {
-                        ref.read(agentEditState.notifier).state =
-                            AgentEditState();
-                        widget.onBack!();
-                      },
-                    ),
-                  ),
-                if (widget.onBack != null) const SizedBox(width: 20),
-                Expanded(child: _buildSaveButton()),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
+        ),
       ),
     );
   }
 
+  Widget buildSidebar(BuildContext context) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: SizedBox(
+                  height: 90,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: theme.zeroGradeColor,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(60),
+                              offset: Offset(0, 1),
+                              blurRadius: 3,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: StdAvatarPicker(
+                          initialWidget: Center(
+                            child: Text(
+                              S.of(context).select_image_hint,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          onImageChanged: (s, setImage) async {
+                            var f = await s.copyTo(
+                              await PathProvider.getPath("chat/avatars"),
+                              rename: agentState.id,
+                              replaceIfExist: true,
+                              createDirIfNotExist: true,
+                            );
+                            setImage(f.path);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextField(
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              controller: nameController,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText: S.of(context).agent_name_hint,
+                                border: InputBorder.none,
+                                hintStyle:
+                                    (agentState.name == null &&
+                                        agentState.isValidateMode)
+                                    ? TextStyle(fontSize: 20, color: Colors.red)
+                                    : null,
+                              ),
+                              onChanged: (value) {
+                                var n = ref.read(agentEditState.notifier);
+                                n.state = n.state.copyWith(name: value);
+                              },
+                            ),
+                            TextField(
+                              style: const TextStyle(fontSize: 15),
+                              controller: descriptionController,
+                              minLines: 2,
+                              maxLines: 2,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText: S.of(context).agent_desc_hint,
+                                border: InputBorder.none,
+                              ),
+                              onChanged: (value) {
+                                var n = ref.read(agentEditState.notifier);
+                                n.state = n.state.copyWith(description: value);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              TokenStats(),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  S.of(context).agent_sets,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  clipBehavior: Clip.hardEdge,
+                  child: ValueListenableBuilder(
+                    valueListenable: editingNotifier,
+                    builder: (context, editing, child) {
+                      return ListView(
+                        children: [
+                          StdListTile(
+                            title: Text(
+                              S.of(context).model_sets,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            trailing: _buildModelSelectIndicator(),
+                            isSelected: editing == PropertyEditing.model,
+                            onTap: () {
+                              editingNotifier.value = PropertyEditing.model;
+                            },
+                          ),
+                          const Divider(),
+                          StdListTile(
+                            title: Text(
+                              S.of(context).sys_prompt,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            trailing:
+                                (agentState.systemPrompt != null &&
+                                    agentState.systemPrompt!.isNotEmpty)
+                                ? (Text(
+                                    "${LLMTokenEstimator.estimateTokens(agentState.systemPrompt!)}tokens",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          (editing == PropertyEditing.sysPrompt)
+                                          ? theme.zeroGradeColor
+                                          : theme.primaryColor,
+                                    ),
+                                  ))
+                                : null,
+                            isSelected: editing == PropertyEditing.sysPrompt,
+                            onTap: () {
+                              editingNotifier.value = PropertyEditing.sysPrompt;
+                            },
+                          ),
+                          const Divider(),
+                          StdListTile(
+                            title: Text(
+                              S.of(context).usr_persona_set,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            isSelected: editing == PropertyEditing.USRIdentity,
+                            onTap: () {
+                              editingNotifier.value =
+                                  PropertyEditing.USRIdentity;
+                            },
+                          ),
+                          const Divider(),
+                          StdListTile(
+                            title: Text(
+                              S.of(context).opening_set,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            isSelected: editing == PropertyEditing.opening,
+                            onTap: () {
+                              editingNotifier.value = PropertyEditing.opening;
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  if (widget.onBack != null)
+                    Expanded(
+                      child: StdButton(
+                        text: S.of(context).cancel_long_press,
+                        color: theme.thirdGradeColor,
+                        onPressed: () {},
+                        onLongPress: () {
+                          ref.read(agentEditState.notifier).state =
+                              AgentEditState();
+                          widget.onBack!();
+                        },
+                      ),
+                    ),
+                  if (widget.onBack != null) const SizedBox(width: 10),
+                  Expanded(
+                    child: _ActionButtons(onSaveReturn: widget.onSaveReturn),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ActionButtons extends ConsumerStatefulWidget {
+  const _ActionButtons({super.key, required this.onSaveReturn});
+  final dynamic onSaveReturn;
+  @override
+  ConsumerState<_ActionButtons> createState() => __ActionButtonsState();
+}
+
+class __ActionButtonsState extends ConsumerState<_ActionButtons>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-
   @override
   void initState() {
     super.initState();
@@ -533,13 +463,6 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
     _controller.addListener(() {
       setState(() {});
     });
-    agentState = ref.read(agentEditState);
-    if (agentState.name != null) {
-      nameController.text = agentState.name!;
-    }
-    if (agentState.description != null) {
-      descriptionController.text = agentState.description!;
-    }
   }
 
   @override
@@ -548,7 +471,9 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
     super.dispose();
   }
 
-  Widget _buildSaveButton() {
+  @override
+  Widget build(BuildContext context) {
+    var agentState = ref.watch(agentEditState);
     return Transform.translate(
       offset: Offset(_animation.value, 0), // 根据动画值设置水平位移
       child: StdButton(
@@ -578,11 +503,161 @@ class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
   }
 }
 
-class EditPageTokenUsageStatistics extends ConsumerWidget {
-  // ignore: prefer_const_constructors_in_immutables
-  EditPageTokenUsageStatistics({super.key});
-  static const double innerRadius = 15;
-  late final List<(double, int)> percentages;
+enum PropertyEditing { sysPrompt, model, USRIdentity, opening }
+
+class AgentEditState {
+  late final String id;
+  final bool isValidateMode;
+  final bool isTokenEnough;
+  final String? name;
+  final String? description;
+  ApiProvider? provider;
+  final Model? model;
+  late final ModelSpecifics modelSettings;
+  final String? systemPrompt;
+  final String? configure;
+  late final Set<String> knowledgeBases;
+  final bool enableUIQL;
+  late final DateTime createdAt;
+  bool autoCreateMDB;
+  final PersonaConfigure userIdentity;
+
+  AgentEditState({
+    String? id,
+    this.isTokenEnough = true,
+    this.isValidateMode = false,
+    ModelSpecifics? modelSettings,
+    this.name,
+    this.provider,
+    this.model,
+    this.enableUIQL = true,
+    this.description,
+    this.systemPrompt,
+    this.configure,
+    Set<String>? knowledgeBases,
+    DateTime? createdAt,
+    this.autoCreateMDB = true,
+    this.userIdentity = const PersonaConfigure(),
+  }) {
+    this.knowledgeBases = knowledgeBases ?? <String>{};
+    this.id = id ?? Uuid().v4();
+    this.createdAt = createdAt ?? DateTime.now();
+    this.modelSettings = modelSettings ?? ModelSpecifics();
+  }
+
+  AgentEditState copyWith({
+    String? id,
+    bool? isTokenEnough,
+    bool? isValidateMode,
+    PropertyEditing? editing,
+    String? name,
+    String? description,
+    String? systemPrompt,
+    String? configure,
+    Set<String>? knowledgeBases,
+    DateTime? createdAt,
+    ApiProvider? provider,
+    Model? model,
+    bool? enableUIQL,
+    ModelSpecifics? modelSettings,
+    bool? autoCreateMDB,
+    PersonaConfigure? userIdentity,
+  }) {
+    return AgentEditState(
+      id: id ?? this.id,
+      isTokenEnough: isTokenEnough ?? this.isTokenEnough,
+      isValidateMode: isValidateMode ?? this.isValidateMode,
+      modelSettings: modelSettings ?? this.modelSettings,
+      enableUIQL: enableUIQL ?? this.enableUIQL,
+      provider: provider ?? this.provider,
+      model: model ?? this.model,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      systemPrompt: systemPrompt ?? this.systemPrompt,
+      configure: configure ?? this.configure,
+      knowledgeBases: knowledgeBases ?? this.knowledgeBases,
+      createdAt: createdAt ?? this.createdAt,
+      autoCreateMDB: autoCreateMDB ?? this.autoCreateMDB,
+      userIdentity: userIdentity ?? this.userIdentity,
+    );
+  }
+
+  bool valid() {
+    return name != null && isTokenEnough && provider != null && model != null;
+  }
+
+  ModelConfigure _toModelConfigure() {
+    return ModelConfigure(
+      modelId: model!.id,
+      providerId: provider!.id,
+      maxContextTokens: modelSettings.maxContextTokens,
+      maxGenerationTokens: modelSettings.maxGenerationTokens,
+      enableTimeTelling: modelSettings.enableTimeTelling,
+      enableUsrLanguage: modelSettings.enableUsrLanguage,
+      enableUsrSystemInformation: modelSettings.enableUsrSystemInformation,
+    );
+  }
+
+  AgentData toAgentData() {
+    return AgentData(
+      version: 1,
+      id: id,
+      name: name!,
+      description: description,
+      modelConfigure: _toModelConfigure(),
+      userIdentityConfigure: userIdentity,
+      systemPrompt: systemPrompt,
+      knowledgeBases: knowledgeBases.toList(),
+      createdAt: createdAt,
+    );
+  }
+
+  static Future<AgentEditState> fromAgentData(AgentData agentData) async {
+    var pv = await ApiDatabase.instance.getProviderById(
+      agentData.modelConfigure.providerId,
+    );
+    var m = await ApiDatabase.instance.getModelById(
+      agentData.modelConfigure.modelId,
+    );
+    return AgentEditState(
+      id: agentData.id,
+      name: agentData.name,
+      provider: pv,
+      model: m,
+      modelSettings: ModelSpecifics(
+        maxContextTokens: agentData.modelConfigure.maxContextTokens,
+        maxGenerationTokens: agentData.modelConfigure.maxGenerationTokens,
+        enableTimeTelling: agentData.modelConfigure.enableTimeTelling,
+        enableUsrLanguage: agentData.modelConfigure.enableUsrLanguage,
+        enableUsrSystemInformation:
+            agentData.modelConfigure.enableUsrSystemInformation,
+      ),
+      description: agentData.description,
+      systemPrompt: agentData.systemPrompt,
+      createdAt: agentData.createdAt,
+    );
+  }
+}
+
+final agentEditState = StateProvider((ref) => AgentEditState());
+
+class TokenStats extends ConsumerStatefulWidget {
+  const TokenStats({super.key});
+
+  @override
+  ConsumerState<TokenStats> createState() => _TokenStatsState();
+}
+
+class _TokenStatsState extends ConsumerState<TokenStats> {
+  late ThemeConfig theme;
+
+  @override
+  void initState() {
+    super.initState();
+    theme = ref.read(themeProvider);
+  }
+
+  late List<(double, int)> percentages;
   void calcPercentage(AgentEditState state, WidgetRef ref) {
     var total = state.modelSettings.maxContextTokens;
     var interSysPrompt = 0;
@@ -598,11 +673,7 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
     var sysPrompt = (state.systemPrompt == null
         ? 0
         : LLMTokenEstimator.estimateTokens(state.systemPrompt!));
-    var uIQL = (state.enableUIQL ? 1000 : 0);
-    var knowledgeBase = 1000;
-    var opening = 1000;
-    var left =
-        total - interSysPrompt - sysPrompt - uIQL - knowledgeBase - opening;
+    var left = total - interSysPrompt - sysPrompt;
     if (left < 0) {
       left = 0;
       if (state.isTokenEnough) {
@@ -624,9 +695,6 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
       (0, total),
       (interSysPrompt / (total - left) * 360, interSysPrompt),
       (sysPrompt / (total - left) * 360, sysPrompt),
-      (knowledgeBase / (total - left) * 360, knowledgeBase),
-      (opening / (total - left) * 360, opening),
-      (uIQL / (total - left) * 360, uIQL),
       (left / (total - left) * 360, left),
     ];
   }
@@ -634,148 +702,78 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
   double width = 465;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    theme = ref.watch(themeProvider);
     var state = ref.watch(agentEditState);
     calcPercentage(state, ref);
-    return LayoutBuilder(
-      builder: (context, c) {
-        width = c.maxWidth;
-        return Row(
-          children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: PieChart(
-                PieChartData(
-                  startDegreeOffset: -90,
-                  sections: _getSections(context),
-                  centerSpaceRadius: 35,
-                  sectionsSpace: 2,
-                  pieTouchData: PieTouchData(
-                    touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                      // 处理触摸事件
-                    },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          (percentages[3].$2 == 0)
+              ? Text(
+                  S.of(context).enlarge_context_or_simplify_prompt,
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
+                )
+              : Text(
+                  S.of(context).token_available_for_chat(percentages[3].$2),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-              ),
-            ),
-            _buildLegend(context),
-          ],
-        );
-      },
+          const SizedBox(height: 2),
+          Text(
+            S.of(context).total_context_lim(percentages[0].$2),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          _buildLine(),
+          const SizedBox(height: 8),
+          _buildLegend(context),
+        ],
+      ),
     );
   }
 
-  List<PieChartSectionData> _getSections(BuildContext context) {
-    return [
-      PieChartSectionData(
-        color: Colors.deepOrange,
-        value: percentages[1].$1,
-        showTitle: false,
-        title: "",
-        radius: innerRadius,
-        titleStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
+  Expanded _buildLineItem(String title, int value, Color color) {
+    return Expanded(
+      flex: value,
+      child: Container(color: color),
+    );
+  }
+
+  Widget _buildLine() {
+    return Container(
+      height: 10,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: theme.zeroGradeColor,
       ),
-      PieChartSectionData(
-        color: Colors.orangeAccent,
-        value: percentages[2].$1,
-        title: S.of(context).sys_prompt,
-        showTitle: false,
-        radius: innerRadius,
-        titleStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: [
+          _buildLineItem("", percentages[1].$2, theme.errorColor),
+          const SizedBox(width: 3),
+          _buildLineItem("", percentages[2].$2, theme.warningColor),
+        ],
       ),
-      PieChartSectionData(
-        color: Colors.indigoAccent,
-        value: percentages[3].$1,
-        title: S.of(context).knowledge_base,
-        radius: innerRadius,
-        showTitle: false,
-        titleStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      PieChartSectionData(
-        color: Colors.green,
-        value: percentages[4].$1,
-        title: S.of(context).opening,
-        radius: innerRadius,
-        showTitle: false,
-        titleStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      PieChartSectionData(
-        color: Colors.purple,
-        value: percentages[5].$1,
-        title: S.of(context).ui_interactions,
-        radius: innerRadius,
-        showTitle: false,
-        titleStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-    ];
+    );
   }
 
   Widget _buildLegend(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Wrap(
       children: [
-        (percentages[6].$2 == 0)
-            ? Text(
-                S.of(context).enlarge_context_or_simplify_prompt,
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              )
-            : Text(
-                (width >= 465)
-                    ? S.of(context).token_available_for_chat(percentages[6].$2)
-                    : "${percentages[6].$2}",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-        const SizedBox(height: 4),
-        Text(
-          (width >= 465)
-              ? S.of(context).total_context_lim(percentages[0].$2)
-              : "${percentages[0].$2}",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        SizedBox(height: 4),
         _buildLegendItem(
-          Colors.deepOrange,
+          theme.errorColor,
           S.of(context).system_internal_prompt(percentages[1].$2),
         ),
         _buildLegendItem(
-          Colors.orangeAccent,
+          theme.warningColor,
           S.of(context).system_prompt_tokens(percentages[2].$2),
-        ),
-        _buildLegendItem(
-          Colors.indigoAccent,
-          S.of(context).knowledge_base_tokens(percentages[3].$2),
-        ),
-        _buildLegendItem(
-          Colors.green,
-          S.of(context).longest_opening(percentages[4].$2),
-        ),
-        _buildLegendItem(
-          Colors.purple,
-          S.of(context).ui_interactions_tokens(percentages[5].$2),
         ),
       ],
     );
@@ -783,54 +781,16 @@ class EditPageTokenUsageStatistics extends ConsumerWidget {
 
   Widget _buildLegendItem(Color color, String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 12, height: 12, color: color),
-          //节约空间，否则在文档打开的时候必定溢出
-          if (width >= 465) SizedBox(width: 10),
-          if (width >= 465) Text(text),
+          SizedBox(width: 12, height: 12, child: ColoredBox(color: color)),
+          const SizedBox(width: 4),
+          Text(text),
         ],
       ),
     );
-  }
-}
-
-class AgentEditDetails extends ConsumerWidget {
-  const AgentEditDetails({super.key});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var agentSet = ref.watch(agentEditState);
-    switch (agentSet.editing) {
-      case PropertyEditing.model:
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref
-              .read(documentDisplayProvider.notifier)
-              .setUrl("$websiteURL/docs/Agents/model_settings");
-        });
-        return _AgentModelSettings();
-      case PropertyEditing.sysPrompt:
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref
-              .read(documentDisplayProvider.notifier)
-              .setUrl("$websiteURL/docs/Agents/system_prompts");
-        });
-        return _SysPromptEdit();
-      case PropertyEditing.opening:
-        return Opening();
-      case PropertyEditing.knowledgeBase:
-        return SizedBox();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref
-              .read(documentDisplayProvider.notifier)
-              .setUrl("$websiteURL/docs/Agents/knowledge_base");
-        });
-      //return MemoryBase();
-      case PropertyEditing.UIQL:
-        return Uiql();
-      default:
-        return SizedBox();
-    }
   }
 }
 
@@ -844,7 +804,7 @@ class _AgentModelSettings extends ConsumerStatefulWidget {
 class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
   void _notifyListeners() {
     var n = ref.read(agentEditState.notifier);
-    n.state = n.state.copyWith();
+    n.state = n.state.copyWith(modelSettings: n.state.modelSettings.copyWith());
   }
 
   @override
@@ -1088,23 +1048,36 @@ class ModelSelect extends StatefulWidget {
     ThemeConfig theme,
   ) {
     var imgP = LLMImageIndexer.tryGetImagePath(model.family);
-    return StdButton(
-      onPressed: onTap,
-      padding: padding,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (imgP != null)
-            StdAvatar(length: height, assetImage: AssetImage(imgP)),
-          const SizedBox(width: 10),
-          Text(
-            "${model.friendlyName} | ${provider.name}",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+    return LayoutBuilder(
+      builder: (context, c) {
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: 330),
+          child: StdButton(
+            onPressed: onTap,
+            padding: padding,
+            child: (c.maxWidth >= 300)
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (imgP != null)
+                        StdAvatar(length: height, assetImage: AssetImage(imgP)),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          "${model.friendlyName} | ${provider.name}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                  )
+                : (imgP != null)
+                ? StdAvatar(length: height, assetImage: AssetImage(imgP))
+                : const Icon(Icons.auto_awesome),
           ),
-          const SizedBox(width: 10),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1342,6 +1315,10 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
         Expanded(
           child: TextField(
             controller: controller,
+            onTapOutside: (e) {
+              onSubmit(s);
+              FocusScope.of(context).unfocus();
+            },
             decoration: InputDecoration(
               fillColor: theme.primaryColor,
               focusColor: theme.primaryColor,
@@ -1608,84 +1585,29 @@ class _OpeningState extends ConsumerState<Opening> {
           ],
         ),
         const SizedBox(height: 16),
-        Text(
-          '更多知识请查看文档',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text("关于占位符的使用,请查看文档"),
-        const SizedBox(height: 16),
-        Expanded(
-          child: TextField(
-            controller: controller,
-            decoration: InputDecoration(
-              fillColor: theme.primaryColor,
-              focusColor: theme.primaryColor,
-              hintText: S.of(context).enter_opening_here,
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: (charCount <= s.modelSettings.maxContextTokens)
-                      ? theme.primaryColor
-                      : Colors.red,
-                  width: 1.0,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: (charCount <= s.modelSettings.maxContextTokens)
-                      ? theme.primaryColor
-                      : Colors.red,
-                  width: 2.5,
-                ),
-              ),
-              border: const OutlineInputBorder(),
-              // 添加计数器显示
-              counterStyle: TextStyle(
-                color: (charCount <= s.modelSettings.maxContextTokens)
-                    ? theme.primaryColor
-                    : Colors.red,
-                fontSize: 15.0,
-              ),
-              counterText: (charCount <= s.modelSettings.maxContextTokens)
-                  ? '$charCount/${s.modelSettings.maxContextTokens}'
-                  : S
-                        .of(context)
-                        .over_maximum_context_length_hint(
-                          charCount,
-                          s.modelSettings.maxContextTokens,
-                        ),
-            ),
-            // 监听文本变化更新计数
-            onChanged: (value) {
-              setState(() {
-                charCount = LLMTokenEstimator.estimateTokens(controller.text);
-              });
-              onSubmit(s);
-            },
-            expands: true,
-            maxLines: null,
-            textAlignVertical: TextAlignVertical.top,
-          ),
-        ),
-        const SizedBox(height: 16),
+        Text("coming soon", style: TextStyle(fontSize: 18)),
       ],
     );
   }
 }
 
-class Uiql extends ConsumerWidget {
-  const Uiql({super.key});
+class UserIdentity extends ConsumerWidget {
+  const UserIdentity({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var agent = ref.watch(agentEditState);
+    var uiden =
+        ref.watch(agentEditState.select((s) => s.userIdentity)) ??
+        PersonaConfigure();
+    var theme = ref.watch(themeProvider);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 16),
         Row(
           children: [
             Text(
-              S.of(context).ui_interaction_set,
+              S.of(context).usr_persona_set,
               style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(width: 8),
@@ -1694,17 +1616,133 @@ class Uiql extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          '该功能是一个实验功能，目前正在完善，更多相关信息请查看文档 \n This is a experimental feature, more information please see the documentation ',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          S.of(context).select_agent_default_persona,
+          style: TextStyle(fontSize: 18),
         ),
         const SizedBox(height: 16),
-        StdCheckbox(
-          value: agent.enableUIQL,
-          onChanged: (value) {
-            var n = ref.read(agentEditState.notifier);
-            n.state = agent.copyWith(enableUIQL: value);
+        StdButton(
+          onPressed: () {
+            OverlayPortalService.showDialog(
+              context,
+              height: 600,
+              width: 400,
+              child: personaSelector(context, ref),
+              backGroundColor: theme.zeroGradeColor,
+            );
           },
-          text: S.of(context).enable_ui_interactions,
+          text: S.of(context).select_agent_default_persona,
+          child: (uiden.defaultPersona == null)
+              ? null
+              : FutureBuilder(
+                  future: () async {
+                    var p = await DatabaseService.instance.getPersonaById(
+                      uiden.defaultPersona!,
+                    );
+                    if (p == null) {
+                      return null;
+                    } else {
+                      return (p, await p.getAvatar());
+                    }
+                  }.call(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data != null) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          StdAvatar(file: snapshot.data!.$2),
+                          const SizedBox(width: 8),
+                          Text(" ${snapshot.data!.$1.name}"),
+                        ],
+                      );
+                    } else {
+                      return Text(
+                        S.of(context).error_occurred,
+                        style: TextStyle(color: theme.errorColor),
+                      );
+                    }
+                  },
+                ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          S.of(context).persona_additonal_information,
+          style: TextStyle(fontSize: 18),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: StdTextFieldOutlined(
+            hintText:
+                S.of(context).plz_enter +
+                S.of(context).persona_additonal_information.toLowerCase(),
+            controller: TextEditingController(
+              text: uiden.personaAdditionalInfo,
+            ),
+            isExpanded: true,
+            onSubmitted: (value) {
+              var n = ref.read(agentEditState.notifier);
+              n.state = n.state.copyWith(
+                userIdentity: n.state.userIdentity.copyWith(
+                  personaAdditionalInfo: value,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget personaSelector(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          S.of(context).select_agent_default_persona,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        FutureBuilder(
+          future: DatabaseService.instance.getAllPersonas(),
+          builder: (context, asyncSnapshot) {
+            if (!asyncSnapshot.hasData) {
+              return SizedBox();
+            }
+            if (asyncSnapshot.hasError || asyncSnapshot.data == null) {
+              return Center(child: Text(S.of(context).error_occurred));
+            }
+            if (asyncSnapshot.data!.isEmpty) {
+              return Center(child: Text(S.of(context).no_persona));
+            }
+            return Expanded(
+              child: ListView.builder(
+                itemCount: asyncSnapshot.data!.length,
+                itemBuilder: (context, index) {
+                  return FutureBuilder(
+                    future: asyncSnapshot.data![index].getAvatar(),
+                    builder: (context, avt) {
+                      return StdListTile(
+                        leading:
+                            ((asyncSnapshot.hasError ||
+                                asyncSnapshot.data == null))
+                            ? null
+                            : StdAvatar(file: avt.data),
+                        title: Text(asyncSnapshot.data![index].name),
+                        onTap: () async {
+                          await OverlayPortalService.hide(context);
+                          var n = ref.read(agentEditState.notifier);
+                          n.state = n.state.copyWith(
+                            userIdentity: PersonaConfigure(
+                              defaultPersona: asyncSnapshot.data![index].id,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            );
+          },
         ),
       ],
     );

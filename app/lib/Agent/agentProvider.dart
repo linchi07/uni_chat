@@ -2,16 +2,17 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uni_chat/Chat/chat_page_main.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
+import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
 
 import '../Chat/chat_models.dart';
 import '../api_configs/api_models.dart';
 import '../utils/file_utils.dart';
+import 'agent_models.dart';
 
 class ModelSpecifics {
   String? modelName;
@@ -36,6 +37,33 @@ class ModelSpecifics {
     this.enableUsrLanguage = true,
     this.enableUsrSystemInformation = true,
   });
+
+  ModelSpecifics copyWith({
+    String? modelName,
+    double? temperature,
+    double? topP,
+    double? frequencyPenalty,
+    double? presencePenalty,
+    int? maxGenerationTokens,
+    int? maxContextTokens,
+    bool? enableTimeTelling,
+    bool? enableUsrLanguage,
+    bool? enableUsrSystemInformation,
+  }) {
+    return ModelSpecifics(
+      modelName: modelName ?? this.modelName,
+      temperature: temperature ?? this.temperature,
+      topP: topP ?? this.topP,
+      frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty,
+      presencePenalty: presencePenalty ?? this.presencePenalty,
+      maxGenerationTokens: maxGenerationTokens ?? this.maxGenerationTokens,
+      maxContextTokens: maxContextTokens ?? this.maxContextTokens,
+      enableTimeTelling: enableTimeTelling ?? this.enableTimeTelling,
+      enableUsrLanguage: enableUsrLanguage ?? this.enableUsrLanguage,
+      enableUsrSystemInformation:
+          enableUsrSystemInformation ?? this.enableUsrSystemInformation,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -73,30 +101,33 @@ class Agent {
     required this.id,
     required this.name,
     this.systemPrompt,
-    required this.modelSpecifics,
+    required this.modelConfigure,
     required this.memoryBaseIds,
+    this.personaConfigure,
     required this.client,
   });
   final String id;
   final String name;
   final bool enableUIQL = false;
   final String? systemPrompt;
-  final ModelSpecifics modelSpecifics;
+  final ModelConfigure modelConfigure;
+  final PersonaConfigure? personaConfigure;
   final List<String> memoryBaseIds;
   ApiClient client;
 
   static Future<Agent> fromAgentData(AgentData agentData) async {
     var client = await ApiClient.fromFactory(
-      agentData.providerId,
-      agentData.modelId,
+      agentData.modelConfigure.providerId,
+      agentData.modelConfigure.modelId,
     );
     return Agent(
       id: agentData.id,
       name: agentData.name,
       client: client,
-      modelSpecifics: agentData.modelSpecifics,
+      personaConfigure: agentData.userIdentityConfigure,
+      modelConfigure: agentData.modelConfigure,
       systemPrompt: agentData.systemPrompt,
-      memoryBaseIds: agentData.knowledgeBases,
+      memoryBaseIds: [],
     );
   }
 
@@ -105,7 +136,8 @@ class Agent {
     String? id,
     String? name,
     ApiClient? client,
-    ModelSpecifics? modelSpecifics,
+    ModelConfigure? modelConfigure,
+    PersonaConfigure? personaConfigure,
     String? systemPrompt,
     List<String>? memoryBaseIds,
   }) {
@@ -113,8 +145,9 @@ class Agent {
       id: id ?? this.id,
       name: name ?? this.name,
       client: client ?? this.client,
-      modelSpecifics: modelSpecifics ?? this.modelSpecifics,
+      modelConfigure: modelConfigure ?? this.modelConfigure,
       systemPrompt: systemPrompt ?? this.systemPrompt,
+      personaConfigure: personaConfigure ?? this.personaConfigure,
       memoryBaseIds: memoryBaseIds ?? this.memoryBaseIds,
     );
   }
@@ -144,13 +177,28 @@ class AgentProvider extends StateNotifier<Agent?> {
   }
 
   void loadDefaultAgent() async {
-    var agentData = await DatabaseService.instance.loadDefaultAgent();
     try {
-      state = await Agent.fromAgentData(agentData!);
+      var agentData = await DatabaseService.instance.loadDefaultAgent();
+      if (agentData == null) {
+        throw AgentException(AgentExceptionType.agentNotFound);
+      }
+      state = await Agent.fromAgentData(agentData);
+      if (state?.personaConfigure != null &&
+          state?.personaConfigure?.defaultPersona != null) {
+        await ref
+            .read(personaProvider.notifier)
+            .loadPersonaById(state!.personaConfigure!.defaultPersona!);
+      }
     } catch (e) {
-      ref
-          .read(chatStateProvider.notifier)
-          .stateCopyWith(error: 'Failed to find agent.', isReady: false);
+      AppException ex;
+      if (e is Exception) {
+        if (e is AppException) {
+          ex = AgentException.fromAncestor(e);
+        } else {
+          ex = AgentException.fromException(e);
+        }
+        ref.read(chatStateProvider.notifier).stateCopyWith(error: ex);
+      }
     }
   }
 
@@ -158,13 +206,28 @@ class AgentProvider extends StateNotifier<Agent?> {
     if (state != null && state!.id == id && !forceReload) {
       return;
     }
-    var agentData = await DatabaseService.instance.getAgent(id);
     try {
-      state = await Agent.fromAgentData(agentData!);
+      var agentData = await DatabaseService.instance.getAgent(id);
+      if (agentData == null) {
+        throw AgentException(AgentExceptionType.agentNotFound);
+      }
+      state = await Agent.fromAgentData(agentData);
+      if (state?.personaConfigure != null &&
+          state?.personaConfigure?.defaultPersona != null) {
+        await ref
+            .read(personaProvider.notifier)
+            .loadPersonaById(state!.personaConfigure!.defaultPersona!);
+      }
     } catch (e) {
-      ref
-          .read(chatStateProvider.notifier)
-          .stateCopyWith(error: 'Failed to find agent.', isReady: false);
+      AppException ex;
+      if (e is Exception) {
+        if (e is AppException) {
+          ex = AgentException.fromAncestor(e);
+        } else {
+          ex = AgentException.fromException(e);
+        }
+        ref.read(chatStateProvider.notifier).stateCopyWith(error: ex);
+      }
     }
   }
 
@@ -188,8 +251,7 @@ class AgentProvider extends StateNotifier<Agent?> {
       }
       return null;
     }
-    // 处理未初始化的情况
-    throw Exception("Agent not initialized");
+    throw AgentException(AgentExceptionType.agentNotLoaded);
   }
 
   Stream<ChatResponse> getStreamingResponse(
@@ -214,7 +276,7 @@ class AgentProvider extends StateNotifier<Agent?> {
         agentId: state!.id,
       );
     } else {
-      throw Exception("Agent not initialized");
+      throw AgentException(AgentExceptionType.agentNotLoaded);
     }
   }
 
@@ -235,7 +297,7 @@ class AgentProvider extends StateNotifier<Agent?> {
     ChatMessage? lastMessage,
   ) async {
     if (state == null) {
-      throw Exception("Agent not initialized");
+      throw AgentException(AgentExceptionType.agentNotLoaded);
     }
     ModelRequestContent rc = ModelRequestContent(
       staticSystemMessages: [],
@@ -243,7 +305,7 @@ class AgentProvider extends StateNotifier<Agent?> {
       uiMessages: [],
       chatHistory: [],
       usrMessage: [],
-      modelSpecifics: state!.modelSpecifics,
+      modelConfigure: state!.modelConfigure,
       ragMessages: [],
     );
     rc.staticSystemMessages.add(
@@ -266,20 +328,26 @@ class AgentProvider extends StateNotifier<Agent?> {
     }
     var personaMsg = ref.read(personaProvider).getPersonaMessage();
     if (personaMsg != null) {
-      rc.staticSystemMessages.add(personaMsg);
+      rc.staticSystemMessages.add(
+        personaMsg.copyWith(
+          content:
+              personaMsg.content +
+              (state?.personaConfigure?.personaAdditionalInfo ?? ""),
+        ),
+      );
     }
-    if (state!.modelSpecifics.enableUsrLanguage) {
+    if (state!.modelConfigure.enableUsrLanguage) {
       //TODO: 获取用户语言
       rc.staticSystemMessages.add(
         FormattedChatMessage(
           type: ChatMessageType.text,
           id: "usr_language",
           sender: MessageSender.system,
-          content: "用户语言为：简体中文,用户的地区为：中国",
+          content: "用户语言为 ${PlatForm().languageCode}",
         ),
       );
     }
-    if (state!.modelSpecifics.enableUsrSystemInformation) {
+    if (state!.modelConfigure.enableUsrSystemInformation) {
       rc.staticSystemMessages.add(
         FormattedChatMessage(
           type: ChatMessageType.text,
@@ -289,7 +357,7 @@ class AgentProvider extends StateNotifier<Agent?> {
         ),
       );
     }
-    if (state!.modelSpecifics.enableTimeTelling) {
+    if (state!.modelConfigure.enableTimeTelling) {
       rc.dynamicSystemMessages.add(
         FormattedChatMessage(
           type: ChatMessageType.text,
@@ -299,26 +367,12 @@ class AgentProvider extends StateNotifier<Agent?> {
         ),
       );
     }
-    if (state!.enableUIQL) {
-      var ps = ref.read(panelManager).triggerPanelSummary();
-      rc.staticSystemMessages.add(
-        FormattedChatMessage(
-          type: ChatMessageType.text,
-          id: "usr_uiql",
-          sender: MessageSender.system,
-          content: "当前UIQL版本为：1.0.0",
-        ),
-      );
-      if (ps != null) {
-        rc.uiMessages = ps;
-      }
-    }
     var t1 = await processChatMessage(history, rc.chatHistory);
     int t2 = 0;
     if (lastMessage != null) {
       t2 = await processChatMessage([lastMessage], rc.usrMessage);
     }
-    rc.modelSpecifics = state!.modelSpecifics;
+    rc.modelConfigure = state!.modelConfigure;
     var t3 = 0;
     for (var i in rc.uiMessages) {
       t3 += i.tokens;
@@ -331,10 +385,10 @@ class AgentProvider extends StateNotifier<Agent?> {
     for (var i in rc.dynamicSystemMessages) {
       t5 += i.tokens;
     }
-    if (t1 + t2 + t3 + t4 + t5 > state!.modelSpecifics.maxGenerationTokens) {
+    if (t1 + t2 + t3 + t4 + t5 > state!.modelConfigure.maxGenerationTokens) {
       //TODO:implement better logic
       var delta =
-          t1 + t2 + t3 + t4 + t5 - state!.modelSpecifics.maxGenerationTokens;
+          t1 + t2 + t3 + t4 + t5 - state!.modelConfigure.maxGenerationTokens;
       stripTokens(rc.chatHistory, delta, t1);
     }
     return rc;
@@ -345,8 +399,7 @@ class AgentProvider extends StateNotifier<Agent?> {
     List<FormattedChatMessage> output,
   ) async {
     if (state == null) {
-      //TODO: 添加错误处理
-      throw Exception("Agent not initialized");
+      throw AgentException(AgentExceptionType.agentNotLoaded);
     }
     int totalTokens = 0;
     for (var i in message) {
@@ -497,7 +550,6 @@ class AgentProvider extends StateNotifier<Agent?> {
                   break;
               }
             }
-            totalTokens += output.last.tokens;
           }
           if (i.content.isNotEmpty) {
             output.add(
