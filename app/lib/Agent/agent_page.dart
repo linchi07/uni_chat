@@ -46,7 +46,7 @@ class _AgentPageState extends State<AgentPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(width: 60),
+              const SizedBox(width: 20),
               Text(
                 S.of(context).agent_manage,
                 style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold),
@@ -72,7 +72,7 @@ class _AgentPageState extends State<AgentPage> {
         ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+            padding: const EdgeInsets.fromLTRB(10, 10, 5, 10),
             child: AgentSelector(onEdit: onEdit),
           ),
         ),

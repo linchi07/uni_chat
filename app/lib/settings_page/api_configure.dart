@@ -7,6 +7,7 @@ import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/settings_page/settings.dart' show settingsMenuKey;
 import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paged_scroll/paged_scroll.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
@@ -66,7 +67,7 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                   OverlayPortalService.showDialog(
                     context,
                     width: 450,
-                    height: 800,
+                    height: 600,
                     child: ApiPresetSelect(
                       onClose: () async {
                         await OverlayPortalService.hide(context);
@@ -412,7 +413,9 @@ class ApiConfigure {
     return ApiProvider(
       id: id,
       name: name!,
-      endpoint: (showVerFlags && !endpoint!.endsWith(apiType!.vFlag)) ? endpoint! + apiType!.vFlag : endpoint!,
+      endpoint: (showVerFlags && !endpoint!.endsWith(apiType!.vFlag))
+          ? endpoint! + apiType!.vFlag
+          : endpoint!,
       type: apiType!,
       preset: providerPreset?.id,
     );
@@ -435,6 +438,7 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
   PageController controller = PageController();
   late bool showBasic;
   late final int indexShift;
+  late SplitViewController spc;
 
   @override
   initState() {
@@ -472,6 +476,11 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
         itemCount: ac.models.length,
       ),
     ];
+    spc = SplitViewController(
+      onPop: () {
+        _currentPage.value = -1;
+      },
+    );
   }
 
   final ValueNotifier<int> _currentPage = ValueNotifier(0);
@@ -490,36 +499,36 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
             var endPointValid =
                 endpoint && (Uri.tryParse(ac.endpoint!)?.isAbsolute ?? false);
             String? endPointT = (ac.endpoint != null && ac.apiType != null)
-                ? (ac.showVerFlags && !(ac.endpoint!.endsWith(ac.apiType!.vFlag)))
+                ? (ac.showVerFlags &&
+                          !(ac.endpoint!.endsWith(ac.apiType!.vFlag)))
                       ? ac.endpoint! + ac.apiType!.vFlag
                       : ac.endpoint
                 : null;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 12),
                 if (img != null)
-                  AspectRatio(
-                    aspectRatio: 1,
-                    child: Container(
-                      clipBehavior: Clip.hardEdge,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(60),
-                            blurRadius: 2,
-                            spreadRadius: 1,
-                            offset: const Offset(1, 2),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints.loose(const Size(250, 250)),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: Container(
+                          clipBehavior: Clip.hardEdge,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(60),
+                                blurRadius: 2,
+                                spreadRadius: 1,
+                                offset: const Offset(1, 2),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      height: 150,
-                      width: 150,
-                      child: Image.asset(
-                        width: 150,
-                        height: 150,
-                        fit: BoxFit.fitWidth,
-                        img,
+                          child: Image.asset(fit: BoxFit.fitWidth, img),
+                        ),
                       ),
                     ),
                   ),
@@ -617,11 +626,17 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                               ),
                               isSelected: page == 0,
                               onTap: () {
-                                controller.animateToPage(
-                                  0,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInSine,
-                                );
+                                if (!spc.isExpanded) {
+                                  controller.jumpTo(0);
+                                  _currentPage.value = 0;
+                                  spc.push(main, topBar: _topbar());
+                                } else {
+                                  controller.animateToPage(
+                                    0,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInSine,
+                                  );
+                                }
                               },
                             ),
                           if (showBasic) const Divider(),
@@ -635,11 +650,17 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                               S.of(context).api_keys_not_set,
                             ),
                             onTap: () {
-                              controller.animateToPage(
-                                1 + indexShift,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInSine,
-                              );
+                              if (!spc.isExpanded) {
+                                controller.jumpToPage(1 + indexShift);
+                                _currentPage.value = 1 + indexShift;
+                                spc.push(main, topBar: _topbar());
+                              } else {
+                                controller.animateToPage(
+                                  1 + indexShift,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInSine,
+                                );
+                              }
                             },
                           ),
                           const Divider(),
@@ -647,11 +668,17 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                             isSelected: page == 2 + indexShift,
                             title: Text(S.of(context).model_configure),
                             onTap: () {
-                              controller.animateToPage(
-                                2 + indexShift,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInSine,
-                              );
+                              if (!spc.isExpanded) {
+                                controller.jumpToPage(2 + indexShift);
+                                _currentPage.value = 2 + indexShift;
+                                spc.push(main, topBar: _topbar());
+                              } else {
+                                controller.animateToPage(
+                                  2 + indexShift,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInSine,
+                                );
+                              }
                             },
                             subtitle: _indicator(
                               ac.models.isNotEmpty,
@@ -665,48 +692,26 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                     ),
                   ),
                 ),
-                StdButton(
-                  color: theme.thirdGradeColor,
-                  text: (page == 0)
-                      ? S.of(context).cancel
-                      : S.of(context).previous_step,
-                  onPressed: () {
-                    if (page == 0) {
-                      widget.onExit(false);
-                      return;
-                    }
-                    controller.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInSine,
-                    );
-                  },
-                ),
-                const SizedBox(height: 10),
-                StdButton(
-                  text: (page == 2 + indexShift)
-                      ? S.of(context).save
-                      : S.of(context).next_step,
-                  onPressed: () async {
-                    if (page == 2 + indexShift) {
-                      if (ac.getIfValid()) {
-                        await ac.save();
-                        var ag = ref.read(agentProvider);
-                        if (ag?.client.provider.id == ac.id) {
-                          //force reload agent to apply changes
-                          await ref
-                              .read(agentProvider.notifier)
-                              .loadAgentById(ag!.id, forceReload: true);
+                if (spc.isExpanded) ..._buildButtons(),
+                if (!spc.isExpanded)
+                  StdButton(
+                    text: S.of(context).save,
+                    onPressed: () async {
+                      if (page == 2 + indexShift) {
+                        if (ac.getIfValid()) {
+                          await ac.save();
+                          var ag = ref.read(agentProvider);
+                          if (ag?.client.provider.id == ac.id) {
+                            //force reload agent to apply changes
+                            await ref
+                                .read(agentProvider.notifier)
+                                .loadAgentById(ag!.id, forceReload: true);
+                          }
+                          widget.onExit(true);
                         }
-                        widget.onExit(true);
                       }
-                    } else {
-                      controller.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInSine,
-                      );
-                    }
-                  },
-                ),
+                    },
+                  ),
                 const SizedBox(height: 20),
               ],
             );
@@ -716,10 +721,145 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
     );
   }
 
-  Widget _indicator(bool isOK, Key key, String okText, String failText) {
+  Widget _topbar() {
+    return AppBar(
+      primary: false,
+      centerTitle: true,
+      backgroundColor: theme.secondGradeColor,
+      title: Stack(
+        children: [
+          Positioned(
+            height: 10,
+            top: 0,
+            left: 0,
+            child: StdIconButton(
+              icon: Icons.arrow_back_ios_sharp,
+              onPressed: () {
+                spc.pop();
+              },
+            ),
+          ),
+          Consumer(
+            builder: (context, ref, child) {
+              ref.watch(apiConfigureProvider);
+              return ValueListenableBuilder(
+                valueListenable: _currentPage,
+                builder: (context, value, child) {
+                  Widget title;
+                  switch (_currentPage.value - indexShift) {
+                    case 0:
+                      var acName = ac.name != null && ac.name! != "";
+                      var endpoint = ac.endpoint != null && ac.endpoint! != "";
+                      title = _indicator(
+                        acName && endpoint,
+                        ValueKey("base info set"),
+                        S.of(context).configure_all_set,
+                        S.of(context).configure_not_set,
+                        true,
+                      );
+                      break;
+                    case 1:
+                      title = _indicator(
+                        ac.keys.isNotEmpty,
+                        ValueKey("api key set"),
+                        S.of(context).api_keys_configured(ac.keys.length),
+                        S.of(context).api_keys_not_set,
+                        true,
+                      );
+                      break;
+                    case 2:
+                      title = _indicator(
+                        ac.models.isNotEmpty,
+                        ValueKey("model set"),
+                        S.of(context).model_configured(ac.models.length),
+                        S.of(context).model_configure_not_set,
+                        true,
+                      );
+                      break;
+                    default:
+                      title = const SizedBox();
+                  }
+                  return DefaultTextStyle(
+                    style: TextStyle(fontSize: 15, color: theme.darkTextColor),
+                    child: title,
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildButtons([bool expanded = false]) {
+    var page = _currentPage.value;
+    var l = [
+      StdButton(
+        color: theme.thirdGradeColor,
+        text: (page == 0) ? S.of(context).cancel : S.of(context).previous_step,
+        onPressed: () {
+          if (page == 0) {
+            widget.onExit(false);
+            return;
+          }
+          controller.previousPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInSine,
+          );
+        },
+      ),
+      const SizedBox(height: 10),
+      StdButton(
+        text: (page == 2 + indexShift)
+            ? S.of(context).save
+            : S.of(context).next_step,
+        onPressed: () async {
+          if (page == 2 + indexShift) {
+            if (ac.getIfValid()) {
+              await ac.save();
+              var ag = ref.read(agentProvider);
+              if (ag?.client.provider.id == ac.id) {
+                //force reload agent to apply changes
+                await ref
+                    .read(agentProvider.notifier)
+                    .loadAgentById(ag!.id, forceReload: true);
+              }
+              widget.onExit(true);
+            }
+          } else {
+            controller.nextPage(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInSine,
+            );
+          }
+        },
+      ),
+    ];
+    if (expanded) {
+      return [
+        Expanded(child: l[0]),
+        const SizedBox(width: 10),
+        Expanded(child: l[2]),
+      ];
+    } else {
+      return l;
+    }
+  }
+
+  Widget _indicator(
+    bool isOK,
+    Key key,
+    String okText,
+    String failText, [
+    bool center = false,
+  ]) {
     return AnimatedCrossFade(
       key: key,
       firstChild: Row(
+        mainAxisAlignment: center
+            ? MainAxisAlignment.center
+            : MainAxisAlignment.start,
         children: [
           Icon(Icons.check, color: theme.okColor),
           const SizedBox(width: 5),
@@ -727,6 +867,9 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
         ],
       ),
       secondChild: Row(
+        mainAxisAlignment: center
+            ? MainAxisAlignment.center
+            : MainAxisAlignment.start,
         children: [
           Icon(Icons.close, color: theme.errorColor),
           const SizedBox(width: 5),
@@ -754,9 +897,9 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
     // this listen method makes sure that only the page that changes will be rebuilt
     // however it relies heavily on the hashcode of lists
     // so everytime a copy with is made , we need to create a new list through "[...]"
+    main = _buildMain();
     ref.listen(apiConfigureProvider, (previous, next) {
       ac = next;
-      var ssFlag = false;
       if (ac.keys != previous?.keys) {
         children[1 + indexShift] = ListView.builder(
           itemBuilder: (context, index) {
@@ -767,7 +910,7 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
           },
           itemCount: ac.keys.length,
         );
-        ssFlag = true;
+        mainSetState?.call(() {});
       }
       if (ac.models != previous?.models) {
         children[2 + indexShift] = ListView.builder(
@@ -783,38 +926,98 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
           },
           itemCount: ac.models.length,
         );
-        ssFlag = true;
-      }
-      if (ssFlag) {
-        setState(() {});
+        mainSetState?.call(() {});
       }
     });
+    spc.defaultRight = main;
+    return SplitView(
+      topbarHeight: 50,
+      controller: spc,
+      onLayout: (p, s, f) {
+        if (f && s == SplitViewStatus.collapsedWithLeft) {
+          _currentPage.value = -1;
+        }
+        if (p == SplitViewStatus.expanded &&
+            s == SplitViewStatus.collapsedWithLeft) {
+          _currentPage.value = -1;
+        }
+        if (p == SplitViewStatus.collapsedWithLeft &&
+            s == SplitViewStatus.expanded) {
+          _currentPage.value = 0;
+        }
+        if (p == SplitViewStatus.collapsedWithRight &&
+            s == SplitViewStatus.expanded) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              controller.jumpToPage(_currentPage.value);
+            });
+          });
+        }
+        if (p == SplitViewStatus.expanded &&
+            s == SplitViewStatus.collapsedWithRight &&
+            _currentPage.value > 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            controller.jumpToPage(_currentPage.value);
+          });
+        }
+      },
+      centralPadding: 10,
+      leftPercent: 0.25,
+      left: _buildSidebar(),
+    );
+  }
+
+  late Widget main;
+
+  void Function(void Function())? mainSetState;
+
+  Widget _buildMain() {
     List<Widget> header = [
       if (showBasic) SizedBox.shrink(),
       ApiKeyHeader(theme: theme),
       ModelAddPageHeader(theme: theme),
     ];
-    return Row(
-      children: [
-        Expanded(flex: 1, child: _buildSidebar()),
-        const SizedBox(width: 10),
-        Expanded(
-          flex: 3,
-          child: PagedScroll(
-            controller: controller,
-            onPageChanged: (page) {
-              var n = ref.read(apiConfigureProvider.notifier);
-              //force listening widget to save changes
-              n.state = n.state.copyWith();
-              _currentPage.value = page;
-            },
-            headerBuilder: (_, index) {
-              return header[index];
-            },
-            children: children,
+    return StatefulBuilder(
+      key: ValueKey("apic_mainP"),
+      builder: (context, ss) {
+        mainSetState = ss;
+        return Material(
+          color: theme.secondGradeColor,
+          child: Column(
+            children: [
+              Expanded(
+                child: PagedScroll(
+                  key: ValueKey("apic_mainPgs"),
+                  controller: controller,
+                  onPageChanged: (page) {
+                    var n = ref.read(apiConfigureProvider.notifier);
+                    //force listening widget to save changes
+                    n.state = n.state.copyWith();
+                    _currentPage.value = page;
+                  },
+                  headerBuilder: (_, index) {
+                    return header[index];
+                  },
+                  children: children,
+                ),
+              ),
+              if (!spc.isExpanded)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ValueListenableBuilder(
+                    valueListenable: _currentPage,
+                    builder: (context, value, child) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: _buildButtons(true),
+                      );
+                    },
+                  ),
+                ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -995,7 +1198,9 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
                       Text(S.of(context).end_point_preview, style: tStyle),
                       const SizedBox(height: 10),
                       ...selected!.getEndPointInfo(
-                        (ac.showVerFlags && !text.endsWith(ac.apiType!.vFlag)) ? (text + ac.apiType!.vFlag) : text,
+                        (ac.showVerFlags && !text.endsWith(ac.apiType!.vFlag))
+                            ? (text + ac.apiType!.vFlag)
+                            : text,
                       ),
                       const SizedBox(height: 10),
                     ],
@@ -1116,7 +1321,7 @@ class _ApiKeyInfoState extends ConsumerState<ApiKeyInfo> {
   Widget build(BuildContext context) {
     var enableAdvance = apiKey.enableAdvanced();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
       decoration: BoxDecoration(
         color: widget.theme.zeroGradeColor,
         borderRadius: BorderRadius.circular(8),
@@ -1195,11 +1400,14 @@ class _ApiKeyInfoState extends ConsumerState<ApiKeyInfo> {
                     editMenu(context, widget.theme);
                   },
                 ),
+                /*
                 const SizedBox(width: 5),
                 StdIconButton(
                   icon: Icons.monitor_heart_outlined,
                   onPressed: () {},
                 ),
+
+                 */
                 const SizedBox(width: 5),
                 StdIconButton(
                   icon: Icons.delete_outline,
@@ -1657,7 +1865,7 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
       decoration: BoxDecoration(
         color: widget.theme.zeroGradeColor,
         borderRadius: BorderRadius.circular(8),
@@ -1678,12 +1886,15 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
                 SelectionArea(
                   child: Row(
                     children: [
-                      Text(
-                        model.friendlyName,
-                        style: TextStyle(
-                          fontSize: 25,
-                          color: widget.theme.darkTextColor,
-                          fontWeight: FontWeight.bold,
+                      Flexible(
+                        child: Text(
+                          model.friendlyName,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 25,
+                            color: widget.theme.darkTextColor,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 5),
@@ -1731,7 +1942,6 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
                           );
                         },
                       ),
-                      const SizedBox(width: 5),
                       StdIconButton(
                         icon: Icons.delete_outline,
                         onPressed: () {

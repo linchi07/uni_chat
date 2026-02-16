@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/settings_page/about.dart';
+import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 
 import '../generated/l10n.dart';
@@ -148,7 +149,6 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
   // 标记当前是否为最大化状态
   bool isMaximized = false;
   bool _forceMaximize = false;
-  int _selectedIndex = 0; // 新增：追踪当前选中的索引，默认为0
 
   @override
   void initState() {
@@ -183,6 +183,14 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
         return true;
       });
     });
+    spc = SplitViewController(
+      defaultRight: ApiSettings(),
+      onPop: () {
+        setState(() {
+          selectedIndex = -1;
+        });
+      },
+    );
     // 启动进入动画
     _animationController.forward();
   }
@@ -207,12 +215,6 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
     });
   }
 
-  void _onSelectItem(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   Widget? _insertPage;
   void Function()? onPagePop;
   void insertPage(Widget page, {void Function()? onPop}) {
@@ -230,7 +232,25 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
     });
   }
 
+  void onSelect(Widget page) {
+    spc.push(
+      Material(color: theme.secondGradeColor, child: page),
+      topBar: AppBar(
+        backgroundColor: theme.secondGradeColor,
+        automaticallyImplyLeading: false,
+        leading: StdIconButton(
+          icon: Icons.arrow_back_ios_sharp,
+          onPressed: spc.pop,
+        ),
+      ),
+    );
+  }
+
+  int selectedIndex = 0;
+
   late ThemeConfig theme;
+  Size lastScreenSize = Size.zero;
+  late SplitViewController spc;
 
   @override
   Widget build(BuildContext context) {
@@ -259,10 +279,14 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
       ),
     ];
     final screenSize = MediaQuery.of(context).size;
+    var dur = (lastScreenSize == screenSize)
+        ? const Duration(milliseconds: 350)
+        : Duration.zero;
+    lastScreenSize = screenSize;
     // 判断屏幕尺寸，如果是小屏幕，则强制为最大化
-    if (PlatForm().isMobile ||
-        screenSize.height <= 800 ||
-        screenSize.width <= 600) {
+    if (PlatForm().isMobilePlatform ||
+        screenSize.height <= 600 ||
+        screenSize.width <= 900) {
       isMaximized = true;
       _forceMaximize = true;
     } else {
@@ -271,7 +295,7 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
     theme = ref.watch(themeProvider);
     // 根据是否最大化，计算菜单的目标尺寸
     final double targetWidth = isMaximized
-        ? screenSize.width - 60
+        ? screenSize.width - ((PlatForm().isMobile) ? 20 : 60)
         : screenSize.width * 0.65;
     final double targetHeight = isMaximized
         ? screenSize.height - 48
@@ -288,7 +312,7 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
           child: AnimatedContainer(
             width: targetWidth,
             height: targetHeight,
-            duration: const Duration(milliseconds: 350),
+            duration: dur,
             curve: Curves.easeInOutCubic,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(targetBorderRadius),
@@ -347,10 +371,28 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
                             ),
                             child: _insertPage!,
                           )
-                        : Row(
-                            children: [
-                              // 左侧导航栏
-                              Column(
+                        : SplitView(
+                            maxLeftWidth: 300,
+                            controller: spc,
+                            leftPercent: 0.3,
+                            onLayout: (p, s, f) {
+                              if (f && s == SplitViewStatus.collapsedWithLeft) {
+                                selectedIndex = -1;
+                                return;
+                              }
+                              if (p == SplitViewStatus.expanded &&
+                                  s == SplitViewStatus.collapsedWithLeft) {
+                                selectedIndex = -1;
+                                return;
+                              }
+                              if (p == SplitViewStatus.collapsedWithLeft &&
+                                  s == SplitViewStatus.expanded) {
+                                selectedIndex = 0;
+                              }
+                            },
+                            left: Material(
+                              color: theme.secondGradeColor,
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
@@ -366,37 +408,34 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
                                     ),
                                   ),
                                   Expanded(
-                                    child: SizedBox(
-                                      width: 230,
-                                      child: ClipRect(
-                                        child: ListView.builder(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 16.0,
-                                            horizontal: 8.0,
-                                          ),
-                                          itemCount: settingItems.length,
-                                          itemBuilder: (context, index) {
-                                            final item = settingItems[index];
-                                            return StdListTile(
-                                              leading: Icon(item.icon),
-                                              title: Text(item.title),
-                                              isSelected:
-                                                  _selectedIndex == index,
-                                              onTap: () => _onSelectItem(index),
-                                            );
-                                          },
+                                    child: ClipRect(
+                                      child: ListView.builder(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16.0,
+                                          horizontal: 8.0,
                                         ),
+                                        itemCount: settingItems.length,
+                                        itemBuilder: (context, index) {
+                                          final item = settingItems[index];
+                                          return StdListTile(
+                                            leading: Icon(item.icon),
+                                            title: Text(item.title),
+                                            isSelected: selectedIndex == index,
+                                            onTap: () => setState(() {
+                                              selectedIndex = index;
+                                              onSelect(
+                                                settingItems[index]
+                                                    .contentWidget,
+                                              );
+                                            }),
+                                          );
+                                        },
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
-                              // 右侧内容区
-                              Expanded(
-                                child:
-                                    settingItems[_selectedIndex].contentWidget,
-                              ),
-                            ],
+                            ),
                           ),
                   ),
                 ],

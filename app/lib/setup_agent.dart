@@ -6,6 +6,7 @@ import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
+import 'package:uni_chat/main.dart';
 import 'package:uni_chat/settings_page/api_configure.dart';
 import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/theme_manager.dart';
@@ -78,7 +79,6 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
       children: [
         Positioned(
           top: 20,
-          right: 20,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -88,7 +88,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                 style: TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 10),
-              LanguageSwitcher(),
+              SizedBox(width: 300, child: LanguageSwitcher()),
             ],
           ),
         ),
@@ -135,6 +135,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
               onPressed: () {
                 OverlayPortalService.show(
                   context,
+                  animate: true,
                   child: SizedBox(
                     width: 500,
                     height: 600,
@@ -145,35 +146,46 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Text(
-                              S.of(context).setup_pre_warning,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: GptMarkdown(
-                                  S.of(context).setup_pre_warn_content,
-                                  style: TextStyle(fontSize: 16),
+                        child: FutureBuilder(
+                          future: Future.delayed(
+                            const Duration(milliseconds: 400),
+                          ),
+                          builder: (context, asyncSnapshot) {
+                            if (asyncSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return Center(child: CircularProgressIndicator());
+                            }
+                            return Column(
+                              mainAxisSize: MainAxisSize.max,
+                              children: [
+                                Text(
+                                  S.of(context).setup_pre_warning,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            StdButton(
-                              text:
-                                  "${S.of(context).got_it} (${S.of(context).long_press})",
-                              onLongPress: () {
-                                OverlayPortalService.hide(context);
-                                nextPage();
-                              },
-                            ),
-                          ],
+                                const SizedBox(height: 5),
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    child: GptMarkdown(
+                                      S.of(context).setup_pre_warn_content,
+                                      style: TextStyle(fontSize: 16),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                StdButton(
+                                  text:
+                                      "${S.of(context).got_it} (${S.of(context).long_press})",
+                                  onLongPress: () {
+                                    OverlayPortalService.hide(context);
+                                    nextPage();
+                                  },
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -190,6 +202,70 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
   bool _addPvChecked = false;
 
   Widget providerAddHint() {
+    var children = [
+      Expanded(
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  S.of(context).setup_provider_add,
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  S.of(context).setup_provider_add_hint,
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 10),
+                StdCheckbox(
+                  text: S.of(context).setup_api_prepared,
+                  value: _addPvChecked,
+                  onChanged: (value) {
+                    setState(() {
+                      _addPvChecked = !_addPvChecked;
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+                if (_addPvChecked)
+                  StdButton(
+                    text: S.of(context).next_step,
+                    onPressed: () {
+                      if (_addPvChecked) {
+                        OverlayPortalService.showDialog(
+                          context,
+                          width: 450,
+                          height: 600,
+                          child: ApiPresetSelect(
+                            onClose: () async {
+                              await OverlayPortalService.hide(context);
+                              nextPage();
+                            },
+                          ),
+                          backGroundColor: theme.zeroGradeColor,
+                        );
+                      }
+                    },
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+      Expanded(
+        child: Container(
+          clipBehavior: Clip.hardEdge,
+          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: theme.zeroGradeColor,
+          ),
+          child: Webview(url: "http://localhost:3000/"),
+        ),
+      ),
+    ];
     return Padding(
       padding: const EdgeInsets.all(10.0),
       child: Column(
@@ -206,81 +282,15 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
             ],
           ),
           Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Expanded(
-                  child: StatefulBuilder(
-                    builder: (context, setState) {
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            S.of(context).setup_provider_add,
-                            style: TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            S.of(context).setup_provider_add_hint,
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 10),
-                          StdCheckbox(
-                            text: S.of(context).setup_api_prepared,
-                            value: _addPvChecked,
-                            onChanged: (value) {
-                              setState(() {
-                                _addPvChecked = !_addPvChecked;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 10),
-                          if (_addPvChecked)
-                            StdButton(
-                              text: S.of(context).next_step,
-                              onPressed: () {
-                                if (_addPvChecked) {
-                                  OverlayPortalService.showDialog(
-                                    context,
-                                    width: 450,
-                                    height: 800,
-                                    child: ApiPresetSelect(
-                                      onClose: () async {
-                                        await OverlayPortalService.hide(
-                                          context,
-                                        );
-                                        nextPage();
-                                      },
-                                    ),
-                                    backGroundColor: theme.zeroGradeColor,
-                                  );
-                                }
-                              },
-                            ),
-                        ],
-                      );
-                    },
+            child: (PlatForm().isMobile)
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: children,
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: children,
                   ),
-                ),
-                Expanded(
-                  child: Container(
-                    clipBehavior: Clip.hardEdge,
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: theme.zeroGradeColor,
-                    ),
-                    child: Webview(url: "http://localhost:3000/"),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -316,6 +326,47 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
   }
 
   Widget addAgentHint() {
+    var children = [
+      Expanded(
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  S.of(context).setup_add_agent,
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  S.of(context).setup_add_agent_hint,
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 10),
+                StdButton(
+                  text: S.of(context).next_step,
+                  onPressed: () {
+                    nextPage();
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+      Expanded(
+        child: Container(
+          clipBehavior: Clip.hardEdge,
+          padding: const EdgeInsets.all(4),
+          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: theme.zeroGradeColor,
+          ),
+          child: Webview(url: "http://localhost:3000/"),
+        ),
+      ),
+    ];
     return Padding(
       padding: const EdgeInsets.all(10.0),
       child: Column(
@@ -328,56 +379,15 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
             icon: Icon(Icons.arrow_back_ios_sharp),
           ),
           Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Expanded(
-                  child: StatefulBuilder(
-                    builder: (context, setState) {
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            S.of(context).setup_add_agent,
-                            style: TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            S.of(context).setup_add_agent_hint,
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 10),
-                          StdButton(
-                            text: S.of(context).next_step,
-                            onPressed: () {
-                              nextPage();
-                            },
-                          ),
-                        ],
-                      );
-                    },
+            child: (PlatForm().isMobile)
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: children,
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: children,
                   ),
-                ),
-                Expanded(
-                  child: Container(
-                    clipBehavior: Clip.hardEdge,
-                    padding: const EdgeInsets.all(4),
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: theme.zeroGradeColor,
-                    ),
-                    child: Webview(url: "http://localhost:3000/"),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -462,6 +472,48 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
 */
 
   Widget personaHint() {
+    var children = [
+      Expanded(
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  S.of(context).setup_add_persona,
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  S.of(context).setup_add_persona_hint,
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 10),
+                StdButton(
+                  text: S.of(context).next_step,
+                  onPressed: () {
+                    nextPage();
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+      const SizedBox(width: 30),
+      Expanded(
+        child: Container(
+          clipBehavior: Clip.hardEdge,
+          padding: const EdgeInsets.all(4),
+          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: theme.zeroGradeColor,
+          ),
+          child: Webview(url: "http://localhost:3000/"),
+        ),
+      ),
+    ];
     return Padding(
       padding: const EdgeInsets.all(10.0),
       child: Column(
@@ -474,56 +526,15 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
             icon: Icon(Icons.arrow_back_ios_sharp),
           ),
           Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Expanded(
-                  child: StatefulBuilder(
-                    builder: (context, setState) {
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            S.of(context).setup_add_persona,
-                            style: TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            S.of(context).setup_add_persona_hint,
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 10),
-                          StdButton(
-                            text: S.of(context).next_step,
-                            onPressed: () {
-                              nextPage();
-                            },
-                          ),
-                        ],
-                      );
-                    },
+            child: (PlatForm().isMobile)
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: children,
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: children,
                   ),
-                ),
-                Container(
-                  width: 700,
-                  height: 600,
-                  clipBehavior: Clip.hardEdge,
-                  padding: const EdgeInsets.all(4),
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: theme.zeroGradeColor,
-                  ),
-                  child: Webview(url: "http://localhost:3000/"),
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -591,7 +602,6 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                   ),
 
                   const SizedBox(height: 30),
-
                   StdButton(
                     color: Colors.redAccent,
                     child: Padding(
@@ -604,9 +614,14 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                             height: 30,
                           ),
                           const SizedBox(width: 10),
-                          Text(
-                            S.of(context).star_github,
-                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          Flexible(
+                            child: Text(
+                              S.of(context).star_github,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ],
                       ),

@@ -174,7 +174,7 @@ class PagedScrollState extends State<PagedScroll> {
   ScrollPhysics _getScrollPhysics(ScrollPhysics physics) {
     return OverScrollTransferPhysics(
       onOverScroll: (v) async {
-        if (pageController.hasClients) {
+        if (pageController.positions.length == 1) {
           var p = pageController.page;
           if (p != null && !alineFlag) {
             pageController.jumpTo(pageController.offset - v);
@@ -193,18 +193,20 @@ class PagedScrollState extends State<PagedScroll> {
         }
       },
       onOverScrollEnd: () async {
-        var p = pageController.page;
-        if (p != null && !alineFlag) {
-          var delta = p - p.round();
-          if (delta.abs() > 0.1) {
-            alineFlag = true;
-            await pageController.animateToPage(
-              (delta < 0) ? p.floor() : p.ceil(),
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInSine,
-            );
-            alineFlag = false;
-            return;
+        if (pageController.positions.length == 1) {
+          var p = pageController.page;
+          if (p != null && !alineFlag) {
+            var delta = p - p.round();
+            if (delta.abs() > 0.1) {
+              alineFlag = true;
+              await pageController.animateToPage(
+                (delta < 0) ? p.floor() : p.ceil(),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInSine,
+              );
+              alineFlag = false;
+              return;
+            }
           }
         }
       },
@@ -334,6 +336,13 @@ class PagedScrollState extends State<PagedScroll> {
 
   @override
   void dispose() {
+    //pageController.dispose();
+    /*
+    A PageController was used after being disposed.
+Once you have called dispose() on a PageController, it can no longer be used.
+
+let's just hope this will not cause memory leak
+     */
     super.dispose();
   }
 

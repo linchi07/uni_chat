@@ -9,6 +9,7 @@ import 'package:flutter_swipe_action_cell/core/cell.dart';
 import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/main.dart';
+import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
@@ -306,6 +307,7 @@ class _SessionSelectorOverlayState
           child: SessionSelector(
             onClose: widget.onClose,
             width: _finalSize.width,
+            height: _finalSize.height,
           ),
         ),
       ),
@@ -318,9 +320,11 @@ class SessionSelector extends ConsumerStatefulWidget {
     super.key,
     required this.onClose,
     required this.width,
+    required this.height,
   });
   final VoidCallback onClose;
   final double width;
+  final double height;
 
   @override
   ConsumerState<SessionSelector> createState() => _SessionSelectorState();
@@ -351,12 +355,20 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
         return KeyEventResult.ignored;
       },
     );
-    if (!PlatForm().isMobile) {
+    if (!PlatForm().isMobilePlatform) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _inputBoxFocusNode.requestFocus();
         //auto  focus on menu open
       });
     }
+    spc = SplitViewController(
+      onPop: () {
+        setState(() {
+          cancelHoverTimer();
+          selectedAgentId = null;
+        });
+      },
+    );
   }
 
   @override
@@ -389,10 +401,64 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
 
   void setPreviewSession(String sid) async {
     var ps = await DatabaseService.instance.getMessageListForSession(sid);
+    _previewedSession = ps;
     if (mounted) {
-      internalSetState(() {
-        _previewedSession = ps;
-      });
+      if (widget.width >= 600) {
+        internalSetState?.call(() {});
+      } else {
+        if (_overlayCurrentShowing != _previewedSession) {
+          await OverlayPortalService.hide(context);
+        }
+        if (!mounted) {
+          return;
+        }
+        var s = MediaQuery.of(context).size;
+        OverlayPortalService.show(
+          context,
+          noBarrier: true,
+          offset: Offset((s.width - widget.width) / 2, widget.height + 15),
+          child: SizedBox(
+            width: widget.width,
+            height:
+                s.height -
+                widget.height -
+                ((PlatForm().isMobilePlatform) ? 80 : 25), //safe area
+            child: Material(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              color: theme.secondGradeColor,
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: (_previewedSession?.isEmpty ?? true)
+                    ? Center(
+                        child: Text(
+                          S.of(context).no_message,
+                          style: TextStyle(color: theme.thirdGradeColor),
+                        ),
+                      )
+                    : SelectionArea(
+                        child: ListView.builder(
+                          reverse: true,
+                          itemCount: _previewedSession?.length,
+                          itemBuilder: (context, index) {
+                            final message = _previewedSession![index];
+                            return PersistChatMessage(
+                              key: ValueKey(message.id),
+                              message: message,
+                              theme: theme,
+                              index: index,
+                            );
+                          },
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        );
+        _overlayCurrentShowing = _previewedSession;
+      }
     }
   }
 
@@ -486,12 +552,125 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
     return (agents, avatars);
   }
 
-  dynamic internalSetState;
+  Widget buildAgentSession() {
+    return Material(
+      color: theme.secondGradeColor,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: (selectedAgentId == null)
+            ? Center(
+                child: Text(
+                  S.of(context).no_history,
+                  style: TextStyle(color: theme.thirdGradeColor),
+                ),
+              )
+            : FutureBuilder(
+                future: () async {
+                  // wait after the anim is done
+                  await Future.delayed(const Duration(milliseconds: 50));
+                  if (selectedAgentId != null) {
+                    return DatabaseService.instance.getAllSessionsByAgent(
+                      selectedAgentId!,
+                    );
+                  }
+                }.call(),
+                builder: (context, asyncSnapshot) {
+                  if (asyncSnapshot.data == null) {
+                    return const SizedBox();
+                  }
+                  if (asyncSnapshot.data!.isEmpty) {
+                    return Center(
+                      child: Text(
+                        S.of(context).no_history,
+                        style: TextStyle(color: theme.thirdGradeColor),
+                      ),
+                    );
+                  }
+                  for (int i = 0; i < asyncSnapshot.data!.length; i++) {
+                    //这里必须手动循环，因为listview有懒加载机制
+                    if (asyncSnapshot.data![i].id == session?.id &&
+                        !isSessionScrollInited) {
+                      _sessionScrollController = ScrollController(
+                        initialScrollOffset: (64 * i.toDouble() - 128.0).clamp(
+                          0,
+                          double.maxFinite,
+                        ),
+                      );
+                      // 监听滚动状态变化
+                      _sessionScrollController.addListener(() {
+                        if (_sessionScrollController
+                            .position
+                            .isScrollingNotifier
+                            .value) {
+                          lastScrollOffset = _sessionScrollController.offset;
+                        }
+                      });
+                      isSessionScrollInited = true;
+                    }
+                  }
+                  if (!isSessionScrollInited) {
+                    _sessionScrollController = ScrollController();
+                    _sessionScrollController.addListener(() {
+                      if (_sessionScrollController
+                          .position
+                          .isScrollingNotifier
+                          .value) {
+                        lastScrollOffset = _sessionScrollController.offset;
+                      }
+                    });
+                    isSessionScrollInited = true;
+                  }
+                  return ListView.builder(
+                    primary: false,
+                    controller: _sessionScrollController,
+                    itemCount: asyncSnapshot.data!.length,
+                    padding: EdgeInsets.zero,
+                    prototypeItem: _SessionTile(
+                      onClose: widget.onClose,
+                      setPreview: setPreviewSession,
+                      session: ChatSession(
+                        id: "",
+                        agentId: "",
+                        name: "112414",
+                        lastMessageTime: DateTime.fromMicrosecondsSinceEpoch(0),
+                        creationTime: DateTime.fromMicrosecondsSinceEpoch(0),
+                      ),
+                      theme: theme,
+                      startHoverTimer: startHoverTimer,
+                      cancelHoverTimer: cancelHoverTimer,
+                      switchSession: switchSession,
+                      isSelected: false,
+                    ),
+                    itemBuilder: (context, index) {
+                      return _SessionTile(
+                        onClose: widget.onClose,
+                        setPreview: setPreviewSession,
+                        session: asyncSnapshot.data![index],
+                        theme: theme,
+                        startHoverTimer: startHoverTimer,
+                        cancelHoverTimer: cancelHoverTimer,
+                        switchSession: switchSession,
+                        isSelected:
+                            asyncSnapshot.data![index].id == session?.id,
+                      );
+                    },
+                  );
+                },
+              ),
+      ),
+    );
+  }
 
+  late SplitViewController spc;
+
+  ChatSession? session;
+  void Function(void Function())? internalSetState;
+  List<ChatMessage>? _overlayCurrentShowing;
   @override
   Widget build(BuildContext context) {
-    final session = ref.watch(chatStateProvider).session;
+    session = ref.watch(chatStateProvider).session;
     theme = ref.watch(themeProvider);
+    spc.defaultRight = buildAgentSession();
     return Column(
       children: [
         Padding(
@@ -506,261 +685,198 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
             child: Row(
               children: [
                 Expanded(
-                  flex: (widget.width >= 600) ? 4 : 3,
-                  //此处是为了防止list tile的背景色溢出
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: FutureBuilder(
-                      future: getAgentAndAvatars(),
-                      builder: (context, asyncSnapshot) {
-                        if (asyncSnapshot.data == null) {
-                          return const SizedBox();
-                        }
-                        if (asyncSnapshot.data!.$1.isEmpty) {
-                          return Center(
-                            child: Text(
-                              S.of(context).no_agent,
-                              style: TextStyle(color: theme.thirdGradeColor),
-                            ),
-                          );
-                        }
-                        return ListView.builder(
-                          controller: _agentScrollController,
-                          itemCount: asyncSnapshot.data!.$1.length,
-                          itemBuilder: (context, index) {
-                            var isSelected =
-                                asyncSnapshot.data!.$1[index].id ==
-                                selectedAgentId;
-                            return StdListTile(
-                              title: Text(asyncSnapshot.data!.$1[index].name),
-                              leading: StdAvatar(
-                                file: asyncSnapshot.data!.$2[index],
-                                length: 30,
-                                backgroundColor: isSelected
-                                    ? theme.zeroGradeColor
-                                    : null,
-                              ),
-                              isSelected: isSelected,
-                              onTap: () {
-                                if (asyncSnapshot.data!.$1[index].id !=
-                                    selectedAgentId) {
-                                  setState(() {
-                                    selectedAgentId =
-                                        asyncSnapshot.data!.$1[index].id;
-                                  });
-                                }
-                              },
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: (widget.width >= 600) ? 15 : 7,
-                  child: StatefulBuilder(
-                    builder: (context, setState) {
-                      internalSetState = setState;
-                      return Row(
-                        children: [
-                          Expanded(
-                            flex: 7,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: (selectedAgentId == null)
-                                  ? Center(
-                                      child: Text(
-                                        S.of(context).no_history,
-                                        style: TextStyle(
-                                          color: theme.thirdGradeColor,
-                                        ),
-                                      ),
-                                    )
-                                  : FutureBuilder(
-                                      future: () async {
-                                        // wait after the anim is done
-                                        await Future.delayed(
-                                          const Duration(milliseconds: 50),
-                                        );
-                                        return DatabaseService.instance
-                                            .getAllSessionsByAgent(
-                                              selectedAgentId!,
-                                            );
-                                      }.call(),
-                                      builder: (context, asyncSnapshot) {
-                                        if (asyncSnapshot.data == null) {
-                                          return const SizedBox();
-                                        }
-                                        if (asyncSnapshot.data!.isEmpty) {
-                                          return Center(
-                                            child: Text(
-                                              S.of(context).no_history,
-                                              style: TextStyle(
-                                                color: theme.thirdGradeColor,
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                        for (
-                                          int i = 0;
-                                          i < asyncSnapshot.data!.length;
-                                          i++
-                                        ) {
-                                          //这里必须手动循环，因为listview有懒加载机制
-                                          if (asyncSnapshot.data![i].id ==
-                                                  session?.id &&
-                                              !isSessionScrollInited) {
-                                            _sessionScrollController =
-                                                ScrollController(
-                                                  initialScrollOffset:
-                                                      (64 * i.toDouble() -
-                                                              128.0)
-                                                          .clamp(
-                                                            0,
-                                                            double.maxFinite,
-                                                          ),
-                                                );
-                                            // 监听滚动状态变化
-                                            _sessionScrollController
-                                                .addListener(() {
-                                                  if (_sessionScrollController
-                                                      .position
-                                                      .isScrollingNotifier
-                                                      .value) {
-                                                    lastScrollOffset =
-                                                        _sessionScrollController
-                                                            .offset;
-                                                  }
-                                                });
-                                            isSessionScrollInited = true;
-                                          }
-                                        }
-                                        if (!isSessionScrollInited) {
-                                          _sessionScrollController =
-                                              ScrollController();
-                                          _sessionScrollController.addListener(
-                                            () {
-                                              if (_sessionScrollController
-                                                  .position
-                                                  .isScrollingNotifier
-                                                  .value) {
-                                                lastScrollOffset =
-                                                    _sessionScrollController
-                                                        .offset;
-                                              }
-                                            },
-                                          );
-                                          isSessionScrollInited = true;
-                                        }
-                                        return ListView.builder(
-                                          controller: _sessionScrollController,
-                                          itemCount: asyncSnapshot.data!.length,
-                                          prototypeItem: _SessionTile(
-                                            onClose: widget.onClose,
-                                            setPreview: setPreviewSession,
-                                            session: ChatSession(
-                                              id: "",
-                                              agentId: "",
-                                              name: "112414",
-                                              lastMessageTime:
-                                                  DateTime.fromMicrosecondsSinceEpoch(
-                                                    0,
-                                                  ),
-                                              creationTime:
-                                                  DateTime.fromMicrosecondsSinceEpoch(
-                                                    0,
-                                                  ),
-                                            ),
-                                            theme: theme,
-                                            startHoverTimer: startHoverTimer,
-                                            cancelHoverTimer: cancelHoverTimer,
-                                            switchSession: switchSession,
-                                            isSelected: false,
+                  flex: 11,
+                  child: FutureBuilder(
+                    future: getAgentAndAvatars(),
+                    builder: (context, asyncSnapshot) {
+                      if (asyncSnapshot.data == null) {
+                        return const SizedBox();
+                      }
+                      var idx = asyncSnapshot.data!.$1.indexWhere(
+                        (e) => e.id == selectedAgentId,
+                      );
+                      return SplitView(
+                        onLayout: (_, s, f) {
+                          if (f && s == SplitViewStatus.collapsedWithLeft) {
+                            spc.push(
+                              buildAgentSession(),
+                              topBar: AppBar(
+                                primary: false,
+                                backgroundColor: theme.secondGradeColor,
+                                title: (idx == -1)
+                                    ? null
+                                    : Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          StdAvatar(
+                                            file: asyncSnapshot.data!.$2[idx],
+                                            length: 25,
                                           ),
-                                          itemBuilder: (context, index) {
-                                            return _SessionTile(
-                                              onClose: widget.onClose,
-                                              setPreview: setPreviewSession,
-                                              session:
-                                                  asyncSnapshot.data![index],
-                                              theme: theme,
-                                              startHoverTimer: startHoverTimer,
-                                              cancelHoverTimer:
-                                                  cancelHoverTimer,
-                                              switchSession: switchSession,
-                                              isSelected:
-                                                  asyncSnapshot
-                                                      .data![index]
-                                                      .id ==
-                                                  session?.id,
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                            ),
-                          ),
-                          if (widget.width >= 600)
-                            Expanded(
-                              flex: 8,
-                              child: _previewedSession == null
-                                  ? Center(
-                                      child: Text(
-                                        (PlatForm().isMobile)
-                                            ? S
-                                                  .of(context)
-                                                  .swipe_right_to_see_session
-                                            : S
-                                                  .of(context)
-                                                  .hover_to_see_session,
-                                        style: TextStyle(
-                                          color: theme.thirdGradeColor,
-                                        ),
-                                      ),
-                                    )
-                                  : Container(
-                                      margin: EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: theme.zeroGradeColor,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      // ignore: prefer_is_empty
-                                      child: (_previewedSession?.length == 0)
-                                          ? Center(
-                                              child: Text(
-                                                S.of(context).no_message,
-                                                style: TextStyle(
-                                                  color: theme.thirdGradeColor,
-                                                ),
-                                              ),
-                                            )
-                                          : SelectionArea(
-                                              selectionControls:
-                                                  MaterialTextSelectionControls(),
-                                              child: ListView.builder(
-                                                reverse: true,
-                                                itemCount:
-                                                    _previewedSession?.length,
-                                                itemBuilder: (context, index) {
-                                                  final message =
-                                                      _previewedSession![index];
-                                                  return PersistChatMessage(
-                                                    key: ValueKey(message.id),
-                                                    message: message,
-                                                    theme: theme,
-                                                    index: index,
-                                                  );
-                                                },
-                                              ),
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            asyncSnapshot.data!.$1[idx].name,
+                                            style: TextStyle(
+                                              color: theme.textColor,
+                                              fontSize: 16,
                                             ),
+                                          ),
+                                        ],
+                                      ),
+                                leading: StdIconButton(
+                                  icon: Icons.arrow_back_ios_sharp,
+                                  onPressed: () {
+                                    spc.pop();
+                                  },
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        minExpandedWidth: 400,
+                        controller: spc,
+                        leftPercent: 0.36,
+                        left: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Builder(
+                            builder: (context) {
+                              if (asyncSnapshot.data!.$1.isEmpty) {
+                                return Center(
+                                  child: Text(
+                                    S.of(context).no_agent,
+                                    style: TextStyle(
+                                      color: theme.thirdGradeColor,
                                     ),
-                            ),
-                        ],
+                                  ),
+                                );
+                              }
+                              return ListView.builder(
+                                padding: EdgeInsets.zero,
+                                primary: false,
+                                controller: _agentScrollController,
+                                itemCount: asyncSnapshot.data!.$1.length,
+                                itemBuilder: (context, index) {
+                                  var isSelected = index == idx;
+                                  return StdListTile(
+                                    title: Text(
+                                      asyncSnapshot.data!.$1[index].name,
+                                    ),
+                                    leading: StdAvatar(
+                                      file: asyncSnapshot.data!.$2[index],
+                                      length: 30,
+                                      backgroundColor: isSelected
+                                          ? theme.zeroGradeColor
+                                          : null,
+                                    ),
+                                    isSelected: isSelected,
+                                    onTap: () {
+                                      setState(() {
+                                        selectedAgentId =
+                                            asyncSnapshot.data!.$1[index].id;
+                                        spc.push(
+                                          buildAgentSession(),
+                                          topBar: AppBar(
+                                            primary: false,
+                                            backgroundColor:
+                                                theme.secondGradeColor,
+                                            leading: StdIconButton(
+                                              icon: Icons.arrow_back_ios_sharp,
+                                              onPressed: () {
+                                                spc.pop();
+                                              },
+                                            ),
+                                            title: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                StdAvatar(
+                                                  file: asyncSnapshot
+                                                      .data!
+                                                      .$2[index],
+                                                  length: 25,
+                                                ),
+                                                const SizedBox(width: 5),
+                                                Text(
+                                                  asyncSnapshot
+                                                      .data!
+                                                      .$1[index]
+                                                      .name,
+                                                  style: TextStyle(
+                                                    color: theme.textColor,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      });
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
                       );
                     },
                   ),
                 ),
+                if (widget.width >= 600)
+                  Expanded(
+                    flex: 8,
+                    child: StatefulBuilder(
+                      builder: (context, setState) {
+                        internalSetState = setState;
+                        return _previewedSession == null
+                            ? Center(
+                                child: Text(
+                                  (PlatForm().isMobilePlatform)
+                                      ? S.of(context).swipe_right_to_see_session
+                                      : S.of(context).hover_to_see_session,
+                                  style: TextStyle(
+                                    color: theme.thirdGradeColor,
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                margin: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: theme.zeroGradeColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                // ignore: prefer_is_empty
+                                child: (_previewedSession?.length == 0)
+                                    ? Center(
+                                        child: Text(
+                                          S.of(context).no_message,
+                                          style: TextStyle(
+                                            color: theme.thirdGradeColor,
+                                          ),
+                                        ),
+                                      )
+                                    : SelectionArea(
+                                        child: ListView.builder(
+                                          reverse: true,
+                                          itemCount: _previewedSession?.length,
+                                          itemBuilder: (context, index) {
+                                            final message =
+                                                _previewedSession![index];
+                                            return PersistChatMessage(
+                                              key: ValueKey(message.id),
+                                              message: message,
+                                              theme: theme,
+                                              index: index,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                              );
+                      },
+                    ),
+                  ),
               ],
             ),
           ),
@@ -802,7 +918,7 @@ class _SessionTileState extends State<_SessionTile> {
   @override
   void initState() {
     super.initState();
-    if (PlatForm().isMobile) {
+    if (PlatForm().isMobilePlatform) {
       displayOptions = true;
     }
   }
@@ -866,7 +982,7 @@ class _SessionTileState extends State<_SessionTile> {
       selected: widget.isSelected,
     );
 
-    if (PlatForm().isMobile) {
+    if (PlatForm().isMobilePlatform) {
       return SwipeActionCell(
         backgroundColor: Colors.transparent,
         key: ValueKey(widget.session.id),
@@ -964,8 +1080,8 @@ class _SessionTileState extends State<_SessionTile> {
             ),
             ListTile(
               dense: true,
-              iconColor: Colors.red,
-              textColor: Colors.red,
+              iconColor: theme.errorColor,
+              textColor: theme.errorColor,
               leading: Icon(Icons.delete),
               title: Text(S.of(context).delete),
               onTap: () {

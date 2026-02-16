@@ -87,10 +87,12 @@ class PlatForm {
   bool get enableHaptic =>
       platform == RunningPlatform.ios || platform == RunningPlatform.macos;
   RunningPlatform platform = RunningPlatform.web;
-  bool get isMobile =>
+  bool get isMobilePlatform =>
       platform == RunningPlatform.android ||
       platform == RunningPlatform.ios ||
       platform == RunningPlatform.ipadOS;
+  bool get isMobile =>
+      platform == RunningPlatform.ios || platform == RunningPlatform.android;
   String platformInfo = '';
   String location = '';
   factory PlatForm() => _instance;
@@ -122,24 +124,30 @@ class _UNIChatState extends State<UNIChat> {
     super.initState();
     isSetUp = widget.isSetUp;
   }
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     Widget mainContent = MainCont(key: masterNavigatorKey);
-    List<Override>? ovr;
+    List<Override> ovr;
+    late ThemeConfig theme;
     if (widget.themeName != null) {
-      var theme = ThemeManager.themes.firstWhere(
-        (element) => element.name == widget.themeName,
-        orElse: () => (name: 'light', theme: ThemeManager.light),
-      );
-      ovr = [
-        themeProvider.overrideWith((ref) {
-          return ThemeManager(theme.theme);
-        }),
-      ];
+      theme = ThemeManager.themes
+          .firstWhere(
+            (element) => element.name == widget.themeName,
+            orElse: () => (name: 'light', theme: ThemeManager.light),
+          )
+          .theme;
+    } else {
+      theme = ThemeManager.light;
     }
+    ovr = [
+      themeProvider.overrideWith((ref) {
+        return ThemeManager(theme);
+      }),
+    ];
     return ProviderScope(
-      overrides: ovr ?? [],
+      overrides: ovr,
       child: MaterialApp(
         localizationsDelegates: [
           S.delegate,
@@ -156,7 +164,7 @@ class _UNIChatState extends State<UNIChat> {
             ? const ScrollBehavior().copyWith(physics: const IOSScrollPhysics())
             : null,
         theme: ThemeData(
-          fontFamilyFallback: (PlatForm().isWindows)?["DengXian"]:null,
+          fontFamilyFallback: (PlatForm().isWindows) ? ["DengXian"] : null,
           // fix the font glitches in windows when displaying SC
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
@@ -175,10 +183,13 @@ class _UNIChatState extends State<UNIChat> {
                 if (PlatForm().platform == RunningPlatform.macos) {
                   mainContent = MacOSMenuBar(mainContent: mainContent);
                 }
-                if (PlatForm().isMobile) {
+                if (PlatForm().isMobilePlatform) {
                   mainContent = Scaffold(
-                    backgroundColor: Colors.white,
-                    body: SafeArea(bottom: false, child: mainContent),
+                    backgroundColor: theme.zeroGradeColor,
+                    body: SafeArea(
+                      bottom: PlatForm().platform != RunningPlatform.ipadOS,
+                      child: mainContent,
+                    ),
                   );
                 }
                 if (!widget.isSetUp) {
@@ -186,13 +197,16 @@ class _UNIChatState extends State<UNIChat> {
                     OverlayWrapper.showOverlay(
                       context,
                       overlayContent: Padding(
-                        padding: const EdgeInsets.all(50.0),
+                        padding: (PlatForm().isMobile)
+                            ? const EdgeInsets.all(10.0)
+                            : const EdgeInsets.all(50.0),
                         child: SetupAgent(),
                       ),
                       barrierDismissible: false,
                     );
                   });
-                  isSetUp = true; // or the setup menu will re-popout when you resize the window
+                  isSetUp =
+                      true; // or the setup menu will re-popout when you resize the window
                 }
                 if (PlatForm().isWindows) {
                   // windows will force the window to get too small when showing desktop even when window size is set
@@ -203,7 +217,10 @@ class _UNIChatState extends State<UNIChat> {
                     return const SizedBox.shrink();
                   }
                 }
-                return mainContent;
+                return AppBarTheme(
+                  scrolledUnderElevation: 0,
+                  child: mainContent,
+                );
               },
             ),
           ),
@@ -378,44 +395,31 @@ class MainContState extends ConsumerState<MainCont> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
-    return Scaffold(
-      backgroundColor: theme.zeroGradeColor,
-      body: Column(
-        children: [
-          MainBanner(bannerWidget: _bannerWidget()),
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  decoration: BoxDecoration(color: theme.zeroGradeColor),
-                  child: Column(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          if (page == Pages.chat) {
-                            return;
-                          }
-                          setState(() {
-                            page = Pages.chat;
-                          });
-                        },
-                        icon: Icon(Icons.chat_bubble_outline),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          if (page == Pages.agent) {
-                            return;
-                          }
-                          setState(() {
-                            page = Pages.agent;
-                          });
-                        },
-                        icon: Icon(Icons.groups_outlined),
-                      ),
+  List<Widget> _buildMenuItems() {
+    return [
+      IconButton(
+        onPressed: () {
+          if (page == Pages.chat) {
+            return;
+          }
+          setState(() {
+            page = Pages.chat;
+          });
+        },
+        icon: Icon(Icons.chat_bubble_outline),
+      ),
+      IconButton(
+        onPressed: () {
+          if (page == Pages.agent) {
+            return;
+          }
+          setState(() {
+            page = Pages.agent;
+          });
+        },
+        icon: Icon(Icons.groups_outlined),
+      ),
+      /*
                       IconButton(
                         onPressed: () {
                           if (page == Pages.Rag) {
@@ -431,25 +435,83 @@ class MainContState extends ConsumerState<MainCont> {
                         onPressed: () {},
                         icon: Icon(Icons.mode_edit_outline_outlined),
                       ),
-                      Expanded(child: SizedBox()),
-                      PersonaIndicator(),
-                      IconButton(
-                        onPressed: () {
-                          OverlayWrapper.showOverlay(
-                            context,
-                            overlayContent: SettingsMenu(key: settingsMenuKey),
-                          );
-                        },
-                        icon: Icon(Icons.settings_outlined),
-                      ),
-                      // to avoid the menu button being cut off
-                      if (PlatForm().platform == RunningPlatform.ipadOS)
-                        const SizedBox(height: 10),
-                    ],
-                  ),
+                       */
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var s = MediaQuery.of(context).size;
+    var theme = ref.watch(themeProvider);
+    var bnw = _bannerWidget();
+    return Scaffold(
+      backgroundColor: theme.zeroGradeColor,
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      floatingActionButton: (s.width >= 500 || page != Pages.chat)
+          ? null
+          : Container(
+              height: 48,
+              width: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: theme.zeroGradeColor,
+              ),
+              child: PersonaIndicator(isFloatingAction: true),
+            ),
+      bottomNavigationBar: (s.width >= 500)
+          ? null
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ..._buildMenuItems(),
+                IconButton(
+                  onPressed: () {
+                    OverlayWrapper.showOverlay(
+                      context,
+                      overlayContent: SettingsMenu(key: settingsMenuKey),
+                    );
+                  },
+                  icon: Icon(Icons.settings_outlined),
                 ),
+              ],
+            ),
+      body: Column(
+        children: [
+          if (!(PlatForm().isMobile && bnw == null))
+            MainBanner(bannerWidget: bnw),
+          Expanded(
+            child: Row(
+              children: [
+                if (s.width >= 500)
+                  Container(
+                    width: 50,
+                    decoration: BoxDecoration(color: theme.zeroGradeColor),
+                    child: Column(
+                      children: [
+                        ..._buildMenuItems(),
+                        const Spacer(),
+                        PersonaIndicator(),
+                        IconButton(
+                          onPressed: () {
+                            OverlayWrapper.showOverlay(
+                              context,
+                              overlayContent: SettingsMenu(
+                                key: settingsMenuKey,
+                              ),
+                            );
+                          },
+                          icon: Icon(Icons.settings_outlined),
+                        ),
+                        // to avoid the menu button being cut off
+                        if (PlatForm().platform == RunningPlatform.ipadOS)
+                          const SizedBox(height: 10),
+                      ],
+                    ),
+                  ),
+                if (s.width < 500) const SizedBox(width: 4),
                 Expanded(
                   child: Container(
+                    key: ValueKey("mainContentWidget"),
                     margin: EdgeInsets.only(right: 4, bottom: 4),
                     clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(

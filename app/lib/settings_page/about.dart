@@ -9,118 +9,58 @@ class UNIChatAbout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 60, bottom: 20),
-          width: 200,
-          height: 200,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(26),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withAlpha(80),
-                spreadRadius: 3,
-                blurRadius: 4,
-                offset: Offset(0, 2), // changes position of shadow
-              ),
-            ],
-          ),
-          child: Image.asset("resources/uni_chat_no_bg.png"),
-        ),
-        const SizedBox(height: 5),
-        Text(
-          S.of(context).title,
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 5),
-        Text(
-          S.of(context).slogan,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          "V 0.1.0 Beta\n (Still under development 仍在开发中)",
-          style: TextStyle(fontSize: 16),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          width: 300,
-          height: 46,
-          child: StdButton(
-            color: Colors.green[200],
-            onPressed: () {},
-            child: Center(
-              child: Row(
-                children: [
-                  Icon(Icons.help_outline, color: Colors.white),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "Help & How To guides",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 5),
-        SizedBox(
-          width: 300,
-          child: StdButton(
-            onPressed: () {
-              launchUrl(
-                Uri(
-                  scheme: "https",
-                  host: "github.com",
-                  path: "linchi07/uni_chat",
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 60, bottom: 20),
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withAlpha(80),
+                  spreadRadius: 3,
+                  blurRadius: 4,
+                  offset: Offset(0, 2), // changes position of shadow
                 ),
-              );
-            },
-            child: Center(
-              child: Row(
-                children: [
-                  Image.asset("resources/github-mark-white.png", height: 30),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "Github: UNIChat",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
+            child: Image.asset("resources/uni_chat_no_bg.png"),
           ),
-        ),
-        const SizedBox(height: 5),
-        SizedBox(
-          width: 300,
-          height: 46,
-          child: StdButton(
-            color: Colors.blueAccent,
-            child: Center(
-              child: Row(
-                children: [
-                  Icon(Icons.email_outlined, color: Colors.white),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: SelectionArea(
+          const SizedBox(height: 5),
+          Text(
+            S.of(context).title,
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            S.of(context).slogan,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "V 0.1.0 Beta\n (Still under development 仍在开发中)",
+            style: TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: 300,
+            height: 46,
+            child: StdButton(
+              color: Colors.green[200],
+              onPressed: () {},
+              child: Center(
+                child: Row(
+                  children: [
+                    Icon(Icons.help_outline, color: Colors.white),
+                    const SizedBox(width: 10),
+                    Expanded(
                       child: Text(
-                        "Email: linchi@wejoinnwk.com",
-                        textAlign: TextAlign.center,
+                        "Help & How To guides",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -128,19 +68,81 @@ class UNIChatAbout extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          "Copyright © 2025 LinChi all rights reserved.",
-          style: TextStyle(fontSize: 16),
-        ),
-        const SizedBox(height: 10),
-      ],
+          const SizedBox(height: 5),
+          SizedBox(
+            width: 300,
+            child: StdButton(
+              onPressed: () {
+                launchUrl(
+                  Uri(
+                    scheme: "https",
+                    host: "github.com",
+                    path: "linchi07/uni_chat",
+                  ),
+                );
+              },
+              child: Center(
+                child: Row(
+                  children: [
+                    Image.asset("resources/github-mark-white.png", height: 30),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "Github: UNIChat",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          SizedBox(
+            width: 300,
+            height: 46,
+            child: StdButton(
+              color: Colors.blueAccent,
+              child: Center(
+                child: Row(
+                  children: [
+                    Icon(Icons.email_outlined, color: Colors.white),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: SelectionArea(
+                        child: Text(
+                          "Email: linchi@wejoinnwk.com",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "Copyright © 2025 LinChi all rights reserved.",
+            style: TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
     );
   }
 }

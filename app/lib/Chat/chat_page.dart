@@ -1,12 +1,11 @@
 import 'dart:io';
 import 'dart:math';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Agent/agent_set_page.dart';
@@ -14,6 +13,7 @@ import 'package:uni_chat/Chat/chat_sidebar.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
 import 'package:uni_chat/error_handling.dart';
+import 'package:uni_chat/main.dart' as m;
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/file_utils.dart';
@@ -28,7 +28,6 @@ import '../utils/overlays.dart';
 import 'chat_message_bubble.dart';
 import 'chat_models.dart';
 import 'chat_state.dart';
-import 'package:uni_chat/main.dart' as m;
 
 class _AgentDropDown extends ConsumerStatefulWidget {
   const _AgentDropDown({super.key});
@@ -497,16 +496,21 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
           children: [
             Text(
               S.of(context).front_page_titleSlogan,
+              textAlign: TextAlign.center,
               style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               S.of(context).choose_agent_and_chat_hint,
+              textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16, color: theme.thirdGradeColor),
             ),
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              runAlignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              runSpacing: 10,
               children: [
                 Text(
                   S.of(context).front_page_hintLine_char1,
@@ -587,7 +591,8 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
   }
 
   void jumpToBottom() {
-    if (scrollController.offset < scrollController.position.maxScrollExtent) {
+    if (scrollController.offset < scrollController.position.maxScrollExtent &&
+        scrollController.hasClients) {
       scrollController.position.moveTo(
         (scrollController.position.maxScrollExtent),
       );
@@ -1116,7 +1121,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                     current + delta - boxSize.height + 40 + 6 + 10,
                     _inputScrollController.position.maxScrollExtent,
                   ) +
-                  (m.PlatForm().isWindows ? 20 : 0),
+                  25,
             ); //6 is a magic number……
           }
           return KeyEventResult.handled;
@@ -1129,7 +1134,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   Widget _buildChatPanel(bool isSendButtonLoading) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (chatState.error != null)
           Container(
@@ -1175,7 +1180,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 2),
           child: TextField(
-            autofocus: true,
+            onTapOutside: (event) {
+              _focusNode.unfocus();
+            },
+            autofocus: !m.PlatForm().isMobilePlatform,
             focusNode: _focusNode,
             onTap: () {
               if (!chatState.isReady) {
@@ -1204,151 +1212,160 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           ),
         ),
         const SizedBox(height: 6),
-        Row(
-          children: [
-            SizedBox(
-              height: 35,
-              width: 35,
-              child: StdButtonOutlined(
-                onPressed: _pickFile,
-                child: const Icon(Icons.attach_file),
+        SizedBox(
+          height: 35,
+          child: Stack(
+            children: [
+              Positioned(
+                left: 0,
+                child: SizedBox(
+                  height: 35,
+                  width: 35,
+                  child: StdButtonOutlined(
+                    onPressed: _pickFile,
+                    child: const Icon(Icons.attach_file),
+                  ),
+                ),
               ),
-            ),
-            /*
-            const SizedBox(width: 6),
-            SizedBox(
-              height: 35,
-              width: 35,
-              child: Builder(
-                builder: (context) {
-                  return StdButtonOutlined(
-                    onPressed: () {
-                      var rb = context.findRenderObject() as RenderBox;
-                      OverlayPortalService.show(
-                        context,
-                        offset: rb
-                            .localToGlobal(Offset.zero)
-                            .translate(-52.5, -210),
-                        barrierVisible: false,
-                        child: SizedBox(
-                          width: 150,
-                          height: 200,
-                          child: Material(
-                            color: theme.zeroGradeColor,
-                            borderRadius: BorderRadius.circular(8),
-                            elevation: 2,
-                          ),
-                        ),
-                      );
-                    },
-                    color: theme.warningColor,
-                    child: const Icon(Icons.lightbulb_outline),
-                  );
-                },
-              ),
-            ),
-
-             */
-            const SizedBox(width: 6),
-            const Spacer(),
-            if (agent != null)
-              ModelSelect.buildPreview(
-                context,
-                26,
-                EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-                agent!.client.provider,
-                agent!.client.model,
-                () {
-                  OverlayPortalService.showDialog(
-                    context,
-                    height: 500,
-                    width: 450,
-                    child: ModelSelect(
-                      theme: theme,
-                      onSelect: (p, m) async {
-                        agent?.client = await ApiClient.fromProviderAndModel(
-                          p,
-                          m,
+              /*
+                  const SizedBox(width: 6),
+                  SizedBox(
+                    height: 35,
+                    width: 35,
+                    child: Builder(
+                      builder: (context) {
+                        return StdButtonOutlined(
+                          onPressed: () {
+                            var rb = context.findRenderObject() as RenderBox;
+                            OverlayPortalService.show(
+                              context,
+                              offset: rb
+                                  .localToGlobal(Offset.zero)
+                                  .translate(-52.5, -210),
+                              barrierVisible: false,
+                              child: SizedBox(
+                                width: 150,
+                                height: 200,
+                                child: Material(
+                                  color: theme.zeroGradeColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                  elevation: 2,
+                                ),
+                              ),
+                            );
+                          },
+                          color: theme.warningColor,
+                          child: const Icon(Icons.lightbulb_outline),
                         );
-                        ref.read(agentProvider.notifier).state = agent
-                            ?.copyWith();
-                        await OverlayPortalService.hide(context);
                       },
                     ),
-                    backGroundColor: theme.zeroGradeColor,
-                  );
-                },
-                theme,
-              ),
-            const SizedBox(width: 4),
-            if (widget.cancelCallback != null)
-              Container(
-                height: 35,
-                width: 35,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                child: Material(
-                  clipBehavior: Clip.hardEdge,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
                   ),
-                  color: theme.thirdGradeColor,
-                  child: InkWell(
-                    splashColor: Colors.grey,
-                    onTap: widget.cancelCallback,
-                    child: Icon(
-                      Icons.close,
-                      color: theme.primaryColor,
-                      size: 20,
+                   */
+              if (agent != null)
+                Positioned(
+                  left: 42,
+                  right: (widget.cancelCallback != null) ? 84 : 42,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: ModelSelect.buildPreview(
+                      context,
+                      26,
+                      EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                      agent!.client.provider,
+                      agent!.client.model,
+                      () {
+                        OverlayPortalService.showDialog(
+                          context,
+                          height: 500,
+                          width: 450,
+                          child: ModelSelect(
+                            theme: theme,
+                            onSelect: (p, m) async {
+                              agent?.client =
+                                  await ApiClient.fromProviderAndModel(p, m);
+                              ref.read(agentProvider.notifier).state = agent
+                                  ?.copyWith();
+                              await OverlayPortalService.hide(context);
+                            },
+                          ),
+                          backGroundColor: theme.zeroGradeColor,
+                        );
+                      },
+                      theme,
+                    ),
+                  ),
+                ),
+              if (widget.cancelCallback != null)
+                Positioned(
+                  right: 42,
+                  child: SizedBox(
+                    height: 35,
+                    width: 35,
+                    child: Material(
+                      clipBehavior: Clip.hardEdge,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      color: theme.thirdGradeColor,
+                      child: InkWell(
+                        splashColor: Colors.grey,
+                        onTap: widget.cancelCallback,
+                        child: Icon(
+                          Icons.close,
+                          color: theme.primaryColor,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                right: 0,
+                child: SizedBox(
+                  height: 35,
+                  width: 35,
+                  child: Material(
+                    clipBehavior: Clip.hardEdge,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    color: (isSendButtonLoading || !chatState.isReady)
+                        ? Colors.grey[600]
+                        : theme.primaryColor,
+                    child: InkWell(
+                      splashColor: Colors.grey,
+                      onTap: (isSendButtonLoading || !chatState.isReady)
+                          ? null
+                          : _sendMessage,
+                      child: isSendButtonLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Padding(
+                                padding: EdgeInsets.all(7.0),
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 3,
+                                ),
+                              ),
+                            )
+                          : (chatState.isReady)
+                          ? const Icon(
+                              Icons.arrow_forward_sharp,
+                              color: Colors.white,
+                              size: 20,
+                            )
+                          : const Icon(
+                              Icons.do_not_disturb_alt_sharp,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                     ),
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: SizedBox(
-                height: 35,
-                width: 35,
-                child: Material(
-                  clipBehavior: Clip.hardEdge,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  color: (isSendButtonLoading || !chatState.isReady)
-                      ? Colors.grey[600]
-                      : theme.primaryColor,
-                  child: InkWell(
-                    splashColor: Colors.grey,
-                    onTap: (isSendButtonLoading || !chatState.isReady)
-                        ? null
-                        : _sendMessage,
-                    child: isSendButtonLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: Padding(
-                              padding: EdgeInsets.all(7.0),
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 3,
-                              ),
-                            ),
-                          )
-                        : (chatState.isReady)
-                        ? const Icon(
-                            Icons.arrow_forward_sharp,
-                            color: Colors.white,
-                            size: 20,
-                          )
-                        : const Icon(
-                            Icons.do_not_disturb_alt_sharp,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

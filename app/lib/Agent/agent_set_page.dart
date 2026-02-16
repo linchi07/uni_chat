@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
-import 'package:uni_chat/main.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/document_display.dart';
+import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
@@ -19,30 +20,485 @@ import 'agent_models.dart';
 
 /// @param onSaveReturn 这个是在保存的时候调用的
 /// @param onBack 这个在取消的时候调用，如果保留空的话就不会有取消按钮（也就是给初始页面用的）
-class AgentSetPage extends StatelessWidget {
+class AgentSetPage extends ConsumerStatefulWidget {
   const AgentSetPage({super.key, required this.onSaveReturn, this.onBack});
   final dynamic onSaveReturn;
   final void Function()? onBack;
 
   @override
+  ConsumerState<AgentSetPage> createState() => _AgentSetPageState();
+}
+
+class _AgentSetPageState extends ConsumerState<AgentSetPage> {
+  late SplitViewController spc;
+  TextEditingController nameController = TextEditingController();
+  TextEditingController descriptionController = TextEditingController();
+  PropertyEditing? get editing => editingNotifier.value;
+  ValueNotifier<PropertyEditing?> editingNotifier = ValueNotifier(null);
+
+  Widget? _buildModelSelectIndicator() {
+    if (agentState.isValidateMode &&
+        (agentState.model == null || agentState.provider == null)) {
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        decoration: BoxDecoration(
+          color: theme.thirdGradeColor,
+          borderRadius: BorderRadius.all(Radius.circular(5)),
+        ),
+        child: Text(
+          (agentState.model == null)
+              ? S.of(context).model_select
+              : S.of(context).plz_select_provider,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.red, fontSize: 12),
+        ),
+      );
+    }
+    return (agentState.model != null && agentState.provider != null)
+        ? Container(
+            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: (editing == PropertyEditing.model)
+                  ? theme.zeroGradeColor
+                  : theme.thirdGradeColor,
+              borderRadius: BorderRadius.all(Radius.circular(5)),
+            ),
+            child: Text(
+              agentState.model!.friendlyName,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black, fontSize: 12),
+            ),
+          )
+        : null;
+  }
+
+  late AgentEditState agentState;
+  late ThemeConfig theme;
+  @override
+  void initState() {
+    super.initState();
+    spc = SplitViewController(
+      onPop: () {
+        if (editing != null) {
+          editingNotifier.value = null;
+        }
+      },
+    );
+    agentState = ref.read(agentEditState);
+    theme = ref.read(themeProvider);
+    if (agentState.name != null) {
+      nameController.text = agentState.name!;
+    }
+    if (agentState.description != null) {
+      descriptionController.text = agentState.description!;
+    }
+    editingNotifier.addListener(() {
+      if (mounted) {
+        if (editing == null) {
+          spc.pop();
+        } else {
+          spc.push(
+            Material(
+              color: theme.secondGradeColor,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: _pg(editing!),
+              ),
+            ),
+            topBar: _topBar(),
+          );
+        }
+      }
+    });
+  }
+
+  Widget _pg(PropertyEditing pe) {
+    switch (pe) {
+      case PropertyEditing.model:
+        return _AgentModelSettings();
+      case PropertyEditing.sysPrompt:
+        return _SysPromptEdit();
+      case PropertyEditing.opening:
+        return Opening();
+      //return MemoryBase();
+      case PropertyEditing.USRIdentity:
+        return UserIdentity();
+    }
+  }
+
+  Widget _topBar() {
+    return ValueListenableBuilder(
+      valueListenable: editingNotifier,
+      builder: (context, value, child) {
+        Widget title;
+        switch (value) {
+          case null:
+            title = const SizedBox();
+          case PropertyEditing.sysPrompt:
+            title =
+                (agentState.systemPrompt != null &&
+                    agentState.systemPrompt!.isNotEmpty)
+                ? (Text(
+                    "${LLMTokenEstimator.estimateTokens(agentState.systemPrompt!)}tokens",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: (editing == PropertyEditing.sysPrompt)
+                          ? theme.zeroGradeColor
+                          : theme.primaryColor,
+                    ),
+                  ))
+                : const SizedBox();
+          case PropertyEditing.model:
+            title = _buildModelSelectIndicator() ?? const SizedBox();
+          case PropertyEditing.USRIdentity:
+            title = const SizedBox();
+          case PropertyEditing.opening:
+            title = const SizedBox();
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: AppBar(
+            primary: false,
+            scrolledUnderElevation: 0,
+            title: DefaultTextStyle(
+              style: TextStyle(fontSize: 15, color: theme.brightTextColor),
+              child: title,
+            ),
+            backgroundColor: theme.secondGradeColor,
+            leading: StdIconButton(
+              icon: Icons.arrow_back_ios_sharp,
+              onPressed: () {
+                spc.pop();
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        const SizedBox(width: 15),
-        DocumentDisplay(),
-        Expanded(
-          flex: 5,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: AgentEditDetails(),
+    theme = ref.watch(themeProvider);
+    agentState = ref.watch(agentEditState);
+    spc.defaultRight = _SysPromptEdit();
+    return KeyboardDismisser(
+      child: Material(
+        color: theme.secondGradeColor,
+        child: SplitView(
+          onLayout: (p, c, f) {
+            if (p == SplitViewStatus.collapsedWithLeft &&
+                c == SplitViewStatus.expanded) {
+              editingNotifier.value = PropertyEditing.sysPrompt;
+            }
+            if (f && c == SplitViewStatus.expanded) {
+              editingNotifier.value = PropertyEditing.sysPrompt;
+            }
+          },
+          key: ValueKey("ageSV"),
+          controller: spc,
+          leftPercent: 0.375,
+          left: Padding(
+            padding: const EdgeInsets.only(left: 15),
+            child: buildSidebar(context),
           ),
         ),
-        Expanded(
-          flex: 3,
-          child: AgentEditConfigure(onSaveReturn: onSaveReturn, onBack: onBack),
-        ),
-      ],
+      ),
+    );
+  }
+
+  Widget buildSidebar(BuildContext context) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: SizedBox(
+                  height: 90,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: theme.zeroGradeColor,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(60),
+                              offset: Offset(0, 1),
+                              blurRadius: 3,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: StdAvatarPicker(
+                          initialWidget: Center(
+                            child: Text(
+                              S.of(context).select_image_hint,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          onImageChanged: (s, setImage) async {
+                            var f = await s.copyTo(
+                              await PathProvider.getPath("chat/avatars"),
+                              rename: agentState.id,
+                              replaceIfExist: true,
+                              createDirIfNotExist: true,
+                            );
+                            setImage(f.path);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextField(
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              controller: nameController,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText: S.of(context).agent_name_hint,
+                                border: InputBorder.none,
+                                hintStyle:
+                                    (agentState.name == null &&
+                                        agentState.isValidateMode)
+                                    ? TextStyle(fontSize: 20, color: Colors.red)
+                                    : null,
+                              ),
+                              onChanged: (value) {
+                                var n = ref.read(agentEditState.notifier);
+                                n.state = n.state.copyWith(name: value);
+                              },
+                            ),
+                            TextField(
+                              style: const TextStyle(fontSize: 15),
+                              controller: descriptionController,
+                              minLines: 2,
+                              maxLines: 2,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText: S.of(context).agent_desc_hint,
+                                border: InputBorder.none,
+                              ),
+                              onChanged: (value) {
+                                var n = ref.read(agentEditState.notifier);
+                                n.state = n.state.copyWith(description: value);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              TokenStats(),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  S.of(context).agent_sets,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  clipBehavior: Clip.hardEdge,
+                  child: ValueListenableBuilder(
+                    valueListenable: editingNotifier,
+                    builder: (context, editing, child) {
+                      return ListView(
+                        children: [
+                          StdListTile(
+                            title: Text(
+                              S.of(context).model_sets,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            trailing: _buildModelSelectIndicator(),
+                            isSelected: editing == PropertyEditing.model,
+                            onTap: () {
+                              editingNotifier.value = PropertyEditing.model;
+                            },
+                          ),
+                          const Divider(),
+                          StdListTile(
+                            title: Text(
+                              S.of(context).sys_prompt,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            trailing:
+                                (agentState.systemPrompt != null &&
+                                    agentState.systemPrompt!.isNotEmpty)
+                                ? (Text(
+                                    "${LLMTokenEstimator.estimateTokens(agentState.systemPrompt!)}tokens",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          (editing == PropertyEditing.sysPrompt)
+                                          ? theme.zeroGradeColor
+                                          : theme.primaryColor,
+                                    ),
+                                  ))
+                                : null,
+                            isSelected: editing == PropertyEditing.sysPrompt,
+                            onTap: () {
+                              editingNotifier.value = PropertyEditing.sysPrompt;
+                            },
+                          ),
+                          const Divider(),
+                          StdListTile(
+                            title: Text(
+                              S.of(context).usr_persona_set,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            isSelected: editing == PropertyEditing.USRIdentity,
+                            onTap: () {
+                              editingNotifier.value =
+                                  PropertyEditing.USRIdentity;
+                            },
+                          ),
+                          const Divider(),
+                          StdListTile(
+                            title: Text(
+                              S.of(context).opening_set,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            isSelected: editing == PropertyEditing.opening,
+                            onTap: () {
+                              editingNotifier.value = PropertyEditing.opening;
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  if (widget.onBack != null)
+                    Expanded(
+                      child: StdButton(
+                        text: S.of(context).cancel_long_press,
+                        color: theme.thirdGradeColor,
+                        onPressed: () {},
+                        onLongPress: () {
+                          ref.read(agentEditState.notifier).state =
+                              AgentEditState();
+                          widget.onBack!();
+                        },
+                      ),
+                    ),
+                  if (widget.onBack != null) const SizedBox(width: 10),
+                  Expanded(
+                    child: _ActionButtons(onSaveReturn: widget.onSaveReturn),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ActionButtons extends ConsumerStatefulWidget {
+  const _ActionButtons({super.key, required this.onSaveReturn});
+  final dynamic onSaveReturn;
+  @override
+  ConsumerState<_ActionButtons> createState() => __ActionButtonsState();
+}
+
+class __ActionButtonsState extends ConsumerState<_ActionButtons>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    // 定义左右晃动的非线性动画
+    _animation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 0, end: -10), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: -10, end: 10), weight: 1.5),
+          TweenSequenceItem(tween: Tween(begin: 10, end: -10), weight: 2),
+          TweenSequenceItem(tween: Tween(begin: -10, end: 10), weight: 1.5),
+          TweenSequenceItem(tween: Tween(begin: 10, end: 0), weight: 1),
+        ]).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Curves.easeOutSine, // 使用非线性曲线
+          ),
+        );
+    _controller.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var agentState = ref.watch(agentEditState);
+    return Transform.translate(
+      offset: Offset(_animation.value, 0), // 根据动画值设置水平位移
+      child: StdButton(
+        text: (!agentState.isTokenEnough)
+            ? S.of(context).model_context_not_enough
+            : S.of(context).save,
+        onPressed: () async {
+          ref.read(agentEditState.notifier).state = agentState.copyWith(
+            isValidateMode: true,
+          );
+          if (agentState.valid()) {
+            await DatabaseService.instance.createOrUpdateAgent(
+              await agentState.toAgentData(),
+            );
+            ref.read(agentEditState.notifier).state = AgentEditState();
+            //此处强制刷新
+            await ref
+                .read(agentProvider.notifier)
+                .loadAgentById(agentState.id, forceReload: true);
+            widget.onSaveReturn();
+          } else {
+            _controller.forward(from: 0);
+          }
+        },
+      ),
     );
   }
 }
@@ -53,7 +509,6 @@ class AgentEditState {
   late final String id;
   final bool isValidateMode;
   final bool isTokenEnough;
-  final PropertyEditing editing;
   final String? name;
   final String? description;
   ApiProvider? provider;
@@ -71,7 +526,6 @@ class AgentEditState {
     String? id,
     this.isTokenEnough = true,
     this.isValidateMode = false,
-    this.editing = PropertyEditing.sysPrompt,
     ModelSpecifics? modelSettings,
     this.name,
     this.provider,
@@ -117,7 +571,6 @@ class AgentEditState {
       enableUIQL: enableUIQL ?? this.enableUIQL,
       provider: provider ?? this.provider,
       model: model ?? this.model,
-      editing: editing ?? this.editing,
       name: name ?? this.name,
       description: description ?? this.description,
       systemPrompt: systemPrompt ?? this.systemPrompt,
@@ -187,370 +640,6 @@ class AgentEditState {
 }
 
 final agentEditState = StateProvider((ref) => AgentEditState());
-
-class AgentEditConfigure extends ConsumerStatefulWidget {
-  const AgentEditConfigure({
-    super.key,
-    required this.onSaveReturn,
-    this.onBack,
-  });
-  final dynamic onSaveReturn;
-  final void Function()? onBack;
-  @override
-  ConsumerState<AgentEditConfigure> createState() => _AgentEditConfigureState();
-}
-
-class _AgentEditConfigureState extends ConsumerState<AgentEditConfigure>
-    with SingleTickerProviderStateMixin {
-  TextEditingController nameController = TextEditingController();
-  TextEditingController descriptionController = TextEditingController();
-
-  void _onPropertySelect(PropertyEditing propertyEdit) {
-    var n = ref.read(agentEditState.notifier);
-    n.state = n.state.copyWith(editing: propertyEdit);
-  }
-
-  Widget? _buildModelSelectIndicator() {
-    if (agentState.isValidateMode &&
-        (agentState.model == null || agentState.provider == null)) {
-      return Container(
-        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        decoration: BoxDecoration(
-          color: theme.thirdGradeColor,
-          borderRadius: BorderRadius.all(Radius.circular(5)),
-        ),
-        child: Text(
-          (agentState.model == null)
-              ? S.of(context).model_select
-              : S.of(context).plz_select_provider,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.red, fontSize: 12),
-        ),
-      );
-    }
-    return (agentState.model != null && agentState.provider != null)
-        ? Container(
-            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(
-              color: (agentState.editing == PropertyEditing.model)
-                  ? theme.zeroGradeColor
-                  : theme.thirdGradeColor,
-              borderRadius: BorderRadius.all(Radius.circular(5)),
-            ),
-            child: Text(
-              agentState.model!.friendlyName,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black, fontSize: 12),
-            ),
-          )
-        : null;
-  }
-
-  late AgentEditState agentState;
-  late ThemeConfig theme;
-  @override
-  Widget build(BuildContext context) {
-    agentState = ref.watch(agentEditState);
-    theme = ref.watch(themeProvider);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
-            child: SizedBox(
-              height: 80,
-              child: Row(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: theme.zeroGradeColor,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(60),
-                          offset: Offset(0, 1),
-                          blurRadius: 3,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: StdAvatarPicker(
-                      initialWidget: Center(
-                        child: Text(
-                          S.of(context).select_image_hint,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      onImageChanged: (s, setImage) async {
-                        var f = await s.copyTo(
-                          await PathProvider.getPath("chat/avatars"),
-                          rename: agentState.id,
-                          replaceIfExist: true,
-                          createDirIfNotExist: true,
-                        );
-                        setImage(f.path);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          controller: nameController,
-                          decoration: InputDecoration(
-                            isDense: true,
-                            hintText: S.of(context).agent_name_hint,
-                            border: InputBorder.none,
-                            hintStyle:
-                                (agentState.name == null &&
-                                    agentState.isValidateMode)
-                                ? TextStyle(fontSize: 20, color: Colors.red)
-                                : null,
-                          ),
-                          onChanged: (value) {
-                            var n = ref.read(agentEditState.notifier);
-                            n.state = n.state.copyWith(name: value);
-                          },
-                        ),
-                        const SizedBox(height: 3),
-                        TextField(
-                          style: const TextStyle(fontSize: 15),
-                          controller: descriptionController,
-                          minLines: 2,
-                          maxLines: 2,
-                          decoration: InputDecoration(
-                            isDense: true,
-                            hintText: S.of(context).agent_desc_hint,
-                            border: InputBorder.none,
-                          ),
-                          onChanged: (value) {
-                            var n = ref.read(agentEditState.notifier);
-                            n.state = n.state.copyWith(description: value);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          TokenStats(),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(
-              S.of(context).agent_sets,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(
-            child: Material(
-              color: Colors.transparent,
-              clipBehavior: Clip.hardEdge,
-              child: ListView(
-                children: [
-                  StdListTile(
-                    title: Text(
-                      S.of(context).model_sets,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    trailing: _buildModelSelectIndicator(),
-                    isSelected: agentState.editing == PropertyEditing.model,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.model);
-                    },
-                  ),
-                  const Divider(),
-                  StdListTile(
-                    title: Text(
-                      S.of(context).sys_prompt,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    trailing:
-                        (agentState.systemPrompt != null &&
-                            agentState.systemPrompt!.isNotEmpty)
-                        ? (Text(
-                            "${LLMTokenEstimator.estimateTokens(agentState.systemPrompt!)}tokens",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color:
-                                  (agentState.editing ==
-                                      PropertyEditing.sysPrompt)
-                                  ? theme.zeroGradeColor
-                                  : theme.primaryColor,
-                            ),
-                          ))
-                        : null,
-                    isSelected: agentState.editing == PropertyEditing.sysPrompt,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.sysPrompt);
-                    },
-                  ),
-                  const Divider(),
-                  StdListTile(
-                    title: Text(
-                      S.of(context).usr_persona_set,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    isSelected:
-                        agentState.editing == PropertyEditing.USRIdentity,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.USRIdentity);
-                    },
-                  ),
-                  const Divider(),
-                  StdListTile(
-                    title: Text(
-                      S.of(context).opening_set,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    trailing:
-                        (agentState.systemPrompt != null &&
-                            agentState.systemPrompt!.isNotEmpty)
-                        ? (Text(
-                            "${agentState.systemPrompt!.length}tokens",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color:
-                                  (agentState.editing ==
-                                      PropertyEditing.sysPrompt)
-                                  ? theme.zeroGradeColor
-                                  : theme.primaryColor,
-                            ),
-                          ))
-                        : null,
-                    isSelected: agentState.editing == PropertyEditing.opening,
-                    onTap: () {
-                      _onPropertySelect(PropertyEditing.opening);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Row(
-              children: [
-                if (widget.onBack != null)
-                  Expanded(
-                    child: StdButton(
-                      text: S.of(context).cancel_long_press,
-                      color: theme.thirdGradeColor,
-                      onPressed: () {},
-                      onLongPress: () {
-                        ref.read(agentEditState.notifier).state =
-                            AgentEditState();
-                        widget.onBack!();
-                      },
-                    ),
-                  ),
-                if (widget.onBack != null) const SizedBox(width: 20),
-                Expanded(child: _buildSaveButton()),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-
-    // 定义左右晃动的非线性动画
-    _animation =
-        TweenSequence<double>([
-          TweenSequenceItem(tween: Tween(begin: 0, end: -10), weight: 1),
-          TweenSequenceItem(tween: Tween(begin: -10, end: 10), weight: 1.5),
-          TweenSequenceItem(tween: Tween(begin: 10, end: -10), weight: 2),
-          TweenSequenceItem(tween: Tween(begin: -10, end: 10), weight: 1.5),
-          TweenSequenceItem(tween: Tween(begin: 10, end: 0), weight: 1),
-        ]).animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: Curves.easeOutSine, // 使用非线性曲线
-          ),
-        );
-    _controller.addListener(() {
-      setState(() {});
-    });
-    agentState = ref.read(agentEditState);
-    if (agentState.name != null) {
-      nameController.text = agentState.name!;
-    }
-    if (agentState.description != null) {
-      descriptionController.text = agentState.description!;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Widget _buildSaveButton() {
-    return Transform.translate(
-      offset: Offset(_animation.value, 0), // 根据动画值设置水平位移
-      child: StdButton(
-        text: (!agentState.isTokenEnough)
-            ? S.of(context).model_context_not_enough
-            : S.of(context).save,
-        onPressed: () async {
-          ref.read(agentEditState.notifier).state = agentState.copyWith(
-            isValidateMode: true,
-          );
-          if (agentState.valid()) {
-            await DatabaseService.instance.createOrUpdateAgent(
-              await agentState.toAgentData(),
-            );
-            ref.read(agentEditState.notifier).state = AgentEditState();
-            //此处强制刷新
-            await ref
-                .read(agentProvider.notifier)
-                .loadAgentById(agentState.id, forceReload: true);
-            widget.onSaveReturn();
-          } else {
-            _controller.forward(from: 0);
-          }
-        },
-      ),
-    );
-  }
-}
 
 class TokenStats extends ConsumerStatefulWidget {
   const TokenStats({super.key});
@@ -705,42 +794,6 @@ class _TokenStatsState extends ConsumerState<TokenStats> {
   }
 }
 
-class AgentEditDetails extends ConsumerWidget {
-  const AgentEditDetails({super.key});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var agentSet = ref.watch(agentEditState);
-    switch (agentSet.editing) {
-      case PropertyEditing.model:
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref
-              .read(documentDisplayProvider.notifier)
-              .setUrl("$websiteURL/docs/Agents/model_settings");
-        });
-        return _AgentModelSettings();
-      case PropertyEditing.sysPrompt:
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref
-              .read(documentDisplayProvider.notifier)
-              .setUrl("$websiteURL/docs/Agents/system_prompts");
-        });
-        return _SysPromptEdit();
-      case PropertyEditing.opening:
-        return Opening();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref
-              .read(documentDisplayProvider.notifier)
-              .setUrl("$websiteURL/docs/Agents/knowledge_base");
-        });
-      //return MemoryBase();
-      case PropertyEditing.USRIdentity:
-        return UserIdentity();
-      default:
-        return SizedBox();
-    }
-  }
-}
-
 class _AgentModelSettings extends ConsumerStatefulWidget {
   const _AgentModelSettings({super.key});
   @override
@@ -751,7 +804,7 @@ class _AgentModelSettings extends ConsumerStatefulWidget {
 class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
   void _notifyListeners() {
     var n = ref.read(agentEditState.notifier);
-    n.state = n.state.copyWith();
+    n.state = n.state.copyWith(modelSettings: n.state.modelSettings.copyWith());
   }
 
   @override
@@ -995,23 +1048,36 @@ class ModelSelect extends StatefulWidget {
     ThemeConfig theme,
   ) {
     var imgP = LLMImageIndexer.tryGetImagePath(model.family);
-    return StdButton(
-      onPressed: onTap,
-      padding: padding,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (imgP != null)
-            StdAvatar(length: height, assetImage: AssetImage(imgP)),
-          const SizedBox(width: 10),
-          Text(
-            "${model.friendlyName} | ${provider.name}",
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+    return LayoutBuilder(
+      builder: (context, c) {
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: 330),
+          child: StdButton(
+            onPressed: onTap,
+            padding: padding,
+            child: (c.maxWidth >= 300)
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (imgP != null)
+                        StdAvatar(length: height, assetImage: AssetImage(imgP)),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          "${model.friendlyName} | ${provider.name}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                  )
+                : (imgP != null)
+                ? StdAvatar(length: height, assetImage: AssetImage(imgP))
+                : const Icon(Icons.auto_awesome),
           ),
-          const SizedBox(width: 10),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1249,6 +1315,10 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
         Expanded(
           child: TextField(
             controller: controller,
+            onTapOutside: (e) {
+              onSubmit(s);
+              FocusScope.of(context).unfocus();
+            },
             decoration: InputDecoration(
               fillColor: theme.primaryColor,
               focusColor: theme.primaryColor,

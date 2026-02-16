@@ -38,6 +38,33 @@ class ModelSpecifics {
     this.enableUsrSystemInformation = true,
   });
 
+  ModelSpecifics copyWith({
+    String? modelName,
+    double? temperature,
+    double? topP,
+    double? frequencyPenalty,
+    double? presencePenalty,
+    int? maxGenerationTokens,
+    int? maxContextTokens,
+    bool? enableTimeTelling,
+    bool? enableUsrLanguage,
+    bool? enableUsrSystemInformation,
+  }) {
+    return ModelSpecifics(
+      modelName: modelName ?? this.modelName,
+      temperature: temperature ?? this.temperature,
+      topP: topP ?? this.topP,
+      frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty,
+      presencePenalty: presencePenalty ?? this.presencePenalty,
+      maxGenerationTokens: maxGenerationTokens ?? this.maxGenerationTokens,
+      maxContextTokens: maxContextTokens ?? this.maxContextTokens,
+      enableTimeTelling: enableTimeTelling ?? this.enableTimeTelling,
+      enableUsrLanguage: enableUsrLanguage ?? this.enableUsrLanguage,
+      enableUsrSystemInformation:
+          enableUsrSystemInformation ?? this.enableUsrSystemInformation,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       "modelName": modelName,

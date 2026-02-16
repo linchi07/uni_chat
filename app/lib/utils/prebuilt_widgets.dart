@@ -221,6 +221,10 @@ class StdTextFormField extends ConsumerWidget {
       child: TextFormField(
         maxLines: maxLines,
         minLines: minLines,
+        onTapOutside: (value) {
+          onSubmitted?.call(controller.text);
+          FocusScope.of(context).unfocus();
+        },
         controller: controller,
         decoration: InputDecoration(
           hintText: hintText,
@@ -288,6 +292,10 @@ class StdTextFormFieldOutlined extends ConsumerWidget {
       minLines: minLines,
       controller: controller,
       inputFormatters: inputFormat,
+      onTapOutside: (value) {
+        onSubmitted?.call(controller.text);
+        FocusScope.of(context).unfocus();
+      },
       decoration: InputDecoration(
         fillColor: theme.primaryColor,
         focusColor: theme.primaryColor,

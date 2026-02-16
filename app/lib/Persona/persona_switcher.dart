@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/document_display.dart';
 import 'package:uni_chat/utils/file_utils.dart';
+import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
@@ -17,7 +19,8 @@ import '../utils/color.dart' show ColorParser;
 import '../utils/overlays.dart';
 
 class PersonaIndicator extends StatefulWidget {
-  const PersonaIndicator({super.key});
+  const PersonaIndicator({super.key, this.isFloatingAction = false});
+  final bool isFloatingAction;
 
   @override
   State<PersonaIndicator> createState() => _PersonaIndicatorState();
@@ -26,7 +29,8 @@ class PersonaIndicator extends StatefulWidget {
 class _PersonaIndicatorState extends State<PersonaIndicator> {
   OverlayEntry? _overlayEntry;
   final GlobalKey<_PersonaSwitcherContainerState> _overlayKey = GlobalKey();
-
+  final GlobalKey<_PersonaSwitcherContainerForFloatingActionState>
+  _fOverlayKey = GlobalKey();
   void showPersonaSwitcher() {
     final overlay = Overlay.of(context);
     final rb = context.findRenderObject() as RenderBox;
@@ -36,13 +40,27 @@ class _PersonaIndicatorState extends State<PersonaIndicator> {
       builder: (context) => Stack(
         children: [
           ModalBarrier(color: Colors.transparent, onDismiss: hide),
-          PersonaSwitcherContainer(
-            baseContext: this.context,
-            onClose: hide,
-            key: _overlayKey,
-            initialSize: rb.size.longestSide,
-            initPos: pos,
-          ),
+          (widget.isFloatingAction)
+              ? Builder(
+                  builder: (context) {
+                    var s = MediaQuery.of(context).size;
+                    return PersonaSwitcherContainerForFloatingAction(
+                      baseContext: this.context,
+                      onClose: hide,
+                      key: _fOverlayKey,
+                      initialSize: rb.size.longestSide,
+                      initPos: pos,
+                      screenSize: s,
+                    );
+                  },
+                )
+              : PersonaSwitcherContainer(
+                  baseContext: this.context,
+                  onClose: hide,
+                  key: _overlayKey,
+                  initialSize: rb.size.longestSide,
+                  initPos: pos,
+                ),
         ],
       ),
     );
@@ -50,6 +68,16 @@ class _PersonaIndicatorState extends State<PersonaIndicator> {
   }
 
   void hide() {
+    if (widget.isFloatingAction) {
+      _fOverlayKey.currentState?.reverse().then((_) {
+        if (_overlayEntry != null) {
+          _overlayEntry?.remove();
+          setState(() {
+            _overlayEntry = null;
+          });
+        }
+      });
+    }
     _overlayKey.currentState?.reverse().then((_) {
       if (_overlayEntry != null) {
         _overlayEntry?.remove();
@@ -239,12 +267,143 @@ class _PersonaSwitcherContainerState extends State<PersonaSwitcherContainer>
   }
 }
 
+class PersonaSwitcherContainerForFloatingAction extends StatefulWidget {
+  const PersonaSwitcherContainerForFloatingAction({
+    super.key,
+    required this.initialSize,
+    required this.initPos,
+    required this.onClose,
+    required this.baseContext,
+    required this.screenSize,
+  });
+  final BuildContext baseContext;
+  final double initialSize;
+  final Offset initPos;
+  final dynamic onClose;
+  final Size screenSize;
+
+  @override
+  State<PersonaSwitcherContainerForFloatingAction> createState() =>
+      _PersonaSwitcherContainerForFloatingActionState();
+}
+
+class _PersonaSwitcherContainerForFloatingActionState
+    extends State<PersonaSwitcherContainerForFloatingAction>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _widthAnimation;
+  late Animation<double> _heightAnimation;
+  late Animation<BorderRadius?> _borderRadiusAnimation;
+  late Animation<double> _opacityAnimation;
+
+  final double _finalWidth = 300.0;
+  final double _finalHeight = 400.0;
+  static Curve curve = Curves.easeInOutSine;
+  @override
+  void initState() {
+    super.initState();
+
+    // 1. 初始化 AnimationController
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    // 2. 定义各个属性的 Tween
+    // 宽度动画：从圆形直径到最终宽度
+    _widthAnimation = Tween<double>(
+      begin: widget.initialSize,
+      end: min(_finalWidth, widget.screenSize.width - 30),
+    ).animate(CurvedAnimation(parent: _controller, curve: curve));
+
+    _heightAnimation = Tween<double>(
+      begin: widget.initialSize,
+      end: _finalHeight,
+    ).animate(CurvedAnimation(parent: _controller, curve: curve));
+
+    // 圆角动画：从圆形到圆角矩形
+    _borderRadiusAnimation = BorderRadiusTween(
+      begin: BorderRadius.circular(widget.initialSize / 2),
+      end: BorderRadius.circular(15.0),
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutExpo));
+    _opacityAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+    );
+    // 3. 在第一帧渲染后立即启动动画
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// 公开一个方法用于播放关闭动画
+  Future<void> reverse() async {
+    await _controller.reverse();
+  }
+
+  /// 公开一个方法用于播放展开动画
+  void forward() {
+    _controller.forward();
+  }
+
+  late ThemeConfig theme;
+  @override
+  Widget build(BuildContext context) {
+    var s = MediaQuery.of(context).size;
+
+    var initBottom = s.height - widget.initPos.dy - widget.initialSize;
+    return Consumer(
+      builder: (context, ref, child) {
+        theme = ref.watch(themeProvider);
+        return child!;
+      },
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Positioned(
+            left: widget.initPos.dx,
+            width: _widthAnimation.value,
+            bottom: initBottom,
+            height: _heightAnimation.value,
+            child: OverlayPortalScope(
+              child: Material(
+                borderRadius: _borderRadiusAnimation.value,
+                clipBehavior: Clip.hardEdge,
+                color: theme.zeroGradeColor,
+                elevation: 4,
+                child: Center(
+                  child: (_opacityAnimation.value >= 0.7)
+                      ? Opacity(
+                          opacity: _opacityAnimation.value,
+                          child: PersonaSwitcher(
+                            isFloatingAction: true,
+                            onClose: widget.onClose,
+                            baseContext: widget.baseContext,
+                          ),
+                        )
+                      : SizedBox.shrink(),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class PersonaSwitcher extends ConsumerStatefulWidget {
   const PersonaSwitcher({
     super.key,
     required this.baseContext,
     required this.onClose,
+    this.isFloatingAction = false,
   });
+  final bool isFloatingAction;
   final dynamic onClose;
   final BuildContext baseContext;
 
@@ -377,7 +536,9 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
               OverlayPortalService.show(
                 context,
                 barrierVisible: false,
-                offset: rb.localToGlobal(Offset.zero).translate(40, 0),
+                offset: rb
+                    .localToGlobal(Offset.zero)
+                    .translate((widget.isFloatingAction) ? -150 : 40, 0),
                 child: _popupMenu(persona, context),
               );
             },
@@ -418,12 +579,19 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
     return (personas, avatars, selectedPersonaFile);
   }
 
+  Persona? cachedPersona;
+  Future<(List<Persona>, List<File?>, File?)>? cachedFuture;
+
   @override
   Widget build(BuildContext context) {
     theme = ref.watch(themeProvider);
     var persona = ref.watch(personaProvider);
+    if (cachedPersona != persona || cachedFuture == null) {
+      cachedFuture = _getPersonasAndAvatars(persona.id);
+    }
+    cachedPersona = persona;
     return FutureBuilder(
-      future: _getPersonasAndAvatars(persona.id),
+      future: cachedFuture,
       builder: (context, asyncSnapshot) {
         if (!asyncSnapshot.hasData || asyncSnapshot.data == null) {
           return const CircularProgressIndicator();
@@ -481,7 +649,10 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
                           barrierVisible: false,
                           offset: rb
                               .localToGlobal(Offset.zero)
-                              .translate(40, 0),
+                              .translate(
+                                (widget.isFloatingAction) ? -150 : 40,
+                                0,
+                              ),
                           child: _popupMenu(persona, context),
                         );
                       },
@@ -642,7 +813,6 @@ class _PersonaEditorAnimationState extends State<PersonaEditorAnimation>
     final screenSize = MediaQuery.of(context).size;
     final double targetWidth = screenSize.width * 0.85;
     final double targetHeight = screenSize.height * 0.8;
-
     // FadeTransition 和 ScaleTransition 组合实现进入和退出动画
     return Consumer(
       builder: (context, ref, child) {
@@ -656,23 +826,14 @@ class _PersonaEditorAnimationState extends State<PersonaEditorAnimation>
               child: SizedBox(
                 width: targetWidth,
                 height: targetHeight,
-                child: Consumer(
-                  builder: (context, ref, child) {
-                    theme = ref.watch(themeProvider);
-                    return child!;
-                  },
-                  child: SizedBox(
-                    width: 400,
-                    height: 400,
-                    child: Material(
-                      color: theme.zeroGradeColor,
-                      borderRadius: BorderRadius.circular(8),
-                      child: PersonaEditorContent(
-                        onSaveReturn: close,
-                        persona: persona,
-                        onBack: handleClose,
-                      ),
-                    ),
+                child: Material(
+                  color: theme.zeroGradeColor,
+                  borderRadius: BorderRadius.circular(8),
+                  child: PersonaEditorContent(
+                    key: ValueKey(persona.id),
+                    onSaveReturn: close,
+                    persona: persona,
+                    onBack: handleClose,
                   ),
                 ),
               ),
@@ -724,6 +885,21 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
             "$websiteURL/docs/QuickStart/create_a_persona",
           );
     });
+    spc = SplitViewController(
+      onStatusChange: (p, c) {
+        if ((p == SplitViewStatus.expanded && !spc.isExpanded) ||
+            (p != SplitViewStatus.expanded && spc.isExpanded)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {});
+          });
+        }
+      },
+      onPop: () {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() {});
+        });
+      },
+    );
   }
 
   @override
@@ -754,7 +930,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
           IconButton(
             icon: Icon(Icons.delete_outline),
             onPressed: () {
-              setState(() {
+              dataEntrySetState?.call(() {
                 personaData.remove(entry);
               });
             },
@@ -765,6 +941,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
   }
 
   PersonaDataEntry? _entryAdding;
+  void Function(void Function())? dataEntrySetState;
 
   Widget _personaDataEntryEdit(PersonaDataEntry entry) {
     // 在打开编辑器时，将当前条目数据填充到控制器中
@@ -779,70 +956,80 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
         color: theme.zeroGradeColor,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  S.of(context).edit_entries,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                Text(S.of(context).name, style: TextStyle(fontSize: 16)),
-                StdTextFormField(
-                  controller: _entryNameController,
-                  hintText: S.of(context).plz_enter_name,
-                  validateFailureText: S.of(context).plz_enter_name,
-                ),
-                const SizedBox(height: 16),
-                Text(S.of(context).content, style: TextStyle(fontSize: 16)),
-                Expanded(
-                  child: StdTextFormField(
-                    isExpanded: true,
-                    controller: _entryContentController,
-                    hintText: S.of(context).plz_enter_content,
-                    validateFailureText: S.of(context).plz_enter_content,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              dataEntrySetState = setState;
+              return Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    StdButton(
-                      color: theme.secondGradeColor,
-                      text: S.of(context).cancel,
-                      onPressed: () {
-                        // 清除控制器文本
-                        _entryNameController.clear();
-                        _entryContentController.clear();
-                        OverlayPortalService.hide(context);
-                      },
+                    Text(
+                      S.of(context).edit_entries,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    StdButton(
-                      text: S.of(context).save,
-                      onPressed: () {
-                        if (!formKey.currentState!.validate()) {
-                          return;
-                        }
-                        // 更新条目数据
-                        setState(() {
-                          entry.name = _entryNameController.text;
-                          entry.content = _entryContentController.text;
-                        });
-                        // 清除控制器文本
-                        _entryNameController.clear();
-                        _entryContentController.clear();
-                        // 关闭弹窗
-                        OverlayPortalService.hide(context);
-                        _writeIn();
-                      },
+                    const SizedBox(height: 16),
+                    Text(S.of(context).name, style: TextStyle(fontSize: 16)),
+                    StdTextFormField(
+                      controller: _entryNameController,
+                      hintText: S.of(context).plz_enter_name,
+                      validateFailureText: S.of(context).plz_enter_name,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(S.of(context).content, style: TextStyle(fontSize: 16)),
+                    Expanded(
+                      child: StdTextFormField(
+                        isExpanded: true,
+                        controller: _entryContentController,
+                        hintText: S.of(context).plz_enter_content,
+                        validateFailureText: S.of(context).plz_enter_content,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        StdButton(
+                          color: theme.secondGradeColor,
+                          text: S.of(context).cancel,
+                          onPressed: () {
+                            // 清除控制器文本
+                            _entryNameController.clear();
+                            _entryContentController.clear();
+                            OverlayPortalService.hide(context);
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        StdButton(
+                          text: S.of(context).save,
+                          onPressed: () {
+                            if (!formKey.currentState!.validate()) {
+                              return;
+                            }
+                            // 更新条目数据
+                            setState(() {
+                              entry.name = _entryNameController.text;
+                              entry.content = _entryContentController.text;
+                            });
+                            dataEntrySetState?.call(() {
+                              _writeIn();
+                            });
+                            // 清除控制器文本
+                            _entryNameController.clear();
+                            _entryContentController.clear();
+                            // 关闭弹窗
+                            OverlayPortalService.hide(context);
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -850,7 +1037,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
   }
 
   void _writeIn() {
-    setState(() {
+    dataEntrySetState?.call(() {
       if (_entryAdding != null) {
         personaData.add(_entryAdding!);
         _entryAdding = null;
@@ -876,12 +1063,75 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
   List<PersonaDataEntry> personaData = [];
   late ThemeConfig theme;
   final _formKey = GlobalKey<FormState>();
+
+  late SplitViewController spc;
+
+  void Function(void Function())? dataSetState;
+  Widget buildDataEditor() {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        dataSetState = setState;
+        return Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const SizedBox(width: 16),
+                Text(
+                  S.of(context).edit_entries,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                Expanded(child: const SizedBox(width: 16)),
+                StdButton(
+                  text: S.of(context).add_entries,
+                  onPressed: () {
+                    setState(() {
+                      _entryAdding = PersonaDataEntry(
+                        name: "",
+                        entryMode: PersonaEntryMode.alwaysInsert,
+                        content: "",
+                      );
+                    });
+                    OverlayPortalService.show(
+                      context,
+                      animate: true,
+                      autoAvoidSoftKeyboard: true,
+                      child: _personaDataEntryEdit(_entryAdding!),
+                    );
+                  },
+                ),
+                const SizedBox(width: 16),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: theme.secondGradeColor,
+                ),
+                child: ListView.builder(
+                  itemCount: personaData.length,
+                  itemBuilder: (context, index) {
+                    return buildPersonaDataEntry(personaData[index]);
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     theme = ref.watch(themeProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       calculateToken();
     });
+    spc.defaultRight = buildDataEditor();
     return Material(
       borderRadius: BorderRadius.circular(8),
       color: (widget.isSetup) ? theme.secondGradeColor : theme.zeroGradeColor,
@@ -892,11 +1142,11 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!widget.isSetup)
-              Padding(
-                padding: const EdgeInsets.only(left: 10),
-                child: Row(
-                  children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 10),
+              child: Row(
+                children: [
+                  if (!widget.isSetup)
                     Text(
                       S.of(context).edit_persona,
                       style: TextStyle(
@@ -904,162 +1154,130 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Spacer(),
-                    ShowDocButton(),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          Container(
-                            clipBehavior: Clip.hardEdge,
-                            margin: const EdgeInsets.fromLTRB(30, 30, 30, 5),
-                            decoration: BoxDecoration(
-                              color: theme.zeroGradeColor,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withAlpha(60),
-                                  blurRadius: 4,
-                                  spreadRadius: 1,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
+                  Spacer(),
+                  if (spc.shouldStatus == SplitViewStatus.collapsedWithLeft)
+                    StdButton(
+                      text: "编辑更多信息",
+                      onPressed: () {
+                        setState(() {
+                          spc.push(
+                            Material(
+                              color: (widget.isSetup)
+                                  ? theme.secondGradeColor
+                                  : theme.zeroGradeColor,
+                              child: buildDataEditor(),
                             ),
-                            height: 200,
-                            width: 200,
-                            child: AspectRatio(
-                              aspectRatio: 1,
-                              child: FutureBuilder(
-                                future: widget.persona.getAvatar(),
-                                builder: (context, asyncSnapshot) {
-                                  if (asyncSnapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return Center(
-                                      child: CircularProgressIndicator(),
-                                    );
-                                  }
-                                  return StdAvatarPicker(
-                                    initialWidget: const Icon(
-                                      Icons.person,
-                                      size: 150,
-                                    ),
-                                    initialImageFile: asyncSnapshot.data,
-                                    onImageChanged: (s, setImage) async {
-                                      var f = await s.copyTo(
-                                        await PathProvider.getPath(
-                                          "chat/avatars",
-                                        ),
-                                        rename: widget.persona.id,
-                                        replaceIfExist: true,
-                                        createDirIfNotExist: true,
-                                      );
-                                      setImage(f.path);
-                                    },
-                                  );
+                            topBar: AppBar(
+                              primary: false,
+                              backgroundColor: (widget.isSetup)
+                                  ? theme.secondGradeColor
+                                  : theme.zeroGradeColor,
+                              leading: StdIconButton(
+                                icon: Icons.arrow_back_ios_sharp,
+                                onPressed: () {
+                                  setState(() {
+                                    spc.pop();
+                                  });
                                 },
                               ),
                             ),
-                          ),
-                          Text(
-                            S.of(context).avatar_change_hint,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: theme.thirdGradeColor,
-                            ),
-                          ),
-                          const SizedBox(height: 15),
-                          StdTextFormField(
-                            hintText: S.of(context).plz_enter_name,
-                            controller: _nameController,
-                            validateFailureText: S.of(context).plz_enter_name,
-                            onChanged: (value) {
-                              calculateToken();
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          Expanded(
-                            child: StdTextFormField(
-                              isExpanded: true,
-                              hintText: S.of(context).persona_description_hint,
-                              controller: _descriptionController,
-                              validateFailureText: S
-                                  .of(context)
-                                  .plz_enter_description,
-                              onChanged: (value) {
-                                calculateToken();
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                          );
+                        });
+                      },
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const SizedBox(width: 16),
-                            Text(
-                              S.of(context).edit_entries,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SplitView(
+                centralPadding: 16,
+                controller: spc,
+                left: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      Container(
+                        clipBehavior: Clip.hardEdge,
+                        margin: const EdgeInsets.fromLTRB(30, 30, 30, 5),
+                        decoration: BoxDecoration(
+                          color: theme.zeroGradeColor,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(60),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                              offset: Offset(0, 2),
                             ),
-                            Expanded(child: const SizedBox(width: 16)),
-                            StdButton(
-                              text: S.of(context).add_entries,
-                              onPressed: () {
-                                setState(() {
-                                  _entryAdding = PersonaDataEntry(
-                                    name: "",
-                                    entryMode: PersonaEntryMode.alwaysInsert,
-                                    content: "",
-                                  );
-                                });
-                                OverlayPortalService.show(
-                                  context,
-                                  child: _personaDataEntryEdit(_entryAdding!),
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 16),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: theme.secondGradeColor,
-                            ),
-                            child: ListView.builder(
-                              itemCount: personaData.length,
-                              itemBuilder: (context, index) {
-                                return buildPersonaDataEntry(
-                                  personaData[index],
+                        height: 200,
+                        width: 200,
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: FutureBuilder(
+                            future: widget.persona.getAvatar(),
+                            builder: (context, asyncSnapshot) {
+                              if (asyncSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return Center(
+                                  child: CircularProgressIndicator(),
                                 );
-                              },
-                            ),
+                              }
+                              return StdAvatarPicker(
+                                initialWidget: const Icon(
+                                  Icons.person,
+                                  size: 150,
+                                ),
+                                initialImageFile: asyncSnapshot.data,
+                                onImageChanged: (s, setImage) async {
+                                  var f = await s.copyTo(
+                                    await PathProvider.getPath("chat/avatars"),
+                                    rename: widget.persona.id,
+                                    replaceIfExist: true,
+                                    createDirIfNotExist: true,
+                                  );
+                                  setImage(f.path);
+                                },
+                              );
+                            },
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      Text(
+                        S.of(context).avatar_change_hint,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: theme.thirdGradeColor,
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      StdTextFormField(
+                        hintText: S.of(context).plz_enter_name,
+                        controller: _nameController,
+                        validateFailureText: S.of(context).plz_enter_name,
+                        onChanged: (value) {
+                          calculateToken();
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: StdTextFormField(
+                          isExpanded: true,
+                          hintText: S.of(context).persona_description_hint,
+                          controller: _descriptionController,
+                          validateFailureText: S
+                              .of(context)
+                              .plz_enter_description,
+                          onChanged: (value) {
+                            calculateToken();
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                  DocumentDisplay(),
-                ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -1078,7 +1296,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                     );
                   },
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 4),
                 StdCheckbox(
                   text: S.of(context).set_as_default,
                   value: widget.persona.isDefault,
