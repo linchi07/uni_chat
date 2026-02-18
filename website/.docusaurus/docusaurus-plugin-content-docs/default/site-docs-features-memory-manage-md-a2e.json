@@ -1,0 +1,25 @@
+{
+  "id": "features/memory_manage",
+  "title": "Memory Manage",
+  "description": "",
+  "source": "@site/docs/features/Memory Manage.md",
+  "sourceDirName": "features",
+  "slug": "/features/memory_manage",
+  "permalink": "/docs/features/memory_manage",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "memory_manage"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "File Manage",
+    "permalink": "/docs/features/file_manage"
+  },
+  "next": {
+    "title": "Website Manage",
+    "permalink": "/docs/features/website_manage"
+  }
+}

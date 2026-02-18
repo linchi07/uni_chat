@@ -345,7 +345,7 @@
     "message": "A powerful AI chat client."
   },
   "theme.downloadButton": {
-    "message": "Download Now"
+    "message": "现在下载"
   },
   "theme.imagePlaceholder": {
     "message": "Image Placeholder"
@@ -358,5 +358,119 @@
   },
   "theme.description": {
     "message": "UNICHAT Official Website"
+  },
+  "homepage.title": {
+    "message": "UNIChat 通聊",
+    "description": "The title of the homepage"
+  },
+  "homepage.subTitle": {
+    "message": "一起集思广益 — 突破线性限制的 Agent 级对话终端",
+    "description": "The subtitle of the homepage"
+  },
+  "homepage.getStarted": {
+    "message": "立即体验",
+    "description": "Get started button label"
+  },
+  "homepage.download": {
+    "message": "下载 App",
+    "description": "Download button label"
+  },
+  "homepage.metaTitle": {
+    "message": "UNIChat - 一起集思广益",
+    "description": "Meta title for browser tab"
+  },
+  "homepage.metaDesc": {
+    "message": "UNIChat - 突破线性限制的 Agent 级多分支对话终端",
+    "description": "Meta description for SEO"
+  },
+  "feature.agent.title": {
+    "message": "Agent 级对话架构"
+  },
+  "feature.agent.desc": {
+    "message": "会话即 Agent。不再是繁琐的角色切换，而是深度绑定的智能交互体验。"
+  },
+  "feature.branch.title": {
+    "message": "真·多分支变体"
+  },
+  "feature.branch.desc": {
+    "message": "原生支持非线性对话树。随时开启分支，对比不同变体，掌握对话的每一个可能。"
+  },
+  "feature.persona.title": {
+    "message": "Persona 系统"
+  },
+  "feature.persona.desc": {
+    "message": "极致的身份定义。让 Agent 真正理解并记住你的设定。"
+  },
+  "feature.api.title": {
+    "message": "全能 API 聚合"
+  },
+  "feature.api.desc": {
+    "message": "内置 DeepSeek, Google, LMStudio等主流预设。支持自定义 Endpoint，掌控所有模型。"
+  },
+  "feature.platform.title": {
+    "message": "全平台原生体验"
+  },
+  "feature.platform.desc": {
+    "message": "一套代码，极致优化。深度适配 macOS, iOS, Windows 和 Android，顺滑如丝。"
+  },
+  "download.title": {
+    "message": "获取 UNICHAT"
+  },
+  "download.subtitle": {
+    "message": "在您的所有设备上开启 Agent 级对话体验"
+  },
+  "download.win.title": {
+    "message": "Windows"
+  },
+  "download.win.desc": {
+    "message": "适用于 Windows 10/11 (x64)"
+  },
+  "download.mac.title": {
+    "message": "macOS"
+  },
+  "download.mac.desc": {
+    "message": "支持 Intel 与 Apple Silicon"
+  },
+  "download.android.title": {
+    "message": "Android"
+  },
+  "download.android.desc": {
+    "message": "适用于 Android 8.0 及更高版本"
+  },
+  "download.ios.title": {
+    "message": "iOS (IPA)"
+  },
+  "download.ios.desc": {
+    "message": "通过自签名或 AltStore 安装"
+  },
+  "download.github": {
+    "message": "在 GitHub 上查看 Release"
+  },
+  "macos_guide.title": {
+    "message": "macOS 安全安装指南"
+  },
+  "macos_guide.subtitle": {
+    "message": "解决“无法验证开发者”或“恶意软件”警告"
+  },
+  "macos_guide.step1.title": {
+    "message": "1. 尝试打开"
+  },
+  "macos_guide.step1.desc": {
+    "message": "在“应用程序”中双击 UNIChat，如果弹出警告，点击“取消”。"
+  },
+  "macos_guide.step2.title": {
+    "message": "2. 前往系统设置"
+  },
+  "macos_guide.step2.desc": {
+    "message": "打开“系统设置” -> “隐私与安全”。向下滚动到“安全性”部分。"
+  },
+  "macos_guide.step3.title": {
+    "message": "3. 点击“仍要打开”"
+  },
+  "macos_guide.step3.desc": {
+    "message": "你会看到一条关于 UNIChat 的提示，点击“仍要打开”并输入开机密码即可。"
+  },
+  "macos_guide.action": {
+    "message": "我已了解，立即下载"
   }
 }

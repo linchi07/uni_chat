@@ -1,0 +1,25 @@
+{
+  "id": "features/edit_persona",
+  "title": "Edit persona",
+  "description": "",
+  "source": "@site/docs/features/edit-persona.md",
+  "sourceDirName": "features",
+  "slug": "/features/edit_persona",
+  "permalink": "/docs/features/edit_persona",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "edit_persona"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Knowledge Base",
+    "permalink": "/docs/features/knowledge_base"
+  },
+  "next": {
+    "title": "Model settings",
+    "permalink": "/docs/features/model_settings"
+  }
+}

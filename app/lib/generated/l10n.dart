@@ -584,6 +584,26 @@ class S {
     );
   }
 
+  /// `Show all models`
+  String get show_all_models {
+    return Intl.message(
+      'Show all models',
+      name: 'show_all_models',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Show available models`
+  String get show_available_models {
+    return Intl.message(
+      'Show available models',
+      name: 'show_available_models',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Save`
   String get save {
     return Intl.message('Save', name: 'save', desc: '', args: []);

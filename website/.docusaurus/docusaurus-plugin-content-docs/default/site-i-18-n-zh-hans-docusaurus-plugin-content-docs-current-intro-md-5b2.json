@@ -15,7 +15,7 @@
   },
   "sidebar": "tutorialSidebar",
   "next": {
-    "title": "配置API提供商",
-    "permalink": "/zh-Hans/docs/QuickStart/configure_api_settings"
+    "title": "快速上手",
+    "permalink": "/zh-Hans/docs/category/快速上手"
   }
 }

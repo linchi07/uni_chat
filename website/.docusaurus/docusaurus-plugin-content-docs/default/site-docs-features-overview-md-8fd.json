@@ -5,7 +5,7 @@
   "source": "@site/docs/features/overview.md",
   "sourceDirName": "features",
   "slug": "/features/overview",
-  "permalink": "/zh-Hans/docs/features/overview",
+  "permalink": "/docs/features/overview",
   "draft": false,
   "unlisted": false,
   "tags": [],
@@ -16,11 +16,11 @@
   },
   "sidebar": "tutorialSidebar",
   "previous": {
-    "title": "教程介绍",
-    "permalink": "/zh-Hans/docs/intro"
+    "title": "功能指南",
+    "permalink": "/docs/category/功能指南"
   },
   "next": {
-    "title": "Create a Document",
-    "permalink": "/zh-Hans/docs/tutorial-basics/create-a-document"
+    "title": "Persona (人格/角色卡)",
+    "permalink": "/docs/features/persona"
   }
 }

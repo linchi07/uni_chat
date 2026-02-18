@@ -358,5 +358,119 @@
   },
   "theme.description": {
     "message": "UNICHAT Official Website"
+  },
+  "homepage.title": {
+    "message": "UNICHAT",
+    "description": "The title of the homepage"
+  },
+  "homepage.subTitle": {
+    "message": "Think Together — Agent-level Chat Terminal that Breaks Linear Limits",
+    "description": "The subtitle of the homepage"
+  },
+  "homepage.getStarted": {
+    "message": "Get Started",
+    "description": "Get started button label"
+  },
+  "homepage.download": {
+    "message": "Download App",
+    "description": "Download button label"
+  },
+  "homepage.metaTitle": {
+    "message": "UNIChat - Think Together",
+    "description": "Meta title for browser tab"
+  },
+  "homepage.metaDesc": {
+    "message": "UNIChat - Agent-level Multi-branch Chat Terminal that Breaks Linear Limits",
+    "description": "Meta description for SEO"
+  },
+  "feature.agent.title": {
+    "message": "Agent-level Architecture"
+  },
+  "feature.agent.desc": {
+    "message": "Sessions as Agents. No more tedious role switching, but a deeply bound intelligent interaction experience."
+  },
+  "feature.branch.title": {
+    "message": "True Multi-branch & Variants"
+  },
+  "feature.branch.desc": {
+    "message": "Native support for non-linear chat trees. Start branches anytime, compare variants, and master every possibility."
+  },
+  "feature.persona.title": {
+    "message": "Persona System"
+  },
+  "feature.persona.desc": {
+    "message": "Ultimate identity definition. Define your identity in a single click."
+  },
+  "feature.api.title": {
+    "message": "All-in-one API Bundler"
+  },
+  "feature.api.desc": {
+    "message": "Built-in presets for DeepSeek, Google, LMStudio…… . Custom endpoints supported. Control all your models."
+  },
+  "feature.platform.title": {
+    "message": "Native UX on All Platforms"
+  },
+  "feature.platform.desc": {
+    "message": "One codebase, extreme optimization. Deeply adapted for macOS, iOS, Windows, and Android."
+  },
+  "download.title": {
+    "message": "Get UNICHAT"
+  },
+  "download.subtitle": {
+    "message": "Experience Agent-level Chat on all your devices"
+  },
+  "download.win.title": {
+    "message": "Windows"
+  },
+  "download.win.desc": {
+    "message": "For Windows 10/11 (x64)"
+  },
+  "download.mac.title": {
+    "message": "macOS"
+  },
+  "download.mac.desc": {
+    "message": "Intel & Apple Silicon Support"
+  },
+  "download.android.title": {
+    "message": "Android"
+  },
+  "download.android.desc": {
+    "message": "For Android 8.0 or later"
+  },
+  "download.ios.title": {
+    "message": "iOS (IPA)"
+  },
+  "download.ios.desc": {
+    "message": "Install via Sideloadly or AltStore"
+  },
+  "download.github": {
+    "message": "View Releases on GitHub"
+  },
+  "macos_guide.title": {
+    "message": "macOS Installation Guide"
+  },
+  "macos_guide.subtitle": {
+    "message": "Bypass \"Unverified Developer\" warnings"
+  },
+  "macos_guide.step1.title": {
+    "message": "1. Attempt to Open"
+  },
+  "macos_guide.step1.desc": {
+    "message": "Double-click UNICHAT in Applications. If a warning appears, click Cancel."
+  },
+  "macos_guide.step2.title": {
+    "message": "2. System Settings"
+  },
+  "macos_guide.step2.desc": {
+    "message": "Go to System Settings -> Privacy & Security. Scroll down to Security."
+  },
+  "macos_guide.step3.title": {
+    "message": "3. Open Anyway"
+  },
+  "macos_guide.step3.desc": {
+    "message": "Find UNICHAT notice and click \"Open Anyway\". Enter password to confirm."
+  },
+  "macos_guide.action": {
+    "message": "Got it, Download Now"
   }
 }

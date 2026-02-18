@@ -1,0 +1,26 @@
+{
+  "id": "features/knowledge-base",
+  "title": "KnowledgeBase (本地知识库)",
+  "description": "KnowledgeBase 允许你将本地的 PDF、Markdown 或 TXT 文件挂载到 Agent 上，使其具备“外挂大脑”。",
+  "source": "@site/docs/features/knowledge-base.md",
+  "sourceDirName": "features",
+  "slug": "/features/knowledge-base",
+  "permalink": "/docs/features/knowledge-base",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Persona (人格/角色卡)",
+    "permalink": "/docs/features/persona"
+  },
+  "next": {
+    "title": "Auto index rules",
+    "permalink": "/docs/features/auto_index_rules"
+  }
+}

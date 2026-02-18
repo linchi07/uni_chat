@@ -1,29 +1,258 @@
-/**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* You can override the default Infima variables here. */
 :root {
+  /* Strict Monochrome Palette */
   --ifm-color-primary: #000000;
-  --ifm-color-primary-dark: #000000;
-  --ifm-color-primary-darker: #000000;
-  --ifm-color-primary-darkest: #000000;
-  --ifm-color-primary-light: #000000;
-  --ifm-color-primary-lighter: #000000;
-  --ifm-color-primary-lightest: #000000;
-  --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-color-primary-dark: #1a1a1a;
+  --ifm-color-primary-darker: #262626;
+  --ifm-color-primary-darkest: #333333;
+  --ifm-color-primary-light: #404040;
+  --ifm-color-primary-lighter: #4d4d4d;
+  --ifm-color-primary-lightest: #595959;
+
+  --ifm-background-color: #ffffff;
+  --ifm-navbar-background-color: #ffffff;
+  --ifm-footer-background-color: #f9f9f9;
+
+  --ifm-code-font-size: 90%;
+  --ifm-font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.05);
+
+  /* App-specific styles */
+  --uni-card-border: 1px solid #eeeeee;
+  --uni-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --uni-border-radius: 12px;
+}
+
+/* Dark Mode Overrides */
+[data-theme='dark'] {
+  --ifm-color-primary: #ffffff;
+  --ifm-color-primary-dark: #f0f0f0;
+  --ifm-color-primary-darker: #e0e0e0;
+  --ifm-color-primary-darkest: #d0d0d0;
+  --ifm-color-primary-light: #c0c0c0;
+  --ifm-color-primary-lighter: #b0b0b0;
+  --ifm-color-primary-lightest: #a0a0a0;
+
+  --ifm-background-color: #000000;
+  --ifm-navbar-background-color: #000000;
+  --ifm-footer-background-color: #111111;
+
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.1);
+
+  --uni-card-border: 1px solid #333333;
+  --uni-card-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
 }
 
 .button--secondary {
-  background-color: #ffffff;
-  color: #000000;
-  border-color: #000000;
+  --ifm-button-background-color: transparent;
+  --ifm-button-color: var(--ifm-color-primary);
+  --ifm-button-border-color: var(--ifm-color-primary);
+  border-width: 1px;
 }
 
 .button--secondary:hover {
-  background-color: #f0f0f0;
-  color: #000000;
+  background-color: var(--ifm-color-primary);
+  color: var(--ifm-background-color);
+}
+
+/* Bento Grid Utilities */
+.bento-grid-custom {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -0.5rem;
+}
+
+.bento-item {
+  background: var(--ifm-background-color);
+  border: var(--uni-card-border);
+  border-radius: var(--uni-border-radius);
+  padding: 2.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.bento-item:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--uni-card-shadow);
+}
+
+.hero__subtitle {
+  font-weight: 500;
+  opacity: 0.8;
+  max-width: 800px;
+  margin: 0 auto 2rem;
+}
+
+/* Hero Visual Scaling Animation */
+.hero-visual-container {
+  overflow: hidden;
+  margin: 0 auto;
+  max-width: 1000px;
+  border-radius: var(--uni-border-radius);
+  border: var(--uni-card-border);
+  background: var(--ifm-background-color);
+  box-shadow: var(--uni-card-shadow);
+  transition: transform 0.1s linear;
+  will-change: transform;
+}
+
+/* Fallback for browsers without animation-timeline support */
+.hero-scaling {
+  transform: scale(0.9);
+}
+
+/* Alternating Feature Rows */
+.feature-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6rem 0;
+  gap: 4rem;
+}
+
+.feature-row:nth-of-type(even) {
+  flex-direction: row-reverse;
+}
+
+.feature-text {
+  flex: 1;
+}
+
+.feature-visual {
+  flex: 1.2;
+  background: #f0f0f0;
+  /* Gray placeholder */
+  border-radius: var(--uni-border-radius);
+  aspect-ratio: 16 / 10;
+  border: var(--uni-card-border);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-weight: 500;
+}
+
+[data-theme='dark'] .feature-visual {
+  background: #111;
+}
+
+.feature-icon-label {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  display: block;
+}
+
+.feature-row h2 {
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.feature-row p {
+  font-size: 1.25rem;
+  color: var(--ifm-font-color-base);
+  opacity: 0.8;
+  line-height: 1.6;
+}
+
+@media (max-width: 996px) {
+
+  .feature-row,
+  .feature-row:nth-of-type(even) {
+    flex-direction: column !important;
+    padding: 3rem 0;
+    text-align: center;
+  }
+
+  .feature-visual {
+    width: 100%;
+    order: -1;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.hero__title,
+.hero__subtitle,
+.styles_buttons__Ksh7_ {
+  opacity: 0;
+}
+
+/* Download Page Grid */
+.download-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin: 4rem 0;
+}
+
+.download-card {
+  padding: 2.5rem;
+  text-align: center;
+  border: var(--uni-card-border);
+  border-radius: var(--uni-border-radius);
+  background: var(--ifm-background-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.download-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--uni-card-shadow);
+}
+
+.download-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.download-card h3 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.download-card p {
+  opacity: 0.7;
+  margin-bottom: 2rem;
+  flex-grow: 1;
+}
+
+.guide-step {
+  text-align: left;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  border: var(--uni-card-border);
+  border-radius: var(--uni-border-radius);
+}
+
+.guide-step h3 {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 996px) {
+  .bento-item {
+    padding: 1.5rem;
+  }
 }

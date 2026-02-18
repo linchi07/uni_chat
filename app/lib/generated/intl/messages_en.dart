@@ -670,6 +670,10 @@ class MessageLookup extends MessageLookupByLibrary {
       "You can check the document on the right to lear about it.",
     ),
     "setup_start": MessageLookupByLibrary.simpleMessage("Start"),
+    "show_all_models": MessageLookupByLibrary.simpleMessage("Show all models"),
+    "show_available_models": MessageLookupByLibrary.simpleMessage(
+      "Show available models",
+    ),
     "show_cot": MessageLookupByLibrary.simpleMessage("Show thoughts"),
     "show_document": MessageLookupByLibrary.simpleMessage("Show Docs"),
     "show_knowledge_base_results": MessageLookupByLibrary.simpleMessage(

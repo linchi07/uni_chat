@@ -1,7 +1,7 @@
 {
   "id": "intro",
-  "title": "Tutorial Intro",
-  "description": "Let's discover Docusaurus in less than 5 minutes.",
+  "title": "欢迎来到 UNICHAT",
+  "description": "UNIChat 是一个突破线性限制的 Agent 级多分支对话终端。",
   "source": "@site/docs/intro.md",
   "sourceDirName": ".",
   "slug": "/intro",
@@ -12,11 +12,12 @@
   "version": "current",
   "sidebarPosition": 1,
   "frontMatter": {
+    "id": "intro",
     "sidebar_position": 1
   },
   "sidebar": "tutorialSidebar",
   "next": {
-    "title": "Features Overview",
-    "permalink": "/docs/features/overview"
+    "title": "快速上手",
+    "permalink": "/docs/category/快速上手"
   }
 }

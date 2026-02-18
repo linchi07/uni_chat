@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agentProvider.dart';
-import 'package:uni_chat/Chat/chat_message_bubble.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/error_handling.dart';
@@ -528,18 +527,20 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       try {
         await for (final chunk in stream) {
           List<ChatResponse>? newBlock;
-          if (chunk.type == MessageChunkType.text) {
-            buffer.write(chunk.content);
-            newBlock = parser.parseDynamicBlock();
-          } else if (chunk.type == parser.blocksCached.lastOrNull?.type) {
-            parser.blocksCached.last = ChatResponse(
-              type: chunk.type,
-              content: parser.blocksCached.last.content + chunk.content,
-            );
-          } else {
-            parser.blocksCached.add(chunk);
+          if (chunk.content.isNotEmpty) {
+            if (chunk.type == MessageChunkType.text) {
+              buffer.write(chunk.content);
+              newBlock = parser.parseDynamicBlock();
+            } else if (chunk.type == parser.blocksCached.lastOrNull?.type) {
+              parser.blocksCached.last = ChatResponse(
+                type: chunk.type,
+                content: parser.blocksCached.last.content + chunk.content,
+              );
+            } else {
+              parser.blocksCached.add(chunk);
+            }
+            state.responses.value = [...parser.blocksCached, ...?newBlock];
           }
-          state.responses.value = [...parser.blocksCached, ...?newBlock];
         }
       } on Exception catch (e) {
         /*

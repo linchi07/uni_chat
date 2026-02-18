@@ -1,0 +1,25 @@
+{
+  "id": "features/system_prompts",
+  "title": "System Prompts",
+  "description": "",
+  "source": "@site/docs/features/system-prompts.md",
+  "sourceDirName": "features",
+  "slug": "/features/system_prompts",
+  "permalink": "/docs/features/system_prompts",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "system_prompts"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "setup-a-provider",
+    "permalink": "/docs/features/setup-a-provider"
+  },
+  "next": {
+    "title": "开发者指南",
+    "permalink": "/docs/category/开发者指南"
+  }
+}

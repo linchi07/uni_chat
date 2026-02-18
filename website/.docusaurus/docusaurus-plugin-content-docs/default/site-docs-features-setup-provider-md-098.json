@@ -1,0 +1,25 @@
+{
+  "id": "features/setup-a-provider",
+  "title": "setup-a-provider",
+  "description": "",
+  "source": "@site/docs/features/setup-provider.md",
+  "sourceDirName": "features",
+  "slug": "/features/setup-a-provider",
+  "permalink": "/docs/features/setup-a-provider",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "setup-a-provider"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Model settings",
+    "permalink": "/docs/features/model_settings"
+  },
+  "next": {
+    "title": "System Prompts",
+    "permalink": "/docs/features/system_prompts"
+  }
+}

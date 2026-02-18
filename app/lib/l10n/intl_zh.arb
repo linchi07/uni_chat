@@ -84,6 +84,8 @@
   "select_model_hint": "选择一个模型",
   "no_results": "无结果",
   "create_new_model": "创建新模型",
+  "show_all_models": "显示所有模型",
+  "show_available_models": "显示可用模型",
   "save": "保存",
   "plz_enter": "请输入",
   "add": "添加",

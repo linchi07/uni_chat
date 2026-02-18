@@ -1,0 +1,25 @@
+{
+  "id": "get-started/configure_api_settings",
+  "title": "配置API提供商",
+  "description": "本文将会教你如何快速配置UNIChat的API提供商。",
+  "source": "@site/docs/get-started/configure-api.md",
+  "sourceDirName": "get-started",
+  "slug": "/get-started/configure_api_settings",
+  "permalink": "/docs/get-started/configure_api_settings",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "configure_api_settings"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "快速上手",
+    "permalink": "/docs/category/快速上手"
+  },
+  "next": {
+    "title": "Setup your first Agent",
+    "permalink": "/docs/get-started/setup-your-first-agent"
+  }
+}

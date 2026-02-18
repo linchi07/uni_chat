@@ -1,0 +1,25 @@
+{
+  "id": "features/model_settings",
+  "title": "Model settings",
+  "description": "",
+  "source": "@site/docs/features/model-settings.md",
+  "sourceDirName": "features",
+  "slug": "/features/model_settings",
+  "permalink": "/docs/features/model_settings",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "model_settings"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Edit persona",
+    "permalink": "/docs/features/edit_persona"
+  },
+  "next": {
+    "title": "setup-a-provider",
+    "permalink": "/docs/features/setup-a-provider"
+  }
+}

@@ -832,11 +832,6 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
           ],
         ),
         const SizedBox(height: 16),
-        Text(
-          '更多知识请查看文档',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
         Expanded(
           child: ListView(
             children: [
@@ -1226,7 +1221,9 @@ class _ModelSelectState extends State<ModelSelect> {
                 ),
               ),
               StdButton(
-                text: (_showAll) ? "显示可用模型" : "显示所有模型",
+                text: (_showAll)
+                    ? S.of(context).show_available_models
+                    : S.of(context).show_all_models,
                 onPressed: () {
                   setState(() {
                     _showAll = !_showAll;
@@ -1290,86 +1287,82 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
   Widget build(BuildContext context) {
     var s = ref.watch(agentEditState);
     var theme = ref.watch(themeProvider);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text(
-              S.of(context).sys_prompt,
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(width: 8),
-            ShowDocButton(),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          '更多知识请查看文档',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text("关于占位符的使用,请查看文档"),
-        const SizedBox(height: 16),
-        Expanded(
-          child: TextField(
-            controller: controller,
-            onTapOutside: (e) {
-              onSubmit(s);
-              FocusScope.of(context).unfocus();
-            },
-            decoration: InputDecoration(
-              fillColor: theme.primaryColor,
-              focusColor: theme.primaryColor,
-              hintText: S.of(context).enter_sys_prompt_here,
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: (charCount <= s.modelSettings.maxContextTokens)
-                      ? theme.primaryColor
-                      : Colors.red,
-                  width: 1.0,
-                ),
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                S.of(context).sys_prompt,
+                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: (charCount <= s.modelSettings.maxContextTokens)
-                      ? theme.primaryColor
-                      : Colors.red,
-                  width: 2.5,
-                ),
-              ),
-              border: const OutlineInputBorder(),
-              // 添加计数器显示
-              counterStyle: TextStyle(
-                color: (charCount <= s.modelSettings.maxContextTokens)
-                    ? theme.primaryColor
-                    : Colors.red,
-                fontSize: 15.0,
-              ),
-              counterText: (charCount <= s.modelSettings.maxContextTokens)
-                  ? '$charCount/${s.modelSettings.maxContextTokens}'
-                  : S
-                        .of(context)
-                        .over_maximum_context_length_hint(
-                          charCount,
-                          s.modelSettings.maxContextTokens,
-                        ),
-            ),
-            // 监听文本变化更新计数
-            onChanged: (value) {
-              setState(() {
-                charCount = LLMTokenEstimator.estimateTokens(value);
-              });
-              onSubmit(s);
-            },
-            expands: true,
-            maxLines: null,
-            textAlignVertical: TextAlignVertical.top,
+              const SizedBox(width: 8),
+              ShowDocButton(),
+            ],
           ),
-        ),
-        const SizedBox(height: 16),
-      ],
+          const SizedBox(height: 16),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onTapOutside: (e) {
+                onSubmit(s);
+                FocusScope.of(context).unfocus();
+              },
+              decoration: InputDecoration(
+                fillColor: theme.primaryColor,
+                focusColor: theme.primaryColor,
+                hintText: S.of(context).enter_sys_prompt_here,
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: (charCount <= s.modelSettings.maxContextTokens)
+                        ? theme.primaryColor
+                        : Colors.red,
+                    width: 1.0,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: (charCount <= s.modelSettings.maxContextTokens)
+                        ? theme.primaryColor
+                        : Colors.red,
+                    width: 2.5,
+                  ),
+                ),
+                border: const OutlineInputBorder(),
+                // 添加计数器显示
+                counterStyle: TextStyle(
+                  color: (charCount <= s.modelSettings.maxContextTokens)
+                      ? theme.primaryColor
+                      : Colors.red,
+                  fontSize: 15.0,
+                ),
+                counterText: (charCount <= s.modelSettings.maxContextTokens)
+                    ? '$charCount/${s.modelSettings.maxContextTokens}'
+                    : S
+                          .of(context)
+                          .over_maximum_context_length_hint(
+                            charCount,
+                            s.modelSettings.maxContextTokens,
+                          ),
+              ),
+              // 监听文本变化更新计数
+              onChanged: (value) {
+                setState(() {
+                  charCount = LLMTokenEstimator.estimateTokens(value);
+                });
+                onSubmit(s);
+              },
+              expands: true,
+              maxLines: null,
+              textAlignVertical: TextAlignVertical.top,
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 }

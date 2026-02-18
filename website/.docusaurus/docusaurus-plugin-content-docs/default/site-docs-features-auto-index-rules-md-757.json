@@ -1,0 +1,25 @@
+{
+  "id": "features/auto_index_rules",
+  "title": "Auto index rules",
+  "description": "",
+  "source": "@site/docs/features/Auto index Rules.md",
+  "sourceDirName": "features",
+  "slug": "/features/auto_index_rules",
+  "permalink": "/docs/features/auto_index_rules",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "auto_index_rules"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "KnowledgeBase (本地知识库)",
+    "permalink": "/docs/features/knowledge-base"
+  },
+  "next": {
+    "title": "File Manage",
+    "permalink": "/docs/features/file_manage"
+  }
+}

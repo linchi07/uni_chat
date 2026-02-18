@@ -1,103 +1,123 @@
 {
   "docusaurus-plugin-content-docs": {
     "default": {
-      "path": "/zh-Hans/docs",
+      "path": "/docs",
       "versions": [
         {
           "name": "current",
           "label": "Next",
           "isLast": true,
-          "path": "/zh-Hans/docs",
+          "path": "/docs",
           "mainDocId": "intro",
           "docs": [
             {
-              "id": "Agents/knowledge_base",
-              "path": "/zh-Hans/docs/Agents/knowledge_base",
+              "id": "core-concepts/agent-philosophy",
+              "path": "/docs/core-concepts/agent-philosophy",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "Agents/model_settings",
-              "path": "/zh-Hans/docs/Agents/model_settings",
+              "id": "core-concepts/branching",
+              "path": "/docs/core-concepts/branching",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "Agents/system_prompts",
-              "path": "/zh-Hans/docs/Agents/system_prompts",
+              "id": "development/run-unichat-on-ios-or-ipados-devices",
+              "path": "/docs/development/run-unichat-on-ios-or-ipados-devices",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "API Providers/setup-a-provider",
-              "path": "/zh-Hans/docs/API Providers/setup-a-provider",
+              "id": "features/auto_index_rules",
+              "path": "/docs/features/auto_index_rules",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "features/edit_persona",
+              "path": "/docs/features/edit_persona",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "features/file_manage",
+              "path": "/docs/features/file_manage",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "features/knowledge_base",
+              "path": "/docs/features/knowledge_base",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "features/knowledge-base",
+              "path": "/docs/features/knowledge-base",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "features/memory_manage",
+              "path": "/docs/features/memory_manage",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "features/model_settings",
+              "path": "/docs/features/model_settings",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "features/overview",
+              "path": "/docs/features/overview",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "features/persona",
+              "path": "/docs/features/persona",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "features/setup-a-provider",
+              "path": "/docs/features/setup-a-provider",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "features/system_prompts",
+              "path": "/docs/features/system_prompts",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "features/website_manage",
+              "path": "/docs/features/website_manage",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "get-started/configure_api_settings",
+              "path": "/docs/get-started/configure_api_settings",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "get-started/setup-your-first-agent",
+              "path": "/docs/get-started/setup-your-first-agent",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "intro",
-              "path": "/zh-Hans/docs/intro",
+              "path": "/docs/intro",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "KnowledgeBases/auto_index_rules",
-              "path": "/zh-Hans/docs/KnowledgeBases/auto_index_rules",
+              "id": "/category/快速上手",
+              "path": "/docs/category/快速上手",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "KnowledgeBases/file_manage",
-              "path": "/zh-Hans/docs/KnowledgeBases/file_manage",
+              "id": "/category/核心概念",
+              "path": "/docs/category/核心概念",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "KnowledgeBases/memory_manage",
-              "path": "/zh-Hans/docs/KnowledgeBases/memory_manage",
+              "id": "/category/功能指南",
+              "path": "/docs/category/功能指南",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "KnowledgeBases/website_manage",
-              "path": "/zh-Hans/docs/KnowledgeBases/website_manage",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "Personas/edit_persona",
-              "path": "/zh-Hans/docs/Personas/edit_persona",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "QuickStart/configure_api_settings",
-              "path": "/zh-Hans/docs/QuickStart/configure_api_settings",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "QuickStart/create_a_persona",
-              "path": "/zh-Hans/docs/QuickStart/create_a_persona",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "QuickStart/link_kb_to_agent",
-              "path": "/zh-Hans/docs/QuickStart/link_kb_to_agent",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "QuickStart/setup-your-first-agent",
-              "path": "/zh-Hans/docs/QuickStart/setup-your-first-agent",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "/category/api-providers",
-              "path": "/zh-Hans/docs/category/api-providers",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "/category/agents",
-              "path": "/zh-Hans/docs/category/agents",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "/category/knowledgebases",
-              "path": "/zh-Hans/docs/category/knowledgebases",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "/category/personas",
-              "path": "/zh-Hans/docs/category/personas",
+              "id": "/category/开发者指南",
+              "path": "/docs/category/开发者指南",
               "sidebar": "tutorialSidebar"
             }
           ],
@@ -105,7 +125,7 @@
           "sidebars": {
             "tutorialSidebar": {
               "link": {
-                "path": "/zh-Hans/docs/intro",
+                "path": "/docs/intro",
                 "label": "intro"
               }
             }

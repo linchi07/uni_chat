@@ -1,0 +1,25 @@
+{
+  "id": "features/file_manage",
+  "title": "File Manage",
+  "description": "",
+  "source": "@site/docs/features/File Manage.md",
+  "sourceDirName": "features",
+  "slug": "/features/file_manage",
+  "permalink": "/docs/features/file_manage",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "file_manage"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Auto index rules",
+    "permalink": "/docs/features/auto_index_rules"
+  },
+  "next": {
+    "title": "Memory Manage",
+    "permalink": "/docs/features/memory_manage"
+  }
+}

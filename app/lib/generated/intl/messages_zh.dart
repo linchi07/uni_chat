@@ -468,6 +468,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "你可以查看右边的教程来了解为什么需要以及如何添加",
     ),
     "setup_start": MessageLookupByLibrary.simpleMessage("开始设置"),
+    "show_all_models": MessageLookupByLibrary.simpleMessage("显示所有模型"),
+    "show_available_models": MessageLookupByLibrary.simpleMessage("显示可用模型"),
     "show_cot": MessageLookupByLibrary.simpleMessage("显示思维链"),
     "show_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
       "查看检索结果",

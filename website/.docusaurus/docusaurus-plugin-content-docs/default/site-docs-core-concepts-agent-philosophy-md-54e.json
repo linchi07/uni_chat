@@ -1,0 +1,26 @@
+{
+  "id": "core-concepts/agent-philosophy",
+  "title": "会话即 Agent：单体架构哲学",
+  "description": "UNIChat 采用了一种独特的“单体化”设计哲学：会话即 Agent (Session is Agent)。",
+  "source": "@site/docs/core-concepts/agent-philosophy.md",
+  "sourceDirName": "core-concepts",
+  "slug": "/core-concepts/agent-philosophy",
+  "permalink": "/docs/core-concepts/agent-philosophy",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "非线性对话与分支",
+    "permalink": "/docs/core-concepts/branching"
+  },
+  "next": {
+    "title": "功能指南",
+    "permalink": "/docs/category/功能指南"
+  }
+}

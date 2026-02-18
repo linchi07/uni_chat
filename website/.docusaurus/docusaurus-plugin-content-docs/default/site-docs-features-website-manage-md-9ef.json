@@ -1,0 +1,25 @@
+{
+  "id": "features/website_manage",
+  "title": "Website Manage",
+  "description": "",
+  "source": "@site/docs/features/Website Manage.md",
+  "sourceDirName": "features",
+  "slug": "/features/website_manage",
+  "permalink": "/docs/features/website_manage",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "website_manage"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Memory Manage",
+    "permalink": "/docs/features/memory_manage"
+  },
+  "next": {
+    "title": "Knowledge Base",
+    "permalink": "/docs/features/knowledge_base"
+  }
+}

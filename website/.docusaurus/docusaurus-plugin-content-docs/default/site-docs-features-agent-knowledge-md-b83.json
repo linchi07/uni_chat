@@ -1,0 +1,25 @@
+{
+  "id": "features/knowledge_base",
+  "title": "Knowledge Base",
+  "description": "",
+  "source": "@site/docs/features/agent-knowledge.md",
+  "sourceDirName": "features",
+  "slug": "/features/knowledge_base",
+  "permalink": "/docs/features/knowledge_base",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "knowledge_base"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Website Manage",
+    "permalink": "/docs/features/website_manage"
+  },
+  "next": {
+    "title": "Edit persona",
+    "permalink": "/docs/features/edit_persona"
+  }
+}

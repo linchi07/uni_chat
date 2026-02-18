@@ -84,6 +84,8 @@
   "select_model_hint":"Please select a model",
   "no_results":"No results",
   "create_new_model":"Create new model",
+  "show_all_models": "Show all models",
+  "show_available_models": "Show available models",
   "save":"Save",
   "plz_enter": "Please enter ",
   "add":"Add",

@@ -1,0 +1,21 @@
+{
+  "id": "development/run-unichat-on-ios-or-ipados-devices",
+  "title": "Run UNIChat on IOS or iPadOS devices",
+  "description": "Since I do not have a paid Apple developer account, I can't publish the app to the app store. But you can still run the app on your own device.",
+  "source": "@site/docs/development/Run UNIChat on IOS or iPadOS devices.md",
+  "sourceDirName": "development",
+  "slug": "/development/run-unichat-on-ios-or-ipados-devices",
+  "permalink": "/docs/development/run-unichat-on-ios-or-ipados-devices",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "run-unichat-on-ios-or-ipados-devices"
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "开发者指南",
+    "permalink": "/docs/category/开发者指南"
+  }
+}
