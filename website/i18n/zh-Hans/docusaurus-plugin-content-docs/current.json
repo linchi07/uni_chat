@@ -1,22 +1,18 @@
 {
-  "sidebar.tutorialSidebar.category.Agents.label": {
-    "message": "Agents",
-    "description": "侧边栏类别标签：Agents"
+  "sidebar.tutorialSidebar.category.Core Concepts": {
+    "message": "核心概念",
+    "description": "The label for category Core Concepts in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.API Providers.label": {
-    "message": "API 服务提供商",
-    "description": "侧边栏类别标签：API 服务提供商"
+  "sidebar.tutorialSidebar.category.Agents & Personas": {
+    "message": "Agent 与角色扮演",
+    "description": "The label for category Agents & Personas in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.KnowledgeBases.label": {
-    "message": "知识库",
-    "description": "侧边栏类别标签：知识库"
+  "sidebar.tutorialSidebar.category.Models & APIs": {
+    "message": "模型与 API",
+    "description": "The label for category Models & APIs in sidebar tutorialSidebar"
   },
-  "sidebar.tutorialSidebar.category.Personas.label": {
-    "message": "人格",
-    "description": "侧边栏类别标签：人格"
-  },
-  "sidebar.tutorialSidebar.category.QuickStart.label": {
-    "message": "快速入门",
-    "description": "侧边栏类别标签：快速入门"
+  "sidebar.tutorialSidebar.category.Development & Installation": {
+    "message": "开发与安装",
+    "description": "The label for category Development & Installation in sidebar tutorialSidebar"
   }
 }

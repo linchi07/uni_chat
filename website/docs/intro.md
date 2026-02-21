@@ -38,6 +38,6 @@ Built-in presets for DeepSeek, Google Gemini, OpenAI, etc., and supports custom 
 
 Ready to experience the charm of non-linear conversations?
 
-1. [Configure API Provider](./get-started/configure-api.md): Connect your first AI model.
-2. [Set Up Your First Agent](./get-started/setup-agent.md): Define its personality and capabilities.
+1. [Configure API Provider](./models-and-apis/intro.md): Connect your first AI model.
+2. [Set Up Your First Agent](./agents/setup-agent.md): Define its personality and capabilities.
 3. [Understand Core Concepts](./core-concepts/branching.md): Learn how to start your first conversation branch.

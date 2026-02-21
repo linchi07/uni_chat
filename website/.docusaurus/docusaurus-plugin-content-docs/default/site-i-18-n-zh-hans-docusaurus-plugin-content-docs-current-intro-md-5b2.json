@@ -39,8 +39,12 @@
     "sidebar_position": 1
   },
   "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "从Agent到会话",
+    "permalink": "/zh-Hans/docs/core-concepts/agent-philosophy"
+  },
   "next": {
-    "title": "Core Concepts",
-    "permalink": "/zh-Hans/docs/category/core-concepts"
+    "title": "Agents & Personas",
+    "permalink": "/zh-Hans/docs/category/agents--personas"
   }
 }

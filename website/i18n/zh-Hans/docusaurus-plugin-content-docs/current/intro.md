@@ -19,6 +19,6 @@ sidebar_position: 1
 
 准备好体验非线性对话的魅力了吗？
 
-1. [配置 API 提供商](./get-started/configure-api.md)：连接你的第一个 AI 模型。
-2. [设置你的第一个 Agent](./get-started/setup-agent.md)：定义它的性格与能力。
+1. [配置 API 提供商](./models-and-apis/intro.md)：连接你的第一个 AI 模型。
+2. [设置你的第一个 Agent](./agents/setup-agent.md)：定义它的性格与能力。
 3. [理解核心概念](./core-concepts/branching.md)：学习如何开启你的第一个对话分支。

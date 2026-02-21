@@ -8,7 +8,7 @@
           "label": "Next",
           "isLast": true,
           "path": "/zh-Hans/docs",
-          "mainDocId": "intro",
+          "mainDocId": "core-concepts/branching",
           "docs": [
             {
               "id": "agents/agent-brief",
@@ -125,8 +125,8 @@
           "sidebars": {
             "tutorialSidebar": {
               "link": {
-                "path": "/zh-Hans/docs/intro",
-                "label": "intro"
+                "path": "/zh-Hans/docs/category/core-concepts",
+                "label": "核心概念"
               }
             }
           }

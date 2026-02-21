@@ -11,6 +11,15 @@ function HomepageHeader() {
   return (
     <header className={clsx('hero', styles.heroBanner)} style={{ textAlign: 'center', padding: '10rem 0 5rem' }}>
       <div className="container">
+        <img
+          src={useBaseUrl('/img/uni_chat_no_bg.png')}
+          alt="UniChatLogo"
+          style={{
+            width: '100%',
+            height: '100px',
+            objectFit: 'contain' // 如果想填满但不裁剪用 contain，如果想铺满用 cover
+          }}
+        />
         <Heading as="h1" className="hero__title animate-fade-in" style={{ fontSize: '4.5rem', fontWeight: 800, animationDelay: '0.1s' }}>
           <Translate id="homepage.title">UNIChat 通聊</Translate>
         </Heading>
@@ -45,7 +54,7 @@ function HeroVisual() {
       const scrollPos = window.scrollY;
       const windowHeight = window.innerHeight;
       // Calculate scale based on scroll position (0 to 1000px)
-      const newScale = Math.min(1.1, 0.85 + (scrollPos / 1500));
+      const newScale = Math.min(1.2, 0.85 + (scrollPos / 1500));
       // Parallax upward movement
       const newTranslateY = Math.max(-100, -(scrollPos / 5));
 
@@ -67,7 +76,7 @@ function HeroVisual() {
       >
         {/* 2. 将原本的占位 div 替换为 <img> */}
         <div style={{
-          height: '600px',
+          height: '700px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

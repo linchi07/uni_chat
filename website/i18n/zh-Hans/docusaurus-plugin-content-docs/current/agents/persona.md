@@ -37,7 +37,7 @@ Persona 的原义是人格，加入这个系统的本意是希望你能像切换
 你可以将某一个人格和Agent绑定起来，这样，当某个Agent被调用时，会自动切换到该Persona。
 同时，你可以为Agent添加人格额外信息，这些信息只会被当前的Agent记住，从而打造“差异化认知”。
 
-详见 [Agent](/docs/agent)
+详见 [Agent](./agent-brief.md)
 
 ## 创建一个Persona
 建立一个 Persona 很简单。在Persona切换器中点击新建人格就会打开创建页面。

@@ -256,3 +256,14 @@
     padding: 1.5rem;
   }
 }
+/* Markdown 正文链接突出显示 */
+.markdown a {
+  color: #0066cc;
+  text-decoration: underline;
+}
+.markdown a:hover {
+  text-decoration: none;
+}
+[data-theme='dark'] .markdown a {
+  color: #4da6ff;
+}
