@@ -1,0 +1,50 @@
+{
+  "id": "agents/agent-brief",
+  "title": "What is an Agent",
+  "description": "Understand the core concept of an Agent and its vital role in UNIChat",
+  "source": "@site/docs/agents/agent-brief.md",
+  "sourceDirName": "agents",
+  "slug": "/agents/agent-brief",
+  "permalink": "/docs/agents/agent-brief",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "Agent",
+      "permalink": "/docs/tags/agent"
+    },
+    {
+      "inline": true,
+      "label": "Persona",
+      "permalink": "/docs/tags/persona"
+    },
+    {
+      "inline": true,
+      "label": "Core Concepts",
+      "permalink": "/docs/tags/core-concepts"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "id": "agent-brief",
+    "title": "What is an Agent",
+    "description": "Understand the core concept of an Agent and its vital role in UNIChat",
+    "tags": [
+      "Agent",
+      "Persona",
+      "Core Concepts"
+    ],
+    "sidebar_position": 1
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Agents & Personas",
+    "permalink": "/docs/category/agents--personas"
+  },
+  "next": {
+    "title": "Setup Your First Agent",
+    "permalink": "/docs/agents/setup-agent"
+  }
+}

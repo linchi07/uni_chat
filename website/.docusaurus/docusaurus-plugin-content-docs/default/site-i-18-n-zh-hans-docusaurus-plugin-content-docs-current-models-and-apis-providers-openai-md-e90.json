@@ -1,0 +1,50 @@
+{
+  "id": "models-and-apis/providers/openai",
+  "title": "接入 OpenAI",
+  "description": "配置官方 OpenAI API 及接入指南",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/models-and-apis/providers/openai.md",
+  "sourceDirName": "models-and-apis/providers",
+  "slug": "/models-and-apis/providers/openai",
+  "permalink": "/zh-Hans/docs/models-and-apis/providers/openai",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API提供商",
+      "permalink": "/zh-Hans/docs/tags/api提供商"
+    },
+    {
+      "inline": true,
+      "label": "OpenAI",
+      "permalink": "/zh-Hans/docs/tags/open-ai"
+    },
+    {
+      "inline": true,
+      "label": "GPT",
+      "permalink": "/zh-Hans/docs/tags/gpt"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "id": "openai",
+    "title": "接入 OpenAI",
+    "description": "配置官方 OpenAI API 及接入指南",
+    "tags": [
+      "API提供商",
+      "OpenAI",
+      "GPT"
+    ],
+    "sidebar_position": 5
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "接入 ModelScope 魔搭",
+    "permalink": "/zh-Hans/docs/models-and-apis/providers/modelscope"
+  },
+  "next": {
+    "title": "Development & Installation",
+    "permalink": "/zh-Hans/docs/category/development--installation"
+  }
+}

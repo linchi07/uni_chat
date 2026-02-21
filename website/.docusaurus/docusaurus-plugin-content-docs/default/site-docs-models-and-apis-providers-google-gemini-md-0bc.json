@@ -1,0 +1,50 @@
+{
+  "id": "models-and-apis/providers/google-gemini",
+  "title": "Connect to Google Gemini",
+  "description": "Configure and use Google AI Studio natively inside UNIChat",
+  "source": "@site/docs/models-and-apis/providers/google-gemini.md",
+  "sourceDirName": "models-and-apis/providers",
+  "slug": "/models-and-apis/providers/google-gemini",
+  "permalink": "/docs/models-and-apis/providers/google-gemini",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API Provider",
+      "permalink": "/docs/tags/api-provider"
+    },
+    {
+      "inline": true,
+      "label": "Google",
+      "permalink": "/docs/tags/google"
+    },
+    {
+      "inline": true,
+      "label": "Gemini",
+      "permalink": "/docs/tags/gemini"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "id": "google-gemini",
+    "title": "Connect to Google Gemini",
+    "description": "Configure and use Google AI Studio natively inside UNIChat",
+    "tags": [
+      "API Provider",
+      "Google",
+      "Gemini"
+    ],
+    "sidebar_position": 3
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Connect to DeepSeek",
+    "permalink": "/docs/models-and-apis/providers/deepseek"
+  },
+  "next": {
+    "title": "Connect to ModelScope",
+    "permalink": "/docs/models-and-apis/providers/modelscope"
+  }
+}

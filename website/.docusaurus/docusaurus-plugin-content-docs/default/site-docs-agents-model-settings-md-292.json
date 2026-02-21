@@ -1,0 +1,50 @@
+{
+  "id": "agents/model-settings",
+  "title": "Model Settings",
+  "description": "How to configure models and parameters for your Agent",
+  "source": "@site/docs/agents/model-settings.md",
+  "sourceDirName": "agents",
+  "slug": "/agents/model-settings",
+  "permalink": "/docs/agents/model-settings",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "Agent",
+      "permalink": "/docs/tags/agent"
+    },
+    {
+      "inline": true,
+      "label": "Model Setup",
+      "permalink": "/docs/tags/model-setup"
+    },
+    {
+      "inline": true,
+      "label": "Basic Config",
+      "permalink": "/docs/tags/basic-config"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "id": "model-settings",
+    "title": "Model Settings",
+    "description": "How to configure models and parameters for your Agent",
+    "tags": [
+      "Agent",
+      "Model Setup",
+      "Basic Config"
+    ],
+    "sidebar_position": 2
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Setup Your First Agent",
+    "permalink": "/docs/agents/setup-agent"
+  },
+  "next": {
+    "title": "System Prompts",
+    "permalink": "/docs/agents/system-prompt"
+  }
+}

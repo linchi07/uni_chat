@@ -1,0 +1,50 @@
+{
+  "id": "agents/persona",
+  "title": "Persona 人格系统",
+  "description": "使用 Persona 为 Agent 提供更多关于你的信息",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/agents/persona.md",
+  "sourceDirName": "agents",
+  "slug": "/agents/persona",
+  "permalink": "/zh-Hans/docs/agents/persona",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "Persona",
+      "permalink": "/zh-Hans/docs/tags/persona"
+    },
+    {
+      "inline": true,
+      "label": "角色扮演",
+      "permalink": "/zh-Hans/docs/tags/角色扮演"
+    },
+    {
+      "inline": true,
+      "label": "个性化",
+      "permalink": "/zh-Hans/docs/tags/个性化"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "id": "persona",
+    "title": "Persona 人格系统",
+    "description": "使用 Persona 为 Agent 提供更多关于你的信息",
+    "tags": [
+      "Persona",
+      "角色扮演",
+      "个性化"
+    ],
+    "sidebar_position": 5
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "用户身份设置",
+    "permalink": "/zh-Hans/docs/agents/user-identity"
+  },
+  "next": {
+    "title": "Models & APIs",
+    "permalink": "/zh-Hans/docs/category/models--apis"
+  }
+}

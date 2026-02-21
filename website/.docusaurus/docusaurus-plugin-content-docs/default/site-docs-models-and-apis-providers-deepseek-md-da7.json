@@ -1,0 +1,44 @@
+{
+  "id": "models-and-apis/providers/deepseek",
+  "title": "Connect to DeepSeek",
+  "description": "Configure and utilize DeepSeek's API within UNIChat",
+  "source": "@site/docs/models-and-apis/providers/deepseek.md",
+  "sourceDirName": "models-and-apis/providers",
+  "slug": "/models-and-apis/providers/deepseek",
+  "permalink": "/docs/models-and-apis/providers/deepseek",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API Provider",
+      "permalink": "/docs/tags/api-provider"
+    },
+    {
+      "inline": true,
+      "label": "DeepSeek",
+      "permalink": "/docs/tags/deep-seek"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "id": "deepseek",
+    "title": "Connect to DeepSeek",
+    "description": "Configure and utilize DeepSeek's API within UNIChat",
+    "tags": [
+      "API Provider",
+      "DeepSeek"
+    ],
+    "sidebar_position": 2
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Connect to LMStudio",
+    "permalink": "/docs/models-and-apis/providers/lmstudio"
+  },
+  "next": {
+    "title": "Connect to Google Gemini",
+    "permalink": "/docs/models-and-apis/providers/google-gemini"
+  }
+}

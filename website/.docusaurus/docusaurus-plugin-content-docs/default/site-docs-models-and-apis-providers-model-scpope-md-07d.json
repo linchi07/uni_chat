@@ -1,0 +1,44 @@
+{
+  "id": "models-and-apis/providers/modelscope",
+  "title": "Connect to ModelScope",
+  "description": "Discover how to tap into free inference blocks utilizing the ModelScope API inside UNIChat",
+  "source": "@site/docs/models-and-apis/providers/model-scpope.md",
+  "sourceDirName": "models-and-apis/providers",
+  "slug": "/models-and-apis/providers/modelscope",
+  "permalink": "/docs/models-and-apis/providers/modelscope",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API Provider",
+      "permalink": "/docs/tags/api-provider"
+    },
+    {
+      "inline": true,
+      "label": "ModelScope",
+      "permalink": "/docs/tags/model-scope"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "id": "modelscope",
+    "title": "Connect to ModelScope",
+    "description": "Discover how to tap into free inference blocks utilizing the ModelScope API inside UNIChat",
+    "tags": [
+      "API Provider",
+      "ModelScope"
+    ],
+    "sidebar_position": 4
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Connect to Google Gemini",
+    "permalink": "/docs/models-and-apis/providers/google-gemini"
+  },
+  "next": {
+    "title": "Connect to OpenAI",
+    "permalink": "/docs/models-and-apis/providers/openai"
+  }
+}

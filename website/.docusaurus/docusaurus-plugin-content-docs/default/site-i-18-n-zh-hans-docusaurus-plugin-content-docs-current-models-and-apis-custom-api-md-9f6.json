@@ -1,0 +1,50 @@
+{
+  "id": "models-and-apis/custom-api",
+  "title": "自定义 API",
+  "description": "如何在 UNIChat 中接入本地或第三方大模型 API",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/models-and-apis/custom-api.md",
+  "sourceDirName": "models-and-apis",
+  "slug": "/models-and-apis/custom-api",
+  "permalink": "/zh-Hans/docs/models-and-apis/custom-api",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API",
+      "permalink": "/zh-Hans/docs/tags/api"
+    },
+    {
+      "inline": true,
+      "label": "自定义端点",
+      "permalink": "/zh-Hans/docs/tags/自定义端点"
+    },
+    {
+      "inline": true,
+      "label": "本地部署",
+      "permalink": "/zh-Hans/docs/tags/本地部署"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "id": "custom-api",
+    "title": "自定义 API",
+    "description": "如何在 UNIChat 中接入本地或第三方大模型 API",
+    "tags": [
+      "API",
+      "自定义端点",
+      "本地部署"
+    ],
+    "sidebar_position": 2
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "模型与 API 概览",
+    "permalink": "/zh-Hans/docs/models-and-apis/api-intro"
+  },
+  "next": {
+    "title": "自动调度与负载均衡",
+    "permalink": "/zh-Hans/docs/models-and-apis/auto-balance"
+  }
+}

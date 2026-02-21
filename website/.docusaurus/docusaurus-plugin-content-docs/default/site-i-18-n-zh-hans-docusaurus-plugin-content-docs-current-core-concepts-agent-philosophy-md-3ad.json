@@ -1,0 +1,50 @@
+{
+  "id": "core-concepts/agent-philosophy",
+  "title": "从Agent到会话",
+  "description": "了解 UNIChat 独特的单体架构哲学与优势",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/core-concepts/agent-philosophy.md",
+  "sourceDirName": "core-concepts",
+  "slug": "/core-concepts/agent-philosophy",
+  "permalink": "/zh-Hans/docs/core-concepts/agent-philosophy",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "核心概念",
+      "permalink": "/zh-Hans/docs/tags/核心概念"
+    },
+    {
+      "inline": true,
+      "label": "架构",
+      "permalink": "/zh-Hans/docs/tags/架构"
+    },
+    {
+      "inline": true,
+      "label": "Agent",
+      "permalink": "/zh-Hans/docs/tags/agent"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "id": "agent-philosophy",
+    "title": "从Agent到会话",
+    "description": "了解 UNIChat 独特的单体架构哲学与优势",
+    "tags": [
+      "核心概念",
+      "架构",
+      "Agent"
+    ],
+    "sidebar_position": 2
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "多分支对话",
+    "permalink": "/zh-Hans/docs/core-concepts/branching"
+  },
+  "next": {
+    "title": "欢迎使用",
+    "permalink": "/zh-Hans/docs/intro"
+  }
+}

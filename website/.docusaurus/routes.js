@@ -3,266 +3,436 @@ import ComponentCreator from '@docusaurus/ComponentCreator';
 
 export default [
   {
-    path: '/__docusaurus/debug',
-    component: ComponentCreator('/__docusaurus/debug', '5ff'),
+    path: '/zh-Hans/__docusaurus/debug',
+    component: ComponentCreator('/zh-Hans/__docusaurus/debug', '555'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/config',
-    component: ComponentCreator('/__docusaurus/debug/config', '5ba'),
+    path: '/zh-Hans/__docusaurus/debug/config',
+    component: ComponentCreator('/zh-Hans/__docusaurus/debug/config', '1fa'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/content',
-    component: ComponentCreator('/__docusaurus/debug/content', 'a2b'),
+    path: '/zh-Hans/__docusaurus/debug/content',
+    component: ComponentCreator('/zh-Hans/__docusaurus/debug/content', '1c6'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/globalData',
-    component: ComponentCreator('/__docusaurus/debug/globalData', 'c3c'),
+    path: '/zh-Hans/__docusaurus/debug/globalData',
+    component: ComponentCreator('/zh-Hans/__docusaurus/debug/globalData', '0df'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/metadata',
-    component: ComponentCreator('/__docusaurus/debug/metadata', '156'),
+    path: '/zh-Hans/__docusaurus/debug/metadata',
+    component: ComponentCreator('/zh-Hans/__docusaurus/debug/metadata', '9f5'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/registry',
-    component: ComponentCreator('/__docusaurus/debug/registry', '88c'),
+    path: '/zh-Hans/__docusaurus/debug/registry',
+    component: ComponentCreator('/zh-Hans/__docusaurus/debug/registry', 'ada'),
     exact: true
   },
   {
-    path: '/__docusaurus/debug/routes',
-    component: ComponentCreator('/__docusaurus/debug/routes', '000'),
+    path: '/zh-Hans/__docusaurus/debug/routes',
+    component: ComponentCreator('/zh-Hans/__docusaurus/debug/routes', '11e'),
     exact: true
   },
   {
-    path: '/blog',
-    component: ComponentCreator('/blog', 'b2f'),
+    path: '/zh-Hans/blog',
+    component: ComponentCreator('/zh-Hans/blog', '575'),
     exact: true
   },
   {
-    path: '/blog/archive',
-    component: ComponentCreator('/blog/archive', '182'),
+    path: '/zh-Hans/blog/archive',
+    component: ComponentCreator('/zh-Hans/blog/archive', 'c6a'),
     exact: true
   },
   {
-    path: '/blog/authors',
-    component: ComponentCreator('/blog/authors', '0b7'),
+    path: '/zh-Hans/blog/authors',
+    component: ComponentCreator('/zh-Hans/blog/authors', 'eed'),
     exact: true
   },
   {
-    path: '/blog/authors/all-sebastien-lorber-articles',
-    component: ComponentCreator('/blog/authors/all-sebastien-lorber-articles', '4a1'),
+    path: '/zh-Hans/blog/authors/all-sebastien-lorber-articles',
+    component: ComponentCreator('/zh-Hans/blog/authors/all-sebastien-lorber-articles', '3cd'),
     exact: true
   },
   {
-    path: '/blog/authors/yangshun',
-    component: ComponentCreator('/blog/authors/yangshun', 'a68'),
+    path: '/zh-Hans/blog/authors/yangshun',
+    component: ComponentCreator('/zh-Hans/blog/authors/yangshun', 'b1b'),
     exact: true
   },
   {
-    path: '/blog/first-blog-post',
-    component: ComponentCreator('/blog/first-blog-post', '89a'),
+    path: '/zh-Hans/blog/first-blog-post',
+    component: ComponentCreator('/zh-Hans/blog/first-blog-post', '9f9'),
     exact: true
   },
   {
-    path: '/blog/long-blog-post',
-    component: ComponentCreator('/blog/long-blog-post', '9ad'),
+    path: '/zh-Hans/blog/long-blog-post',
+    component: ComponentCreator('/zh-Hans/blog/long-blog-post', 'd61'),
     exact: true
   },
   {
-    path: '/blog/mdx-blog-post',
-    component: ComponentCreator('/blog/mdx-blog-post', 'e9f'),
+    path: '/zh-Hans/blog/mdx-blog-post',
+    component: ComponentCreator('/zh-Hans/blog/mdx-blog-post', 'd1e'),
     exact: true
   },
   {
-    path: '/blog/tags',
-    component: ComponentCreator('/blog/tags', '287'),
+    path: '/zh-Hans/blog/tags',
+    component: ComponentCreator('/zh-Hans/blog/tags', 'c60'),
     exact: true
   },
   {
-    path: '/blog/tags/docusaurus',
-    component: ComponentCreator('/blog/tags/docusaurus', '704'),
+    path: '/zh-Hans/blog/tags/docusaurus',
+    component: ComponentCreator('/zh-Hans/blog/tags/docusaurus', '874'),
     exact: true
   },
   {
-    path: '/blog/tags/facebook',
-    component: ComponentCreator('/blog/tags/facebook', '858'),
+    path: '/zh-Hans/blog/tags/facebook',
+    component: ComponentCreator('/zh-Hans/blog/tags/facebook', '205'),
     exact: true
   },
   {
-    path: '/blog/tags/hello',
-    component: ComponentCreator('/blog/tags/hello', '299'),
+    path: '/zh-Hans/blog/tags/hello',
+    component: ComponentCreator('/zh-Hans/blog/tags/hello', '0ab'),
     exact: true
   },
   {
-    path: '/blog/tags/hola',
-    component: ComponentCreator('/blog/tags/hola', '00d'),
+    path: '/zh-Hans/blog/tags/hola',
+    component: ComponentCreator('/zh-Hans/blog/tags/hola', 'c43'),
     exact: true
   },
   {
-    path: '/blog/welcome',
-    component: ComponentCreator('/blog/welcome', 'd2b'),
+    path: '/zh-Hans/blog/welcome',
+    component: ComponentCreator('/zh-Hans/blog/welcome', 'abc'),
     exact: true
   },
   {
-    path: '/download',
-    component: ComponentCreator('/download', 'b81'),
+    path: '/zh-Hans/download',
+    component: ComponentCreator('/zh-Hans/download', '4ff'),
     exact: true
   },
   {
-    path: '/macos-guide',
-    component: ComponentCreator('/macos-guide', 'a4a'),
+    path: '/zh-Hans/macos-guide',
+    component: ComponentCreator('/zh-Hans/macos-guide', '1c7'),
     exact: true
   },
   {
-    path: '/markdown-page',
-    component: ComponentCreator('/markdown-page', '3d7'),
-    exact: true
-  },
-  {
-    path: '/docs',
-    component: ComponentCreator('/docs', 'd0e'),
+    path: '/zh-Hans/docs',
+    component: ComponentCreator('/zh-Hans/docs', '496'),
     routes: [
       {
-        path: '/docs',
-        component: ComponentCreator('/docs', 'e8a'),
+        path: '/zh-Hans/docs',
+        component: ComponentCreator('/zh-Hans/docs', 'e94'),
         routes: [
           {
-            path: '/docs',
-            component: ComponentCreator('/docs', '2df'),
+            path: '/zh-Hans/docs/tags',
+            component: ComponentCreator('/zh-Hans/docs/tags', 'a97'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/安装',
+            component: ComponentCreator('/zh-Hans/docs/tags/安装', '745'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/本地部署',
+            component: ComponentCreator('/zh-Hans/docs/tags/本地部署', '906'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/对话树',
+            component: ComponentCreator('/zh-Hans/docs/tags/对话树', '1d1'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/多分支',
+            component: ComponentCreator('/zh-Hans/docs/tags/多分支', 'f52'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/负载均衡',
+            component: ComponentCreator('/zh-Hans/docs/tags/负载均衡', '163'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/概览',
+            component: ComponentCreator('/zh-Hans/docs/tags/概览', 'b8d'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/高级调度',
+            component: ComponentCreator('/zh-Hans/docs/tags/高级调度', 'd07'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/个性化',
+            component: ComponentCreator('/zh-Hans/docs/tags/个性化', 'd4d'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/核心概念',
+            component: ComponentCreator('/zh-Hans/docs/tags/核心概念', 'e71'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/基础配置',
+            component: ComponentCreator('/zh-Hans/docs/tags/基础配置', 'bcf'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/基础设置',
+            component: ComponentCreator('/zh-Hans/docs/tags/基础设置', '1e8'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/架构',
+            component: ComponentCreator('/zh-Hans/docs/tags/架构', '2c0'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/角色扮演',
+            component: ComponentCreator('/zh-Hans/docs/tags/角色扮演', '805'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/角色设定',
+            component: ComponentCreator('/zh-Hans/docs/tags/角色设定', '545'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/介绍',
+            component: ComponentCreator('/zh-Hans/docs/tags/介绍', '3d0'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/快速开始',
+            component: ComponentCreator('/zh-Hans/docs/tags/快速开始', '873'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/模型设置',
+            component: ComponentCreator('/zh-Hans/docs/tags/模型设置', 'c80'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/魔搭',
+            component: ComponentCreator('/zh-Hans/docs/tags/魔搭', 'eed'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/入门',
+            component: ComponentCreator('/zh-Hans/docs/tags/入门', 'f0b'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/自定义端点',
+            component: ComponentCreator('/zh-Hans/docs/tags/自定义端点', 'ccb'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/agent',
+            component: ComponentCreator('/zh-Hans/docs/tags/agent', 'b90'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/api',
+            component: ComponentCreator('/zh-Hans/docs/tags/api', '9b2'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/api提供商',
+            component: ComponentCreator('/zh-Hans/docs/tags/api提供商', '2ba'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/deep-seek',
+            component: ComponentCreator('/zh-Hans/docs/tags/deep-seek', '280'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/gemini',
+            component: ComponentCreator('/zh-Hans/docs/tags/gemini', 'ff1'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/google',
+            component: ComponentCreator('/zh-Hans/docs/tags/google', '973'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/gpt',
+            component: ComponentCreator('/zh-Hans/docs/tags/gpt', 'ac1'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/i-os',
+            component: ComponentCreator('/zh-Hans/docs/tags/i-os', '937'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/i-pad-os',
+            component: ComponentCreator('/zh-Hans/docs/tags/i-pad-os', 'eef'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/lm-studio',
+            component: ComponentCreator('/zh-Hans/docs/tags/lm-studio', '3c8'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/model-scope',
+            component: ComponentCreator('/zh-Hans/docs/tags/model-scope', '61b'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/open-ai',
+            component: ComponentCreator('/zh-Hans/docs/tags/open-ai', '66f'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/persona',
+            component: ComponentCreator('/zh-Hans/docs/tags/persona', '48d'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs/tags/prompt技巧',
+            component: ComponentCreator('/zh-Hans/docs/tags/prompt技巧', 'db4'),
+            exact: true
+          },
+          {
+            path: '/zh-Hans/docs',
+            component: ComponentCreator('/zh-Hans/docs', '59e'),
             routes: [
               {
-                path: '/docs/category/功能指南',
-                component: ComponentCreator('/docs/category/功能指南', '4c3'),
+                path: '/zh-Hans/docs/agents/agent-brief',
+                component: ComponentCreator('/zh-Hans/docs/agents/agent-brief', 'baa'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/category/核心概念',
-                component: ComponentCreator('/docs/category/核心概念', '846'),
+                path: '/zh-Hans/docs/agents/model-settings',
+                component: ComponentCreator('/zh-Hans/docs/agents/model-settings', '571'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/category/开发者指南',
-                component: ComponentCreator('/docs/category/开发者指南', 'be9'),
+                path: '/zh-Hans/docs/agents/persona',
+                component: ComponentCreator('/zh-Hans/docs/agents/persona', 'afe'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/category/快速上手',
-                component: ComponentCreator('/docs/category/快速上手', '382'),
+                path: '/zh-Hans/docs/agents/setup-agent',
+                component: ComponentCreator('/zh-Hans/docs/agents/setup-agent', 'd1e'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/core-concepts/agent-philosophy',
-                component: ComponentCreator('/docs/core-concepts/agent-philosophy', '521'),
+                path: '/zh-Hans/docs/agents/system-prompt',
+                component: ComponentCreator('/zh-Hans/docs/agents/system-prompt', '44b'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/core-concepts/branching',
-                component: ComponentCreator('/docs/core-concepts/branching', '655'),
+                path: '/zh-Hans/docs/agents/user-identity',
+                component: ComponentCreator('/zh-Hans/docs/agents/user-identity', '484'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/development/run-unichat-on-ios-or-ipados-devices',
-                component: ComponentCreator('/docs/development/run-unichat-on-ios-or-ipados-devices', 'fb6'),
+                path: '/zh-Hans/docs/category/agents--personas',
+                component: ComponentCreator('/zh-Hans/docs/category/agents--personas', '5d4'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/auto_index_rules',
-                component: ComponentCreator('/docs/features/auto_index_rules', 'dfb'),
+                path: '/zh-Hans/docs/category/core-concepts',
+                component: ComponentCreator('/zh-Hans/docs/category/core-concepts', 'cb2'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/edit_persona',
-                component: ComponentCreator('/docs/features/edit_persona', 'adb'),
+                path: '/zh-Hans/docs/category/development--installation',
+                component: ComponentCreator('/zh-Hans/docs/category/development--installation', 'f82'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/file_manage',
-                component: ComponentCreator('/docs/features/file_manage', '71c'),
+                path: '/zh-Hans/docs/category/models--apis',
+                component: ComponentCreator('/zh-Hans/docs/category/models--apis', '102'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/knowledge_base',
-                component: ComponentCreator('/docs/features/knowledge_base', '27f'),
+                path: '/zh-Hans/docs/core-concepts/agent-philosophy',
+                component: ComponentCreator('/zh-Hans/docs/core-concepts/agent-philosophy', '944'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/knowledge-base',
-                component: ComponentCreator('/docs/features/knowledge-base', '4b0'),
+                path: '/zh-Hans/docs/core-concepts/branching',
+                component: ComponentCreator('/zh-Hans/docs/core-concepts/branching', '6e3'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/memory_manage',
-                component: ComponentCreator('/docs/features/memory_manage', 'a7d'),
+                path: '/zh-Hans/docs/development/run-on-ios',
+                component: ComponentCreator('/zh-Hans/docs/development/run-on-ios', 'bb3'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/model_settings',
-                component: ComponentCreator('/docs/features/model_settings', '632'),
+                path: '/zh-Hans/docs/intro',
+                component: ComponentCreator('/zh-Hans/docs/intro', '16f'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/overview',
-                component: ComponentCreator('/docs/features/overview', 'a83'),
+                path: '/zh-Hans/docs/models-and-apis/api-intro',
+                component: ComponentCreator('/zh-Hans/docs/models-and-apis/api-intro', '755'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/persona',
-                component: ComponentCreator('/docs/features/persona', 'd65'),
+                path: '/zh-Hans/docs/models-and-apis/auto-balance',
+                component: ComponentCreator('/zh-Hans/docs/models-and-apis/auto-balance', '61f'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/setup-a-provider',
-                component: ComponentCreator('/docs/features/setup-a-provider', 'efa'),
+                path: '/zh-Hans/docs/models-and-apis/custom-api',
+                component: ComponentCreator('/zh-Hans/docs/models-and-apis/custom-api', 'f47'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/system_prompts',
-                component: ComponentCreator('/docs/features/system_prompts', 'cf0'),
+                path: '/zh-Hans/docs/models-and-apis/providers/deepseek',
+                component: ComponentCreator('/zh-Hans/docs/models-and-apis/providers/deepseek', 'e06'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/features/website_manage',
-                component: ComponentCreator('/docs/features/website_manage', 'f11'),
+                path: '/zh-Hans/docs/models-and-apis/providers/google-gemini',
+                component: ComponentCreator('/zh-Hans/docs/models-and-apis/providers/google-gemini', 'ad0'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/get-started/configure_api_settings',
-                component: ComponentCreator('/docs/get-started/configure_api_settings', '1b8'),
+                path: '/zh-Hans/docs/models-and-apis/providers/lmstudio',
+                component: ComponentCreator('/zh-Hans/docs/models-and-apis/providers/lmstudio', '295'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/get-started/setup-your-first-agent',
-                component: ComponentCreator('/docs/get-started/setup-your-first-agent', 'a8a'),
+                path: '/zh-Hans/docs/models-and-apis/providers/modelscope',
+                component: ComponentCreator('/zh-Hans/docs/models-and-apis/providers/modelscope', '4d7'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
               {
-                path: '/docs/intro',
-                component: ComponentCreator('/docs/intro', '61d'),
+                path: '/zh-Hans/docs/models-and-apis/providers/openai',
+                component: ComponentCreator('/zh-Hans/docs/models-and-apis/providers/openai', '276'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               }
@@ -273,8 +443,8 @@ export default [
     ]
   },
   {
-    path: '/',
-    component: ComponentCreator('/', 'e5f'),
+    path: '/zh-Hans/',
+    component: ComponentCreator('/zh-Hans/', '85c'),
     exact: true
   },
   {

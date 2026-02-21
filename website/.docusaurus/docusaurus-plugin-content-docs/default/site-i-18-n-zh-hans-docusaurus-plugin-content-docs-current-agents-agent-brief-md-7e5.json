@@ -1,0 +1,50 @@
+{
+  "id": "agents/agent-brief",
+  "title": "何为 Agent",
+  "description": "了解 Agent 的核心概念及其在 UNIChat 中的重要地位",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/agents/agent-brief.md",
+  "sourceDirName": "agents",
+  "slug": "/agents/agent-brief",
+  "permalink": "/zh-Hans/docs/agents/agent-brief",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "Agent",
+      "permalink": "/zh-Hans/docs/tags/agent"
+    },
+    {
+      "inline": true,
+      "label": "角色设定",
+      "permalink": "/zh-Hans/docs/tags/角色设定"
+    },
+    {
+      "inline": true,
+      "label": "核心概念",
+      "permalink": "/zh-Hans/docs/tags/核心概念"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "id": "agent-brief",
+    "title": "何为 Agent",
+    "description": "了解 Agent 的核心概念及其在 UNIChat 中的重要地位",
+    "tags": [
+      "Agent",
+      "角色设定",
+      "核心概念"
+    ],
+    "sidebar_position": 1
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Agents & Personas",
+    "permalink": "/zh-Hans/docs/category/agents--personas"
+  },
+  "next": {
+    "title": "创建你的第一个 Agent",
+    "permalink": "/zh-Hans/docs/agents/setup-agent"
+  }
+}

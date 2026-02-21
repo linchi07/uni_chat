@@ -1,0 +1,44 @@
+{
+  "id": "models-and-apis/providers/deepseek",
+  "title": "接入 DeepSeek",
+  "description": "在 UNIChat 中配置及使用 DeepSeek API",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/models-and-apis/providers/deepseek.md",
+  "sourceDirName": "models-and-apis/providers",
+  "slug": "/models-and-apis/providers/deepseek",
+  "permalink": "/zh-Hans/docs/models-and-apis/providers/deepseek",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API提供商",
+      "permalink": "/zh-Hans/docs/tags/api提供商"
+    },
+    {
+      "inline": true,
+      "label": "DeepSeek",
+      "permalink": "/zh-Hans/docs/tags/deep-seek"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "id": "deepseek",
+    "title": "接入 DeepSeek",
+    "description": "在 UNIChat 中配置及使用 DeepSeek API",
+    "tags": [
+      "API提供商",
+      "DeepSeek"
+    ],
+    "sidebar_position": 2
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "接入 LMStudio",
+    "permalink": "/zh-Hans/docs/models-and-apis/providers/lmstudio"
+  },
+  "next": {
+    "title": "接入 Google Gemini",
+    "permalink": "/zh-Hans/docs/models-and-apis/providers/google-gemini"
+  }
+}

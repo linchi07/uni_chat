@@ -1,0 +1,50 @@
+{
+  "id": "models-and-apis/providers/lmstudio",
+  "title": "Connect to LMStudio",
+  "description": "How to integrate locally running LMStudio as a service provider into UNIChat",
+  "source": "@site/docs/models-and-apis/providers/LMStudio.md",
+  "sourceDirName": "models-and-apis/providers",
+  "slug": "/models-and-apis/providers/lmstudio",
+  "permalink": "/docs/models-and-apis/providers/lmstudio",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API Provider",
+      "permalink": "/docs/tags/api-provider"
+    },
+    {
+      "inline": true,
+      "label": "LMStudio",
+      "permalink": "/docs/tags/lm-studio"
+    },
+    {
+      "inline": true,
+      "label": "Local Deployment",
+      "permalink": "/docs/tags/local-deployment"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "id": "lmstudio",
+    "title": "Connect to LMStudio",
+    "description": "How to integrate locally running LMStudio as a service provider into UNIChat",
+    "tags": [
+      "API Provider",
+      "LMStudio",
+      "Local Deployment"
+    ],
+    "sidebar_position": 1
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Auto-Scheduling & Load Balancing",
+    "permalink": "/docs/models-and-apis/auto-balance"
+  },
+  "next": {
+    "title": "Connect to DeepSeek",
+    "permalink": "/docs/models-and-apis/providers/deepseek"
+  }
+}

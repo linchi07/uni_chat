@@ -1,0 +1,50 @@
+{
+  "id": "models-and-apis/providers/modelscope",
+  "title": "接入 ModelScope 魔搭",
+  "description": "如何在 UNIChat 中使用魔搭社区提供的免费调用额度",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/models-and-apis/providers/model-scpope.md",
+  "sourceDirName": "models-and-apis/providers",
+  "slug": "/models-and-apis/providers/modelscope",
+  "permalink": "/zh-Hans/docs/models-and-apis/providers/modelscope",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API提供商",
+      "permalink": "/zh-Hans/docs/tags/api提供商"
+    },
+    {
+      "inline": true,
+      "label": "魔搭",
+      "permalink": "/zh-Hans/docs/tags/魔搭"
+    },
+    {
+      "inline": true,
+      "label": "ModelScope",
+      "permalink": "/zh-Hans/docs/tags/model-scope"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "id": "modelscope",
+    "title": "接入 ModelScope 魔搭",
+    "description": "如何在 UNIChat 中使用魔搭社区提供的免费调用额度",
+    "tags": [
+      "API提供商",
+      "魔搭",
+      "ModelScope"
+    ],
+    "sidebar_position": 4
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "接入 Google Gemini",
+    "permalink": "/zh-Hans/docs/models-and-apis/providers/google-gemini"
+  },
+  "next": {
+    "title": "接入 OpenAI",
+    "permalink": "/zh-Hans/docs/models-and-apis/providers/openai"
+  }
+}

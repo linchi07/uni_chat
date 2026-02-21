@@ -1,0 +1,46 @@
+{
+  "id": "development/run-on-ios",
+  "title": "在 iOS 设备上运行",
+  "description": "如何通过自签名在 iPhone 或是 iPad 上运行 UNIChat",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/development/run-on-ios.md",
+  "sourceDirName": "development",
+  "slug": "/development/run-on-ios",
+  "permalink": "/zh-Hans/docs/development/run-on-ios",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "安装",
+      "permalink": "/zh-Hans/docs/tags/安装"
+    },
+    {
+      "inline": true,
+      "label": "iOS",
+      "permalink": "/zh-Hans/docs/tags/i-os"
+    },
+    {
+      "inline": true,
+      "label": "iPadOS",
+      "permalink": "/zh-Hans/docs/tags/i-pad-os"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "id": "run-on-ios",
+    "title": "在 iOS 设备上运行",
+    "description": "如何通过自签名在 iPhone 或是 iPad 上运行 UNIChat",
+    "tags": [
+      "安装",
+      "iOS",
+      "iPadOS"
+    ],
+    "sidebar_position": 1
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Development & Installation",
+    "permalink": "/zh-Hans/docs/category/development--installation"
+  }
+}

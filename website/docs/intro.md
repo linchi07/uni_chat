@@ -1,37 +1,43 @@
 ---
 id: intro
+title: Welcome to UNIChat
+description: A quick overview and introduction to UNIChat's core features
+tags:
+  - Introduction
+  - Overview
+  - Getting Started
 sidebar_position: 1
 ---
 
-# 欢迎来到 UNICHAT
+# Welcome to UNIChat
 
-**UNIChat** 是一个突破线性限制的 **Agent 级多分支对话终端**。
+**UNIChat** is an **Agent-level multi-branch dialogue terminal** that breaks through linear constraints.
 
-它不仅仅是一个聊天客户端，更是一个能够让你自由探索对话可能性的思考工具。无论你是想调优复杂的 Prompt，还是进行沉浸式的角色扮演，UNIChat 都能为你提供最顺滑的体验。
+It is more than just a chat client; it is a thinking tool that allows you to freely explore the possibilities of conversation. Whether you want to fine-tune complex Prompts or engage in immersive role-playing, UNIChat provides the smoothest experience possible.
 
-## 🌟 为什么选择 UNIChat？
+## 🌟 Why Choose UNIChat?
 
-### 🌿 突破线性限制：真·多分支变体
-在传统的聊天工具中，对话是单线向下的。而在 UNIChat 中，你可以随时从任何一条消息开启**分支**。
-- **对比变体**：发送同一问题的不同变体，对比 Agent 的不同反馈。
-- **探索路径**：像写小说一样尝试不同的故事走向，随时切换回主干消息。
+### 🌿 Breaking Linear Constraints: True Multi-Branch Variants
+In traditional chat tools, conversations flow linearly downwards. In UNIChat, you can start a **branch** from any message at any time.
+- **Compare Variants**: Send different variants of the same question to compare different AI responses.
+- **Explore Paths**: Try different story directions like writing a novel, and switch back to the main trunk message at any time.
 
-### 🤖 会话即 Agent
-我们取消了繁琐的“角色管理”与“对话列表”分离模式。在 UNIChat 中，**每一个会话本身就是一个独立的 Agent**。
-- 深度绑定的 Persona 设置。
-- 会话私有的知识库关联。
-- 独立的模型参数配置。
+### 🤖 Session is Agent
+We have eliminated the tedious separation of "Role Management" and "Chat List". In UNIChat, **every session itself is an independent Agent**.
+- Deeply bound Persona settings.
+- Session-private knowledge bases.
+- Independent model parameter configurations.
 
-### 🎭 酒馆级沉浸体验
-深度兼容 **Tavern (酒馆)** 格式的角色卡，适配角色扮演需求。通过极其细腻的身份定义，让 Agent 真正拥有“灵魂”。
+### 🎭 Tavern-Level Immersive Experience
+Deeply compatible with **Tavern** format character cards, catering to role-playing needs. Through highly detailed identity definitions, Agents truly possess a "soul."
 
-### 🔌 全能 API 聚合
-内置 DeepSeek, Google Gemini, OpenAI 等主流预设，支持自定义 Endpoint。您可以轻松连接到本地私有部署的模型（如 LMStudio）或任何云端 API。
+### 🔌 Omnipotent API Aggregation
+Built-in presets for DeepSeek, Google Gemini, OpenAI, etc., and supports custom Endpoints. You can easily connect to locally deployed models (like LMStudio) or any cloud API.
 
-## 🚀 开启旅程
+## 🚀 Start Your Journey
 
-准备好体验非线性对话的魅力了吗？
+Ready to experience the charm of non-linear conversations?
 
-1. [配置 API 提供商](./get-started/configure-api.md)：连接你的第一个 AI 模型。
-2. [设置你的第一个 Agent](./get-started/setup-agent.md)：定义它的性格与能力。
-3. [理解核心概念](./core-concepts/branching.md)：学习如何开启你的第一个对话分支。
+1. [Configure API Provider](./get-started/configure-api.md): Connect your first AI model.
+2. [Set Up Your First Agent](./get-started/setup-agent.md): Define its personality and capabilities.
+3. [Understand Core Concepts](./core-concepts/branching.md): Learn how to start your first conversation branch.

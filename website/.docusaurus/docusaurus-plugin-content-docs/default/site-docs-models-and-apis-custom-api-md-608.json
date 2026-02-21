@@ -1,0 +1,50 @@
+{
+  "id": "models-and-apis/custom-api",
+  "title": "Custom API",
+  "description": "How to connect local or third-party large model APIs in UNIChat",
+  "source": "@site/docs/models-and-apis/custom-api.md",
+  "sourceDirName": "models-and-apis",
+  "slug": "/models-and-apis/custom-api",
+  "permalink": "/docs/models-and-apis/custom-api",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API",
+      "permalink": "/docs/tags/api"
+    },
+    {
+      "inline": true,
+      "label": "Custom Endpoints",
+      "permalink": "/docs/tags/custom-endpoints"
+    },
+    {
+      "inline": true,
+      "label": "Local Deployment",
+      "permalink": "/docs/tags/local-deployment"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "id": "custom-api",
+    "title": "Custom API",
+    "description": "How to connect local or third-party large model APIs in UNIChat",
+    "tags": [
+      "API",
+      "Custom Endpoints",
+      "Local Deployment"
+    ],
+    "sidebar_position": 2
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Models and APIs Overview",
+    "permalink": "/docs/models-and-apis/intro"
+  },
+  "next": {
+    "title": "Auto-Scheduling & Load Balancing",
+    "permalink": "/docs/models-and-apis/auto-balance"
+  }
+}

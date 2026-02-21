@@ -1,0 +1,50 @@
+{
+  "id": "agents/persona",
+  "title": "Persona System",
+  "description": "Use Persona to provide the Agent with more information about yourself",
+  "source": "@site/docs/agents/persona.md",
+  "sourceDirName": "agents",
+  "slug": "/agents/persona",
+  "permalink": "/docs/agents/persona",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "Persona",
+      "permalink": "/docs/tags/persona"
+    },
+    {
+      "inline": true,
+      "label": "Roleplay",
+      "permalink": "/docs/tags/roleplay"
+    },
+    {
+      "inline": true,
+      "label": "Personalization",
+      "permalink": "/docs/tags/personalization"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "id": "persona",
+    "title": "Persona System",
+    "description": "Use Persona to provide the Agent with more information about yourself",
+    "tags": [
+      "Persona",
+      "Roleplay",
+      "Personalization"
+    ],
+    "sidebar_position": 5
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "User Identity Settings",
+    "permalink": "/docs/agents/user-identity"
+  },
+  "next": {
+    "title": "Models & APIs",
+    "permalink": "/docs/category/models--apis"
+  }
+}

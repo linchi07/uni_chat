@@ -1,123 +1,123 @@
 {
   "docusaurus-plugin-content-docs": {
     "default": {
-      "path": "/docs",
+      "path": "/zh-Hans/docs",
       "versions": [
         {
           "name": "current",
           "label": "Next",
           "isLast": true,
-          "path": "/docs",
+          "path": "/zh-Hans/docs",
           "mainDocId": "intro",
           "docs": [
             {
+              "id": "agents/agent-brief",
+              "path": "/zh-Hans/docs/agents/agent-brief",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "agents/model-settings",
+              "path": "/zh-Hans/docs/agents/model-settings",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "agents/persona",
+              "path": "/zh-Hans/docs/agents/persona",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "agents/setup-agent",
+              "path": "/zh-Hans/docs/agents/setup-agent",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "agents/system-prompt",
+              "path": "/zh-Hans/docs/agents/system-prompt",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "agents/user-identity",
+              "path": "/zh-Hans/docs/agents/user-identity",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "core-concepts/agent-philosophy",
-              "path": "/docs/core-concepts/agent-philosophy",
+              "path": "/zh-Hans/docs/core-concepts/agent-philosophy",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "core-concepts/branching",
-              "path": "/docs/core-concepts/branching",
+              "path": "/zh-Hans/docs/core-concepts/branching",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "development/run-unichat-on-ios-or-ipados-devices",
-              "path": "/docs/development/run-unichat-on-ios-or-ipados-devices",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/auto_index_rules",
-              "path": "/docs/features/auto_index_rules",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/edit_persona",
-              "path": "/docs/features/edit_persona",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/file_manage",
-              "path": "/docs/features/file_manage",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/knowledge_base",
-              "path": "/docs/features/knowledge_base",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/knowledge-base",
-              "path": "/docs/features/knowledge-base",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/memory_manage",
-              "path": "/docs/features/memory_manage",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/model_settings",
-              "path": "/docs/features/model_settings",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/overview",
-              "path": "/docs/features/overview",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/persona",
-              "path": "/docs/features/persona",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/setup-a-provider",
-              "path": "/docs/features/setup-a-provider",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/system_prompts",
-              "path": "/docs/features/system_prompts",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "features/website_manage",
-              "path": "/docs/features/website_manage",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "get-started/configure_api_settings",
-              "path": "/docs/get-started/configure_api_settings",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "get-started/setup-your-first-agent",
-              "path": "/docs/get-started/setup-your-first-agent",
+              "id": "development/run-on-ios",
+              "path": "/zh-Hans/docs/development/run-on-ios",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "intro",
-              "path": "/docs/intro",
+              "path": "/zh-Hans/docs/intro",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "/category/快速上手",
-              "path": "/docs/category/快速上手",
+              "id": "models-and-apis/api-intro",
+              "path": "/zh-Hans/docs/models-and-apis/api-intro",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "/category/核心概念",
-              "path": "/docs/category/核心概念",
+              "id": "models-and-apis/auto-balance",
+              "path": "/zh-Hans/docs/models-and-apis/auto-balance",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "/category/功能指南",
-              "path": "/docs/category/功能指南",
+              "id": "models-and-apis/custom-api",
+              "path": "/zh-Hans/docs/models-and-apis/custom-api",
               "sidebar": "tutorialSidebar"
             },
             {
-              "id": "/category/开发者指南",
-              "path": "/docs/category/开发者指南",
+              "id": "models-and-apis/providers/deepseek",
+              "path": "/zh-Hans/docs/models-and-apis/providers/deepseek",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "models-and-apis/providers/google-gemini",
+              "path": "/zh-Hans/docs/models-and-apis/providers/google-gemini",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "models-and-apis/providers/lmstudio",
+              "path": "/zh-Hans/docs/models-and-apis/providers/lmstudio",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "models-and-apis/providers/modelscope",
+              "path": "/zh-Hans/docs/models-and-apis/providers/modelscope",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "models-and-apis/providers/openai",
+              "path": "/zh-Hans/docs/models-and-apis/providers/openai",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/core-concepts",
+              "path": "/zh-Hans/docs/category/core-concepts",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/agents--personas",
+              "path": "/zh-Hans/docs/category/agents--personas",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/models--apis",
+              "path": "/zh-Hans/docs/category/models--apis",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/development--installation",
+              "path": "/zh-Hans/docs/category/development--installation",
               "sidebar": "tutorialSidebar"
             }
           ],
@@ -125,7 +125,7 @@
           "sidebars": {
             "tutorialSidebar": {
               "link": {
-                "path": "/docs/intro",
+                "path": "/zh-Hans/docs/intro",
                 "label": "intro"
               }
             }

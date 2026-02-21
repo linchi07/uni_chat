@@ -1,0 +1,50 @@
+{
+  "id": "agents/setup-agent",
+  "title": "Setup Your First Agent",
+  "description": "Guide to quickly creating and configuring your first UNIChat Agent",
+  "source": "@site/docs/agents/setup-agent.md",
+  "sourceDirName": "agents",
+  "slug": "/agents/setup-agent",
+  "permalink": "/docs/agents/setup-agent",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "Agent",
+      "permalink": "/docs/tags/agent"
+    },
+    {
+      "inline": true,
+      "label": "Quick Start",
+      "permalink": "/docs/tags/quick-start"
+    },
+    {
+      "inline": true,
+      "label": "Basic Settings",
+      "permalink": "/docs/tags/basic-settings"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "id": "setup-agent",
+    "title": "Setup Your First Agent",
+    "description": "Guide to quickly creating and configuring your first UNIChat Agent",
+    "tags": [
+      "Agent",
+      "Quick Start",
+      "Basic Settings"
+    ],
+    "sidebar_position": 1
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "What is an Agent",
+    "permalink": "/docs/agents/agent-brief"
+  },
+  "next": {
+    "title": "Model Settings",
+    "permalink": "/docs/agents/model-settings"
+  }
+}

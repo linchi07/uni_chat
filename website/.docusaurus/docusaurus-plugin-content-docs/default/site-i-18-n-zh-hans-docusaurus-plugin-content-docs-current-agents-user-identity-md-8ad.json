@@ -1,0 +1,50 @@
+{
+  "id": "agents/user-identity",
+  "title": "用户身份设置",
+  "description": "设置 Agent 特定的人格与用户关系",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/agents/user-identity.md",
+  "sourceDirName": "agents",
+  "slug": "/agents/user-identity",
+  "permalink": "/zh-Hans/docs/agents/user-identity",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "Agent",
+      "permalink": "/zh-Hans/docs/tags/agent"
+    },
+    {
+      "inline": true,
+      "label": "Persona",
+      "permalink": "/zh-Hans/docs/tags/persona"
+    },
+    {
+      "inline": true,
+      "label": "角色设定",
+      "permalink": "/zh-Hans/docs/tags/角色设定"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "id": "user-identity",
+    "title": "用户身份设置",
+    "description": "设置 Agent 特定的人格与用户关系",
+    "tags": [
+      "Agent",
+      "Persona",
+      "角色设定"
+    ],
+    "sidebar_position": 4
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "系统提示词",
+    "permalink": "/zh-Hans/docs/agents/system-prompt"
+  },
+  "next": {
+    "title": "Persona 人格系统",
+    "permalink": "/zh-Hans/docs/agents/persona"
+  }
+}

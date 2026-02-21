@@ -1,36 +1,57 @@
 ---
+id: agent-philosophy
+title: Session is Agent
+description: Understand UNIChat's unique monolithic architecture philosophy and its advantages
+tags:
+  - Core Concepts
+  - Architecture
+  - Agent
 sidebar_position: 2
 ---
 
-# 会话即 Agent：单体架构哲学
+# Session is Agent: Monolithic Architecture Philosophy
 
-UNIChat 采用了一种独特的“单体化”设计哲学：**会话即 Agent (Session is Agent)**。
+UNIChat adopts a unique design philosophy where you create a session in an Agent instead of selecting an Agent for a new session.
 
-## 传统模式 vs UNIChat 模式
+## Traditional Model vs UNIChat Model
 
-| 特性 | 传统聊天工具 | UNIChat |
+| Feature | Traditional Chat Tools | UNIChat |
 | :--- | :--- | :--- |
-| **配置归属** | 全局或角色库 | 深度绑定在当前会话中 |
-| **知识库** | 全局关联 | 会话私有化关联 |
-| **灵活性** | 修改角色会影响所有相关对话 | 每个对话都是独立的进化个体 |
-| **复杂度** | 高（需要在多个界面间跳转） | 低（一站式配置） |
+| **Configuration Scope** | Global or Character Library | Deeply bound within the current sagent |
+| **Knowledge Base** | Global association | Agent-private association |
+| **Flexibility** | Modifying a role affects all related chats | Each agent is an independently evolving entity |
 
-## 为什么要这么设计？
+## Why design it this way?
 
-### 1. 减少上下文污染
-如果您在全局设置了一个“代码助手”角色，但您想在某个特定的对话中让他改用 Python 3.12 的标准库，传统工具可能需要你修改全局设置。而在 UNIChat 中，你只需要在**当前会话**的设置中微调即可，不会干扰其他对话。
+Anyone who has used ChatGPT probably knows about its feature that references chat history. Originally, OpenAI introduced this to provide personalized content. In reality, however, it often tacks on something like this at the end of a reply:
 
-### 2. 状态的完整性
-一个 Agent 应该包含它的：
-- **Persona (人设)**：它是谁？
-- **Knowledge (知识)**：它知道什么？
-- **Parameters (参数)**：它的回复风格如何（Temperature, Top-P 等）？
+* *"You previously discussed XXX with me, and our current topic YYY shares a similar essence, which shows that you are a ... person. If you're interested, I can help you create a plan to apply the philosophy of XXX to YYY. Just say the word, and I will immediately..."*
 
-将这些属性全部锁定在会话中，意味着当你导出或分享这个会话时，你分享的是一个**完整的、可复现的智能体状态**。
+(Never mind that XXX and YYY have absolutely nothing to do with each other.)
+Honestly, seeing it forcibly draw these non-existent connections just to make small talk frequently makes my blood boil.
 
-## 操作指南
+So, here is what an architecture like UNIChat's **brings to the table**:
 
-点击会话顶部的 **[⚙️ Agent 设置]**，你可以随时调整：
-- **System Prompt**：定义它的核心逻辑。
-- **Persona 卡片**：导入 Tavern 角色卡。
-- **关联知识库**：选择该会话可以检索的本地文档。
+### 1. Reduced Context Pollution
+
+If you set up a global "Coding Assistant" role but want it to switch to the Python 3.12 standard library for one specific conversation, traditional tools might require you to modify the global settings. In UNIChat, you only need to tweak the specific settings within the Agent, and it won't interfere with other chats.
+
+### 2. State Integrity
+
+An Agent should encompass its:
+
+* **Persona**: Who is it?
+* **Knowledge**: What does it know?
+* **Parameters**: What is its response style (Temperature, Top-P, etc.)?
+
+### 3. Stronger Relevance
+
+For instance, you can create a dedicated Agent specifically for a project. This Agent can access all your conversations and content related to this project, gaining a comprehensive understanding of it and becoming smarter with every question you ask. At the same time, it won't pollute your other non-project-related chats.
+
+## User Guide
+
+Click Edit in the Agent settings panel to enter the **Agent Editing Page**, where you can adjust the Agent's settings at any time. For specific details, refer to:
+
+* ⚙️ **[Configuring Models and Parameters](./model-settings.md)**: This is the Agent's "brain". Choose a suitable model for it (like DeepSeek or GPT-4) and configure the basic parameter details.
+* 🗣️ **[Writing System Prompts](./system-prompt.md)**: This is the Agent's "personality". Use prompts to define who it is, what it is responsible for, and how it communicates with you.
+* 👤 **[Binding User Identity](./user-identity.md)**: This is how the Agent recognizes you. You can assign a specific persona to it or have it use a special "nickname" for you.

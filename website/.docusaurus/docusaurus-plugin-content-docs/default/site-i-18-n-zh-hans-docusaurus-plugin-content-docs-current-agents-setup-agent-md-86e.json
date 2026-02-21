@@ -1,0 +1,50 @@
+{
+  "id": "agents/setup-agent",
+  "title": "创建你的第一个 Agent",
+  "description": "引导你快速创建并配置你的第一个 UNIChat Agent",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/agents/setup-agent.md",
+  "sourceDirName": "agents",
+  "slug": "/agents/setup-agent",
+  "permalink": "/zh-Hans/docs/agents/setup-agent",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "Agent",
+      "permalink": "/zh-Hans/docs/tags/agent"
+    },
+    {
+      "inline": true,
+      "label": "快速开始",
+      "permalink": "/zh-Hans/docs/tags/快速开始"
+    },
+    {
+      "inline": true,
+      "label": "基础设置",
+      "permalink": "/zh-Hans/docs/tags/基础设置"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "id": "setup-agent",
+    "title": "创建你的第一个 Agent",
+    "description": "引导你快速创建并配置你的第一个 UNIChat Agent",
+    "tags": [
+      "Agent",
+      "快速开始",
+      "基础设置"
+    ],
+    "sidebar_position": 1
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "何为 Agent",
+    "permalink": "/zh-Hans/docs/agents/agent-brief"
+  },
+  "next": {
+    "title": "模型设置",
+    "permalink": "/zh-Hans/docs/agents/model-settings"
+  }
+}

@@ -1,8 +1,8 @@
 {
-    "label": "核心概念",
-    "position": 2,
+    "label": "Core Concepts",
+    "position": 1,
     "link": {
         "type": "generated-index",
-        "description": "理解 UNIChat 的设计哲学：非线性对话与单体 Agent 架构。"
+        "description": "Understand UNIChat's design philosophy: non-linear conversations and a monolithic Agent architecture."
     }
 }

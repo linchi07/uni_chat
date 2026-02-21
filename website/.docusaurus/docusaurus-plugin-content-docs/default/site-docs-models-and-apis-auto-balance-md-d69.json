@@ -1,0 +1,50 @@
+{
+  "id": "models-and-apis/auto-balance",
+  "title": "Auto-Scheduling & Load Balancing",
+  "description": "Learn about UNIChat's intelligent API scheduling system and High Availability solutions",
+  "source": "@site/docs/models-and-apis/auto-balance.md",
+  "sourceDirName": "models-and-apis",
+  "slug": "/models-and-apis/auto-balance",
+  "permalink": "/docs/models-and-apis/auto-balance",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API",
+      "permalink": "/docs/tags/api"
+    },
+    {
+      "inline": true,
+      "label": "Load Balancing",
+      "permalink": "/docs/tags/load-balancing"
+    },
+    {
+      "inline": true,
+      "label": "Advanced Scheduling",
+      "permalink": "/docs/tags/advanced-scheduling"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "id": "auto-balance",
+    "title": "Auto-Scheduling & Load Balancing",
+    "description": "Learn about UNIChat's intelligent API scheduling system and High Availability solutions",
+    "tags": [
+      "API",
+      "Load Balancing",
+      "Advanced Scheduling"
+    ],
+    "sidebar_position": 3
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Custom API",
+    "permalink": "/docs/models-and-apis/custom-api"
+  },
+  "next": {
+    "title": "Connect to LMStudio",
+    "permalink": "/docs/models-and-apis/providers/lmstudio"
+  }
+}

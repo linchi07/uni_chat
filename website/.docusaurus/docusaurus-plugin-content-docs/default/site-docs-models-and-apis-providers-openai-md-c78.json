@@ -1,0 +1,50 @@
+{
+  "id": "models-and-apis/providers/openai",
+  "title": "Connect to OpenAI",
+  "description": "Guidance on integrating the definitive OpenAI parameters mapping to UNIChat",
+  "source": "@site/docs/models-and-apis/providers/openai.md",
+  "sourceDirName": "models-and-apis/providers",
+  "slug": "/models-and-apis/providers/openai",
+  "permalink": "/docs/models-and-apis/providers/openai",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API Provider",
+      "permalink": "/docs/tags/api-provider"
+    },
+    {
+      "inline": true,
+      "label": "OpenAI",
+      "permalink": "/docs/tags/open-ai"
+    },
+    {
+      "inline": true,
+      "label": "GPT",
+      "permalink": "/docs/tags/gpt"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "id": "openai",
+    "title": "Connect to OpenAI",
+    "description": "Guidance on integrating the definitive OpenAI parameters mapping to UNIChat",
+    "tags": [
+      "API Provider",
+      "OpenAI",
+      "GPT"
+    ],
+    "sidebar_position": 5
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Connect to ModelScope",
+    "permalink": "/docs/models-and-apis/providers/modelscope"
+  },
+  "next": {
+    "title": "Development & Installation",
+    "permalink": "/docs/category/development--installation"
+  }
+}

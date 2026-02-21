@@ -1,0 +1,50 @@
+{
+  "id": "models-and-apis/providers/lmstudio",
+  "title": "接入 LMStudio",
+  "description": "如何将本地运行的 LMStudio 作为服务端接入 UNIChat",
+  "source": "@site/i18n/zh-Hans/docusaurus-plugin-content-docs/current/models-and-apis/providers/LMStudio.md",
+  "sourceDirName": "models-and-apis/providers",
+  "slug": "/models-and-apis/providers/lmstudio",
+  "permalink": "/zh-Hans/docs/models-and-apis/providers/lmstudio",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "API提供商",
+      "permalink": "/zh-Hans/docs/tags/api提供商"
+    },
+    {
+      "inline": true,
+      "label": "LMStudio",
+      "permalink": "/zh-Hans/docs/tags/lm-studio"
+    },
+    {
+      "inline": true,
+      "label": "本地部署",
+      "permalink": "/zh-Hans/docs/tags/本地部署"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "id": "lmstudio",
+    "title": "接入 LMStudio",
+    "description": "如何将本地运行的 LMStudio 作为服务端接入 UNIChat",
+    "tags": [
+      "API提供商",
+      "LMStudio",
+      "本地部署"
+    ],
+    "sidebar_position": 1
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "自动调度与负载均衡",
+    "permalink": "/zh-Hans/docs/models-and-apis/auto-balance"
+  },
+  "next": {
+    "title": "接入 DeepSeek",
+    "permalink": "/zh-Hans/docs/models-and-apis/providers/deepseek"
+  }
+}
