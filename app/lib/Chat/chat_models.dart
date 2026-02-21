@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:uni_chat/Agent/agent_models.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/utils/file_utils.dart';
@@ -110,7 +109,7 @@ class ChatMessage {
     return ChatMessage(
       id: map['id'],
       messageId: map['message_id'],
-      parent: map['parent'],
+      parent: map['parent_id'],
       childIds: (map['child_ids'] as String?)?.split(",") ?? [],
       sender: MessageSenderExtension.fromString(
         (map['sender'] as String?) ?? 'internal',
@@ -306,11 +305,7 @@ class MessageBlock {
   });
 
   Map<String, dynamic> toMap() {
-    return {
-      'content': content,
-      'anchor': anchor,
-      'chunkType': chunkType.name,
-    };
+    return {'content': content, 'anchor': anchor, 'chunkType': chunkType.name};
   }
 
   factory MessageBlock.fromMap(Map<String, dynamic> map) {
@@ -321,20 +316,24 @@ class MessageBlock {
     );
   }
 
-  static ({String mainContent,List<MessageBlock>? blocks}) fromChatResponse(List<ChatResponse> responses){
+  static ({String mainContent, List<MessageBlock>? blocks}) fromChatResponse(
+    List<ChatResponse> responses,
+  ) {
     List<String> mainContent = [];
     var blocks = <MessageBlock>[];
     int pt = 0;
-    for(var response in responses){
-      if(response.type == MessageChunkType.text){
+    for (var response in responses) {
+      if (response.type == MessageChunkType.text) {
         mainContent.add(response.content);
         pt += response.content.length;
-      }else{
-        blocks.add(MessageBlock(
-          content: response.content,
-          anchor: pt,
-          chunkType: response.type,
-        ));
+      } else {
+        blocks.add(
+          MessageBlock(
+            content: response.content,
+            anchor: pt,
+            chunkType: response.type,
+          ),
+        );
       }
     }
     return (mainContent: mainContent.join(), blocks: blocks);
@@ -404,7 +403,6 @@ class ChatFile {
     type = getFileType(extension);
     mimeType = getMimeType(extension); // 修改这里，使用专门的方法获取 MIME 类型
   }
-
 
   // 添加 copyWith 方法
   ChatFile copyWith({
@@ -476,7 +474,9 @@ class ChatFile {
       return FileTypeDefine.image;
     } else if (extension == '.pdf') {
       return FileTypeDefine.pdf;
-    } else if (textExtensions.contains(extension)||EXT_INDEX.containsKey(extension.substring(1))) {//ignore the . of  extension
+    } else if (textExtensions.contains(extension) ||
+        EXT_INDEX.containsKey(extension.substring(1))) {
+      //ignore the . of  extension
       return FileTypeDefine.text;
     } else {
       return FileTypeDefine.unknown;

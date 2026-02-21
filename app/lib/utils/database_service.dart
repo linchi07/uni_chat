@@ -246,24 +246,25 @@ class DatabaseService {
       creationTime: now,
       lastMessageTime: now,
     );
-
+    var obj1 = {
+      'id': newSession.id,
+      'agent_id': newSession.agentId,
+      'title': newSession.name,
+      'created_at': newSession.creationTime.microsecondsSinceEpoch,
+      'modified_at': newSession.lastMessageTime.microsecondsSinceEpoch,
+      'persona_id': newSession.persona,
+    };
+    var obj2 = {
+      'id': newSession.id,
+      'session_id': newSession.id,
+      // this is useless for a root message (since it doesn't have content)
+      // however , it is required for the from map method (since the Chat message object requires a non null message_id)
+    };
     await db.transaction((trx) async {
-      await trx.insert('sessions', {
-        'id': newSession.id,
-        'agent_id': newSession.agentId,
-        'title': newSession.name,
-        'created_at': newSession.creationTime.microsecondsSinceEpoch,
-        'modified_at': newSession.lastMessageTime.microsecondsSinceEpoch,
-        'persona_id': newSession.persona,
-      });
+      await trx.insert('sessions', obj1);
       // insert the root message
       // root message is always the first message (and will not be rendered)
-      await trx.insert('message_relations', {
-        'id': newSession.id,
-        'session_id': newSession.id,
-        // this is useless for a root message (since it doesn't have content)
-        // however , it is required for the from map method (since the Chat message object requires a non null message_id)
-      });
+      await trx.insert('message_relations', obj2);
     });
     return newSession;
   }
@@ -381,7 +382,7 @@ class DatabaseService {
   }) async {
     final db = await database;
     await db.transaction((txn) async {
-      await txn.insert('messages', {
+      var obj1 = {
         //the id and the message id is two different things
         //here(messageTable), the id(column) is the message id(object)
         //however in the relations table , the id(column) is the id(object),the messageId is the messageID (object)
@@ -398,15 +399,15 @@ class DatabaseService {
               )
             : null,
         //or a string "null" will be inserted...
-      });
-      await txn.insert('message_relations', {
+      };
+      var obj2 = {
         'id': message.id,
         'session_id': sessionId,
         'message_id': message.messageId,
         'parent_id': message.parent,
         'child_ids': message.childIds.join(','),
         'enabled_child_index': message.enabledChild,
-      });
+      };
       if (modifiedParent != null) {
         await txn.update(
           'message_relations',
@@ -418,6 +419,8 @@ class DatabaseService {
           whereArgs: [modifiedParent.id],
         );
       }
+      await txn.insert('messages', obj1);
+      await txn.insert('message_relations', obj2);
       await txn.update(
         'sessions',
         {'modified_at': DateTime.now().microsecondsSinceEpoch},
@@ -643,7 +646,6 @@ ORDER BY t.depth DESC;
       }
     });
   }
-
 
   // --- 2. Read (读取所有) ---
   Future<List<Persona>> getAllPersonas() async {
