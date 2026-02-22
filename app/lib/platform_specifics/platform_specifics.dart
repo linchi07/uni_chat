@@ -12,7 +12,7 @@ class MacOSSpecificsSetting {
     await WindowManipulator.hideTitle();
     await WindowManipulator.makeTitlebarTransparent();
     await WindowManipulator.addToolbar();
-    await WindowManipulator.setWindowMinSize(const Size(210, 480));
+    await WindowManipulator.setWindowMinSize(const Size(640, 480));
     await WindowManipulator.setToolbarStyle(
       toolbarStyle: NSWindowToolbarStyle.unified,
     );

@@ -60,6 +60,12 @@ dependencies:
   image_picker: ^1.2.1
   keyboard_dismisser: ^3.0.0
   package_info_plus: ^9.0.0
+dependency_overrides:
+  irondash_engine_context:
+    git:
+      url: https://github.com/orestesgaolin/irondash.git
+      path: engine_context/dart
+      ref: 220bd91
 dev_dependencies:
   flutter_test:
     sdk: flutter

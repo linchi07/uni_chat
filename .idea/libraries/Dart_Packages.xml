@@ -684,7 +684,7 @@
         <entry key="irondash_engine_context">
           <value>
             <list>
-              <option value="$USER_HOME$/.pub-cache/hosted/pub.dev/irondash_engine_context-0.5.5/lib" />
+              <option value="$USER_HOME$/.pub-cache/git/irondash-220bd911fae213282932b964322f9cc4c274f649/engine_context/dart/lib" />
             </list>
           </value>
         </entry>
@@ -1573,6 +1573,7 @@
       </option>
     </properties>
     <CLASSES>
+      <root url="file://$USER_HOME$/.pub-cache/git/irondash-220bd911fae213282932b964322f9cc4c274f649/engine_context/dart/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/_discoveryapis_commons-1.0.7/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/_fe_analyzer_shared-91.0.0/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/abutil-0.1.2/lib" />
@@ -1666,7 +1667,6 @@
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/intl-0.20.2/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/io-1.0.5/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/iregexp-0.1.2/lib" />
-      <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/irondash_engine_context-0.5.5/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/irondash_message_channel-0.7.0/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/jieba_flutter-0.2.0/lib" />
       <root url="file://$USER_HOME$/.pub-cache/hosted/pub.dev/json_annotation-4.9.0/lib" />
