@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agent_models.dart';
+import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
@@ -26,6 +27,17 @@ class ChatSession {
     required this.lastMessageTime,
     required this.creationTime,
   });
+
+  factory ChatSession.fromSessionDbModel(SessionDbModel dbModel) {
+    return ChatSession(
+      id: dbModel.id,
+      agentId: dbModel.agentId!,
+      persona: dbModel.personaId,
+      name: dbModel.title,
+      creationTime: dbModel.createdAt,
+      lastMessageTime: dbModel.modifiedAt,
+    );
+  }
 }
 
 enum MessageSender { internal, system, user, ai }

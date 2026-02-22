@@ -8,10 +8,10 @@ import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
+import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/promps.dart';
 import 'package:uni_chat/utils/chunked_string_buffer.dart';
-import 'package:uni_chat/utils/database_service.dart';
 import 'package:uuid/uuid.dart';
 
 import '../api_configs/api_models.dart';

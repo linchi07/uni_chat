@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
+import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/error_handling.dart';
 
 import '../api_configs/api_models.dart';
@@ -115,7 +117,7 @@ class PersonaConfigure {
   }
 }
 
-class AgentData {
+class AgentData implements Insertable<AgentDbModel> {
   final int version;
   // the version of agent settings
 
@@ -146,17 +148,6 @@ class AgentData {
     this.isDefault = false,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'system_prompt': systemPrompt,
-      'created_at': createdAt.toIso8601String(),
-      'is_default': isDefault ? 1 : 0,
-    };
-  }
-
   Future<File?> getAvatar() async {
     var f = await PathProvider.getPath("chat/avatars/$id");
     var f1 = File("$f.png");
@@ -185,20 +176,9 @@ class AgentData {
     return jsonEncode(parameters);
   }
 
-  Map<String, dynamic> toDatabaseStorage() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'configure': _parameterToJson(),
-      'created_at': createdAt.toIso8601String(),
-      'is_default': isDefault ? 1 : 0,
-    };
-  }
-
-  factory AgentData.fromDatabaseStorage(Map<String, dynamic> map) {
+  factory AgentData.fromAgentDBModel(AgentDbModel adbm) {
     try {
-      var parameters = jsonDecode(map['configure']);
+      var parameters = jsonDecode(adbm.configure);
       PersonaConfigure? uidc;
       var uidcp = parameters['persona_configure'];
       if (uidcp != null) {
@@ -206,17 +186,27 @@ class AgentData {
       }
       return AgentData(
         version: parameters['version'] as int,
-        id: map['id'] as String,
-        name: map['name'] as String,
-        description: map['description'] as String?,
+        id: adbm.id,
+        name: adbm.name,
+        description: adbm.description,
         systemPrompt: parameters['system_prompt'] as String?,
-        createdAt: DateTime.parse(map['created_at']),
-        isDefault: map['is_default'] == 1,
+        createdAt: DateTime.parse(adbm.createdAt),
+        isDefault: adbm.isDefault,
         modelConfigure: ModelConfigure.fromMap(parameters['model_configure']),
         userIdentityConfigure: uidc,
       );
     } catch (e) {
       throw AgentException(AgentExceptionType.failLoadingAgent_ParseError);
     }
+  }
+
+  @override
+  Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
+    return AgentsCompanion.insert(
+      id: id,
+      name: name,
+      configure: _parameterToJson(),
+      createdAt: createdAt.toIso8601String(), //TODO:to UNIX time
+    ).toColumns(nullToAbsent);
   }
 }

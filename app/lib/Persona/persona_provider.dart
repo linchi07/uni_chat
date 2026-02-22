@@ -1,9 +1,8 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
-import 'package:uni_chat/utils/database_service.dart';
+import 'package:uni_chat/database/database_service.dart';
 
 import '../utils/file_utils.dart';
 
@@ -81,44 +80,13 @@ class Persona {
     );
   }
 
-  // 转换为数据库可接受的 Map
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'content': content,
-      // 将 Dart Map 转换为 JSON 字符串存储，需要先将 PersonaDataEntry 转换为 Map
-      'data': json.encode(
-        data.map((key, value) => MapEntry(key, value.toMap())),
-      ),
-      // 将 Dart bool 转换为 SQLite INTEGER
-      'is_default': isDefault ? 1 : 0,
-    };
-  }
-
-  // 从数据库 Map 创建 Persona 对象
-  factory Persona.fromMap(Map<String, dynamic> map) {
+  factory Persona.fromDBModel(PersonaDbModel dbm) {
     return Persona(
-      id: map['id'] as String,
-      name: map['name'] as String,
-      content: map['content'] as String,
-      // 将 JSON 字符串解析为 Dart Map，并将每个 Map 转换回 PersonaDataEntry
-      data: map['data'] != null
-          ? Map<String, PersonaDataEntry>.from(
-              json
-                  .decode(map['data'])
-                  .map(
-                    (key, value) => MapEntry(
-                      key,
-                      PersonaDataEntry.fromMap(
-                        Map<String, dynamic>.from(value),
-                      ),
-                    ),
-                  ),
-            )
-          : {},
-      // 将 SQLite INTEGER 转换为 Dart bool
-      isDefault: map['is_default'] == 1,
+      id: dbm.id,
+      name: dbm.name,
+      content: dbm.content,
+      data: dbm.data ?? {},
+      isDefault: dbm.isDefault,
     );
   }
 

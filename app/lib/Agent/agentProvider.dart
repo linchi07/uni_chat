@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
+import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/main.dart';
-import 'package:uni_chat/utils/database_service.dart';
 
 import '../Chat/chat_models.dart';
 import '../api_configs/api_models.dart';

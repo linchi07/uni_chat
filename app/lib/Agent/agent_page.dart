@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/utils/overlays.dart';
 
+import '../database/database_service.dart';
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
-import '../utils/database_service.dart';
 import '../utils/prebuilt_widgets.dart';
 import 'agent_models.dart';
 import 'agent_set_page.dart';

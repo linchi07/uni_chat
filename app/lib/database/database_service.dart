@@ -1,0 +1,410 @@
+import 'package:drift/drift.dart' hide Column;
+import 'package:drift_flutter/drift_flutter.dart';
+import 'package:uni_chat/error_handling.dart';
+import 'package:uuid/uuid.dart';
+
+import '../Agent/agent_models.dart';
+import '../Chat/chat_models.dart';
+import '../Persona/persona_provider.dart';
+import '../utils/file_utils.dart';
+import 'chat_tables.dart';
+
+part 'database_service.g.dart';
+
+@DriftDatabase(
+  tables: [
+    Agents,
+    Sessions,
+    MessageRelations,
+    Messages,
+    PersistentData,
+    Personas,
+  ],
+)
+class _ChatDb extends _$_ChatDb {
+  _ChatDb() : super(_onOpen());
+
+  @override
+  int get schemaVersion => 1;
+
+  static QueryExecutor _onOpen() {
+    return driftDatabase(
+      name: 'chat_session_saves',
+      native: DriftNativeOptions(
+        databasePath: () async {
+          return await PathProvider.getPath("chat/session_saves.db");
+        },
+      ),
+    );
+  }
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      beforeOpen: (mig) async {
+        await customStatement('PRAGMA foreign_keys = ON');
+      },
+      onCreate: (mig) async {
+        await mig.createAll();
+      },
+    );
+  }
+}
+
+class DatabaseService {
+  static final DatabaseService instance = DatabaseService._privateConstructor();
+  late final _ChatDb _db;
+  static const _uuid = Uuid();
+
+  DatabaseService._privateConstructor() {
+    _db = _ChatDb();
+  }
+  // --- Agent CRUD ---
+  Future<void> createOrUpdateAgent(AgentData agent) async {
+    await _db.into(_db.agents).insert(agent, mode: InsertMode.insertOrReplace);
+  }
+
+  Future<AgentData?> getAgent(String agentId) async {
+    var agentDb = await (_db.select(
+      _db.agents,
+    )..where((t) => t.id.equals(agentId))).getSingleOrNull();
+    if (agentDb != null) {
+      return AgentData.fromAgentDBModel(agentDb);
+    }
+    return null;
+  }
+
+  Future<List<AgentData>> getAllAgents() async {
+    final list = await (_db.select(
+      _db.agents,
+    )..orderBy([(t) => OrderingTerm.asc(t.name)])).get();
+    return list.map((e) => AgentData.fromAgentDBModel(e)).toList();
+  }
+
+  Future<void> deleteAgent(String agentId) async {
+    await (_db.delete(_db.agents)..where((t) => t.id.equals(agentId))).go();
+  }
+
+  Future<AgentData?> loadDefaultAgent() async {
+    var a =
+        await (_db.select(_db.agents)
+              ..where((t) => t.isDefault)
+              ..limit(1))
+            .getSingleOrNull();
+    if (a != null) return AgentData.fromAgentDBModel(a);
+
+    var any = await (_db.select(_db.agents)..limit(1)).getSingleOrNull();
+    if (any != null) {
+      await setDefaultAgent(any.id);
+      return AgentData.fromAgentDBModel(any);
+    }
+    return null;
+  }
+
+  Future<void> setDefaultAgent(String agentId) async {
+    await _db.transaction(() async {
+      await (_db.update(_db.agents)..where((t) => t.isDefault)).write(
+        const AgentsCompanion(isDefault: Value(true)),
+      );
+      await (_db.update(_db.agents)..where((t) => t.id.equals(agentId))).write(
+        const AgentsCompanion(isDefault: Value(true)),
+      );
+    });
+  }
+
+  // --- Session CRUD ---
+  Future<ChatSession> createSession({
+    String? title,
+    required String agentId,
+    String? personaId,
+  }) async {
+    final now = DateTime.now();
+    final newSession = ChatSession(
+      id: _uuid.v7(),
+      agentId: agentId,
+      persona: personaId,
+      name: title ?? 'New Chat - ${now.toIso8601String()}',
+      creationTime: now,
+      lastMessageTime: now,
+    );
+    var m1 = SessionDbModel(
+      id: newSession.id,
+      agentId: newSession.agentId,
+      title: newSession.name,
+      createdAt: newSession.creationTime,
+      modifiedAt: newSession.lastMessageTime,
+      personaId: newSession.persona,
+    );
+    var m2 = MessageRelationDbModel(
+      id: newSession.id, // root relation has id == sessionId
+      sessionId: newSession.id,
+    );
+    // avoid the data race condition when doing async operations
+    await _db.transaction(() async {
+      await _db.into(_db.sessions).insert(m1);
+      await _db.into(_db.messageRelations).insert(m2);
+    });
+    return newSession;
+  }
+
+  Future<ChatSession?> getSession(String sessionId) async {
+    var session = await (_db.select(
+      _db.sessions,
+    )..where((t) => t.id.equals(sessionId))).getSingleOrNull();
+    if (session != null) return ChatSession.fromSessionDbModel(session);
+    return null;
+  }
+
+  Future<List<ChatSession>> getAllSessionsByAgent(String agentId) async {
+    final list =
+        await (_db.select(_db.sessions)
+              ..where((t) => t.agentId.equals(agentId))
+              ..orderBy([(t) => OrderingTerm.desc(t.modifiedAt)]))
+            .get();
+    return list.map((e) => ChatSession.fromSessionDbModel(e)).toList();
+  }
+
+  Future<List<ChatSession>> getAllSessions() async {
+    final list = await (_db.select(
+      _db.sessions,
+    )..orderBy([(t) => OrderingTerm.desc(t.modifiedAt)])).get();
+    return list.map((e) => ChatSession.fromSessionDbModel(e)).toList();
+  }
+
+  Future<void> updateSessionTitle(String sessionId, String newTitle) async {
+    await (_db.update(
+      _db.sessions,
+    )..where((t) => t.id.equals(sessionId))).write(
+      SessionsCompanion(
+        title: Value(newTitle),
+        modifiedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    await (_db.delete(_db.sessions)..where((t) => t.id.equals(sessionId))).go();
+  }
+
+  Future<void> updateActiveIndex(String id, int newIndex) async {
+    await (_db.update(_db.messageRelations)..where((t) => t.id.equals(id)))
+        .write(MessageRelationsCompanion(enabledChildIndex: Value(newIndex)));
+  }
+
+  // --- Message CRUD ---
+  Future<void> addMessage(
+    String sessionId,
+    ChatMessage message, {
+    ChatMessage? modifiedParent,
+  }) async {
+    var m1 = MessageDbModel(
+      id: message.messageId!,
+      sender: message.sender.name,
+      senderId: message.senderId,
+      content: message.content,
+      timestamp: message.timestamp,
+      data: message.data,
+      attachments: message.attachedFiles,
+    );
+    var m2 = MessageRelationDbModel(
+      id: message.id,
+      sessionId: sessionId,
+      messageId: message.messageId,
+      parentId: message.parent,
+      childIds: message.childIds,
+      enabledChildIndex: message.enabledChild,
+    );
+    dynamic m3;
+    if (modifiedParent != null) {
+      m3 = MessageRelationsCompanion(
+        childIds: Value(modifiedParent.childIds),
+        enabledChildIndex: Value(modifiedParent.enabledChild),
+      );
+    }
+    await _db.transaction(() async {
+      await _db.into(_db.messages).insert(m1);
+      await _db.into(_db.messageRelations).insert(m2);
+      if (modifiedParent != null) {
+        await (_db.update(
+          _db.messageRelations,
+        )..where((t) => t.id.equals(modifiedParent.id))).write(m3);
+      }
+      await (_db.update(_db.sessions)..where((t) => t.id.equals(sessionId)))
+          .write(SessionsCompanion(modifiedAt: Value(DateTime.now())));
+    });
+  }
+
+  Future<({ChatMessage? root, Map<String, ChatMessage> messages})>
+  getMessagesForSession(String sessionId) async {
+    final query = _db.select(_db.messageRelations).join([
+      leftOuterJoin(
+        _db.messages,
+        _db.messages.id.equalsExp(_db.messageRelations.messageId),
+      ),
+    ])..where(_db.messageRelations.sessionId.equals(sessionId));
+
+    final rows = await query.get();
+    if (rows.isEmpty) return (root: null, messages: <String, ChatMessage>{});
+
+    var result = <String, ChatMessage>{};
+    ChatMessage? root;
+    for (final row in rows) {
+      var rel = row.readTable(_db.messageRelations);
+      var msg = row.readTableOrNull(_db.messages);
+      var obj = ChatMessage(
+        id: rel.id,
+        messageId: msg?.id,
+        parent: rel.parentId,
+        childIds: rel.childIds ?? [],
+        sender: MessageSenderExtension.fromString(msg?.sender ?? 'internal'),
+        data: msg?.data,
+        senderId: msg?.senderId ?? '',
+        attachedFiles: msg?.attachments,
+        content: msg?.content ?? '',
+        timestamp: msg?.timestamp ?? DateTime.now(),
+        enabledChild: rel.enabledChildIndex ?? 0,
+      );
+      if (obj.parent == null) {
+        root = obj;
+      }
+      result[obj.id] = obj;
+    }
+    if (root == null) {
+      throw ChatException(
+        ChatExceptionType.failParsingMessage,
+        message: 'No root message found , data is corrupted',
+      );
+    }
+    return (root: root, messages: result);
+  }
+
+  Future<List<ChatMessage>> getMessageListForSession(String sessionId) async {
+    final sql = '''
+WITH RECURSIVE chat_tree AS (
+    SELECT 
+        id, 
+        message_id,
+        child_ids, 
+        enabled_child_index,
+        0 AS depth
+    FROM message_relations
+    WHERE session_id = ? AND parent_id IS NULL
+
+    UNION ALL
+
+    SELECT 
+        r.id,
+        r.message_id,
+        r.child_ids,
+        r.enabled_child_index,
+        ct.depth + 1
+    FROM message_relations r
+    JOIN chat_tree ct ON r.id = substr(
+        ct.child_ids, 
+        (ct.enabled_child_index * 37) + 1, 
+        36
+    )
+    WHERE r.session_id = ?
+)
+SELECT 
+    m.id AS message_id,
+    m.sender,
+    m.sender_id,
+    m.content,
+    m.timestamp,
+    m.attachments,
+    t.id AS id,
+    t.child_ids,
+    t.enabled_child_index
+FROM chat_tree t
+JOIN messages m ON t.message_id = m.id
+WHERE t.depth > 0
+ORDER BY t.depth DESC;
+''';
+    // the previewed message do not need the "data" or "attachments" field
+
+    final rows = await _db
+        .customSelect(
+          sql,
+          variables: [
+            Variable.withString(sessionId),
+            Variable.withString(sessionId),
+          ],
+        )
+        .get();
+
+    return rows.map((row) => ChatMessage.fromMap(row.data)).toList();
+  }
+
+  // --- Persona CRUD ---
+  Future<void> createOrUpdatePersona(Persona persona) async {
+    await _db.transaction(() async {
+      if (persona.isDefault) {
+        await (_db.update(_db.personas)..where((t) => t.isDefault)).write(
+          const PersonasCompanion(isDefault: Value(false)),
+        );
+      }
+      await _db
+          .into(_db.personas)
+          .insert(
+            PersonaDbModel(
+              id: persona.id,
+              name: persona.name,
+              content: persona.content,
+              data: persona.data,
+              isDefault: persona.isDefault,
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+    });
+  }
+
+  Future<List<Persona>> getAllPersonas() async {
+    final maps = await _db.select(_db.personas).get();
+    return maps.map((map) => Persona.fromDBModel(map)).toList();
+  }
+
+  Future<Persona?> getPersonaById(String id) async {
+    final map = await (_db.select(
+      _db.personas,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (map != null) return Persona.fromDBModel(map);
+    return null;
+  }
+
+  Future<void> deletePersona(String id) async {
+    await (_db.delete(_db.personas)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<Persona?> getDefaultPersona() async {
+    final map =
+        await (_db.select(_db.personas)
+              ..where((t) => t.isDefault)
+              ..limit(1))
+            .getSingleOrNull();
+    if (map != null) return Persona.fromDBModel(map);
+
+    final any = await (_db.select(_db.personas)..limit(1)).getSingleOrNull();
+    if (any != null) {
+      await setPersonaAsDefault(any.id);
+      return Persona.fromDBModel(any);
+    }
+    return null;
+  }
+
+  Future<void> setPersonaAsDefault(String personaId) async {
+    await _db.transaction(() async {
+      await (_db.update(_db.personas)..where((t) => t.isDefault)).write(
+        const PersonasCompanion(isDefault: Value(false)),
+      );
+
+      final rowsAffected =
+          await (_db.update(_db.personas)..where((t) => t.id.equals(personaId)))
+              .write(const PersonasCompanion(isDefault: Value(true)));
+
+      if (rowsAffected == 0) {
+        throw PersonaException(PersonaExceptionType.personaNotFound);
+      }
+    });
+  }
+}
