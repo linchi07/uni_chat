@@ -3,3 +3,4 @@
 /.gemini/
 /.vs/
 /build/
+/node_modules/

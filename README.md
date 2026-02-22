@@ -1,40 +1,59 @@
-# uniChat
+# UNIChat 
 
-uniChat is a powerful, cross-platform AI agent client built with Flutter. It's designed to be an ultimate AI executing system, providing a rich and interactive experience for communicating with various language models.
+> **Think Together — An Agent-level Chat Terminal that Breaks Linear Boundaries.**
+>
+> 🌐 [Website & Documentation](https://unichat.wejoinnwk.com) | ⬇️ [Download](#download) | 📖 [中文版(Chinese)](README_zh.md)
 
-## 🌟 Features
+<p align="center">
+  <img src="website/static/img/homepage/title_en.gif" alt="UNIChat Interface" width="800">
+</p>
 
-- **🤖 Agent-based Framework**: Create and manage multiple AI agents, each with its own configurable model, system prompts, and parameters.
-- **💬 Core Chat Functionality**: Supports text messages and file attachments, including images, PDFs, and text files.
-- **🔌 Multi-Provider Support**: Easily switch between different LLM providers like OpenAI, Google Gemini, or even your custom API endpoints.
-- **✨ UIQL (User Interface Query Language)**: A unique command-based language that allows the AI to dynamically create, update, and interact with UI components like charts, tables, and buttons.
-- **⚙️ Comprehensive Settings**: A detailed settings panel to manage API providers, keys, and models.
-- **💾 Local Data Persistence**: All your chat sessions, messages, and agent configurations are saved locally using a `sqflite` database.
-- **📱 Cross-Platform**: Built with Flutter, uniChat is designed to run on Android, iOS, macOS, Windows, Linux, and Web.
+## ✨ Core Features
 
-## 🔧 Project Structure
+<table align="center" style="text-align:center;">
+  <tr>
+    <td width="25%">
+      <img src="website/static/img/homepage/agent_en.png" alt="Agent-level conversational architecture" width="200"><br/>
+      <b>Agent Architecture</b><br/>
+      Session is Agent. Deeply bound intelligent interactive experience without tedious role switching.
+    </td>
+    <td width="25%">
+      <img src="website/static/img/homepage/tree_style_en.gif" alt="True Multi-branch Variants" width="200"><br/>
+      <b>Multi-branch Variants</b><br/>
+      Native support for non-linear chat trees. Start branches anytime, compare variants, and master every possibility.
+    </td>
+    <td width="25%">
+      <img src="website/static/img/homepage/persona_en.gif" alt="Tavern-level Persona System" width="200"><br/>
+      <b>Persona System</b><br/>
+      Ultimate identity definition. Define your identity in a single click, creating an immersive interactive environment.
+    </td>
+    <td width="25%">
+      <img src="website/static/img/homepage/model_provider_en.gif" alt="All-in-one API Bundler" width="200"><br/>
+      <b>API Bundler</b><br/>
+      Built-in presets for DeepSeek, Google, LMStudio, etc. Custom OpenAI-compatible endpoints supported.
+    </td>
+  </tr>
+</table>
 
-The project is organized into the following main directories:
+## 💻 Native UX on All Platforms
 
-- `lib/`: Contains the core Dart code for the application.
-  - `Agent/`: Manages the AI agents, including their creation, configuration, and state.
-  - `Chat/`: Implements the main chat interface, message handling, and UI panels.
-    - `panels/`: Contains the various UIQL panels that can be dynamically rendered.
-  - `Editor/`: The visual node editor (beta).
-  - `llm_provider/`: Handles communication with different LLM APIs.
-  - `settings_page/`: The settings UI for managing APIs and models.
-  - `utils/`: Utility classes and services, including database and file handling.
-- `assets/`: Contains static assets like images and shaders.
-- `android/`, `ios/`, `linux/`, `macos/`, `web/`, `windows/`: Platform-specific code and configurations.
+One codebase, extreme optimization. Deeply adapted for macOS, iOS, Windows, and Android.
+🍎 🪟 🤖 📱
 
-## 🛠️ Key Technologies
+## 🚀 Download
 
-- **Flutter**: The core framework for building the cross-platform UI.
-- **Riverpod**: For state management.
-- **sqflite**: For local database storage.
-- **http**: For making API requests to LLM providers.
-- **fl_chart**, **webview_flutter**, and more: For rendering dynamic UIQL panels.
+Choose your operating system to download:
+- [Windows](https://github.com/linchi07/uni_chat/releases)
+- [macOS](https://unichat.wejoinnwk.com/docs/macos-guide) - Please view our [Installation Guide](https://unichat.wejoinnwk.com/macos-guide) for bypassing unverified developer warnings.
+- [Android](https://github.com/linchi07/uni_chat/releases)
+- [iOS (IPA)](https://github.com/linchi07/uni_chat/wiki/iOS-Installation)
 
-## 🤝 Contributing
+Visit the [Releases page](https://github.com/linchi07/uni_chat/releases) for the latest versions.
 
-Contributions are welcome! If you have any ideas, suggestions, or bug reports, please open an issue or submit a pull request.
+## 📖 Documentation
+
+For detailed guides on configuring APIs, creating Agents, and mastering branching, please visit our [official documentation](https://unichat.wejoinnwk.com/docs/intro).
+
+---
+
+*Powered by Flutter & Rust.*

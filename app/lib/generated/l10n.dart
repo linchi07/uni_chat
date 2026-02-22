@@ -1789,6 +1789,21 @@ class S {
     );
   }
 
+  /// `New version available`
+  String get new_version_available {
+    return Intl.message(
+      'New version available',
+      name: 'new_version_available',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Download`
+  String get download {
+    return Intl.message('Download', name: 'download', desc: '', args: []);
+  }
+
   /// `File manage`
   String get file_manage {
     return Intl.message('File manage', name: 'file_manage', desc: '', args: []);

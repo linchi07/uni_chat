@@ -265,6 +265,8 @@
   "embedding_dimension": "嵌入维度",
   "plz_select_embedding_dimension": "请选择嵌入维度",
   "default_index_method": "默认索引方式",
+  "new_version_available": "发现新版本",
+  "download": "前往下载",
   "file_manage": "文件管理",
   "website_manage": "网站管理",
   "memory_manage": "记忆管理",

@@ -59,8 +59,7 @@ dependencies:
   drift_flutter: ^0.2.8
   image_picker: ^1.2.1
   keyboard_dismisser: ^3.0.0
-  
-
+  package_info_plus: ^9.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

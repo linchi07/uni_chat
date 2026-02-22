@@ -24,6 +24,7 @@ part 'api_database.g.dart';
 )
 class _ApiDb extends _$_ApiDb {
   _ApiDb() : super(_onOpen());
+  _ApiDb.connect(DatabaseConnection connection) : super(connection);
 
   @override
   int get schemaVersion => 1;
@@ -63,6 +64,16 @@ class _ApiDb extends _$_ApiDb {
 
   Future<bool> updateModel(Model model) {
     return update(models).replace(model);
+  }
+
+  Future<void> upsertModel(Model model) {
+    return into(models).insert(model, mode: InsertMode.replace);
+  }
+
+  Future<void> upsertProviderPreset(ProviderPreset preset) {
+    return into(
+      providerPresetsTable,
+    ).insert(preset.companion, mode: InsertMode.replace);
   }
 
   Future<List<ApiProvider>> getAllApiProviders() => select(apiProviders).get();
@@ -170,7 +181,7 @@ class _ApiDb extends _$_ApiDb {
   Future<void> insertApikeyUsage(ApiKeyUsage usage) =>
       into(apiKeyUsages).insert(usage);
 
-  Future<List<({ApiKey key,String? invokeDataJson})>> getAvailableApiKeys(
+  Future<List<({ApiKey key, String? invokeDataJson})>> getAvailableApiKeys(
     String providerId,
   ) async {
     var r =
@@ -181,7 +192,7 @@ class _ApiDb extends _$_ApiDb {
               ..orderBy([(e) => OrderingTerm.random()]))
             .get();
 
-    var result = <({ApiKey key,String? invokeDataJson})>[];
+    var result = <({ApiKey key, String? invokeDataJson})>[];
     for (var k in r) {
       var key = ApiKey(
         k.providerId,
@@ -204,11 +215,9 @@ class _ApiDb extends _$_ApiDb {
         .get();
   }
 
-  Future<void> updateApiKeyInvokeData(ApiKey key,String dataJson) {
+  Future<void> updateApiKeyInvokeData(ApiKey key, String dataJson) {
     return (update(apiKeysTable)..where((e) => e.id.equals(key.id))).write(
-      ApiKeysTableCompanion(
-        invokeData: Value(dataJson),
-      ),
+      ApiKeysTableCompanion(invokeData: Value(dataJson)),
     );
   }
 
@@ -347,6 +356,56 @@ class _ApiDb extends _$_ApiDb {
       print(e);
     }
   }
+
+  Future<void> processModelsUpdateMapList(List<dynamic> dataList) async {
+    await computeWithDatabase(
+      computation: (db) async {
+        await db.transaction(() async {
+          for (var map in dataList) {
+            List<ModelParameters>? parameters;
+            var pr = map['parameters'];
+            if (pr != null) {
+              parameters = ModelParameters.fromMap(pr);
+              if (parameters.isEmpty) {
+                parameters = null;
+              }
+            }
+
+            var m = Model(
+              id: map['id'],
+              family: map['family'],
+              friendlyName: map['friendly_name'],
+              abilities: XModelAlibity.fromList((map['abilities'] as List)),
+              contextLength: map['context_length'],
+              maxCompletionTokens: map['max_completion_tokens'],
+              pricing: map['pricing'] != null
+                  ? ModelPricing.fromMap(map['pricing'])
+                  : null,
+              parameters: parameters,
+            );
+            await db.into(db.models).insert(m, mode: InsertMode.replace);
+          }
+        });
+      },
+      connect: (connection) => _ApiDb.connect(connection),
+    );
+  }
+
+  Future<void> processProvidersUpdateMapList(List<dynamic> dataList) async {
+    await computeWithDatabase(
+      computation: (db) async {
+        await db.transaction(() async {
+          for (var map in dataList) {
+            var p = ProviderPreset.fromMap(map);
+            await db
+                .into(db.providerPresetsTable)
+                .insert(p.companion, mode: InsertMode.replace);
+          }
+        });
+      },
+      connect: (connection) => _ApiDb.connect(connection),
+    );
+  }
 }
 
 class ApiDatabase {
@@ -376,6 +435,11 @@ class ApiDatabase {
 
   // Model 表操作
   Future<void> insertModel(Model model) => _adb.insertModel(model);
+
+  Future<void> upsertModel(Model model) => _adb.upsertModel(model);
+
+  Future<void> upsertProviderPreset(ProviderPreset preset) =>
+      _adb.upsertProviderPreset(preset);
 
   Future<List<Model>> getAllModels() => _adb.getAllModels();
 
@@ -411,10 +475,15 @@ class ApiDatabase {
   Future<void> insertApikeyUsage(ApiKeyUsage usage) =>
       _adb.insertApikeyUsage(usage);
 
-  Future<List<({ApiKey key,String? invokeDataJson})>> getAvailableApiKeys(
+  Future<List<({ApiKey key, String? invokeDataJson})>> getAvailableApiKeys(
     String providerId,
   ) => _adb.getAvailableApiKeys(providerId);
 
+  Future<void> processModelsUpdateMapList(List<dynamic> dataList) =>
+      _adb.processModelsUpdateMapList(dataList);
+
+  Future<void> processProvidersUpdateMapList(List<dynamic> dataList) =>
+      _adb.processProvidersUpdateMapList(dataList);
   Future<ProviderModelConfig?> getProviderModelConfig(
     String providerId,
     String modelId,
@@ -424,6 +493,6 @@ class ApiDatabase {
   Future<List<Model>> getAvailableModels() => _adb.getAvailableModels();
   Future<List<ApiProvider>> getApiProviderByModelId(String modelId) =>
       _adb.getApiProviderByModelId(modelId);
-  Future<void> updateApiKeyInvokeData(ApiKey key,String dataJson) =>
+  Future<void> updateApiKeyInvokeData(ApiKey key, String dataJson) =>
       _adb.updateApiKeyInvokeData(key, dataJson);
 }

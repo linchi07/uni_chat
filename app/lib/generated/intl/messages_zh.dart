@@ -185,6 +185,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "delete_confirm": MessageLookupByLibrary.simpleMessage("确定删除吗？"),
     "delete_long_press": MessageLookupByLibrary.simpleMessage("删除（长按）"),
     "disable": MessageLookupByLibrary.simpleMessage("禁用"),
+    "download": MessageLookupByLibrary.simpleMessage("前往下载"),
     "drag_image_hint": MessageLookupByLibrary.simpleMessage("拖拽图片到此处"),
     "drop_files_hint": MessageLookupByLibrary.simpleMessage("在这里拖放文件"),
     "edit": MessageLookupByLibrary.simpleMessage("编辑"),
@@ -343,6 +344,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "name": MessageLookupByLibrary.simpleMessage("名称"),
     "name_not_set": MessageLookupByLibrary.simpleMessage("未命名"),
     "new_chat_session": MessageLookupByLibrary.simpleMessage("新聊天会话"),
+    "new_version_available": MessageLookupByLibrary.simpleMessage("发现新版本"),
     "next_step": MessageLookupByLibrary.simpleMessage("下一步"),
     "no_agent": MessageLookupByLibrary.simpleMessage("暂无Agent,请添加一个"),
     "no_embedding_model": MessageLookupByLibrary.simpleMessage(

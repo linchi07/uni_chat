@@ -21,6 +21,7 @@ import 'package:uni_chat/utils/overlays.dart';
 
 import 'Agent/agent_page.dart';
 import 'generated/l10n.dart';
+import 'utils/auto_update_service.dart';
 
 final Map<String, Locale> languages = const {
   "简体中文": Locale("zh"),
@@ -119,6 +120,7 @@ class UNIChat extends StatefulWidget {
 
 class _UNIChatState extends State<UNIChat> {
   late bool isSetUp;
+  bool _isUpdateChecked = false;
   @override
   void initState() {
     super.initState();
@@ -172,6 +174,16 @@ class _UNIChatState extends State<UNIChat> {
           child: OverlayPortalScope(
             child: Builder(
               builder: (context) {
+                if (!_isUpdateChecked) {
+                  // 否则拿不到 overlay 的context引用
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    AutoUpdateService.checkUpdates(
+                      context,
+                      backgroundColor: theme.zeroGradeColor,
+                    );
+                  });
+                  _isUpdateChecked = true;
+                }
                 if (widget.locale != null) {
                   S.load(widget.locale!);
                   PlatForm().languageCode = widget.locale!.languageCode;

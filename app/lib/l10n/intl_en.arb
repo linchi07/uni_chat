@@ -265,6 +265,8 @@
   "embedding_dimension": "Embedding dimension",
   "plz_select_embedding_dimension": "Please select embedding dimension",
   "default_index_method": "Default index method",
+  "new_version_available": "New version available",
+  "download": "Download",
   "file_manage": "File manage",
   "website_manage": "Website manage",
   "memory_manage": "Memory manage",

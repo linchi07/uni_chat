@@ -251,6 +251,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Delete (LongPress)",
     ),
     "disable": MessageLookupByLibrary.simpleMessage("Disable"),
+    "download": MessageLookupByLibrary.simpleMessage("Download"),
     "drag_image_hint": MessageLookupByLibrary.simpleMessage("Drop image here"),
     "drop_files_hint": MessageLookupByLibrary.simpleMessage("Drop files here"),
     "edit": MessageLookupByLibrary.simpleMessage("Edit"),
@@ -485,6 +486,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "name_not_set": MessageLookupByLibrary.simpleMessage("Unnamed"),
     "new_chat_session": MessageLookupByLibrary.simpleMessage(
       "New chat session",
+    ),
+    "new_version_available": MessageLookupByLibrary.simpleMessage(
+      "New version available",
     ),
     "next_step": MessageLookupByLibrary.simpleMessage("Next step"),
     "no_agent": MessageLookupByLibrary.simpleMessage(

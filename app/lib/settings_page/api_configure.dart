@@ -1023,7 +1023,7 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
 }
 
 class _BaseInfo extends ConsumerStatefulWidget {
-  const _BaseInfo({super.key, required this.theme});
+  const _BaseInfo({required this.theme});
   final ThemeConfig theme;
   @override
   ConsumerState<_BaseInfo> createState() => __BaseInfoState();

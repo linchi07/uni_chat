@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uni_chat/utils/auto_update_service.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../generated/l10n.dart';
+import '../theme_manager.dart';
 
-class UNIChatAbout extends StatelessWidget {
+class UNIChatAbout extends ConsumerWidget {
   const UNIChatAbout({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    var theme = ref.watch(themeProvider);
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -51,8 +55,48 @@ class UNIChatAbout extends StatelessWidget {
             width: 300,
             height: 46,
             child: StdButton(
+              color: theme.warningColor,
+              onPressed: () {
+                AutoUpdateService.checkUpdates(
+                  context,
+                  backgroundColor: theme.zeroGradeColor,
+                );
+              },
+              child: Center(
+                child: Row(
+                  children: [
+                    Icon(Icons.update, color: Colors.white),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "CheckUpdates 检查更新",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          SizedBox(
+            width: 300,
+            height: 46,
+            child: StdButton(
               color: Colors.green[200],
-              onPressed: () {},
+              onPressed: () {
+                launchUrl(
+                  Uri(
+                    scheme: "https",
+                    host: "unichat.wejoinnwk.com",
+                    path: "docs/intro",
+                  ),
+                );
+              },
               child: Center(
                 child: Row(
                   children: [
