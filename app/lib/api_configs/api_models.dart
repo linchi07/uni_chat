@@ -514,7 +514,6 @@ class ProviderModelConfig implements Insertable<ProviderModelConfig> {
           : null,
       parametersOverride: map['parameters_override'] != null
           ? ModelParameters.fromMap(jsonDecode(map['parameters_override']))
-                as List<ModelParameters>
           : null,
     );
   }
@@ -652,12 +651,12 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
         ProviderModelConfig(
           providerId: 'deepseek',
           modelId: '@official-464a9745-faf7-5e9c-813d-dc230998fed4',
-          callName: 'deepseek/deepseek-r1',
+          callName: 'deepseek-reasoner',
         ),
         ProviderModelConfig(
           providerId: 'deepseek',
           modelId: '@official-a8c6da93-45af-5030-bbbd-b415bfa11e66',
-          callName: 'deepseek/deepseek-v3.2',
+          callName: 'deepseek-chat',
         ),
       ],
     ),
