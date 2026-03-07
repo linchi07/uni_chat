@@ -117,6 +117,7 @@ class DatabaseService {
     String? title,
     required String agentId,
     String? personaId,
+    BranchInfo? branchInfo,
   }) async {
     final now = DateTime.now();
     final newSession = ChatSession(
@@ -126,6 +127,7 @@ class DatabaseService {
       name: title ?? 'New Chat - ${now.toIso8601String()}',
       creationTime: now,
       lastMessageTime: now,
+      branchInfo: branchInfo,
     );
     var m1 = SessionDbModel(
       id: newSession.id,
@@ -134,6 +136,7 @@ class DatabaseService {
       createdAt: newSession.creationTime,
       modifiedAt: newSession.lastMessageTime,
       personaId: newSession.persona,
+      branchInfo: newSession.branchInfo?.toJsonString(),
     );
     var m2 = MessageRelationDbModel(
       id: newSession.id, // root relation has id == sessionId
@@ -180,6 +183,163 @@ class DatabaseService {
         modifiedAt: Value(DateTime.now()),
       ),
     );
+  }
+
+  /// When we branch from a specific message, what we actually want is to make sure the branch we are currently on is copied until the branch message.
+  /// So the excluded message ids are those behind the message we branch which are on the same branch.
+  Future<ChatSession?> branchSessionFromMessage(
+    String originSessionId,
+    String branchMessageId,
+    String newTitle,
+  ) async {
+    ChatSession? session = await getSession(originSessionId);
+    if (session == null) return null;
+
+    final query = _db.select(_db.messageRelations)
+      ..where((t) => t.sessionId.equals(originSessionId));
+    final relations = await query.get();
+
+    // We only create branch session
+    final now = DateTime.now();
+    final newSessionId = _uuid.v7();
+
+    BranchInfo targetBranchInfo = BranchInfo(
+      origin: BranchInfoData(
+        sessionId: originSessionId,
+        messageId: branchMessageId,
+      ),
+    );
+
+    final newSession = ChatSession(
+      id: newSessionId,
+      agentId: session.agentId,
+      persona: session.persona,
+      name: newTitle,
+      creationTime: now,
+      lastMessageTime: now,
+      branchInfo: targetBranchInfo,
+    );
+
+    var m1 = SessionDbModel(
+      id: newSession.id,
+      agentId: newSession.agentId,
+      title: newSession.name,
+      createdAt: newSession.creationTime,
+      modifiedAt: newSession.lastMessageTime,
+      personaId: newSession.persona,
+      branchInfo: newSession.branchInfo?.toJsonString(),
+    );
+
+    // Update origin session's branch info
+    BranchInfo originBranchInfo = session.branchInfo ?? BranchInfo();
+    originBranchInfo.branches.add(
+      BranchInfoData(sessionId: newSessionId, messageId: branchMessageId),
+    );
+
+    Map<String, MessageRelationDbModel> relMap = {
+      for (var rel in relations) rel.id: rel,
+    };
+    MessageRelationDbModel? branchPointRelation;
+
+    for (var rel in relations) {
+      if (rel.messageId == branchMessageId) {
+        branchPointRelation = rel;
+        break;
+      }
+    }
+
+    if (branchPointRelation == null) {
+      return null;
+    }
+
+    // Determine descendants of branchPointRelation to discard
+    Set<String> descendantsToDiscard = {};
+    List<String> queue = List.from(branchPointRelation.childIds ?? []);
+    while (queue.isNotEmpty) {
+      var cur = queue.removeLast();
+      descendantsToDiscard.add(cur);
+      var children = relMap[cur]?.childIds ?? [];
+      queue.addAll(children);
+    }
+
+    // Determine path from root to branchPoint to update active branches
+    Set<String> pathToBranchPoint = {branchPointRelation.id};
+    String? currentParent = branchPointRelation.parentId;
+    while (currentParent != null) {
+      pathToBranchPoint.add(currentParent);
+      currentParent = relMap[currentParent]?.parentId;
+    }
+
+    // duplicate all kept relations using a map
+    Map<String, String> oldToNewRelationId = {};
+    for (var rel in relations) {
+      if (!descendantsToDiscard.contains(rel.id)) {
+        oldToNewRelationId[rel.id] = _uuid.v7();
+      }
+    }
+
+    // copy the relations into new objects
+    List<MessageRelationDbModel> newRelations = [];
+
+    for (var rel in relations) {
+      if (descendantsToDiscard.contains(rel.id)) continue;
+
+      List<String> childIdsList = [];
+      var enableIdx = 0;
+      if (rel.childIds != null && rel.childIds!.isNotEmpty) {
+        var oldSelected =
+            rel.enabledChildIndex != null &&
+                rel.enabledChildIndex! < rel.childIds!.length
+            ? rel.childIds![rel.enabledChildIndex!]
+            : null;
+
+        bool isAnyChildInPath = false;
+        for (var oldChild in rel.childIds!) {
+          var nId = oldToNewRelationId[oldChild];
+          if (nId != null) {
+            childIdsList.add(nId);
+
+            // Auto-select the child if it's on the path to the branch point
+            if (pathToBranchPoint.contains(oldChild)) {
+              enableIdx = childIdsList.length - 1;
+              isAnyChildInPath = true;
+            } else if (!isAnyChildInPath && oldSelected == oldChild) {
+              enableIdx = childIdsList.length - 1;
+            }
+          }
+        }
+      }
+
+      var newRel = rel.copyWith(
+        id: oldToNewRelationId[rel.id],
+        sessionId: newSessionId,
+        parentId: Value(
+          rel.parentId == null ? null : oldToNewRelationId[rel.parentId],
+        ),
+        childIds: Value(childIdsList.isEmpty ? null : childIdsList),
+        enabledChildIndex: Value(childIdsList.isEmpty ? null : enableIdx),
+      );
+      newRelations.add(newRel);
+    }
+
+    await _db.transaction(() async {
+      // 1. insert new session
+      await _db.into(_db.sessions).insert(m1);
+
+      // 2. insert all new relations
+      await _db.batch((batch) {
+        batch.insertAll(_db.messageRelations, newRelations);
+      });
+
+      // 3. update origin session branch info
+      await (_db.update(
+        _db.sessions,
+      )..where((t) => t.id.equals(originSessionId))).write(
+        SessionsCompanion(branchInfo: Value(originBranchInfo.toJsonString())),
+      );
+    });
+
+    return newSession;
   }
 
   Future<void> deleteSession(String sessionId) async {

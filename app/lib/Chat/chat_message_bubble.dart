@@ -11,12 +11,12 @@ import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/error_handling.dart';
-import 'package:uni_chat/utils/chunked_string_buffer.dart';
+import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
+import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
-import '../utils/prebuilt_widgets.dart' show FileIcon;
 import 'chat_models.dart';
 
 /// A widget that displays a chat message.
@@ -81,7 +81,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
             ref.read(chatStateProvider.notifier).addBranch(index);
           },
           afterSubmit: () {
-            
+
           }
           cancelCallback: () {
             setState(() {
@@ -254,11 +254,13 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
           w.add(typeMatch(i));
           pt = i.anchor;
         }
-        if(pt < wm.content.length){
-          w.add(_TextBlock(
-            content: wm.content.substring(pt),
-            color: theme.darkTextColor,
-          ));
+        if (pt < wm.content.length) {
+          w.add(
+            _TextBlock(
+              content: wm.content.substring(pt),
+              color: theme.darkTextColor,
+            ),
+          );
         }
       } on Exception catch (e) {
         w.add(
@@ -306,6 +308,17 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                   child: Icon(Icons.edit_outlined, size: 20),
                 ),
               ),
+            SizedBox(
+              height: 30,
+              width: 24,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () {
+                  _showBranchDialog(context);
+                },
+                child: Icon(Icons.fork_right_rounded, size: 20),
+              ),
+            ),
             SizedBox(
               height: 30,
               width: 24,
@@ -429,6 +442,44 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
     ];
   }
 
+  void _showBranchDialog(BuildContext context) {
+    final TextEditingController controller = TextEditingController(
+      text: '${ref.read(chatStateProvider).session?.name ?? 'Chat'} - Branch',
+    );
+    OverlayPortalService.showDialog(
+      width: 400,
+      context,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(S.of(context).branch_from_here, style: TextStyle(fontSize: 18)),
+          const SizedBox(height: 8),
+          StdTextFieldOutlined(controller: controller, maxLines: 2),
+        ],
+      ),
+      actions: [
+        StdButton(
+          onPressed: () => OverlayPortalService.hide(context),
+          child: Text(S.of(context).cancel),
+        ),
+        const SizedBox(width: 8),
+        StdButton(
+          onPressed: () async {
+            final name = controller.text.trim();
+            if (name.isNotEmpty) {
+              await OverlayPortalService.hide(context);
+              ref
+                  .read(chatStateProvider.notifier)
+                  .branchSession(message.messageId ?? "", name);
+            }
+          },
+          child: Text(S.of(context).branch_confirm),
+        ),
+      ],
+      backGroundColor: theme.zeroGradeColor,
+    );
+  }
+
   Widget _buildAttachmentView(
     BuildContext context,
     ChatFile file,
@@ -462,7 +513,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
               ),
             )
           : Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.all(8),
               height: 50,
               width: 130,

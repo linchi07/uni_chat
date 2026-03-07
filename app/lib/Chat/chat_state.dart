@@ -299,6 +299,31 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       state = state.copyWith();
     }
   }
+
+  Future<void> branchSession(String messageId, String newTitle) async {
+    if (state.session == null) return;
+    state = state.copyWith(isLoading: true);
+    try {
+      final newSession = await _dbService.branchSessionFromMessage(
+        state.session!.id,
+        messageId,
+        newTitle,
+      );
+      if (newSession != null) {
+        await switchSession(newSession.id);
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          error: ChatException(ChatExceptionType.branchSessionFailed),
+        );
+      }
+    } on Exception catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: ChatException(ChatExceptionType.branchSessionFailed),
+      );
+    }
+  }
   // --- End Public Session Management API ---
 
   Future<void> triggerUploadFile(

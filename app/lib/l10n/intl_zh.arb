@@ -430,5 +430,9 @@
           "condition":{}
       }
   },
-  "ex_and": "并且"
+  "ex_and": "并且",
+  "branch_from_here": "从此处创建分支",
+  "name_new_branch": "为新分支命名",
+  "branch_confirm": "创建分支",
+  "no_pop_out_announcement": "不再弹出此公告"
 }

@@ -434,5 +434,9 @@
       "condition":{}
     }
   },
-  "ex_and": " and "
+  "ex_and": " and ",
+  "branch_from_here": "Branch from here",
+  "name_new_branch": "Name your new branch",
+  "branch_confirm": "Branch",
+    "no_pop_out_announcement": "不再弹出此公告"
 }

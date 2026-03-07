@@ -1497,7 +1497,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               height: 50,
               width: 50,
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withAlpha(153),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Center(

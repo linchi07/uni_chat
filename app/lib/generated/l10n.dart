@@ -3032,6 +3032,41 @@ class S {
   String get ex_and {
     return Intl.message(' and ', name: 'ex_and', desc: '', args: []);
   }
+
+  /// `Branch from here`
+  String get branch_from_here {
+    return Intl.message(
+      'Branch from here',
+      name: 'branch_from_here',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Name your new branch`
+  String get name_new_branch {
+    return Intl.message(
+      'Name your new branch',
+      name: 'name_new_branch',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Branch`
+  String get branch_confirm {
+    return Intl.message('Branch', name: 'branch_confirm', desc: '', args: []);
+  }
+
+  /// `不再弹出此公告`
+  String get no_pop_out_announcement {
+    return Intl.message(
+      '不再弹出此公告',
+      name: 'no_pop_out_announcement',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

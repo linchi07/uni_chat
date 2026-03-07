@@ -177,6 +177,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "basic_configure": MessageLookupByLibrary.simpleMessage(
       "Basic configuration",
     ),
+    "branch_confirm": MessageLookupByLibrary.simpleMessage("Branch"),
+    "branch_from_here": MessageLookupByLibrary.simpleMessage(
+      "Branch from here",
+    ),
     "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
     "cancel_long_press": MessageLookupByLibrary.simpleMessage(
       "Cancel (LongPress)",
@@ -483,6 +487,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Modify session name",
     ),
     "name": MessageLookupByLibrary.simpleMessage("Name"),
+    "name_new_branch": MessageLookupByLibrary.simpleMessage(
+      "Name your new branch",
+    ),
     "name_not_set": MessageLookupByLibrary.simpleMessage("Unnamed"),
     "new_chat_session": MessageLookupByLibrary.simpleMessage(
       "New chat session",
@@ -512,6 +519,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "No model yet, please add one first.",
     ),
     "no_persona": MessageLookupByLibrary.simpleMessage("No persona"),
+    "no_pop_out_announcement": MessageLookupByLibrary.simpleMessage("不再弹出此公告"),
     "no_preview": MessageLookupByLibrary.simpleMessage("No preview available"),
     "no_provider": MessageLookupByLibrary.simpleMessage("No providers "),
     "no_results": MessageLookupByLibrary.simpleMessage("No results"),

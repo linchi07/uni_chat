@@ -8,6 +8,7 @@ import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:xxh3/xxh3.dart';
 
 import '../generated/l10n.dart';
 
@@ -17,6 +18,7 @@ class AutoUpdateService {
   static const String _lastCheckKey = "last_update_check_time";
   static const String _modelsVersionKey = "models_version";
   static const String _providersVersionKey = "providers_version";
+  static const String _dismissedAnnouncementKey = "dismissed_announcement_hash";
 
   static Future<void> checkUpdates(
     BuildContext context, {
@@ -50,9 +52,30 @@ class AutoUpdateService {
         final data = jsonDecode(response.body);
 
         if (data['status'] == 'update_available') {
-          // 1. 处理 App 更新
-          if (data['app_update'] != null && context.mounted) {
-            _showAppUpdateDialog(context, backgroundColor, data['app_update']);
+          // 过滤公告
+          if (data['announcement'] != null) {
+            final announcementStr = jsonEncode(data['announcement']);
+            final announcementHash = xxh3(
+              utf8.encode(announcementStr),
+            ).toString();
+            final dismissedHash = prefs.getString(_dismissedAnnouncementKey);
+
+            if (announcementHash == dismissedHash) {
+              data.remove('announcement');
+            } else {
+              data['announcement_hash'] = announcementHash;
+            }
+          }
+
+          // 1. 处理 App 更新与公告
+          if ((data['app_update'] != null || data['announcement'] != null) &&
+              context.mounted) {
+            _showAppUpdateOrAnnouncementDialog(
+              context,
+              backgroundColor,
+              data,
+              prefs,
+            );
           }
 
           // 2. 处理 Models 更新
@@ -74,51 +97,151 @@ class AutoUpdateService {
     }
   }
 
-  static void _showAppUpdateDialog(
+  static void _showAppUpdateOrAnnouncementDialog(
     BuildContext context,
     Color backgroundColor,
-    Map<String, dynamic> appUpdate,
+    Map<String, dynamic> data,
+    SharedPreferences prefs,
   ) {
-    final latestVersion = appUpdate['latest_version'];
-    final releaseNotes = appUpdate['release_notes'];
-    final downloadUrl = appUpdate['download_url'];
+    final appUpdate = data['app_update'];
+    final announcement = data['announcement'];
+    final announcementHash = data['announcement_hash'];
 
+    if (appUpdate == null && announcement == null) return;
+
+    // 0 = App 更新阶段, 1 = 公告阶段
+    final stepNotifier = ValueNotifier<int>(appUpdate != null ? 0 : 1);
     OverlayPortalService.showDialog(
+      width: 400,
       context,
       backGroundColor: backgroundColor,
-      child: Column(
-        children: [
-          Text(
-            "${S.of(context).new_version_available} ($latestVersion)",
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          Text(releaseNotes ?? ''),
-        ],
+      child: ValueListenableBuilder<int>(
+        valueListenable: stepNotifier,
+        builder: (context, step, _) {
+          if (step == 0) {
+            final latestVersion = appUpdate!['latest_version'];
+            final releaseNotes = appUpdate['release_notes'];
+            final downloadUrl = appUpdate['download_url'];
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "${S.of(context).new_version_available} ($latestVersion)",
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(releaseNotes ?? ''),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    StdButton(
+                      onPressed: () {
+                        if (announcement != null) {
+                          stepNotifier.value = 1; // 切换到公告
+                        } else {
+                          OverlayPortalService.hide(context);
+                        }
+                      },
+                      text: S.of(context).cancel,
+                    ),
+                    const SizedBox(width: 10),
+                    StdButton(
+                      onPressed: () async {
+                        if (downloadUrl != null) {
+                          final uri = Uri.parse(downloadUrl);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri);
+                          }
+                        }
+                        if (context.mounted) {
+                          OverlayPortalService.hide(context);
+                        }
+                      },
+                      child: Text(S.of(context).download),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          } else {
+            // 显示公告
+            final text = announcement!['text'] ?? '';
+            final String? url = announcement['url'];
+            bool noPopOut = false;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "公告 Announcement",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                Text(text),
+                const SizedBox(height: 20),
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        StdCheckbox(
+                          value: noPopOut,
+                          onChanged: (value) {
+                            setState(() {
+                              noPopOut = value ?? false;
+                            });
+                          },
+                          text: S.of(context).no_pop_out_announcement,
+                        ),
+                        const SizedBox(width: 10),
+                        StdButton(
+                          onPressed: () {
+                            if (announcementHash != null && noPopOut) {
+                              prefs.setString(
+                                _dismissedAnnouncementKey,
+                                announcementHash,
+                              );
+                            }
+                            OverlayPortalService.hide(context);
+                          },
+                          text: S.of(context).confirm,
+                        ),
+                        if (url != null) ...[
+                          const SizedBox(width: 10),
+                          StdButton(
+                            onPressed: () async {
+                              if (announcementHash != null) {
+                                prefs.setString(
+                                  _dismissedAnnouncementKey,
+                                  announcementHash,
+                                );
+                              }
+                              final uri = Uri.parse(url);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                              }
+                              if (context.mounted) {
+                                OverlayPortalService.hide(context);
+                              }
+                            },
+                            child: const Text('前往查看'),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ],
+            );
+          }
+        },
       ),
-      actions: [
-        StdButton(
-          onPressed: () {
-            OverlayPortalService.hide(context);
-          },
-          text: S.of(context).cancel,
-        ),
-        const SizedBox(width: 10),
-        StdButton(
-          onPressed: () async {
-            if (downloadUrl != null) {
-              final uri = Uri.parse(downloadUrl);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri);
-              }
-            }
-            if (context.mounted) {
-              OverlayPortalService.hide(context);
-            }
-          },
-          child: Text(S.of(context).download),
-        ),
-      ],
     );
   }
 

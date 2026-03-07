@@ -11,6 +11,61 @@ import 'package:uni_chat/utils/tokenizer.dart';
 
 import '../utils/paste_and_drop/src/file_semantic_map.g.dart' show EXT_INDEX;
 
+class BranchInfoData {
+  final String sessionId;
+  final String messageId;
+
+  BranchInfoData({required this.sessionId, required this.messageId});
+
+  Map<String, dynamic> toMap() {
+    return {'sessionId': sessionId, 'messageId': messageId};
+  }
+
+  factory BranchInfoData.fromMap(Map<String, dynamic> map) {
+    return BranchInfoData(
+      sessionId: map['sessionId'],
+      messageId: map['messageId'],
+    );
+  }
+}
+
+class BranchInfo {
+  final BranchInfoData? origin;
+  final List<BranchInfoData> branches;
+
+  BranchInfo({this.origin, List<BranchInfoData>? branches})
+    : branches = branches ?? [];
+
+  Map<String, dynamic> toMap() {
+    return {
+      if (origin != null) 'origin': origin!.toMap(),
+      'branches': branches.map((e) => e.toMap()).toList(),
+    };
+  }
+
+  factory BranchInfo.fromMap(Map<String, dynamic> map) {
+    return BranchInfo(
+      origin: map['origin'] != null
+          ? BranchInfoData.fromMap(map['origin'])
+          : null,
+      branches:
+          (map['branches'] as List<dynamic>?)
+              ?.map((e) => BranchInfoData.fromMap(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+
+  factory BranchInfo.fromJsonString(String jsonStr) {
+    if (jsonStr.isEmpty) return BranchInfo();
+    return BranchInfo.fromMap(jsonDecode(jsonStr));
+  }
+
+  String toJsonString() {
+    return jsonEncode(toMap());
+  }
+}
+
 class ChatSession {
   final String id;
   final String agentId;
@@ -18,6 +73,7 @@ class ChatSession {
   String name;
   DateTime lastMessageTime;
   final DateTime creationTime;
+  BranchInfo? branchInfo;
 
   ChatSession({
     required this.id,
@@ -26,6 +82,7 @@ class ChatSession {
     required this.name,
     required this.lastMessageTime,
     required this.creationTime,
+    this.branchInfo,
   });
 
   factory ChatSession.fromSessionDbModel(SessionDbModel dbModel) {
@@ -36,6 +93,9 @@ class ChatSession {
       name: dbModel.title,
       creationTime: dbModel.createdAt,
       lastMessageTime: dbModel.modifiedAt,
+      branchInfo: dbModel.branchInfo != null
+          ? BranchInfo.fromJsonString(dbModel.branchInfo!)
+          : null,
     );
   }
 }
@@ -378,10 +438,17 @@ class ChatFile {
   }
 
   factory ChatFile.fromMap(Map<String, dynamic> map) {
+    DateTime dt;
+    //我自己的老文件无法解析了哈哈……
+    try {
+      dt = DateTime.fromMillisecondsSinceEpoch(map['uploadTime']);
+    } catch (e) {
+      dt = DateTime.parse(map['uploadTime']);
+    }
     return ChatFile(
       name: map['name'],
       originalName: map['originalName'],
-      uploadTime: DateTime.parse(map['uploadTime']),
+      uploadTime: dt,
       providerInfo: {
         for (var e in map['providerInfo'])
           e['provider']: (e['fileId'], DateTime.parse(e['uploadTime'])),
