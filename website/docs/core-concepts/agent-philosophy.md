@@ -52,6 +52,6 @@ For instance, you can create a dedicated Agent specifically for a project. This 
 
 Click Edit in the Agent settings panel to enter the **Agent Editing Page**, where you can adjust the Agent's settings at any time. For specific details, refer to:
 
-* ⚙️ **[Configuring Models and Parameters](./model-settings.md)**: This is the Agent's "brain". Choose a suitable model for it (like DeepSeek or GPT-4) and configure the basic parameter details.
-* 🗣️ **[Writing System Prompts](./system-prompt.md)**: This is the Agent's "personality". Use prompts to define who it is, what it is responsible for, and how it communicates with you.
-* 👤 **[Binding User Identity](./user-identity.md)**: This is how the Agent recognizes you. You can assign a specific persona to it or have it use a special "nickname" for you.
+* ⚙️ **[Configuring Models and Parameters](./models-and-apis/intro.md)**: This is the Agent's "brain". Choose a suitable model for it (like DeepSeek or GPT-4) and configure the basic parameter details.
+* 🗣️ **[Writing System Prompts](./agents/system-prompt.md)**: This is the Agent's "personality". Use prompts to define who it is, what it is responsible for, and how it communicates with you.
+* 👤 **[Binding User Identity](./agents/user-identity.md)**: This is how the Agent recognizes you. You can assign a specific persona to it or have it use a special "nickname" for you.
