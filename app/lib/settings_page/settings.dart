@@ -10,6 +10,7 @@ import '../main.dart';
 import '../theme_manager.dart';
 import '../utils/prebuilt_widgets.dart';
 import 'api_configure.dart' show ApiSettings;
+import 'log_settings_page.dart';
 
 /// “账户”设置页面的占位符
 class _GeneralSettings extends ConsumerWidget {
@@ -276,6 +277,11 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
         icon: Icons.info_outline,
         title: S.of(context).about,
         contentWidget: UNIChatAbout(),
+      ),
+      _SettingItem(
+        icon: Icons.receipt_long,
+        title: S.of(context).log_settings,
+        contentWidget: LogSettingsPage(),
       ),
     ];
     final screenSize = MediaQuery.of(context).size;

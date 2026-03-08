@@ -434,5 +434,31 @@
   "branch_from_here": "从此处创建分支",
   "name_new_branch": "为新分支命名",
   "branch_confirm": "创建分支",
-  "no_pop_out_announcement": "不再弹出此公告"
+  "no_pop_out_announcement": "不再弹出此公告",
+  "log_settings": "日志捕获",
+  "log_loading": "正在加载日志...",
+  "log_file_not_init": "日志文件未初始化",
+  "log_read_fail": "读取日志失败: {error}",
+  "@log_read_fail": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "log_none": "暂无日志",
+  "log_enable_global_catch": "启用全局日志捕获（重启生效部分拦截）",
+  "log_enable_global_catch_hint": "开启后，自动将控制台的输出及未捕获错误记录到本地",
+  "log_refresh": "刷新日志",
+  "log_clear": "清空日志",
+  "log_copy": "复制日志",
+  "log_copied_to_clipboard": "已复制日志到剪贴板",
+  "db_downgrade_title": "数据库版本不兼容",
+  "db_downgrade_content": "如果出现该错误，说明您使用旧版本软件打开了由新版本软件创建的数据存档，这可能会导致应用闪退或数据彻底损坏。\n为了保护您的数据安全，已阻止本次启动。请先更新软件到更高版本。",
+  "db_downgrade_error": "{dbName}发生降级：试图使用旧版本({to})的应用打开高版本({from})的数据库",
+  "@db_downgrade_error": {
+    "placeholders": {
+      "dbName": {},
+      "from": {},
+      "to": {}
+    }
+  }
 }

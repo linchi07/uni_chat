@@ -47,6 +47,11 @@ class _ChatDb extends _$_ChatDb {
       onCreate: (mig) async {
         await mig.createAll();
       },
+      onUpgrade: (mig, from, to) async {
+        if (from > to) {
+          throw DatabaseDowngradeException("chat_session_saves.db", from, to);
+        }
+      },
     );
   }
 }
@@ -59,6 +64,11 @@ class DatabaseService {
   DatabaseService._privateConstructor() {
     _db = _ChatDb();
   }
+
+  Future<void> init() async {
+    await _db.customSelect('SELECT 1').get();
+  }
+
   // --- Agent CRUD ---
   Future<void> createOrUpdateAgent(AgentData agent) async {
     await _db.into(_db.agents).insert(agent, mode: InsertMode.insertOrReplace);

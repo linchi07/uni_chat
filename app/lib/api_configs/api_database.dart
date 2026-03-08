@@ -8,6 +8,7 @@ import 'package:uni_chat/api_configs/database_models.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 
 import '../settings_page/api_configure.dart' show ApiConfigure;
+import 'package:uni_chat/error_handling.dart';
 import 'database_converters.dart';
 
 part 'api_database.g.dart';
@@ -49,6 +50,11 @@ class _ApiDb extends _$_ApiDb {
       onCreate: (mig) async {
         await mig.createAll();
         await loadDefaultData();
+      },
+      onUpgrade: (mig, from, to) async {
+        if (from > to) {
+          throw DatabaseDowngradeException("api_config.db", from, to);
+        }
       },
     );
   }
@@ -429,6 +435,10 @@ class ApiDatabase {
   // 私有构造函数
   ApiDatabase._internal() {
     _adb = _ApiDb();
+  }
+
+  Future<void> init() async {
+    await _adb.customSelect('SELECT 1').get();
   }
 
   // 在 ApiDatabase 类中添加以下方法

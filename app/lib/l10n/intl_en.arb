@@ -438,5 +438,31 @@
   "branch_from_here": "Branch from here",
   "name_new_branch": "Name your new branch",
   "branch_confirm": "Branch",
-    "no_pop_out_announcement": "不再弹出此公告"
+  "no_pop_out_announcement": "不再弹出此公告",
+  "log_settings": "Log capture",
+  "log_loading": "Loading logs...",
+  "log_file_not_init": "Log file not initialized",
+  "log_read_fail": "Failed to read logs: {error}",
+  "@log_read_fail": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "log_none": "No logs",
+  "log_enable_global_catch": "Enable global log capture (partial interception takes effect after restart)",
+  "log_enable_global_catch_hint": "When enabled, console outputs and uncaught errors are automatically recorded locally.",
+  "log_refresh": "Refresh logs",
+  "log_clear": "Clear logs",
+  "log_copy": "Copy logs",
+  "log_copied_to_clipboard": "Logs copied to clipboard",
+  "db_downgrade_title": "Database Version Incompatible",
+  "db_downgrade_content": "If you see this error, it means you have opened data created by a newer version of the software with an older version. This may cause the application to crash or completely corrupt the data.\nTo protect your data, this startup has been blocked. Please update the software to a newer version first.",
+  "db_downgrade_error": "Downgrade occurred in {dbName}: Attempting to open newer database ({from}) with an older app version ({to})",
+  "@db_downgrade_error": {
+    "placeholders": {
+      "dbName": {},
+      "from": {},
+      "to": {}
+    }
+  }
 }

@@ -332,3 +332,15 @@ class ApiException extends AppException {
     return ApiException(ApiExceptionType.unknownError, message: e.toString());
   }
 }
+
+class DatabaseDowngradeException implements Exception {
+  final String dbName;
+  final int from;
+  final int to;
+  DatabaseDowngradeException(this.dbName, this.from, this.to);
+
+  @override
+  String toString() {
+    return "DatabaseDowngradeException: $dbName from $from to $to";
+  }
+}
