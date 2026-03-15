@@ -346,7 +346,7 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
                           Padding(
                             padding: const EdgeInsets.only(left: 8.0),
                             child: StdIconButton(
-                              tooltip: '返回',
+                              tooltip: S.of(context).back,
                               icon: Icons.arrow_back_ios_new,
                               onPressed: popPage,
                             ),
@@ -354,14 +354,16 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
                         Expanded(child: const SizedBox()),
                         if (!_forceMaximize)
                           StdIconButton(
-                            tooltip: isMaximized ? '还原' : '最大化',
+                            tooltip: isMaximized
+                                ? S.of(context).restore
+                                : S.of(context).maximize,
                             icon: isMaximized
                                 ? Icons.close_fullscreen
                                 : Icons.open_in_full_sharp,
                             onPressed: toggleMaximize,
                           ),
                         StdIconButton(
-                          tooltip: '关闭',
+                          tooltip: S.of(context).close,
                           icon: Icons.close,
                           onPressed: _handleClose,
                         ),

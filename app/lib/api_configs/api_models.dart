@@ -273,13 +273,13 @@ extension XModelAlibity on ModelAbility {
   String get simpleString {
     switch (this) {
       case ModelAbility.textGenerate:
-        return 'textGenerate';
+        return 'text';
       case ModelAbility.imageGenerate:
         return 'imageGenerate';
       case ModelAbility.image2imageGenerate:
         return 'image2imageGenerate';
       case ModelAbility.file:
-        return 'pdfUnderstanding';
+        return 'file';
       case ModelAbility.visual:
         return 'visual';
       case ModelAbility.embedding:
@@ -297,11 +297,11 @@ extension XModelAlibity on ModelAbility {
 
   static Set<ModelAbility> fromList(List<dynamic> list) {
     Map<String, ModelAbility> map = {
-      'textGenerate': ModelAbility.textGenerate,
+      'text': ModelAbility.textGenerate,
       'imageGenerate': ModelAbility.imageGenerate,
       'image2imageGenerate': ModelAbility.image2imageGenerate,
-      'pdfUnderstanding': ModelAbility.file,
-      'visualUnderstanding': ModelAbility.visual,
+      'file': ModelAbility.file,
+      'visual': ModelAbility.visual,
       'embedding': ModelAbility.embedding,
       'audio': ModelAbility.audio,
       'video': ModelAbility.video,

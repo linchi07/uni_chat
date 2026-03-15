@@ -29,7 +29,7 @@ export default {
     "experimental_router": "browser"
   },
   "url": "https://unichat.wejoinnwk.com",
-  "baseUrl": "/zh-Hans/",
+  "baseUrl": "/",
   "organizationName": "linchi",
   "projectName": "uni_chat",
   "onBrokenLinks": "throw",
@@ -66,7 +66,7 @@ export default {
       "respectPrefersColorScheme": false
     },
     "navbar": {
-      "title": "UNICHAT 通聊",
+      "title": "UNICHAT",
       "logo": {
         "alt": "UNICHAT Logo",
         "src": "img/logo.svg"
@@ -76,11 +76,11 @@ export default {
           "type": "docSidebar",
           "sidebarId": "tutorialSidebar",
           "position": "left",
-          "label": "文档"
+          "label": "Docs"
         },
         {
           "to": "/blog",
-          "label": "博客",
+          "label": "Blog",
           "position": "left"
         },
         {
@@ -99,7 +99,7 @@ export default {
     },
     "footer": {
       "style": "light",
-      "copyright": "Copyright © 2025 linchi ",
+      "copyright": "Copyright © 2025 UNICHAT. Built with Docusaurus.",
       "links": []
     },
     "prism": {

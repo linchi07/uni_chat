@@ -1,26 +1,50 @@
 {
   "id": "core-concepts/agent-philosophy",
-  "title": "会话即 Agent：单体架构哲学",
-  "description": "UNIChat 采用了一种独特的“单体化”设计哲学：会话即 Agent (Session is Agent)。",
+  "title": "Session is Agent",
+  "description": "Understand UNIChat's unique monolithic architecture philosophy and its advantages",
   "source": "@site/docs/core-concepts/agent-philosophy.md",
   "sourceDirName": "core-concepts",
   "slug": "/core-concepts/agent-philosophy",
   "permalink": "/docs/core-concepts/agent-philosophy",
   "draft": false,
   "unlisted": false,
-  "tags": [],
+  "tags": [
+    {
+      "inline": true,
+      "label": "Core Concepts",
+      "permalink": "/docs/tags/core-concepts"
+    },
+    {
+      "inline": true,
+      "label": "Architecture",
+      "permalink": "/docs/tags/architecture"
+    },
+    {
+      "inline": true,
+      "label": "Agent",
+      "permalink": "/docs/tags/agent"
+    }
+  ],
   "version": "current",
   "sidebarPosition": 2,
   "frontMatter": {
+    "id": "agent-philosophy",
+    "title": "Session is Agent",
+    "description": "Understand UNIChat's unique monolithic architecture philosophy and its advantages",
+    "tags": [
+      "Core Concepts",
+      "Architecture",
+      "Agent"
+    ],
     "sidebar_position": 2
   },
   "sidebar": "tutorialSidebar",
   "previous": {
-    "title": "非线性对话与分支",
+    "title": "Multi-Branch Conversations",
     "permalink": "/docs/core-concepts/branching"
   },
   "next": {
-    "title": "功能指南",
-    "permalink": "/docs/category/功能指南"
+    "title": "Welcome",
+    "permalink": "/docs/intro"
   }
 }

@@ -124,21 +124,10 @@ class DatabaseService {
 
   // --- Session CRUD ---
   Future<ChatSession> createSession({
-    String? title,
-    required String agentId,
-    String? personaId,
-    BranchInfo? branchInfo,
+    required ChatSession newSession,
+    required ChatMessage root,
+    ChatMessage? opening,
   }) async {
-    final now = DateTime.now();
-    final newSession = ChatSession(
-      id: _uuid.v7(),
-      agentId: agentId,
-      persona: personaId,
-      name: title ?? 'New Chat - ${now.toIso8601String()}',
-      creationTime: now,
-      lastMessageTime: now,
-      branchInfo: branchInfo,
-    );
     var m1 = SessionDbModel(
       id: newSession.id,
       agentId: newSession.agentId,
@@ -149,13 +138,40 @@ class DatabaseService {
       branchInfo: newSession.branchInfo?.toJsonString(),
     );
     var m2 = MessageRelationDbModel(
-      id: newSession.id, // root relation has id == sessionId
+      id: root.id, // root relation has id == sessionId
       sessionId: newSession.id,
+      childIds: root.childIds,
+      enabledChildIndex: root.enabledChild,
     );
+    dynamic m3, m4;
+    if (opening != null) {
+      m3 = MessageDbModel(
+        id: opening.messageId!,
+        sender: opening.sender.name,
+        senderId: opening.senderId,
+        content: opening.content,
+        timestamp: opening.timestamp,
+        data: opening.data,
+        attachments: opening.attachedFiles,
+      );
+      m4 = MessageRelationDbModel(
+        id: opening.id,
+        sessionId: newSession.id,
+        messageId: opening.messageId,
+        parentId: opening.parent,
+        childIds: opening.childIds,
+        enabledChildIndex: opening.enabledChild,
+      );
+      await _db.transaction(() async {});
+    }
     // avoid the data race condition when doing async operations
     await _db.transaction(() async {
       await _db.into(_db.sessions).insert(m1);
       await _db.into(_db.messageRelations).insert(m2);
+      if (opening != null) {
+        await _db.into(_db.messages).insert(m3);
+        await _db.into(_db.messageRelations).insert(m4);
+      }
     });
     return newSession;
   }
@@ -182,6 +198,15 @@ class DatabaseService {
       _db.sessions,
     )..orderBy([(t) => OrderingTerm.desc(t.modifiedAt)])).get();
     return list.map((e) => ChatSession.fromSessionDbModel(e)).toList();
+  }
+
+  Future<List<({String id, String title})>> getSessionTitles(
+    List<String> sessionIds,
+  ) async {
+    if (sessionIds.isEmpty) return [];
+    final query = _db.select(_db.sessions)..where((t) => t.id.isIn(sessionIds));
+    final results = await query.get();
+    return [for (var row in results) (id: row.id, title: row.title)];
   }
 
   Future<void> updateSessionTitle(String sessionId, String newTitle) async {

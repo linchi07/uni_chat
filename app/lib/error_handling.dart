@@ -102,6 +102,7 @@ enum AgentExceptionType {
   agentNotFound,
   unknownError,
   failLoadingAgent_ParseError,
+  versionMismatch,
 }
 
 extension AgentExceptionTypeExt on AgentExceptionType {
@@ -113,6 +114,8 @@ extension AgentExceptionTypeExt on AgentExceptionType {
         return S.of(context).agentEx_unknownError;
       case AgentExceptionType.failLoadingAgent_ParseError:
         return S.of(context).agentEx_failLoading_parse_error;
+      case AgentExceptionType.versionMismatch:
+        return S.of(context).agentEx_versionMismatch;
       case AgentExceptionType.agentNotLoaded:
         return S.of(context).agentEx_agentNotLoaded;
     }

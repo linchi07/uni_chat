@@ -1,123 +1,128 @@
 {
   "docusaurus-plugin-content-docs": {
     "default": {
-      "path": "/zh-Hans/docs",
+      "path": "/docs",
       "versions": [
         {
           "name": "current",
           "label": "Next",
           "isLast": true,
-          "path": "/zh-Hans/docs",
+          "path": "/docs",
           "mainDocId": "core-concepts/branching",
           "docs": [
             {
               "id": "agents/agent-brief",
-              "path": "/zh-Hans/docs/agents/agent-brief",
+              "path": "/docs/agents/agent-brief",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "agents/model-settings",
-              "path": "/zh-Hans/docs/agents/model-settings",
+              "path": "/docs/agents/model-settings",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "agents/persona",
-              "path": "/zh-Hans/docs/agents/persona",
+              "path": "/docs/agents/persona",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "agents/setup-agent",
-              "path": "/zh-Hans/docs/agents/setup-agent",
+              "path": "/docs/agents/setup-agent",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "agents/system-prompt",
-              "path": "/zh-Hans/docs/agents/system-prompt",
+              "path": "/docs/agents/system-prompt",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "agents/user-identity",
-              "path": "/zh-Hans/docs/agents/user-identity",
+              "path": "/docs/agents/user-identity",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "core-concepts/agent-philosophy",
-              "path": "/zh-Hans/docs/core-concepts/agent-philosophy",
+              "path": "/docs/core-concepts/agent-philosophy",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "core-concepts/branching",
-              "path": "/zh-Hans/docs/core-concepts/branching",
+              "path": "/docs/core-concepts/branching",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "development/build-from-source",
+              "path": "/docs/development/build-from-source",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "development/run-on-ios",
-              "path": "/zh-Hans/docs/development/run-on-ios",
+              "path": "/docs/development/run-on-ios",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "intro",
-              "path": "/zh-Hans/docs/intro",
-              "sidebar": "tutorialSidebar"
-            },
-            {
-              "id": "models-and-apis/api-intro",
-              "path": "/zh-Hans/docs/models-and-apis/api-intro",
+              "path": "/docs/intro",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "models-and-apis/auto-balance",
-              "path": "/zh-Hans/docs/models-and-apis/auto-balance",
+              "path": "/docs/models-and-apis/auto-balance",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "models-and-apis/custom-api",
-              "path": "/zh-Hans/docs/models-and-apis/custom-api",
+              "path": "/docs/models-and-apis/custom-api",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "models-and-apis/intro",
+              "path": "/docs/models-and-apis/intro",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "models-and-apis/providers/deepseek",
-              "path": "/zh-Hans/docs/models-and-apis/providers/deepseek",
+              "path": "/docs/models-and-apis/providers/deepseek",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "models-and-apis/providers/google-gemini",
-              "path": "/zh-Hans/docs/models-and-apis/providers/google-gemini",
+              "path": "/docs/models-and-apis/providers/google-gemini",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "models-and-apis/providers/lmstudio",
-              "path": "/zh-Hans/docs/models-and-apis/providers/lmstudio",
+              "path": "/docs/models-and-apis/providers/lmstudio",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "models-and-apis/providers/modelscope",
-              "path": "/zh-Hans/docs/models-and-apis/providers/modelscope",
+              "path": "/docs/models-and-apis/providers/modelscope",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "models-and-apis/providers/openai",
-              "path": "/zh-Hans/docs/models-and-apis/providers/openai",
+              "path": "/docs/models-and-apis/providers/openai",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "/category/core-concepts",
-              "path": "/zh-Hans/docs/category/core-concepts",
+              "path": "/docs/category/core-concepts",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "/category/agents--personas",
-              "path": "/zh-Hans/docs/category/agents--personas",
+              "path": "/docs/category/agents--personas",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "/category/models--apis",
-              "path": "/zh-Hans/docs/category/models--apis",
+              "path": "/docs/category/models--apis",
               "sidebar": "tutorialSidebar"
             },
             {
               "id": "/category/development--installation",
-              "path": "/zh-Hans/docs/category/development--installation",
+              "path": "/docs/category/development--installation",
               "sidebar": "tutorialSidebar"
             }
           ],
@@ -125,8 +130,8 @@
           "sidebars": {
             "tutorialSidebar": {
               "link": {
-                "path": "/zh-Hans/docs/category/core-concepts",
-                "label": "核心概念"
+                "path": "/docs/category/core-concepts",
+                "label": "Core Concepts"
               }
             }
           }

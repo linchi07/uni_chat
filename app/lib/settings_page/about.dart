@@ -46,7 +46,7 @@ class UNIChatAbout extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            "V 0.1.0 Beta\n (Still under development 仍在开发中)",
+            S.of(context).version_preview,
             style: TextStyle(fontSize: 16),
             textAlign: TextAlign.center,
           ),
@@ -69,7 +69,7 @@ class UNIChatAbout extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        "CheckUpdates 检查更新",
+                        S.of(context).check_updates,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -104,7 +104,7 @@ class UNIChatAbout extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        "Help & How To guides",
+                        S.of(context).help_guides,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -137,7 +137,7 @@ class UNIChatAbout extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        "Github: UNIChat",
+                        S.of(context).github_repo,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -164,7 +164,9 @@ class UNIChatAbout extends ConsumerWidget {
                     Expanded(
                       child: SelectionArea(
                         child: Text(
-                          "Email: linchi@wejoinnwk.com",
+                          S
+                              .of(context)
+                              .email_with_holder("linchi@wejoinnwk.com"),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 16,
@@ -181,7 +183,7 @@ class UNIChatAbout extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            "Copyright © 2025 LinChi all rights reserved.",
+            S.of(context).all_rights_reserved,
             style: TextStyle(fontSize: 16),
           ),
           const SizedBox(height: 10),

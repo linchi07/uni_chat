@@ -84,15 +84,11 @@ function HeroVisual() {
           borderRadius: '20px', // 可选：让边缘更圆润
           overflow: 'hidden'    // 确保 GIF 不会超出圆角边界
         }}>
-          <img
-            src={useBaseUrl(i18n.currentLocale === 'zh-Hans' ? '/img/homepage/title_cn.gif' : '/img/homepage/title_en.gif')}
-            alt="App UI Interface"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover' // 如果想填满但不裁剪用 contain，如果想铺满用 cover
-            }}
-          />
+          <video src={useBaseUrl(i18n.currentLocale === 'zh-Hans' ? '/img/homepage/title_cn.mp4' : '/img/homepage/title_en.mp4')} autoPlay loop muted playsInline style={{ 
+      width: '100%', 
+      height: '100%', 
+      objectFit: 'cover' // 这里的关键：让视频按比例缩放并裁剪填满容器
+    }}></video>
         </div>
       </div>
     </div>

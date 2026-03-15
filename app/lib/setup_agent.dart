@@ -8,7 +8,6 @@ import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/settings_page/api_configure.dart';
-import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
@@ -17,6 +16,8 @@ import 'package:uuid/uuid.dart';
 
 import 'generated/l10n.dart';
 import 'utils/web_view/webview_all.dart';
+
+const BASE_URL = "https://unichat.wejoinnwk.com/";
 
 class SetupAgent extends ConsumerStatefulWidget {
   const SetupAgent({super.key});
@@ -74,126 +75,108 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
   }
 
   Widget welcomePage() {
-    return Stack(
-      alignment: Alignment.center,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Positioned(
-          top: 20,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              Text(
-                "Switch language here (在这里切换语言):",
-                style: TextStyle(fontSize: 16),
+        Container(
+          margin: const EdgeInsets.only(bottom: 20),
+          width: 200,
+          height: 200,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withAlpha(80),
+                spreadRadius: 3,
+                blurRadius: 4,
+                offset: Offset(0, 2), // changes position of shadow
               ),
-              const SizedBox(height: 10),
-              SizedBox(width: 300, child: LanguageSwitcher()),
             ],
           ),
+          child: Image.asset("resources/uni_chat_no_bg.png"),
         ),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(bottom: 20),
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(26),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withAlpha(80),
-                    spreadRadius: 3,
-                    blurRadius: 4,
-                    offset: Offset(0, 2), // changes position of shadow
+        const SizedBox(height: 5),
+        Text(
+          S.of(context).title,
+          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 5),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            S.of(context).slogan,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const SizedBox(height: 40),
+        StdButton(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              S.of(context).setup_start,
+              style: TextStyle(fontSize: 16, color: Colors.white),
+            ),
+          ),
+          onPressed: () {
+            OverlayPortalService.show(
+              context,
+              animate: true,
+              child: SizedBox(
+                width: 500,
+                height: 600,
+                child: Material(
+                  color: theme.zeroGradeColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
-              ),
-              child: Image.asset("resources/uni_chat_no_bg.png"),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              S.of(context).title,
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              S.of(context).slogan,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 40),
-            StdButton(
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  S.of(context).setup_start,
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                ),
-              ),
-              onPressed: () {
-                OverlayPortalService.show(
-                  context,
-                  animate: true,
-                  child: SizedBox(
-                    width: 500,
-                    height: 600,
-                    child: Material(
-                      color: theme.zeroGradeColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: FutureBuilder(
-                          future: Future.delayed(
-                            const Duration(milliseconds: 400),
-                          ),
-                          builder: (context, asyncSnapshot) {
-                            if (asyncSnapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return Center(child: CircularProgressIndicator());
-                            }
-                            return Column(
-                              mainAxisSize: MainAxisSize.max,
-                              children: [
-                                Text(
-                                  S.of(context).setup_pre_warning,
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: FutureBuilder(
+                      future: Future.delayed(const Duration(milliseconds: 400)),
+                      builder: (context, asyncSnapshot) {
+                        if (asyncSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Center(child: CircularProgressIndicator());
+                        }
+                        return Column(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            Text(
+                              S.of(context).setup_pre_warning,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: GptMarkdown(
+                                  S.of(context).setup_pre_warn_content,
+                                  style: TextStyle(fontSize: 16),
                                 ),
-                                const SizedBox(height: 5),
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    child: GptMarkdown(
-                                      S.of(context).setup_pre_warn_content,
-                                      style: TextStyle(fontSize: 16),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                StdButton(
-                                  text:
-                                      "${S.of(context).got_it} (${S.of(context).long_press})",
-                                  onLongPress: () {
-                                    OverlayPortalService.hide(context);
-                                    nextPage();
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            StdButton(
+                              text:
+                                  "${S.of(context).got_it} (${S.of(context).long_press})",
+                              onLongPress: () {
+                                OverlayPortalService.hide(context);
+                                nextPage();
+                              },
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
-                );
-              },
-            ),
-          ],
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -262,7 +245,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
             borderRadius: BorderRadius.circular(12),
             color: theme.zeroGradeColor,
           ),
-          child: Webview(url: "http://localhost:3000/"),
+          child: Webview(url: "${BASE_URL}docs/models-and-apis/intro"),
         ),
       ),
     ];
@@ -363,7 +346,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
             borderRadius: BorderRadius.circular(12),
             color: theme.zeroGradeColor,
           ),
-          child: Webview(url: "http://localhost:3000/"),
+          child: Webview(url: "${BASE_URL}docs/agents/agent-brief"),
         ),
       ),
     ];
@@ -485,6 +468,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                 ),
                 const SizedBox(height: 10),
                 Text(
+                  textAlign: TextAlign.center,
                   S.of(context).setup_add_persona_hint,
                   style: TextStyle(fontSize: 16),
                 ),
@@ -510,7 +494,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
             borderRadius: BorderRadius.circular(12),
             color: theme.zeroGradeColor,
           ),
-          child: Webview(url: "http://localhost:3000/"),
+          child: Webview(url: "${BASE_URL}docs/agents/persona"),
         ),
       ),
     ];
@@ -598,6 +582,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                 children: [
                   Text(
                     S.of(context).setup_finished,
+                    textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 38, fontWeight: FontWeight.bold),
                   ),
 

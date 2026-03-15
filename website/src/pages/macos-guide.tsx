@@ -4,7 +4,7 @@ import Link from '@docusaurus/Link';
 import Translate, { translate } from '@docusaurus/Translate';
 import Heading from '@theme/Heading';
 
-function GuideStep({ number, title, description, icon }) {
+function GuideStep({ number, title, description, path }) {
     return (
         <div className="guide-step animate-fade-in">
             <Heading as="h3">
@@ -24,7 +24,7 @@ function GuideStep({ number, title, description, icon }) {
             <p style={{ marginTop: '1rem', fontSize: '1.1rem', opacity: 0.8 }}>{description}</p>
             <div style={{
                 background: 'rgba(0,0,0,0.05)',
-                height: '200px',
+                height: '400px',
                 borderRadius: '8px',
                 display: 'flex',
                 alignItems: 'center',
@@ -33,7 +33,15 @@ function GuideStep({ number, title, description, icon }) {
                 border: '1px dashed #ccc',
                 color: '#999'
             }}>
-                {icon} Placeholder
+                 <img
+                            src={path}
+                            alt="App UI Interface"
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'contain' // 如果想填满但不裁剪用 contain，如果想铺满用 cover
+                            }}
+                          />
             </div>
         </div>
     );
@@ -59,19 +67,19 @@ export default function MacOSGuide(): React.ReactNode {
                         number="1"
                         title={<Translate id="macos_guide.step1.title">尝试打开</Translate>}
                         description={<Translate id="macos_guide.step1.desc">双击打开下载的 dmg 或应用程序。如果提示“无法验证开发者”，点击取消。</Translate>}
-                        icon="🚫"
+                        path={"/img/macOS_guide/s1cn.png"}
                     />
                     <GuideStep
                         number="2"
                         title={<Translate id="macos_guide.step2.title">前往系统设置</Translate>}
                         description={<Translate id="macos_guide.step2.desc">打开系统设置 - 隐私与安全。向下滚动找到安全性设置。</Translate>}
-                        icon="⚙️"
+                        path={"/img/macOS_guide/s2cn.png"}
                     />
                     <GuideStep
                         number="3"
                         title={<Translate id="macos_guide.step3.title">点击“仍要打开”</Translate>}
                         description={<Translate id="macos_guide.step3.desc">在安全性部分点击“仍要打开”，然后输入您的开机密码完成验证。</Translate>}
-                        icon="🔓"
+                        path={"/img/macOS_guide/s3cn.png"}
                     />
                 </div>
 

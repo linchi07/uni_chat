@@ -104,6 +104,7 @@ class Agent {
     required this.modelConfigure,
     required this.memoryBaseIds,
     this.personaConfigure,
+    this.openingConfigure,
     required this.client,
   });
   final String id;
@@ -112,6 +113,7 @@ class Agent {
   final String? systemPrompt;
   final ModelConfigure modelConfigure;
   final PersonaConfigure? personaConfigure;
+  final OpeningConfigure? openingConfigure;
   final List<String> memoryBaseIds;
   ApiClient client;
 
@@ -125,6 +127,7 @@ class Agent {
       name: agentData.name,
       client: client,
       personaConfigure: agentData.userIdentityConfigure,
+      openingConfigure: agentData.openingConfigure,
       modelConfigure: agentData.modelConfigure,
       systemPrompt: agentData.systemPrompt,
       memoryBaseIds: [],
@@ -138,6 +141,7 @@ class Agent {
     ApiClient? client,
     ModelConfigure? modelConfigure,
     PersonaConfigure? personaConfigure,
+    OpeningConfigure? openingConfigure,
     String? systemPrompt,
     List<String>? memoryBaseIds,
   }) {
@@ -148,6 +152,7 @@ class Agent {
       modelConfigure: modelConfigure ?? this.modelConfigure,
       systemPrompt: systemPrompt ?? this.systemPrompt,
       personaConfigure: personaConfigure ?? this.personaConfigure,
+      openingConfigure: openingConfigure ?? this.openingConfigure,
       memoryBaseIds: memoryBaseIds ?? this.memoryBaseIds,
     );
   }

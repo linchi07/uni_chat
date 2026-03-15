@@ -5,7 +5,9 @@
 > 🌐 [Website & Documentation](https://unichat.wejoinnwk.com) | ⬇️ [Download](#download) | 📖 [中文版(Chinese)](README_zh.md)
 
 <p align="center">
-  <img src="website/static/img/homepage/title_en.gif" alt="UNIChat Interface" width="800">
+  <video src="website/static/img/homepage/title_en.mp4" autoPlay loop muted playsInline 
+      width: "800" height="auto" 
+    ></video>
 </p>
 
 ## ✨ Core Features

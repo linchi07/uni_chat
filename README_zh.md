@@ -5,7 +5,9 @@
 > 🌐 [官方网站与文档](https://linchi07.github.io/uni_chat) | ⬇️ [立即下载](#下载) | 📖 [English Version](README.md)
 
 <p align="center">
-  <img src="website/static/img/homepage/title_cn.gif" alt="UNIChat 界面展示" width="800">
+  <video src="website/static/img/homepage/title_cn.mp4" autoPlay loop muted playsInline 
+      width: "800" height="auto" 
+    ></video>
 </p>
 
 ## ✨ 核心特性

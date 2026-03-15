@@ -27,6 +27,7 @@ class ChatState {
   ChatSession? session;
   final Map<String, ChatMessage> messages;
   final List<ChatMessage> messagesList;
+  final Map<String, List<({String sessionId, String title})>> branchNames;
   late Map<String, ({UploadStatus status, ChatFile file})> uploadedFilesStash;
   // 临时存储上传的文件，当用户点击发送按钮的时候会被合并到messages里面
   late final ChunkedStringBuffer newContentBuffer;
@@ -40,6 +41,7 @@ class ChatState {
     ChatSession? session,
     this.messages = const {},
     this.messagesList = const [],
+    this.branchNames = const {},
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     ValueNotifier<List<ChatResponse>?>? responses,
     ChunkedStringBuffer? newContentBuffer,
@@ -62,7 +64,7 @@ class ChatState {
     ChatSession? session,
     Map<String, ChatMessage>? messages,
     List<ChatMessage>? messagesList,
-    List<ChatMessage>? roots,
+    Map<String, List<({String sessionId, String title})>>? branchNames,
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     ChunkedStringBuffer? newContentBuffer,
     ValueNotifier<bool>? refreshFlag,
@@ -77,6 +79,7 @@ class ChatState {
       session: session ?? this.session,
       messages: messages ?? this.messages,
       messagesList: messagesList ?? this.messagesList,
+      branchNames: branchNames ?? this.branchNames,
       uploadedFilesStash: uploadedFilesStash ?? this.uploadedFilesStash,
       newContentBuffer: newContentBuffer ?? this.newContentBuffer,
       refreshFlag: refreshFlag ?? this.refreshFlag,
@@ -92,6 +95,7 @@ class ChatState {
       session: null,
       messages: {},
       messagesList: [],
+      branchNames: {},
       uploadedFilesStash: {},
       isLoading: false,
       error: null,
@@ -126,7 +130,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     ChatSession? session,
     Map<String, ChatMessage>? messages,
     List<ChatMessage>? messagesList,
-    List<ChatMessage>? roots,
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     bool? isLoading,
     AppException? error,
@@ -198,21 +201,72 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     }
   }
 
-  Future<void> createNewSession({String? agentId, String? title}) async {
-    state = state.copyWith(isLoading: true);
-    agentId ??= agent!.id;
+  Future<void> createNewSession({String? title}) async {
+    state = state.copyWith(isLoading: true, error: null);
     String? pid = _ref.read(personaProvider).id;
     if (!(pid.isNotEmpty && pid != "")) {
       pid = null;
       //如果是默认人格（id = “ ”），就不储存消息
     }
-    final session = await _dbService.createSession(
-      agentId: agentId,
-      title: title,
-      personaId: pid,
+    final now = DateTime.now();
+    final newSession = ChatSession(
+      id: _uuid.v7(),
+      agentId: agent!.id,
+      persona: pid,
+      name: title ?? 'New Chat - ${now.toIso8601String()}',
+      creationTime: now,
+      lastMessageTime: now,
+      branchInfo: null,
     );
-    // After creating, switch to it to activate the agent and load everything
-    await switchSession(session.id, fromNewSession: session);
+    //construct the root message
+    var root = ChatMessage(
+      id: newSession.id,
+      parent: null,
+      childIds: [],
+      sender: MessageSender.internal,
+      senderId: "internal",
+      content: '',
+      timestamp: now,
+      enabledChild: 0,
+    );
+    var history = [root];
+    var messages = {root.id: root};
+    ChatMessage? opening;
+    // Check if we should insert opening message
+    if (agent?.openingConfigure?.firstMessage != null &&
+        agent!.openingConfigure!.firstMessage!.isNotEmpty) {
+      opening = ChatMessage(
+        id: _uuid.v7(),
+        messageId: _uuid.v7(),
+        sender: MessageSender.ai,
+        senderId: agent!.id,
+        content: agent!.openingConfigure!.firstMessage!,
+        timestamp: DateTime.now(),
+        parent: root.id,
+        childIds: [],
+        enabledChild: 0,
+      );
+      root.childIds.add(opening.id);
+      root.enabledChild = root.childIds.length - 1;
+      // Update local state
+      messages[opening.id] = opening;
+      history.add(opening);
+    }
+    await _dbService.createSession(
+      newSession: newSession,
+      root: root,
+      opening: opening,
+    );
+    //解释一下，由于我们现在的懒加载机制，在创建new session的时候此时state里面的数据不能清空并重加载，
+    // 因为比如用户可能上传了一个文件（被保存在stash中，此时new一个state的话就导致文件没了）
+    state = state.copyWith(
+      isReady: agent != null,
+      session: newSession,
+      messages: messages,
+      messagesList: history,
+      branchNames: {},
+      isLoading: false,
+    );
   }
 
   Future<void> switchSession(
@@ -222,29 +276,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       if (fromNewSession != null) {
-        await _ref
-            .read(agentProvider.notifier)
-            .loadAgentById(fromNewSession.agentId);
-        //construct the root message
-        var root = ChatMessage(
-          id: sessionId,
-          parent: null,
-          childIds: [],
-          sender: MessageSender.internal,
-          senderId: "internal",
-          content: '',
-          timestamp: DateTime.now(),
-          enabledChild: 0,
-        );
-        //解释一下，由于我们现在的懒加载机制，在创建new session的时候此时state里面的数据不能清空并重加载，
-        // 因为比如用户可能上传了一个文件（被保存在stash中，此时new一个state的话就导致文件没了）
-        state = state.copyWith(
-          isReady: agent != null,
-          session: fromNewSession,
-          messages: {root.id: root},
-          messagesList: [root],
-          isLoading: false,
-        );
       } else {
         // 1. Get Session
         var session = await _dbService.getSession(sessionId);
@@ -265,11 +296,47 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
               .loadPersonaById(session.persona!);
         }
         var formed = formMessageTree(msg.root!, msg.messages);
+
+        // 3. Load Branch Names
+        Map<String, List<({String sessionId, String title})>>? branchNames;
+        if (session.branchInfo != null) {
+          branchNames = {};
+          Map<String, List<String>> relatedSessionIds = {};
+          if (session.branchInfo!.origin != null) {
+            var so = session.branchInfo!.origin!;
+            relatedSessionIds[so.messageId] = [so.sessionId];
+          }
+          for (var branch in session.branchInfo!.branches) {
+            if (relatedSessionIds.containsKey(branch.messageId)) {
+              relatedSessionIds[branch.messageId]!.add(branch.sessionId);
+            } else {
+              relatedSessionIds[branch.messageId] = [branch.sessionId];
+            }
+          }
+
+          if (relatedSessionIds.isNotEmpty) {
+            final allSessionIds = relatedSessionIds.values
+                .expand((e) => e)
+                .toList();
+            var r = await _dbService.getSessionTitles(allSessionIds);
+
+            // Create a lookup map for titles
+            final titleMap = {for (var e in r) e.id: e.title};
+
+            relatedSessionIds.forEach((messageId, sessionIds) {
+              branchNames![messageId] = sessionIds
+                  .map((sid) => (sessionId: sid, title: titleMap[sid] ?? ""))
+                  .toList();
+            });
+          }
+        }
+
         state = state.copyWith(
           isReady: agent != null,
           session: session,
           messages: msg.messages,
           messagesList: formed,
+          branchNames: branchNames,
           isLoading: false,
         );
       }
@@ -465,52 +532,52 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     if (text.isEmpty && state.uploadedFilesStash.isEmpty) {
       return;
     }
-    if (state.session == null) {
-      await createNewSession(title: 'New Chat');
-    }
-    var history = state.messagesList;
-    var attach = <ChatFile>[];
-    for (var v in state.uploadedFilesStash.values) {
-      if (v.status == UploadStatus.uploaded) {
-        attach.add(
-          ChatFile(
-            name: v.file.name,
-            originalName: v.file.originalName,
-            uploadTime: v.file.uploadTime,
-            providerInfo: v.file.providerInfo,
-          ),
-        );
-      }
-    }
-    // 2. Add user message to list
-    final userMessage = ChatMessage(
-      id: _uuid.v7(),
-      messageId: _uuid.v7(),
-      sender: MessageSender.user,
-      senderId: persona?.id ?? 'user',
-      content: text,
-      attachedFiles: attach, // 转换为附件文件对象列表
-      timestamp: DateTime.now(),
-      parent: history.lastOrNull?.id,
-      childIds: [],
-      enabledChild: 0,
-    );
-    var hc = history.lastOrNull?.childIds;
-    hc?.add(userMessage.id);
-    history.lastOrNull?.enabledChild = (hc?.length != null
-        ? hc!.length - 1
-        : 0);
-    //将树给设置好（由于dart传引用，所以我可以直接修改从map form来的history list，能同步上）
-    state.messages[userMessage.id] = userMessage;
-    state = state.copyWith(
-      isLoading: true,
-      uploadedFilesStash: {},
-      error: null,
-      messagesList: [...history, userMessage],
-    );
     //接下来构造发送的后端消息
     // --- Database Integration ---
     try {
+      if (state.session == null) {
+        await createNewSession(title: 'New Chat');
+      }
+      var history = state.messagesList;
+      var attach = <ChatFile>[];
+      for (var v in state.uploadedFilesStash.values) {
+        if (v.status == UploadStatus.uploaded) {
+          attach.add(
+            ChatFile(
+              name: v.file.name,
+              originalName: v.file.originalName,
+              uploadTime: v.file.uploadTime,
+              providerInfo: v.file.providerInfo,
+            ),
+          );
+        }
+      }
+      // 2. Add user message to list
+      final userMessage = ChatMessage(
+        id: _uuid.v7(),
+        messageId: _uuid.v7(),
+        sender: MessageSender.user,
+        senderId: persona?.id ?? 'user',
+        content: text,
+        attachedFiles: attach, // 转换为附件文件对象列表
+        timestamp: DateTime.now(),
+        parent: history.lastOrNull?.id,
+        childIds: [],
+        enabledChild: 0,
+      );
+      var hc = history.lastOrNull?.childIds;
+      hc?.add(userMessage.id);
+      history.lastOrNull?.enabledChild = (hc?.length != null
+          ? hc!.length - 1
+          : 0);
+      //将树给设置好（由于dart传引用，所以我可以直接修改从map form来的history list，能同步上）
+      state.messages[userMessage.id] = userMessage;
+      state = state.copyWith(
+        isLoading: true,
+        uploadedFilesStash: {},
+        error: null,
+        messagesList: [...history, userMessage],
+      );
       if (currentSessionId == null) {
         throw ChatException(ChatExceptionType.sessionNotFound);
       }
@@ -519,6 +586,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         userMessage,
         modifiedParent: history.lastOrNull,
       );
+      sendRequest(history, userMessage);
     } on Exception catch (e) {
       state = state.copyWith(
         error: (e is AppException)
@@ -528,7 +596,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       // Decide if we want to stop or continue if DB save fails. For now, continue.
     }
     // --- End Database Integration ---
-    sendRequest(history, userMessage);
   }
 
   /// request the llm to generate a response

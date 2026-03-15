@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' as io show Platform;
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -25,7 +26,6 @@ import 'package:uni_chat/utils/overlays.dart';
 import 'Agent/agent_page.dart';
 import 'generated/l10n.dart';
 import 'utils/auto_update_service.dart';
-import 'dart:async';
 import 'utils/log_manager.dart';
 
 final Map<String, Locale> languages = const {
@@ -36,121 +36,144 @@ final Map<String, Locale> languages = const {
 const String websiteURL = "http://localhost:3000/zh-Hans";
 
 Future<void> main() async {
-  await LogManager.instance.init();
-  runZonedGuarded(() async {
+  runZonedGuarded(
+    () async {
       WidgetsFlutterBinding.ensureInitialized();
-    if (io.Platform.isAndroid) {
-      PlatForm().platform = RunningPlatform.android;
-      var di = await DeviceInfoPlugin().androidInfo;
-      PlatForm().platformInfo = "${di.model} running on ${di.version}";
-    } else if (io.Platform.isIOS) {
-      var di = await DeviceInfoPlugin().iosInfo;
-      PlatForm().platformInfo = "${di.modelName} running on IOS ${di.systemName}";
-      // whether this is an ipad
-      if (di.model.contains("iPad")) {
-        PlatForm().platform = RunningPlatform.ipadOS;
-      } else {
-        PlatForm().platform = RunningPlatform.ios;
+      await LogManager.instance.init();
+      if (io.Platform.isAndroid) {
+        PlatForm().platform = RunningPlatform.android;
+        var di = await DeviceInfoPlugin().androidInfo;
+        PlatForm().platformInfo = "${di.model} running on ${di.version}";
+      } else if (io.Platform.isIOS) {
+        var di = await DeviceInfoPlugin().iosInfo;
+        PlatForm().platformInfo =
+            "${di.modelName} running on IOS ${di.systemName}";
+        // whether this is an ipad
+        if (di.model.contains("iPad")) {
+          PlatForm().platform = RunningPlatform.ipadOS;
+        } else {
+          PlatForm().platform = RunningPlatform.ios;
+        }
+      } else if (io.Platform.isMacOS) {
+        PlatForm().platform = RunningPlatform.macos;
+        await MacOSSpecificsSetting.setWindowStyle();
+        var di = await DeviceInfoPlugin().macOsInfo;
+        PlatForm().platformInfo =
+            "${di.modelName} running on MacOS ${di.majorVersion}";
+      } else if (io.Platform.isWindows) {
+        PlatForm().platform = RunningPlatform.windows;
+        await WindowsSpecificsSetting.setWindowStyle();
+        var di = await DeviceInfoPlugin().windowsInfo;
+        var bn = di.buildNumber;
+        String sys = "Windows";
+        if (bn > 22000) {
+          sys = "Windows 11 ${di.displayVersion}";
+        } else if (bn >= 10240) {
+          sys = "Windows 10 ${di.displayVersion}";
+        } // else might be win 8.1 or 7 since flutter don run on xp
+        PlatForm().platformInfo = "${di.computerName} running on $sys";
+        //windows 下使用 ffi版本
+        //我在考虑把macos 也切换到ffi版本，但是听说好像性能没有提升啥
+        sqfliteFfiInit();
+        databaseFactory = databaseFactoryFfi;
       }
-    } else if (io.Platform.isMacOS) {
-      PlatForm().platform = RunningPlatform.macos;
-      await MacOSSpecificsSetting.setWindowStyle();
-      var di = await DeviceInfoPlugin().macOsInfo;
-      PlatForm().platformInfo =
-          "${di.modelName} running on MacOS ${di.majorVersion}";
-    } else if (io.Platform.isWindows) {
-      PlatForm().platform = RunningPlatform.windows;
-      await WindowsSpecificsSetting.setWindowStyle();
-      var di = await DeviceInfoPlugin().windowsInfo;
-      var bn = di.buildNumber;
-      String sys = "Windows";
-      if (bn > 22000) {
-        sys = "Windows 11 ${di.displayVersion}";
-      } else if (bn >= 10240) {
-        sys = "Windows 10 ${di.displayVersion}";
-      } // else might be win 8.1 or 7 since flutter don run on xp
-      PlatForm().platformInfo = "${di.computerName} running on $sys";
-      //windows 下使用 ffi版本
-      //我在考虑把macos 也切换到ffi版本，但是听说好像性能没有提升啥
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    }
-    
-    final prefs = await SharedPreferences.getInstance();
-    var l = prefs.getString("language");
-    var local = languages[l];
 
-    if (local != null) {
-      await S.load(local);
-    } else {
-      var platformLocale = WidgetsBinding.instance.platformDispatcher.locale;
-      if (S.delegate.isSupported(platformLocale)) {
-        await S.load(platformLocale);
+      final prefs = await SharedPreferences.getInstance();
+      var l = prefs.getString("language");
+      var local = languages[l];
+
+      if (local != null) {
+        await S.load(local);
       } else {
-        await S.load(const Locale('en'));
+        var platformLocale = WidgetsBinding.instance.platformDispatcher.locale;
+        if (S.delegate.isSupported(platformLocale)) {
+          await S.load(platformLocale);
+        } else {
+          await S.load(const Locale('en'));
+        }
       }
-    }
 
-    try {
-      await DatabaseService.instance.init();
-      await ApiDatabase.instance.init();
-    } on DatabaseDowngradeException catch (e) {
-      runApp(
-        MaterialApp(
-          localizationsDelegates: const [
-            S.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: S.delegate.supportedLocales,
-          home: Scaffold(
-            backgroundColor: Colors.white,
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                    const SizedBox(height: 16),
-                    Text(
-                      S.current.db_downgrade_title,
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      S.current.db_downgrade_error(e.dbName, e.from.toString(), e.to.toString()),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16, color: Colors.black87),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      S.current.db_downgrade_content,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                  ],
+      try {
+        await DatabaseService.instance.init();
+        await ApiDatabase.instance.init();
+      } on DatabaseDowngradeException catch (e) {
+        runApp(
+          MaterialApp(
+            localizationsDelegates: const [
+              S.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: S.delegate.supportedLocales,
+            home: Scaffold(
+              backgroundColor: Colors.white,
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 64,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        S.current.db_downgrade_title,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        S.current.db_downgrade_error(
+                          e.dbName,
+                          e.from.toString(),
+                          e.to.toString(),
+                        ),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        S.current.db_downgrade_content,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      return;
-    }
+        );
+        return;
+      }
 
-    var isSu = prefs.getBool("isSetUp") ?? false;
-    var theme = prefs.getString("theme");
-    runApp(UNIChat(locale: local, isSetUp: isSu, themeName: theme));
-  }, (error, stack) {
-    LogManager.instance.addLog("ERROR: $error\n$stack");
-  }, zoneSpecification: ZoneSpecification(
-    print: (self, parent, zone, line) {
-      LogManager.instance.addLog(line);
-      parent.print(zone, line);
+      var isSu = prefs.getBool("isSetUp") ?? false;
+      var theme = prefs.getString("theme");
+      runApp(UNIChat(locale: local, isSetUp: isSu, themeName: theme));
     },
-  ));
+    (error, stack) {
+      LogManager.instance.addLog("ERROR: $error\n$stack");
+    },
+    zoneSpecification: ZoneSpecification(
+      print: (self, parent, zone, line) {
+        LogManager.instance.addLog(line);
+        parent.print(zone, line);
+      },
+    ),
+  );
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -228,6 +251,7 @@ class _UNIChatState extends State<UNIChat> {
     return ProviderScope(
       overrides: ovr,
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         localizationsDelegates: [
           S.delegate,
           GlobalMaterialLocalizations.delegate,

@@ -134,6 +134,11 @@
   "knowledge_base_and_contexts": "知识库&上下文检索",
   "ui_interaction_set": "UI交互(BETA)设置",
   "usr_persona_set": "用户身份设置",
+  "opening_configure_title": "开场白配置",
+  "opening_slogan_label": "自定义标语",
+  "opening_slogan_hint": "在无会话时显示的自定义标语",
+  "opening_message_label": "自动欢迎语",
+  "opening_message_hint": "开启新对话时 Agent 自动发送的消息 (支持 markdown)",
   "opening_set": "开场白设置",
   "enable": "启用",
   "disable": "禁用",
@@ -315,7 +320,7 @@
   "base_stat_OK": "可用",
   "base_stat_processing": "处理中",
   "base_stat_PENDING": "检查中",
-  "slogan": "开源的AI Agent和知识库集成聊天软件",
+  "slogan": "开源的AI Agent聊天软件",
   "setup_start": "开始设置",
   "got_it": "了解",
   "long_press": "长按",
@@ -383,7 +388,7 @@
   "search_for_models": "搜索模型",
   "model_not_found": "未找到模型,请检查输入",
   "comment@model_ability": "",
-  "textGenerate": "文本生成",
+  "textGenerate": "文本",
   "imageGenerate": "图像生成",
   "image2imageGenerate": "图像到图像生成",
   "visual": "视觉理解",
@@ -404,8 +409,9 @@
   "agentEx_agentNotLoaded": "Agent 未被加载",
   "agentEx_agentNotFound": "Agent 未找到",
   "agentEx_unknownError": "未知错误",
-  "agentEx_failLoading_parse_error": "Agent的数据无法被解析",
-  "agentEx": "Agent系统错误",
+  "agentEx_failLoading_parse_error": "Agent数据损坏或解析失败",
+  "agentEx_versionMismatch": "核心组件版本不匹配，请升级应用",
+  "agentEx": "Agent 错误",
   "agentEx_recursive_call": "加载Agent",
   "personaEX_personaNotFound": "人格未找到",
   "personaEX_unknownError": "未知错误",
@@ -460,5 +466,33 @@
       "from": {},
       "to": {}
     }
-  }
+  },
+  "branched_from": "分支自：{branch}",
+  "@branched_from": {
+    "placeholders": {
+      "branch": {}
+    }
+  },
+  "branches": "派生分支:{branch}",
+    "@branches": {
+    "placeholders": {
+      "branch": {}
+    }
+  },
+  "edit_more": "编辑更多",
+  "check_updates": "检查更新",
+  "help_guides": "帮助与指南",
+  "github_repo": "GitHub 仓库",
+  "email_with_holder": "电子邮箱：{email}",
+  "@email_with_holder": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "all_rights_reserved": "版权所有 © 2026 LinChi 保留所有权利。",
+  "maximize": "最大化",
+  "restore": "还原",
+  "close": "关闭",
+  "back": "返回",
+  "version_preview": "V 1.0 Beta 预览版"
 }

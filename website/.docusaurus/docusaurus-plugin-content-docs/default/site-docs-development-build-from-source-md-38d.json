@@ -1,0 +1,19 @@
+{
+  "id": "development/build-from-source",
+  "title": "从源码构建 (Build from Source)",
+  "description": "本文档将指导你如何在本地机器上从源码编译并运行 UNIChat。",
+  "source": "@site/docs/development/build-from-source.md",
+  "sourceDirName": "development",
+  "slug": "/development/build-from-source",
+  "permalink": "/docs/development/build-from-source",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Running on iOS Devices",
+    "permalink": "/docs/development/run-on-ios"
+  }
+}

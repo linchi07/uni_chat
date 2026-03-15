@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:path/path.dart' as p;
 import 'package:scrollview_observer/scrollview_observer.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
@@ -488,6 +489,11 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     var theme = ref.watch(themeProvider);
+    var agent = ref.watch(agentProvider);
+    var slogan =
+        agent?.openingConfigure?.slogan ?? S.of(context).front_page_titleSlogan;
+    var firstMessage = agent?.openingConfigure?.firstMessage;
+
     return Scaffold(
       backgroundColor: theme.secondGradeColor,
       body: Center(
@@ -495,11 +501,10 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              S.of(context).front_page_titleSlogan,
+              slogan,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
             Text(
               S.of(context).choose_agent_and_chat_hint,
               textAlign: TextAlign.center,
@@ -534,7 +539,31 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            if (firstMessage != null && firstMessage.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.fromLTRB(30, 16, 30, 0),
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(maxHeight: 600),
+                width: 700,
+                decoration: BoxDecoration(
+                  color: theme.zeroGradeColor,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(20),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  child: GptMarkdown(
+                    firstMessage,
+                    style: TextStyle(color: theme.textColor, fontSize: 16),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 16),
             SizedBox(
               width: MediaQuery.of(context).size.width.clamp(0, 800),
               child: Padding(
@@ -716,11 +745,80 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                       index <=
                                           chatState.messagesList.length - 1) {
                                     var message = chatState.messagesList[index];
+                                    ({String title, String sessionId})?
+                                    fromBranch;
+                                    List<({String title, String sessionId})>?
+                                    toBranch;
+                                    if (chatState.branchNames.isNotEmpty &&
+                                        chatState.branchNames.containsKey(
+                                          message.messageId,
+                                        )) {
+                                      final allRelated = chatState
+                                          .branchNames[message.messageId]!;
+
+                                      // Check if this message is the origin of the current session
+                                      if (chatState
+                                              .session
+                                              ?.branchInfo
+                                              ?.origin
+                                              ?.messageId ==
+                                          message.messageId) {
+                                        final originSid = chatState
+                                            .session!
+                                            .branchInfo!
+                                            .origin!
+                                            .sessionId;
+                                        final originData = allRelated
+                                            .where(
+                                              (e) => e.sessionId == originSid,
+                                            )
+                                            .firstOrNull;
+                                        if (originData != null) {
+                                          fromBranch = (
+                                            title: originData.title,
+                                            sessionId: originData.sessionId,
+                                          );
+                                        }
+                                      }
+
+                                      // Check for branches from this message
+                                      final branchSids =
+                                          chatState
+                                              .session
+                                              ?.branchInfo
+                                              ?.branches
+                                              .where(
+                                                (b) =>
+                                                    b.messageId ==
+                                                    message.messageId,
+                                              )
+                                              .map((b) => b.sessionId)
+                                              .toSet() ??
+                                          {};
+
+                                      if (branchSids.isNotEmpty) {
+                                        toBranch = allRelated
+                                            .where(
+                                              (e) => branchSids.contains(
+                                                e.sessionId,
+                                              ),
+                                            )
+                                            .map(
+                                              (e) => (
+                                                title: e.title,
+                                                sessionId: e.sessionId,
+                                              ),
+                                            )
+                                            .toList();
+                                      }
+                                    }
                                     return PersistChatMessage(
                                       key: ValueKey(message.id),
                                       index: index,
                                       prevMessage:
                                           chatState.messagesList[index - 1],
+                                      toBranchData: toBranch,
+                                      fromBranchData: fromBranch,
                                       message: message,
                                       theme: theme,
                                     );
@@ -1118,7 +1216,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             // the same (40 is 2x height of cursor)
             _inputScrollController.jumpTo(
               min(
-                    current + delta - boxSize.height + 40 + 6 + 10,
+                    current + delta - boxSize.height + 40 + 6,
                     _inputScrollController.position.maxScrollExtent,
                   ) +
                   25,

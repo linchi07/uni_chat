@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
+import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -41,6 +42,7 @@ class AutoUpdateService {
         "build_number": buildNumber,
         "models_version": modelsVersion,
         "providers_version": providersVersion,
+        "locale": PlatForm().languageCode,
       };
       final response = await http.post(
         Uri.parse(_updateUrl),

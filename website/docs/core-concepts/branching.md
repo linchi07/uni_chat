@@ -36,8 +36,12 @@ Professional Prompt engineers can utilize the branching feature to fine-tune the
 
 ## How to Use
 
+### Auto Branching
 The branching system will automatically start a new branch when you :
 - Regenerate a message
 - Modify your input mesage
 
 You can use the buttons to switch between branches.
+
+### Manual Branching
+Click on the branch icon and enter the name of the new branch to create a new branch on this current node.

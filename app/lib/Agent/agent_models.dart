@@ -9,6 +9,11 @@ import 'package:uni_chat/error_handling.dart';
 import '../api_configs/api_models.dart';
 import '../utils/file_utils.dart';
 
+const int CURRENT_MODEL_CONFIG_VERSION = 1;
+const int CURRENT_PERSONA_CONFIG_VERSION = 1;
+const int CURRENT_OPENING_CONFIG_VERSION = 1;
+const int CURRENT_AGENT_DATA_VERSION = 1;
+
 @immutable
 class ModelConfigure {
   final String modelId;
@@ -61,6 +66,7 @@ class ModelConfigure {
 
   Map<String, dynamic> toMap() {
     return {
+      'version': CURRENT_MODEL_CONFIG_VERSION,
       'model_id': modelId,
       'provider_id': providerId,
       'max_generation_tokens': maxGenerationTokens,
@@ -73,6 +79,13 @@ class ModelConfigure {
   }
 
   factory ModelConfigure.fromMap(Map<String, dynamic> map) {
+    var version = map['version'] as int? ?? 1;
+    if (version > CURRENT_MODEL_CONFIG_VERSION) {
+      throw AgentException(
+        AgentExceptionType.versionMismatch,
+        message: "Model config version mismatch: $version",
+      );
+    }
     return ModelConfigure(
       modelId: map['model_id'] as String,
       providerId: map['provider_id'] as String,
@@ -104,15 +117,55 @@ class PersonaConfigure {
 
   Map<String, dynamic> toMap() {
     return {
+      'version': CURRENT_PERSONA_CONFIG_VERSION,
       'default_persona': defaultPersona,
       'persona_additional_info': personaAdditionalInfo,
     };
   }
 
-  static PersonaConfigure fromMap(Map<String, dynamic> map) {
+  static PersonaConfigure? fromMap(Map<String, dynamic> map) {
+    var version = map['version'] as int? ?? 1;
+    if (version > CURRENT_PERSONA_CONFIG_VERSION) {
+      // Non-core module, fallback to null instead of throwing
+      return null;
+    }
     return PersonaConfigure(
       defaultPersona: map['default_persona'] as String?,
       personaAdditionalInfo: map['persona_additional_info'] as String?,
+    );
+  }
+}
+
+@immutable
+class OpeningConfigure {
+  final String? slogan;
+  final String? firstMessage;
+
+  const OpeningConfigure({this.slogan, this.firstMessage});
+
+  OpeningConfigure copyWith({String? slogan, String? firstMessage}) {
+    return OpeningConfigure(
+      slogan: slogan ?? this.slogan,
+      firstMessage: firstMessage ?? this.firstMessage,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'version': CURRENT_OPENING_CONFIG_VERSION,
+      'slogan': slogan,
+      'first_message': firstMessage,
+    };
+  }
+
+  static OpeningConfigure? fromMap(Map<String, dynamic> map) {
+    var version = map['version'] as int? ?? 1;
+    if (version > CURRENT_OPENING_CONFIG_VERSION) {
+      return null;
+    }
+    return OpeningConfigure(
+      slogan: map['slogan'] as String?,
+      firstMessage: map['first_message'] as String?,
     );
   }
 }
@@ -131,6 +184,7 @@ class AgentData implements Insertable<AgentDbModel> {
   final ModelConfigure modelConfigure;
 
   final PersonaConfigure? userIdentityConfigure;
+  final OpeningConfigure? openingConfigure;
 
   final DateTime createdAt;
   final bool isDefault;
@@ -142,6 +196,7 @@ class AgentData implements Insertable<AgentDbModel> {
     required this.modelConfigure,
     this.description,
     required this.userIdentityConfigure,
+    this.openingConfigure,
     this.systemPrompt,
     List<String>? knowledgeBases,
     required this.createdAt,
@@ -168,9 +223,10 @@ class AgentData implements Insertable<AgentDbModel> {
 
   String _parameterToJson() {
     Map<String, dynamic> parameters = {
-      'version': version,
+      'version': CURRENT_AGENT_DATA_VERSION,
       'model_configure': modelConfigure.toMap(),
       'persona_configure': userIdentityConfigure?.toMap(),
+      'opening_configure': openingConfigure?.toMap(),
       'system_prompt': systemPrompt,
     };
     return jsonEncode(parameters);
@@ -179,13 +235,28 @@ class AgentData implements Insertable<AgentDbModel> {
   factory AgentData.fromAgentDBModel(AgentDbModel adbm) {
     try {
       var parameters = jsonDecode(adbm.configure);
+      var topVersion = parameters['version'] as int? ?? 1;
+      if (topVersion > CURRENT_AGENT_DATA_VERSION) {
+        throw AgentException(
+          AgentExceptionType.versionMismatch,
+          message: "Agent data version mismatch: $topVersion",
+        );
+      }
+
       PersonaConfigure? uidc;
       var uidcp = parameters['persona_configure'];
       if (uidcp != null) {
         uidc = PersonaConfigure.fromMap(uidcp);
       }
+
+      OpeningConfigure? opc;
+      var opcp = parameters['opening_configure'];
+      if (opcp != null) {
+        opc = OpeningConfigure.fromMap(opcp);
+      }
+
       return AgentData(
-        version: parameters['version'] as int,
+        version: topVersion,
         id: adbm.id,
         name: adbm.name,
         description: adbm.description,
@@ -194,9 +265,15 @@ class AgentData implements Insertable<AgentDbModel> {
         isDefault: adbm.isDefault,
         modelConfigure: ModelConfigure.fromMap(parameters['model_configure']),
         userIdentityConfigure: uidc,
+        openingConfigure: opc,
       );
+    } on AgentException {
+      rethrow;
     } catch (e) {
-      throw AgentException(AgentExceptionType.failLoadingAgent_ParseError);
+      throw AgentException(
+        AgentExceptionType.failLoadingAgent_ParseError,
+        message: e.toString(),
+      );
     }
   }
 

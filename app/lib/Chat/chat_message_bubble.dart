@@ -28,11 +28,15 @@ class PersistChatMessage extends ConsumerStatefulWidget {
     this.prevMessage,
     required this.theme,
     required this.index,
+    this.fromBranchData,
+    this.toBranchData,
   });
   final int index; //the index in the message list
   final ChatMessage? prevMessage; //the previous message ,used to show variants
   final ChatMessage message;
   final ThemeConfig theme;
+  final ({String title, String sessionId})? fromBranchData;
+  final List<({String title, String sessionId})>? toBranchData;
 
   @override
   ConsumerState<PersistChatMessage> createState() => _PersistChatMessageState();
@@ -51,11 +55,37 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
   Widget build(BuildContext context) {
     final isUserMessage = message.sender == MessageSender.user;
     List<ChatFile> files = message.attachedFiles ?? [];
+
+    List<Widget> branchIndicators = [];
+    if (widget.fromBranchData != null) {
+      branchIndicators.add(
+        _buildBranchIndicator(
+          context,
+          Icons.source_rounded,
+          S.of(context).branched_from(widget.fromBranchData!.title),
+          widget.fromBranchData!.sessionId,
+        ),
+      );
+    }
+    if (widget.toBranchData != null && widget.toBranchData!.isNotEmpty) {
+      for (var branch in widget.toBranchData!) {
+        branchIndicators.add(
+          _buildBranchIndicator(
+            context,
+            Icons.call_split_rounded,
+            S.of(context).branches(branch.title),
+            branch.sessionId,
+          ),
+        );
+      }
+    }
+
     Widget content;
     if (isUserMessage) {
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (branchIndicators.isNotEmpty) ...branchIndicators,
           if (files.isNotEmpty && !isEditMode) ...[
             Wrap(
               children: [
@@ -162,6 +192,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (branchIndicators.isNotEmpty) ...branchIndicators,
           if (widget.prevMessage != null) _toolbar(),
           if (files.isNotEmpty) ...[
             Wrap(
@@ -217,6 +248,42 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
       );
     }
     return box;
+  }
+
+  Widget _buildBranchIndicator(
+    BuildContext context,
+    IconData icon,
+    String text,
+    String sessionId,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: widget.theme.primaryColor.withAlpha(200)),
+          const SizedBox(width: 4),
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              ref.read(chatStateProvider.notifier).switchSession(sessionId);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: widget.theme.primaryColor.withAlpha(200),
+                  fontStyle: FontStyle.italic,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget typeMatch(MessageBlock block) {

@@ -1,7 +1,7 @@
 {
   "id": "intro",
-  "title": "Welcome to UNIChat",
-  "description": "A quick overview and introduction to UNIChat's core features",
+  "title": "Welcome",
+  "description": "UNIChat 的快速概览与核心特性介绍",
   "source": "@site/docs/intro.md",
   "sourceDirName": ".",
   "slug": "/intro",
@@ -11,30 +11,30 @@
   "tags": [
     {
       "inline": true,
-      "label": "Introduction",
-      "permalink": "/docs/tags/introduction"
+      "label": "介绍",
+      "permalink": "/docs/tags/介绍"
     },
     {
       "inline": true,
-      "label": "Overview",
-      "permalink": "/docs/tags/overview"
+      "label": "概览",
+      "permalink": "/docs/tags/概览"
     },
     {
       "inline": true,
-      "label": "Getting Started",
-      "permalink": "/docs/tags/getting-started"
+      "label": "入门",
+      "permalink": "/docs/tags/入门"
     }
   ],
   "version": "current",
   "sidebarPosition": 1,
   "frontMatter": {
     "id": "intro",
-    "title": "Welcome to UNIChat",
-    "description": "A quick overview and introduction to UNIChat's core features",
+    "title": "Welcome",
+    "description": "UNIChat 的快速概览与核心特性介绍",
     "tags": [
-      "Introduction",
-      "Overview",
-      "Getting Started"
+      "介绍",
+      "概览",
+      "入门"
     ],
     "sidebar_position": 1
   },

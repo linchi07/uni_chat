@@ -5,7 +5,6 @@ import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/theme_manager.dart';
-import 'package:uni_chat/utils/document_display.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
@@ -379,7 +378,7 @@ class _AgentSetPageState extends ConsumerState<AgentSetPage> {
                           const Divider(),
                           StdListTile(
                             title: Text(
-                              S.of(context).opening_set,
+                              S.of(context).opening_configure_title,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
@@ -521,6 +520,7 @@ class AgentEditState {
   late final DateTime createdAt;
   bool autoCreateMDB;
   final PersonaConfigure userIdentity;
+  final OpeningConfigure opening;
 
   AgentEditState({
     String? id,
@@ -538,6 +538,7 @@ class AgentEditState {
     DateTime? createdAt,
     this.autoCreateMDB = true,
     this.userIdentity = const PersonaConfigure(),
+    this.opening = const OpeningConfigure(),
   }) {
     this.knowledgeBases = knowledgeBases ?? <String>{};
     this.id = id ?? Uuid().v4();
@@ -562,6 +563,7 @@ class AgentEditState {
     ModelSpecifics? modelSettings,
     bool? autoCreateMDB,
     PersonaConfigure? userIdentity,
+    OpeningConfigure? opening,
   }) {
     return AgentEditState(
       id: id ?? this.id,
@@ -579,6 +581,7 @@ class AgentEditState {
       createdAt: createdAt ?? this.createdAt,
       autoCreateMDB: autoCreateMDB ?? this.autoCreateMDB,
       userIdentity: userIdentity ?? this.userIdentity,
+      opening: opening ?? this.opening,
     );
   }
 
@@ -606,6 +609,7 @@ class AgentEditState {
       description: description,
       modelConfigure: _toModelConfigure(),
       userIdentityConfigure: userIdentity,
+      openingConfigure: opening,
       systemPrompt: systemPrompt,
       knowledgeBases: knowledgeBases.toList(),
       createdAt: createdAt,
@@ -635,6 +639,8 @@ class AgentEditState {
       description: agentData.description,
       systemPrompt: agentData.systemPrompt,
       createdAt: agentData.createdAt,
+      opening: agentData.openingConfigure ?? const OpeningConfigure(),
+      userIdentity: agentData.userIdentityConfigure ?? const PersonaConfigure(),
     );
   }
 }
@@ -821,15 +827,9 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Text(
-              S.of(context).model_sets,
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(width: 8),
-            ShowDocButton(),
-          ],
+        Text(
+          S.of(context).model_sets,
+          style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         Expanded(
@@ -1293,15 +1293,9 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Text(
-                S.of(context).sys_prompt,
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 8),
-              ShowDocButton(),
-            ],
+          Text(
+            S.of(context).sys_prompt,
+            style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -1531,55 +1525,101 @@ class Opening extends ConsumerStatefulWidget {
 }
 
 class _OpeningState extends ConsumerState<Opening> {
-  late TextEditingController controller;
-  int charCount = 0;
+  late TextEditingController sloganController;
+  late TextEditingController firstMessageController;
 
   @override
   void initState() {
     super.initState();
-    controller = TextEditingController();
-    // 初始化时设置当前字符数
     final currentState = ref.read(agentEditState);
-    if (currentState.systemPrompt != null) {
-      controller.text = currentState.systemPrompt!;
-      charCount = LLMTokenEstimator.estimateTokens(currentState.systemPrompt!);
-    }
+    sloganController = TextEditingController(text: currentState.opening.slogan);
+    firstMessageController = TextEditingController(
+      text: currentState.opening.firstMessage,
+    );
   }
 
-  void onSubmit(AgentEditState s) {
-    //这里卡了一个bug，on Submitted似乎无法正常触发
-    var value = controller.text;
-    if (value.isEmpty) {
-      return;
-    }
-    if (charCount > s.modelSettings.maxContextTokens) {
-      value = value.substring(0, s.modelSettings.maxContextTokens);
-    }
-    var n = ref.read(agentEditState.notifier);
-    n.state = n.state.copyWith(systemPrompt: value);
+  @override
+  void dispose() {
+    sloganController.dispose();
+    firstMessageController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
-    var s = ref.watch(agentEditState);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text(
-              S.of(context).opening_set,
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+    return Padding(
+      padding: const EdgeInsets.only(right: 8, bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                S.of(context).opening_configure_title,
+                style: const TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                S.of(context).opening_slogan_label,
+                style: const TextStyle(fontSize: 18),
+              ),
+              const SizedBox(width: 4),
+              Tooltip(
+                message: S.of(context).opening_slogan_hint,
+                child: const Icon(Icons.info_outline, size: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          StdTextFieldOutlined(
+            hintText: S.of(context).opening_slogan_label,
+            controller: sloganController,
+            onSubmitted: (value) {
+              var n = ref.read(agentEditState.notifier);
+              n.state = n.state.copyWith(
+                opening: n.state.opening.copyWith(slogan: value),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Text(
+                S.of(context).opening_message_label,
+                style: const TextStyle(fontSize: 18),
+              ),
+              const SizedBox(width: 4),
+              Tooltip(
+                message: S.of(context).opening_message_hint,
+                child: const Icon(Icons.info_outline, size: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: StdTextFieldOutlined(
+              hintText:
+                  S.of(context).plz_enter + S.of(context).opening_message_label,
+              controller: firstMessageController,
+              isExpanded: true,
+              onSubmitted: (value) {
+                var n = ref.read(agentEditState.notifier);
+                n.state = n.state.copyWith(
+                  opening: n.state.opening.copyWith(firstMessage: value),
+                );
+              },
             ),
-            const SizedBox(width: 8),
-            IconButton(icon: Icon(Icons.info_outline), onPressed: () {}),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text("coming soon", style: TextStyle(fontSize: 18)),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1589,99 +1629,100 @@ class UserIdentity extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var uiden =
-        ref.watch(agentEditState.select((s) => s.userIdentity)) ??
-        PersonaConfigure();
+    var uiden = ref.watch(agentEditState.select((s) => s.userIdentity));
     var theme = ref.watch(themeProvider);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text(
-              S.of(context).usr_persona_set,
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(width: 8),
-            IconButton(icon: Icon(Icons.info_outline), onPressed: () {}),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          S.of(context).select_agent_default_persona,
-          style: TextStyle(fontSize: 18),
-        ),
-        const SizedBox(height: 16),
-        StdButton(
-          onPressed: () {
-            OverlayPortalService.showDialog(
-              context,
-              height: 600,
-              width: 400,
-              child: personaSelector(context, ref),
-              backGroundColor: theme.zeroGradeColor,
-            );
-          },
-          text: S.of(context).select_agent_default_persona,
-          child: (uiden.defaultPersona == null)
-              ? null
-              : FutureBuilder(
-                  future: () async {
-                    var p = await DatabaseService.instance.getPersonaById(
-                      uiden.defaultPersona!,
-                    );
-                    if (p == null) {
-                      return null;
-                    } else {
-                      return (p, await p.getAvatar());
-                    }
-                  }.call(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData && snapshot.data != null) {
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          StdAvatar(file: snapshot.data!.$2),
-                          const SizedBox(width: 8),
-                          Text(" ${snapshot.data!.$1.name}"),
-                        ],
-                      );
-                    } else {
-                      return Text(
-                        S.of(context).error_occurred,
-                        style: TextStyle(color: theme.errorColor),
-                      );
-                    }
-                  },
-                ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          S.of(context).persona_additonal_information,
-          style: TextStyle(fontSize: 18),
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: StdTextFieldOutlined(
-            hintText:
-                S.of(context).plz_enter +
-                S.of(context).persona_additonal_information.toLowerCase(),
-            controller: TextEditingController(
-              text: uiden.personaAdditionalInfo,
-            ),
-            isExpanded: true,
-            onSubmitted: (value) {
-              var n = ref.read(agentEditState.notifier);
-              n.state = n.state.copyWith(
-                userIdentity: n.state.userIdentity.copyWith(
-                  personaAdditionalInfo: value,
-                ),
+    return Padding(
+      padding: const EdgeInsets.only(right: 8, bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                S.of(context).usr_persona_set,
+                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 8),
+              IconButton(icon: Icon(Icons.info_outline), onPressed: () {}),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            S.of(context).select_agent_default_persona,
+            style: TextStyle(fontSize: 18),
+          ),
+          const SizedBox(height: 16),
+          StdButton(
+            onPressed: () {
+              OverlayPortalService.showDialog(
+                context,
+                height: 600,
+                width: 400,
+                child: personaSelector(context, ref),
+                backGroundColor: theme.zeroGradeColor,
               );
             },
+            text: S.of(context).select_agent_default_persona,
+            child: (uiden.defaultPersona == null)
+                ? null
+                : FutureBuilder(
+                    future: () async {
+                      var p = await DatabaseService.instance.getPersonaById(
+                        uiden.defaultPersona!,
+                      );
+                      if (p == null) {
+                        return null;
+                      } else {
+                        return (p, await p.getAvatar());
+                      }
+                    }.call(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data != null) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            StdAvatar(file: snapshot.data!.$2),
+                            const SizedBox(width: 8),
+                            Text(" ${snapshot.data!.$1.name}"),
+                          ],
+                        );
+                      } else {
+                        return Text(
+                          S.of(context).error_occurred,
+                          style: TextStyle(color: theme.errorColor),
+                        );
+                      }
+                    },
+                  ),
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          Text(
+            S.of(context).persona_additonal_information,
+            style: TextStyle(fontSize: 18),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: StdTextFieldOutlined(
+              hintText:
+                  S.of(context).plz_enter +
+                  S.of(context).persona_additonal_information.toLowerCase(),
+              controller: TextEditingController(
+                text: uiden.personaAdditionalInfo,
+              ),
+              isExpanded: true,
+              onSubmitted: (value) {
+                var n = ref.read(agentEditState.notifier);
+                n.state = n.state.copyWith(
+                  userIdentity: n.state.userIdentity.copyWith(
+                    personaAdditionalInfo: value,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 

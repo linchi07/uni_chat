@@ -1,507 +1,511 @@
 {
-  "/zh-Hans/__docusaurus/debug-555": {
+  "/__docusaurus/debug-5ff": {
     "__comp": "__comp---theme-debug-config-23-a-2ff",
     "__context": {
-      "plugin": "plugin---zh-hans-docusaurus-debugb-38-080"
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
     }
   },
-  "/zh-Hans/__docusaurus/debug/config-1fa": {
+  "/__docusaurus/debug/config-5ba": {
     "__comp": "__comp---theme-debug-config-23-a-2ff",
     "__context": {
-      "plugin": "plugin---zh-hans-docusaurus-debugb-38-080"
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
     }
   },
-  "/zh-Hans/__docusaurus/debug/content-1c6": {
+  "/__docusaurus/debug/content-a2b": {
     "__comp": "__comp---theme-debug-contentba-8-ce7",
     "__context": {
-      "plugin": "plugin---zh-hans-docusaurus-debugb-38-080"
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
     },
-    "__props": "__props---zh-hans-docusaurus-debug-contentd-25-2bb"
+    "__props": "__props---docusaurus-debug-content-3-c-0-be2"
   },
-  "/zh-Hans/__docusaurus/debug/globalData-0df": {
+  "/__docusaurus/debug/globalData-c3c": {
     "__comp": "__comp---theme-debug-global-dataede-0fa",
     "__context": {
-      "plugin": "plugin---zh-hans-docusaurus-debugb-38-080"
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
     }
   },
-  "/zh-Hans/__docusaurus/debug/metadata-9f5": {
+  "/__docusaurus/debug/metadata-156": {
     "__comp": "__comp---theme-debug-site-metadata-68-e-3d4",
     "__context": {
-      "plugin": "plugin---zh-hans-docusaurus-debugb-38-080"
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
     }
   },
-  "/zh-Hans/__docusaurus/debug/registry-ada": {
+  "/__docusaurus/debug/registry-88c": {
     "__comp": "__comp---theme-debug-registry-679-501",
     "__context": {
-      "plugin": "plugin---zh-hans-docusaurus-debugb-38-080"
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
     }
   },
-  "/zh-Hans/__docusaurus/debug/routes-11e": {
+  "/__docusaurus/debug/routes-000": {
     "__comp": "__comp---theme-debug-routes-946-699",
     "__context": {
-      "plugin": "plugin---zh-hans-docusaurus-debugb-38-080"
+      "plugin": "plugin---docusaurus-debugb-38-ad3"
     }
   },
-  "/zh-Hans/blog-575": {
+  "/blog-b2f": {
     "__comp": "__comp---theme-blog-list-pagea-6-a-7ba",
     "__context": {
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
+    "sidebar": "sidebar---blog-814-8ac",
     "items": [
       {
-        "content": "content---zh-hans-blog-766-29f"
+        "content": "content---blog-766-e3c"
       },
       {
-        "content": "content---zh-hans-blogf-4-f-d10"
+        "content": "content---blogf-4-f-cd7"
       },
       {
-        "content": "content---zh-hans-blog-871-764"
+        "content": "content---blog-871-381"
       },
       {
-        "content": "content---zh-hans-blog-925-06d"
+        "content": "content---blog-925-e00"
       }
     ],
-    "__props": "__props---zh-hans-blog-087-df7"
+    "__props": "__props---blogc-15-573"
   },
-  "/zh-Hans/blog/archive-c6a": {
+  "/blog/archive-182": {
     "__comp": "__comp---theme-blog-archive-page-9-e-4-1d8",
     "__context": {
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "__props": "__props---zh-hans-blog-archive-9-e-4-975"
+    "__props": "__props---blog-archivef-81-229"
   },
-  "/zh-Hans/blog/authors-eed": {
+  "/blog/authors-0b7": {
     "__comp": "__comp---theme-blog-pages-blog-authors-list-page-621-70c",
     "__context": {
       "data": {
-        "blogMetadata": "blogMetadata---zh-hans-blog-authorsace-f3f"
+        "blogMetadata": "blogMetadata---blog-authorsace-e7d"
       },
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
-    "__props": "__props---zh-hans-blog-authors-88-b-812"
+    "sidebar": "sidebar---blog-814-8ac",
+    "__props": "__props---blog-authorsef-8-44f"
   },
-  "/zh-Hans/blog/authors/all-sebastien-lorber-articles-3cd": {
+  "/blog/authors/all-sebastien-lorber-articles-4a1": {
     "__comp": "__comp---theme-blog-pages-blog-authors-posts-page-33-f-bd5",
     "__context": {
       "data": {
-        "blogMetadata": "blogMetadata---zh-hans-blog-authorsace-f3f"
+        "blogMetadata": "blogMetadata---blog-authorsace-e7d"
       },
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
     "items": [
       {
-        "content": "content---zh-hans-blog-766-29f"
+        "content": "content---blog-766-e3c"
       },
       {
-        "content": "content---zh-hans-blogf-4-f-d10"
+        "content": "content---blogf-4-f-cd7"
       },
       {
-        "content": "content---zh-hans-blog-925-06d"
+        "content": "content---blog-925-e00"
       }
     ],
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
-    "__props": "__props---zh-hans-blog-authors-all-sebastien-lorber-articles-7-c-0-b90"
+    "sidebar": "sidebar---blog-814-8ac",
+    "__props": "__props---blog-authors-all-sebastien-lorber-articlesc-9-c-639"
   },
-  "/zh-Hans/blog/authors/yangshun-b1b": {
+  "/blog/authors/yangshun-a68": {
     "__comp": "__comp---theme-blog-pages-blog-authors-posts-page-33-f-bd5",
     "__context": {
       "data": {
-        "blogMetadata": "blogMetadata---zh-hans-blog-authorsace-f3f"
+        "blogMetadata": "blogMetadata---blog-authorsace-e7d"
       },
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
     "items": [
       {
-        "content": "content---zh-hans-blog-766-29f"
+        "content": "content---blog-766-e3c"
       },
       {
-        "content": "content---zh-hans-blog-871-764"
+        "content": "content---blog-871-381"
       },
       {
-        "content": "content---zh-hans-blog-925-06d"
+        "content": "content---blog-925-e00"
       }
     ],
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
-    "__props": "__props---zh-hans-blog-authors-yangshun-0-fe-05e"
+    "sidebar": "sidebar---blog-814-8ac",
+    "__props": "__props---blog-authors-yangshun-1-de-d0c"
   },
-  "/zh-Hans/blog/first-blog-post-9f9": {
+  "/blog/first-blog-post-89a": {
     "__comp": "__comp---theme-blog-post-pageccc-cab",
     "__context": {
       "data": {
-        "blogMetadata": "blogMetadata---zh-hans-blog-authorsace-f3f"
+        "blogMetadata": "blogMetadata---blog-authorsace-e7d"
       },
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
-    "content": "content---zh-hans-blog-first-blog-poste-27-d7a"
+    "sidebar": "sidebar---blog-814-8ac",
+    "content": "content---blog-first-blog-poste-27-4a1"
   },
-  "/zh-Hans/blog/long-blog-post-d61": {
+  "/blog/long-blog-post-9ad": {
     "__comp": "__comp---theme-blog-post-pageccc-cab",
     "__context": {
       "data": {
-        "blogMetadata": "blogMetadata---zh-hans-blog-authorsace-f3f"
+        "blogMetadata": "blogMetadata---blog-authorsace-e7d"
       },
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
-    "content": "content---zh-hans-blog-long-blog-post-736-f3b"
+    "sidebar": "sidebar---blog-814-8ac",
+    "content": "content---blog-long-blog-post-736-bc7"
   },
-  "/zh-Hans/blog/mdx-blog-post-d1e": {
+  "/blog/mdx-blog-post-e9f": {
     "__comp": "__comp---theme-blog-post-pageccc-cab",
     "__context": {
       "data": {
-        "blogMetadata": "blogMetadata---zh-hans-blog-authorsace-f3f"
+        "blogMetadata": "blogMetadata---blog-authorsace-e7d"
       },
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
-    "content": "content---zh-hans-blog-mdx-blog-post-593-65c"
+    "sidebar": "sidebar---blog-814-8ac",
+    "content": "content---blog-mdx-blog-post-593-37b"
   },
-  "/zh-Hans/blog/tags-c60": {
+  "/blog/tags-287": {
     "__comp": "__comp---theme-blog-tags-list-page-01-a-d0b",
     "__context": {
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
-    "__props": "__props---zh-hans-blog-tags-01-e-d1d"
+    "sidebar": "sidebar---blog-814-8ac",
+    "__props": "__props---blog-tags-3-a-2-fa2"
   },
-  "/zh-Hans/blog/tags/docusaurus-874": {
+  "/blog/tags/docusaurus-704": {
     "__comp": "__comp---theme-blog-tags-posts-page-687-b6c",
     "__context": {
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
+    "sidebar": "sidebar---blog-814-8ac",
     "items": [
       {
-        "content": "content---zh-hans-blog-766-29f"
+        "content": "content---blog-766-e3c"
       },
       {
-        "content": "content---zh-hans-blogf-4-f-d10"
+        "content": "content---blogf-4-f-cd7"
       },
       {
-        "content": "content---zh-hans-blog-871-764"
+        "content": "content---blog-871-381"
       },
       {
-        "content": "content---zh-hans-blog-925-06d"
+        "content": "content---blog-925-e00"
       }
     ],
-    "__props": "__props---zh-hans-blog-tags-docusauruse-10-572"
+    "__props": "__props---blog-tags-docusaurus-321-832"
   },
-  "/zh-Hans/blog/tags/facebook-205": {
+  "/blog/tags/facebook-858": {
     "__comp": "__comp---theme-blog-tags-posts-page-687-b6c",
     "__context": {
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
+    "sidebar": "sidebar---blog-814-8ac",
     "items": [
       {
-        "content": "content---zh-hans-blog-766-29f"
+        "content": "content---blog-766-e3c"
       }
     ],
-    "__props": "__props---zh-hans-blog-tags-facebook-322-5d5"
+    "__props": "__props---blog-tags-facebooke-5-a-514"
   },
-  "/zh-Hans/blog/tags/hello-0ab": {
+  "/blog/tags/hello-299": {
     "__comp": "__comp---theme-blog-tags-posts-page-687-b6c",
     "__context": {
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
+    "sidebar": "sidebar---blog-814-8ac",
     "items": [
       {
-        "content": "content---zh-hans-blog-766-29f"
+        "content": "content---blog-766-e3c"
       },
       {
-        "content": "content---zh-hans-blog-871-764"
+        "content": "content---blog-871-381"
       }
     ],
-    "__props": "__props---zh-hans-blog-tags-hellobd-4-a7e"
+    "__props": "__props---blog-tags-hellof-82-2fd"
   },
-  "/zh-Hans/blog/tags/hola-c43": {
+  "/blog/tags/hola-00d": {
     "__comp": "__comp---theme-blog-tags-posts-page-687-b6c",
     "__context": {
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
+    "sidebar": "sidebar---blog-814-8ac",
     "items": [
       {
-        "content": "content---zh-hans-blog-925-06d"
+        "content": "content---blog-925-e00"
       }
     ],
-    "__props": "__props---zh-hans-blog-tags-holaecf-890"
+    "__props": "__props---blog-tags-hola-5-e-9-9a3"
   },
-  "/zh-Hans/blog/welcome-abc": {
+  "/blog/welcome-d2b": {
     "__comp": "__comp---theme-blog-post-pageccc-cab",
     "__context": {
       "data": {
-        "blogMetadata": "blogMetadata---zh-hans-blog-authorsace-f3f"
+        "blogMetadata": "blogMetadata---blog-authorsace-e7d"
       },
-      "plugin": "plugin---zh-hans-blog-369-220"
+      "plugin": "plugin---blog-369-22e"
     },
-    "sidebar": "sidebar---zh-hans-blog-814-7ac",
-    "content": "content---zh-hans-blog-welcomed-9-f-6a0"
+    "sidebar": "sidebar---blog-814-8ac",
+    "content": "content---blog-welcomed-9-f-ffb"
   },
-  "/zh-Hans/download-4ff": {
+  "/download-b81": {
     "__comp": "__comp---site-src-pages-download-tsx-686-713",
     "__context": {
-      "plugin": "plugin---zh-hans-downloada-74-11c"
+      "plugin": "plugin---downloada-74-678"
     },
-    "config": "config---zh-hans-download-5-e-9-fcd"
+    "config": "config---download-5-e-9-a88"
   },
-  "/zh-Hans/macos-guide-1c7": {
+  "/macos-guide-a4a": {
     "__comp": "__comp---site-src-pages-macos-guide-tsx-27-d-384",
     "__context": {
-      "plugin": "plugin---zh-hans-downloada-74-11c"
+      "plugin": "plugin---downloada-74-678"
     },
-    "config": "config---zh-hans-download-5-e-9-fcd"
+    "config": "config---download-5-e-9-a88"
   },
-  "/zh-Hans/docs-496": {
+  "/docs-805": {
     "__comp": "__comp---theme-docs-root-5-e-9-0b6",
     "__context": {
-      "plugin": "plugin---zh-hans-docsaba-620"
+      "plugin": "plugin---docsaba-d7c"
     }
   },
-  "/zh-Hans/docs-e94": {
+  "/docs-b2f": {
     "__comp": "__comp---theme-doc-version-roota-7-b-5de",
-    "__props": "__props---zh-hans-docsece-f8c"
+    "__props": "__props---docs-005-788"
   },
-  "/zh-Hans/docs/tags-a97": {
+  "/docs/tags-fce": {
     "__comp": "__comp---theme-doc-tags-list-page-372-89e",
-    "__props": "__props---zh-hans-docs-tags-998-da0"
+    "__props": "__props---docs-tags-898-65c"
   },
-  "/zh-Hans/docs/tags/安装-745": {
+  "/docs/tags/概览-83a": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-安装-2-c-7-418"
+    "__props": "__props---docs-tags-概览db-9-bb0"
   },
-  "/zh-Hans/docs/tags/本地部署-906": {
+  "/docs/tags/介绍-1fe": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-本地部署-637-8b3"
+    "__props": "__props---docs-tags-介绍b-94-84e"
   },
-  "/zh-Hans/docs/tags/对话树-1d1": {
+  "/docs/tags/入门-c51": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-对话树-641-fdd"
+    "__props": "__props---docs-tags-入门-0-e-4-bc7"
   },
-  "/zh-Hans/docs/tags/多分支-f52": {
+  "/docs/tags/advanced-scheduling-889": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-多分支-5-d-9-a1f"
+    "__props": "__props---docs-tags-advanced-schedulingd-63-958"
   },
-  "/zh-Hans/docs/tags/负载均衡-163": {
+  "/docs/tags/agent-bcd": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-负载均衡-618-950"
+    "__props": "__props---docs-tags-agentd-55-bb0"
   },
-  "/zh-Hans/docs/tags/概览-b8d": {
+  "/docs/tags/api-0eb": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-概览-696-fbf"
+    "__props": "__props---docs-tags-apif-64-14c"
   },
-  "/zh-Hans/docs/tags/高级调度-d07": {
+  "/docs/tags/api-provider-d5b": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-高级调度e-63-ac9"
+    "__props": "__props---docs-tags-api-providera-12-1a2"
   },
-  "/zh-Hans/docs/tags/个性化-d4d": {
+  "/docs/tags/architecture-926": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-个性化-5-e-3-dd1"
+    "__props": "__props---docs-tags-architecture-7-de-e73"
   },
-  "/zh-Hans/docs/tags/核心概念-e71": {
+  "/docs/tags/basic-config-6fb": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-核心概念d-5-f-24a"
+    "__props": "__props---docs-tags-basic-configc-06-120"
   },
-  "/zh-Hans/docs/tags/基础配置-bcf": {
+  "/docs/tags/basic-settings-bb6": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-基础配置-0-c-3-61e"
+    "__props": "__props---docs-tags-basic-settings-9-bb-223"
   },
-  "/zh-Hans/docs/tags/基础设置-1e8": {
+  "/docs/tags/character-settings-6df": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-基础设置-3-a-7-04c"
+    "__props": "__props---docs-tags-character-settings-148-dbe"
   },
-  "/zh-Hans/docs/tags/架构-2c0": {
+  "/docs/tags/core-concepts-94c": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-架构-5-f-7-dcb"
+    "__props": "__props---docs-tags-core-concepts-975-716"
   },
-  "/zh-Hans/docs/tags/角色扮演-805": {
+  "/docs/tags/custom-endpoints-989": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-角色扮演-30-d-ab3"
+    "__props": "__props---docs-tags-custom-endpoints-6-b-3-f1c"
   },
-  "/zh-Hans/docs/tags/角色设定-545": {
+  "/docs/tags/deep-seek-aa1": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-角色设定-26-f-70c"
+    "__props": "__props---docs-tags-deep-seek-5-cc-784"
   },
-  "/zh-Hans/docs/tags/介绍-3d0": {
+  "/docs/tags/dialogue-tree-7e8": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-介绍-7-e-0-0fe"
+    "__props": "__props---docs-tags-dialogue-treedd-1-fd0"
   },
-  "/zh-Hans/docs/tags/快速开始-873": {
+  "/docs/tags/gemini-5d5": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-快速开始-4-f-0-cfa"
+    "__props": "__props---docs-tags-gemini-917-da0"
   },
-  "/zh-Hans/docs/tags/模型设置-c80": {
+  "/docs/tags/google-2f8": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-模型设置-8-f-2-c69"
+    "__props": "__props---docs-tags-google-03-d-65d"
   },
-  "/zh-Hans/docs/tags/魔搭-eed": {
+  "/docs/tags/gpt-d56": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-魔搭-44-a-ca9"
+    "__props": "__props---docs-tags-gpt-077-41d"
   },
-  "/zh-Hans/docs/tags/入门-f0b": {
+  "/docs/tags/i-os-7f4": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-入门-985-d51"
+    "__props": "__props---docs-tags-i-os-8-a-6-3ea"
   },
-  "/zh-Hans/docs/tags/自定义端点-ccb": {
+  "/docs/tags/i-pad-os-717": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-自定义端点a-5-d-ee6"
+    "__props": "__props---docs-tags-i-pad-os-7-bf-eb9"
   },
-  "/zh-Hans/docs/tags/agent-b90": {
+  "/docs/tags/identity-setup-693": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-agent-7-c-6-c54"
+    "__props": "__props---docs-tags-identity-setup-4-b-8-540"
   },
-  "/zh-Hans/docs/tags/api-9b2": {
+  "/docs/tags/installation-bc4": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-apia-71-65c"
+    "__props": "__props---docs-tags-installation-5-c-2-f92"
   },
-  "/zh-Hans/docs/tags/api提供商-2ba": {
+  "/docs/tags/lm-studio-eb2": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-api提供商-726-18f"
+    "__props": "__props---docs-tags-lm-studio-9-a-9-be6"
   },
-  "/zh-Hans/docs/tags/deep-seek-280": {
+  "/docs/tags/load-balancing-c25": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-deep-seek-30-b-aca"
+    "__props": "__props---docs-tags-load-balancing-9-fc-4c1"
   },
-  "/zh-Hans/docs/tags/gemini-ff1": {
+  "/docs/tags/local-deployment-f72": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-gemini-657-a93"
+    "__props": "__props---docs-tags-local-deployment-21-c-014"
   },
-  "/zh-Hans/docs/tags/google-973": {
+  "/docs/tags/model-scope-faf": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-googledc-2-93b"
+    "__props": "__props---docs-tags-model-scope-485-00a"
   },
-  "/zh-Hans/docs/tags/gpt-ac1": {
+  "/docs/tags/model-setup-8ca": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-gpt-029-4a2"
+    "__props": "__props---docs-tags-model-setupba-4-794"
   },
-  "/zh-Hans/docs/tags/i-os-937": {
+  "/docs/tags/multi-branch-0a4": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-i-os-7-bd-63f"
+    "__props": "__props---docs-tags-multi-branch-8-eb-188"
   },
-  "/zh-Hans/docs/tags/i-pad-os-eef": {
+  "/docs/tags/open-ai-ed3": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-i-pad-os-0-a-8-5b2"
+    "__props": "__props---docs-tags-open-aic-82-b5e"
   },
-  "/zh-Hans/docs/tags/lm-studio-3c8": {
+  "/docs/tags/persona-b54": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-lm-studioa-1-c-200"
+    "__props": "__props---docs-tags-persona-7-ea-725"
   },
-  "/zh-Hans/docs/tags/model-scope-61b": {
+  "/docs/tags/personalization-ca8": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-model-scope-8-fa-b18"
+    "__props": "__props---docs-tags-personalization-941-3f2"
   },
-  "/zh-Hans/docs/tags/open-ai-66f": {
+  "/docs/tags/prompt-tricks-af1": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-open-ai-08-f-0c9"
+    "__props": "__props---docs-tags-prompt-tricks-60-d-399"
   },
-  "/zh-Hans/docs/tags/persona-48d": {
+  "/docs/tags/quick-start-84f": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-persona-4-e-3-2dd"
+    "__props": "__props---docs-tags-quick-start-44-e-37a"
   },
-  "/zh-Hans/docs/tags/prompt技巧-db4": {
+  "/docs/tags/roleplay-934": {
     "__comp": "__comp---theme-doc-tag-doc-list-pagedf-2-9f0",
-    "__props": "__props---zh-hans-docs-tags-prompt技巧-86-b-7c2"
+    "__props": "__props---docs-tags-roleplay-7-d-0-977"
   },
-  "/zh-Hans/docs-59e": {
+  "/docs-680": {
     "__comp": "__comp---theme-doc-roota-94-67a"
   },
-  "/zh-Hans/docs/agents/agent-brief-baa": {
+  "/docs/agents/agent-brief-744": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-agents-agent-brief-7-e-5-4a5"
+    "content": "content---docs-agents-agent-briefa-4-c-ec5"
   },
-  "/zh-Hans/docs/agents/model-settings-571": {
+  "/docs/agents/model-settings-ccc": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-agents-model-settingsd-17-47b"
+    "content": "content---docs-agents-model-settings-292-3a3"
   },
-  "/zh-Hans/docs/agents/persona-afe": {
+  "/docs/agents/persona-c89": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-agents-persona-925-e88"
+    "content": "content---docs-agents-personab-19-456"
   },
-  "/zh-Hans/docs/agents/setup-agent-d1e": {
+  "/docs/agents/setup-agent-089": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-agents-setup-agent-86-e-0a8"
+    "content": "content---docs-agents-setup-agentd-22-8ca"
   },
-  "/zh-Hans/docs/agents/system-prompt-44b": {
+  "/docs/agents/system-prompt-297": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-agents-system-prompt-521-031"
+    "content": "content---docs-agents-system-promptc-72-901"
   },
-  "/zh-Hans/docs/agents/user-identity-484": {
+  "/docs/agents/user-identity-9ce": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-agents-user-identity-8-ad-bfc"
+    "content": "content---docs-agents-user-identityfff-9d0"
   },
-  "/zh-Hans/docs/category/agents--personas-5d4": {
+  "/docs/category/agents--personas-ac8": {
     "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
-    "__props": "__props---zh-hans-docs-category-agents-personas-3-f-1-590"
+    "__props": "__props---docs-category-agents-personas-042-3ff"
   },
-  "/zh-Hans/docs/category/core-concepts-cb2": {
+  "/docs/category/core-concepts-409": {
     "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
-    "__props": "__props---zh-hans-docs-category-core-conceptsd-0-a-d5f"
+    "__props": "__props---docs-category-core-concepts-9-d-1-fe4"
   },
-  "/zh-Hans/docs/category/development--installation-f82": {
+  "/docs/category/development--installation-19f": {
     "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
-    "__props": "__props---zh-hans-docs-category-development-installationa-7-e-26c"
+    "__props": "__props---docs-category-development-installationff-3-8d2"
   },
-  "/zh-Hans/docs/category/models--apis-102": {
+  "/docs/category/models--apis-279": {
     "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
-    "__props": "__props---zh-hans-docs-category-models-apisbf-4-fa0"
+    "__props": "__props---docs-category-models-apis-803-516"
   },
-  "/zh-Hans/docs/core-concepts/agent-philosophy-944": {
+  "/docs/core-concepts/agent-philosophy-521": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-core-concepts-agent-philosophy-3-ad-68c"
+    "content": "content---docs-core-concepts-agent-philosophy-54-e-ec7"
   },
-  "/zh-Hans/docs/core-concepts/branching-6e3": {
+  "/docs/core-concepts/branching-655": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-core-concepts-branching-763-591"
+    "content": "content---docs-core-concepts-branchingf-6-b-4b9"
   },
-  "/zh-Hans/docs/development/run-on-ios-bb3": {
+  "/docs/development/build-from-source-eb2": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-development-run-on-ios-565-0a1"
+    "content": "content---docs-development-build-from-source-38-d-3e3"
   },
-  "/zh-Hans/docs/intro-16f": {
+  "/docs/development/run-on-ios-a23": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-intro-5-b-2-2a8"
+    "content": "content---docs-development-run-on-iosce-9-6ac"
   },
-  "/zh-Hans/docs/models-and-apis/api-intro-755": {
+  "/docs/intro-61d": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-models-and-apis-api-intro-3-ac-6dc"
+    "content": "content---docs-intro-0-e-3-be1"
   },
-  "/zh-Hans/docs/models-and-apis/auto-balance-61f": {
+  "/docs/models-and-apis/auto-balance-79d": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-models-and-apis-auto-balance-4-d-4-c34"
+    "content": "content---docs-models-and-apis-auto-balanced-69-c64"
   },
-  "/zh-Hans/docs/models-and-apis/custom-api-f47": {
+  "/docs/models-and-apis/custom-api-fdb": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-models-and-apis-custom-api-9-f-6-dfe"
+    "content": "content---docs-models-and-apis-custom-api-608-a11"
   },
-  "/zh-Hans/docs/models-and-apis/providers/deepseek-e06": {
+  "/docs/models-and-apis/intro-136": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-models-and-apis-providers-deepseek-170-095"
+    "content": "content---docs-models-and-apis-intro-3-b-4-9d5"
   },
-  "/zh-Hans/docs/models-and-apis/providers/google-gemini-ad0": {
+  "/docs/models-and-apis/providers/deepseek-021": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-models-and-apis-providers-google-gemini-408-0d0"
+    "content": "content---docs-models-and-apis-providers-deepseekda-7-24c"
   },
-  "/zh-Hans/docs/models-and-apis/providers/lmstudio-295": {
+  "/docs/models-and-apis/providers/google-gemini-7b2": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-models-and-apis-providers-lmstudiodb-0-5fd"
+    "content": "content---docs-models-and-apis-providers-google-gemini-0-bc-f85"
   },
-  "/zh-Hans/docs/models-and-apis/providers/modelscope-4d7": {
+  "/docs/models-and-apis/providers/lmstudio-5ff": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-models-and-apis-providers-modelscope-2-ed-d77"
+    "content": "content---docs-models-and-apis-providers-lmstudiodf-3-837"
   },
-  "/zh-Hans/docs/models-and-apis/providers/openai-276": {
+  "/docs/models-and-apis/providers/modelscope-cc9": {
     "__comp": "__comp---theme-doc-item-178-a40",
-    "content": "content---zh-hans-docs-models-and-apis-providers-openaie-90-2bb"
+    "content": "content---docs-models-and-apis-providers-modelscope-07-d-6eb"
   },
-  "/zh-Hans/-85c": {
+  "/docs/models-and-apis/providers/openai-2d8": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-models-and-apis-providers-openaic-78-f9e"
+  },
+  "/-e5f": {
     "__comp": "__comp---site-src-pages-index-tsx-1-df-d3e",
     "__context": {
-      "plugin": "plugin---zh-hans-downloada-74-11c"
+      "plugin": "plugin---downloada-74-678"
     },
-    "config": "config---zh-hans-download-5-e-9-fcd"
+    "config": "config---download-5-e-9-a88"
   }
 }

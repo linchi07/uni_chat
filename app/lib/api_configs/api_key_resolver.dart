@@ -27,17 +27,17 @@ abstract class BaseApiKeyResolver {
   /// You can implement any strategy you want.
   /// A "No available key" will be thrown if no key is available.
   Future<ApiKey> resolveKey(Model model);
+
   /// This method will be called when an invoke is finished.Which should then write the invoke data to db.Such as 429s or 200s.
   Future<void> updateData(InvokeResult invokeResult);
 
-  
   /// On invoke a new call , this method will be called to select the most suitable resolver for the provider.
   /// Note that a db future containing  the keys and their invoke data (in json strings) are provided , which you can use in constructors.
   /// >[!note] The database return the api keys in random orders (in sql feature) so you don't have to do it yourself.
   static Future<BaseApiKeyResolver> getInstance(
-      Future<List<({ApiKey key, String? invokeDataJson})>> dbFuture, {
-        ApiProvider? apiProvider,
-      }) {
+    Future<List<({ApiKey key, String? invokeDataJson})>> dbFuture, {
+    ApiProvider? apiProvider,
+  }) {
     return GeneralApiKeyResolver.getInstance(dbFuture);
   }
 }
@@ -81,7 +81,6 @@ class GeneralApiKeyInvokeData {
     };
   }
 
-
   GeneralApiKeyInvokeData copyWith({
     int? retryCount,
     DateTime? nextAvailableTime,
@@ -117,15 +116,15 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
     // 1. 定义筛选档位 (Tiering)
     // 档位从高到低：200/新Key > 429待命 > 其他错误待命
     final List<bool Function(KeyInfo)> tiers = [
-          (k) =>
-      (k.invokeData.lastStatusCode == null ||
+      (k) =>
+          (k.invokeData.lastStatusCode == null ||
           k.invokeData.lastStatusCode == 200),
-          (k) =>
-      k.invokeData.lastStatusCode == 429 &&
+      (k) =>
+          k.invokeData.lastStatusCode == 429 &&
           (k.invokeData.nextAvailableTime == null ||
               k.invokeData.nextAvailableTime!.isBefore(now)),
-          (k) =>
-      ![200, 429, 401, 400].contains(k.invokeData.lastStatusCode) &&
+      (k) =>
+          ![200, 429, 401, 400].contains(k.invokeData.lastStatusCode) &&
           (k.invokeData.nextAvailableTime == null ||
               k.invokeData.nextAvailableTime!.isBefore(now)),
     ];
@@ -143,17 +142,17 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
 
     // 3. 最后保底：如果全都在冷却，选一个最快能用的
     keys.sort(
-          (a, b) => a.invokeData.nextAvailableTime!.compareTo(
+      (a, b) => a.invokeData.nextAvailableTime!.compareTo(
         b.invokeData.nextAvailableTime!,
       ),
     );
     return keys
         .firstWhere(
           (k) =>
-      ![401, 403].contains(k.invokeData.lastStatusCode) &&
-          k.invokeData.retryCount <= overLimitRetryCountsMinutes.length,
-      orElse: () => throw "No available key",
-    )
+              ![401, 403].contains(k.invokeData.lastStatusCode) &&
+              k.invokeData.retryCount <= overLimitRetryCountsMinutes.length,
+          orElse: () => throw "No available key",
+        )
         .key;
   }
 
@@ -179,8 +178,8 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
   }
 
   static Future<GeneralApiKeyResolver> getInstance(
-      Future<List<({ApiKey key, String? invokeDataJson})>> dbFuture,
-      ) async {
+    Future<List<({ApiKey key, String? invokeDataJson})>> dbFuture,
+  ) async {
     var dbf = await dbFuture;
     var ks = <({ApiKey key, GeneralApiKeyInvokeData invokeData})>[];
     var newKeys = <ApiKey>[];
@@ -200,7 +199,10 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
       }
       ks.add((key: k.key, invokeData: data));
     }
-    return GeneralApiKeyResolver._private(ks, (newKeys.isEmpty) ? null : newKeys);
+    return GeneralApiKeyResolver._private(
+      ks,
+      (newKeys.isEmpty) ? null : newKeys,
+    );
   }
 
   @override
@@ -281,7 +283,7 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
     } else {
       tut =
           keyI.todayUsedTokens +
-              ((invokeData.usage != null) ? invokeData.usage!.total : 0);
+          ((invokeData.usage != null) ? invokeData.usage!.total : 0);
       rtd = keyI.requestToday++;
     }
     var id = GeneralApiKeyInvokeData(

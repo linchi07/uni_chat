@@ -1,0 +1,50 @@
+{
+  "id": "agents/system-prompt",
+  "title": "System Prompts",
+  "description": "A guide to writing excellent system prompts for your Agent",
+  "source": "@site/docs/agents/system-prompt.md",
+  "sourceDirName": "agents",
+  "slug": "/agents/system-prompt",
+  "permalink": "/docs/agents/system-prompt",
+  "draft": false,
+  "unlisted": false,
+  "tags": [
+    {
+      "inline": true,
+      "label": "Agent",
+      "permalink": "/docs/tags/agent"
+    },
+    {
+      "inline": true,
+      "label": "Prompt Tricks",
+      "permalink": "/docs/tags/prompt-tricks"
+    },
+    {
+      "inline": true,
+      "label": "Character Settings",
+      "permalink": "/docs/tags/character-settings"
+    }
+  ],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "id": "system-prompt",
+    "title": "System Prompts",
+    "description": "A guide to writing excellent system prompts for your Agent",
+    "tags": [
+      "Agent",
+      "Prompt Tricks",
+      "Character Settings"
+    ],
+    "sidebar_position": 3
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Model Settings",
+    "permalink": "/docs/agents/model-settings"
+  },
+  "next": {
+    "title": "User Identity Settings",
+    "permalink": "/docs/agents/user-identity"
+  }
+}

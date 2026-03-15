@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/database/database_service.dart';
-import 'package:uni_chat/main.dart';
-import 'package:uni_chat/utils/document_display.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
@@ -877,14 +875,6 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
     _descriptionController.text = widget.persona.content;
 
     personaData = widget.persona.data.values.toList();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(documentDisplayProvider.notifier)
-          .setShowWithUrl(
-            false,
-            "$websiteURL/docs/QuickStart/create_a_persona",
-          );
-    });
     spc = SplitViewController(
       onStatusChange: (p, c) {
         if ((p == SplitViewStatus.expanded && !spc.isExpanded) ||
@@ -1157,7 +1147,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
                   Spacer(),
                   if (spc.shouldStatus == SplitViewStatus.collapsedWithLeft)
                     StdButton(
-                      text: "编辑更多信息",
+                      text: S.of(context).edit_more,
                       onPressed: () {
                         setState(() {
                           spc.push(

@@ -1,6 +1,6 @@
 ---
 id: intro
-title: 欢迎使用
+title: Welcome
 description: UNIChat 的快速概览与核心特性介绍
 tags:
   - 介绍

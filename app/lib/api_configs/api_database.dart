@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -342,9 +342,7 @@ class _ApiDb extends _$_ApiDb {
           family: map['family'],
           friendlyName: map['friendly_name'],
           // abilities: XModelAlibity.fromList((jsonDecode(map['abilities']) as List)),
-          // dart的json decode简直就是傻逼中的傻逼
-          // 这里前面已经decode一次之后，他就变成list dynamic了，然后如果用处理数据库的那一套逻辑，再decode一遍（因为数据库出来就是map,不会有第一次的decode）
-          // 就会报错。所以说必须为数据库和json维护两套逻辑 真tm醉了 你已经是list dynamic了再decode直接返回不好了吗 😅
+          // JSON 已经过一级解析，直接使用 List 处理以避免重复解析错误
           abilities: XModelAlibity.fromList((map['abilities'] as List)),
           contextLength: map['context_length'],
           maxCompletionTokens: map['max_completion_tokens'],
