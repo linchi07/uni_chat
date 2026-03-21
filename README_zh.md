@@ -2,11 +2,11 @@
 
 > **一起集思广益 — 突破线性限制的 Agent 级对话终端**
 >
-> 🌐 [官方网站与文档](https://linchi07.github.io/uni_chat) | ⬇️ [立即下载](#下载) | 📖 [English Version](README.md)
+> 🌐 [官方网站与文档](https://linchi07.github.io/uni_chat) | ⬇️ [立即下载](https://github.com/linchi07/uni_chat/releases) | 📖 [English Version](README.md)
 
 <p align="center">
   <video src="website/static/img/homepage/title_cn.mp4" autoPlay loop muted playsInline 
-      width: "800" height="auto" 
+      width="800" height="auto" 
     ></video>
 </p>
 
@@ -46,7 +46,7 @@
 
 请根据您的操作系统选择下载：
 - [Windows](https://github.com/linchi07/uni_chat/releases)
-- [macOS](https://linchi07.github.io/uni_chat/macos-guide) -（含防拦截安全安装指南）
+- [macOS](https://unichat.wejoinnwk.com/macos-guide)—关闭macOS未验证警告，请查看 [Installation Guide](https://unichat.wejoinnwk.com/macos-guide).
 - [Android](https://github.com/linchi07/uni_chat/releases)
 - [iOS (IPA) 安装教程](https://github.com/linchi07/uni_chat/wiki/iOS-Installation)
 
@@ -58,4 +58,3 @@
 
 ---
 
-*Powered by Flutter & Rust.*

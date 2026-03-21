@@ -1,7 +1,7 @@
 {
   "id": "development/run-on-ios",
   "title": "Running on iOS Devices",
-  "description": "How to run UNIChat on an iPhone or iPad via self-signing",
+  "description": "How to run UNIChat on an iPhone or iPad by building from source",
   "source": "@site/docs/development/run-on-ios.md",
   "sourceDirName": "development",
   "slug": "/development/run-on-ios",
@@ -30,7 +30,7 @@
   "frontMatter": {
     "id": "run-on-ios",
     "title": "Running on iOS Devices",
-    "description": "How to run UNIChat on an iPhone or iPad via self-signing",
+    "description": "How to run UNIChat on an iPhone or iPad by building from source",
     "tags": [
       "Installation",
       "iOS",
@@ -44,7 +44,7 @@
     "permalink": "/docs/category/development--installation"
   },
   "next": {
-    "title": "从源码构建 (Build from Source)",
+    "title": "Build from Source",
     "permalink": "/docs/development/build-from-source"
   }
 }

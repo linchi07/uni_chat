@@ -1,5 +1,3 @@
-import 'dart:io' hide Platform;
-
 import 'package:path/path.dart' as p;
 import 'package:super_native_extensions/raw_clipboard.dart' as raw;
 import 'package:uni_chat/main.dart';
@@ -66,7 +64,9 @@ class NativeTypeResolver {
         );
         continue;
       }
-      if (PlatForm().platform  == RunningPlatform.ios && name != null && p.extension(name).isEmpty) {
+      if (PlatForm().platform == RunningPlatform.ios &&
+          name != null &&
+          p.extension(name).isEmpty) {
         for (final format in info.formats) {
           final ext = PathProvider.iosCommonExtensions[format];
           if (ext != null) {

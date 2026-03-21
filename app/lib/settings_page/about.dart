@@ -46,7 +46,7 @@ class UNIChatAbout extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            S.of(context).version_preview,
+            "V1.0 Beta 1",
             style: TextStyle(fontSize: 16),
             textAlign: TextAlign.center,
           ),
@@ -120,6 +120,7 @@ class UNIChatAbout extends ConsumerWidget {
           const SizedBox(height: 5),
           SizedBox(
             width: 300,
+            height: 46,
             child: StdButton(
               onPressed: () {
                 launchUrl(
@@ -133,7 +134,7 @@ class UNIChatAbout extends ConsumerWidget {
               child: Center(
                 child: Row(
                   children: [
-                    Image.asset("resources/github-mark-white.png", height: 30),
+                    Image.asset("resources/github-mark-white.png", height: 22),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -164,10 +165,7 @@ class UNIChatAbout extends ConsumerWidget {
                     Expanded(
                       child: SelectionArea(
                         child: Text(
-                          S
-                              .of(context)
-                              .email_with_holder("linchi@wejoinnwk.com"),
-                          textAlign: TextAlign.center,
+                          "linchi@wejoinnwk.com",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

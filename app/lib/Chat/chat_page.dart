@@ -31,7 +31,7 @@ import 'chat_models.dart';
 import 'chat_state.dart';
 
 class _AgentDropDown extends ConsumerStatefulWidget {
-  const _AgentDropDown({super.key});
+  const _AgentDropDown();
   @override
   ConsumerState<_AgentDropDown> createState() => _AgentDropDownState();
 }
@@ -1062,7 +1062,6 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   @override
   Widget build(BuildContext context) {
     chatState = ref.watch(chatStateProvider);
-    final globalLoading = chatState.isLoading;
     theme = ref.watch(themeProvider);
     agent = ref.watch(agentProvider);
     late Widget childPanel;
@@ -1073,7 +1072,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            AbsorbPointer(child: _buildChatPanel(globalLoading)),
+            AbsorbPointer(child: _buildChatPanel()),
             Text(
               S.of(context).drop_files_hint,
               style: TextStyle(
@@ -1088,7 +1087,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     } else {
       childPanel = Padding(
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-        child: _buildChatPanel(globalLoading),
+        child: _buildChatPanel(),
       );
     }
     return NativeDropRegion(
@@ -1229,7 +1228,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     },
   );
   final ScrollController _inputScrollController = ScrollController();
-  Widget _buildChatPanel(bool isSendButtonLoading) {
+  Widget _buildChatPanel() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1265,9 +1264,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                     color: theme.errorColor,
                     icon: Icons.cancel_outlined,
                     onPressed: () {
-                      var n = ref.read(chatStateProvider.notifier);
-                      n.state.error = null;
-                      n.stateCopyWith();
+                      ref.read(chatStateProvider.notifier).clearError();
                     },
                   ),
                 ),
@@ -1296,7 +1293,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             maxLines: 8,
             minLines: 2,
             onSubmitted: (text) {
-              if (text.isEmpty || isSendButtonLoading || !chatState.isReady) {
+              if (text.isEmpty || chatState.isLoading || !chatState.isReady) {
                 return;
               }
               _sendMessage();
@@ -1379,10 +1376,16 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                           child: ModelSelect(
                             theme: theme,
                             onSelect: (p, m) async {
-                              agent?.client =
-                                  await ApiClient.fromProviderAndModel(p, m);
-                              ref.read(agentProvider.notifier).state = agent
-                                  ?.copyWith();
+                              final localAgent = agent;
+                              if (localAgent != null) {
+                                final newClient =
+                                    await ApiClient.fromProviderAndModel(p, m);
+                                ref
+                                    .read(agentProvider.notifier)
+                                    .setAgent(
+                                      localAgent.copyWith(client: newClient),
+                                    );
+                              }
                               await OverlayPortalService.hide(context);
                             },
                           ),
@@ -1427,15 +1430,27 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    color: (isSendButtonLoading || !chatState.isReady)
+                    color: chatState.isResponding
+                        ? theme.primaryColor
+                        : (chatState.isLoading || !chatState.isReady)
                         ? Colors.grey[600]
                         : theme.primaryColor,
                     child: InkWell(
                       splashColor: Colors.grey,
-                      onTap: (isSendButtonLoading || !chatState.isReady)
+                      onTap: chatState.isResponding
+                          ? () => ref
+                                .read(chatStateProvider.notifier)
+                                .stopGeneration()
+                          : (!chatState.isReady)
                           ? null
                           : _sendMessage,
-                      child: isSendButtonLoading
+                      child: chatState.isResponding
+                          ? const Icon(
+                              Icons.stop,
+                              color: Colors.white,
+                              size: 20,
+                            )
+                          : chatState.isLoading
                           ? const SizedBox(
                               width: 20,
                               height: 20,
@@ -1635,9 +1650,9 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               onTap: () {
                 setState(() {
                   if (chatFile != null) {
-                    var n = ref.read(chatStateProvider.notifier);
-                    n.state.uploadedFilesStash.remove(chatFile.name);
-                    n.stateCopyWith();
+                    ref
+                        .read(chatStateProvider.notifier)
+                        .removeFromStash(chatFile.name);
                   }
                 });
               },

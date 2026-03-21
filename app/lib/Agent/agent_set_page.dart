@@ -427,7 +427,7 @@ class _AgentSetPageState extends ConsumerState<AgentSetPage> {
 }
 
 class _ActionButtons extends ConsumerStatefulWidget {
-  const _ActionButtons({super.key, required this.onSaveReturn});
+  const _ActionButtons({required this.onSaveReturn});
   final dynamic onSaveReturn;
   @override
   ConsumerState<_ActionButtons> createState() => __ActionButtonsState();
@@ -801,7 +801,7 @@ class _TokenStatsState extends ConsumerState<TokenStats> {
 }
 
 class _AgentModelSettings extends ConsumerStatefulWidget {
-  const _AgentModelSettings({super.key});
+  const _AgentModelSettings();
   @override
   ConsumerState<_AgentModelSettings> createState() =>
       _AgentModelSettingsState();
@@ -1251,7 +1251,7 @@ class _ModelSelectState extends State<ModelSelect> {
 }
 
 class _SysPromptEdit extends ConsumerStatefulWidget {
-  const _SysPromptEdit({super.key});
+  const _SysPromptEdit();
 
   @override
   ConsumerState<_SysPromptEdit> createState() => _SysPromptEditState();

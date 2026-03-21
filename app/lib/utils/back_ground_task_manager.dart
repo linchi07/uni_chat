@@ -51,10 +51,8 @@ class Activity {
 
 class ActivityManager extends StateNotifier<ActivityState> {
   ActivityManager(Ref ref) : super(ActivityState(activities: {})) {
-    _ref = ref;
     loadUnFinishedActivity();
   }
-  late final Ref _ref;
   SharedPreferences? _prefs;
   void loadUnFinishedActivity() async {
     _prefs ??= await SharedPreferences.getInstance();

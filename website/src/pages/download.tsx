@@ -42,7 +42,7 @@ export default function Download(): React.ReactNode {
             icon="🪟"
             title={<Translate id="download.win.title">Windows</Translate>}
             description={<Translate id="download.win.desc">For Windows 10/11 (x64)</Translate>}
-            link="#" // Release link placeholder
+            link="https://download.wejoinnwk.com/unichat/unichat_v1.0_beta1.exe" // Release link placeholder
           />
           <DownloadCard
             icon="🍎"
@@ -54,13 +54,13 @@ export default function Download(): React.ReactNode {
             icon="🤖"
             title={<Translate id="download.android.title">Android</Translate>}
             description={<Translate id="download.android.desc">For Android 8.0 or later</Translate>}
-            link="#" // Release link placeholder
+            link="https://download.wejoinnwk.com/unichat/unichat_v1.0_beta1.apk" // Release link placeholder
           />
           <DownloadCard
             icon="📱"
-            title={<Translate id="download.ios.title">iOS (IPA)</Translate>}
-            description={<Translate id="download.ios.desc">Install via Sideloadly or AltStore</Translate>}
-            link="https://github.com/linchi07/uni_chat/wiki/iOS-Installation" // Doc link placeholder
+            title={<Translate id="download.ios.title">iOS (Build from Source)</Translate>}
+            description={<Translate id="download.ios.desc">Build and install via Xcode</Translate>}
+            link="/docs/development/run-on-ios"
           />
         </div>
 

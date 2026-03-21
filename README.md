@@ -2,11 +2,11 @@
 
 > **Think Together — An Agent-level Chat Terminal that Breaks Linear Boundaries.**
 >
-> 🌐 [Website & Documentation](https://unichat.wejoinnwk.com) | ⬇️ [Download](#download) | 📖 [中文版(Chinese)](README_zh.md)
+> 🌐 [Website & Documentation](https://unichat.wejoinnwk.com) | ⬇️ [Download](https://github.com/linchi07/uni_chat/releases) | 📖 [中文版(Chinese)](README_zh.md)
 
 <p align="center">
   <video src="website/static/img/homepage/title_en.mp4" autoPlay loop muted playsInline 
-      width: "800" height="auto" 
+      width="800" height="auto" 
     ></video>
 </p>
 
@@ -46,9 +46,9 @@ One codebase, extreme optimization. Deeply adapted for macOS, iOS, Windows, and 
 
 Choose your operating system to download:
 - [Windows](https://github.com/linchi07/uni_chat/releases)
-- [macOS](https://unichat.wejoinnwk.com/docs/macos-guide) - Please view our [Installation Guide](https://unichat.wejoinnwk.com/macos-guide) for bypassing unverified developer warnings.
+- [macOS](https://unichat.wejoinnwk.com/macos-guide)—Please view our [Installation Guide](https://unichat.wejoinnwk.com/macos-guide) for bypassing unverified developer warnings.
 - [Android](https://github.com/linchi07/uni_chat/releases)
-- [iOS (IPA)](https://github.com/linchi07/uni_chat/wiki/iOS-Installation)
+- [iOS ](https://github.com/linchi07/uni_chat/wiki/iOS-Installation)
 
 Visit the [Releases page](https://github.com/linchi07/uni_chat/releases) for the latest versions.
 
@@ -58,4 +58,3 @@ For detailed guides on configuring APIs, creating Agents, and mastering branchin
 
 ---
 
-*Powered by Flutter & Rust.*

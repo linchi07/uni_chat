@@ -33,15 +33,15 @@ function GuideStep({ number, title, description, path }) {
                 border: '1px dashed #ccc',
                 color: '#999'
             }}>
-                 <img
-                            src={path}
-                            alt="App UI Interface"
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'contain' // 如果想填满但不裁剪用 contain，如果想铺满用 cover
-                            }}
-                          />
+                <img
+                    src={path}
+                    alt="App UI Interface"
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain' // 如果想填满但不裁剪用 contain，如果想铺满用 cover
+                    }}
+                />
             </div>
         </div>
     );
@@ -88,7 +88,7 @@ export default function MacOSGuide(): React.ReactNode {
                     <p style={{ opacity: 0.6, marginBottom: '2rem' }}>Intel & Apple Silicon (Universal Target)</p>
                     <Link
                         className="button button--primary button--lg"
-                        to="#" // Actual download link placeholder
+                        to="https://download.wejoinnwk.com/unichat/unichat_v1.0_beta1.dmg"
                         style={{ borderRadius: '8px', padding: '12px 64px' }}>
                         <Translate id="theme.downloadButton">Download Now</Translate>
                     </Link>

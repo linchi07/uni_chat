@@ -11,8 +11,8 @@ Map<int, String> findGolangErrors(String text) {
     }
 
     if (lines[i].startsWith(RegExp("\\s*/\\*"))) {
-      while (
-          (!lines[i].contains(RegExp("\\*/\\s*"))) && (i < lines.length - 1)) {
+      while ((!lines[i].contains(RegExp("\\*/\\s*"))) &&
+          (i < lines.length - 1)) {
         i++;
       }
     } else if (lines[i].startsWith(RegExp(".*`"))) {
@@ -35,8 +35,8 @@ Map<int, String> findGolangErrors(String text) {
       }
       commandFor += lines[i];
       if (commandFor.contains(RegExp("for.*:=")) &&
-          commandFor.contains(RegExp("for.*[\+-][\+-]"))) {
-        if (!commandFor.contains(RegExp("for.*:=.*;.*;.*[\+-][\+-]"))) {
+          commandFor.contains(RegExp("for.*[+-][\+-]"))) {
+        if (!commandFor.contains(RegExp("for.*:=.*;.*;.*[+-][+-]"))) {
           errors.addAll({(i + 1): "Incorrect for statement"});
         }
       }

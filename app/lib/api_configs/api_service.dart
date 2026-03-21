@@ -99,12 +99,15 @@ class ApiClient {
     String? agentId,
   }) async* {
     while (true) {
+      if (modelRequestContent.stopSignal?.isStopped ?? false) break;
       var keysCandidate = ApiDatabase.instance.getAvailableApiKeys(provider.id);
       var resolver = await BaseApiKeyResolver.getInstance(
         keysCandidate,
         apiProvider: provider,
       );
+      if (modelRequestContent.stopSignal?.isStopped ?? false) break;
       var keyInfo = await resolver.resolveKey(model);
+      if (modelRequestContent.stopSignal?.isStopped ?? false) break;
       var s = service.getStreamingResponse(
         this,
         keyInfo,
@@ -253,6 +256,16 @@ class OpenAiApiService extends BaseApiService {
 
     request.body = jsonEncode(requestBody);
 
+    if (modelRequestContent.stopSignal?.isStopped ?? false) {
+      httpClient.close();
+      return;
+    }
+    void onStop() {
+      httpClient.close();
+    }
+
+    modelRequestContent.stopSignal?.addListener(onStop);
+
     try {
       final response = await httpClient.send(request);
       TokenUsage? usg;
@@ -328,6 +341,7 @@ class OpenAiApiService extends BaseApiService {
         );
       }
     } finally {
+      modelRequestContent.stopSignal?.removeListener(onStop);
       httpClient.close();
     }
   }
@@ -627,6 +641,16 @@ class OpenAiCompletionService extends OpenAiApiService {
 
     request.body = jsonEncode(requestBody);
 
+    if (modelRequestContent.stopSignal?.isStopped ?? false) {
+      httpClient.close();
+      return;
+    }
+    void onStop() {
+      httpClient.close();
+    }
+
+    modelRequestContent.stopSignal?.addListener(onStop);
+
     try {
       final response = await httpClient.send(request);
       if (response.statusCode == 200) {
@@ -710,6 +734,7 @@ class OpenAiCompletionService extends OpenAiApiService {
         );
       }
     } finally {
+      modelRequestContent.stopSignal?.removeListener(onStop);
       httpClient.close();
     }
   }
@@ -911,6 +936,16 @@ class GeminiApiService extends BaseApiService {
       },
     });
 
+    if (modelRequestContent.stopSignal?.isStopped ?? false) {
+      httpClient.close();
+      return;
+    }
+    void onStop() {
+      httpClient.close();
+    }
+
+    modelRequestContent.stopSignal?.addListener(onStop);
+
     try {
       final response = await httpClient.send(request);
 
@@ -973,6 +1008,7 @@ class GeminiApiService extends BaseApiService {
         );
       }
     } finally {
+      modelRequestContent.stopSignal?.removeListener(onStop);
       httpClient.close();
     }
   }

@@ -1,7 +1,7 @@
 {
   "id": "development/build-from-source",
-  "title": "从源码构建 (Build from Source)",
-  "description": "本文档将指导你如何在本地机器上从源码编译并运行 UNIChat。",
+  "title": "Build from Source",
+  "description": "This document will guide you on how to compile and run UNIChat from source on your local machine.",
   "source": "@site/docs/development/build-from-source.md",
   "sourceDirName": "development",
   "slug": "/development/build-from-source",

@@ -30,10 +30,9 @@ class ChatState {
   final Map<String, List<({String sessionId, String title})>> branchNames;
   late Map<String, ({UploadStatus status, ChatFile file})> uploadedFilesStash;
   // 临时存储上传的文件，当用户点击发送按钮的时候会被合并到messages里面
-  late final ChunkedStringBuffer newContentBuffer;
-  late final ValueNotifier<bool> refreshFlag;
   final bool isLoading;
   final bool isResponding;
+  final StopSignal? stopSignal;
   late final ValueNotifier<List<ChatResponse>?> responses;
 
   ChatState({
@@ -44,16 +43,13 @@ class ChatState {
     this.branchNames = const {},
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     ValueNotifier<List<ChatResponse>?>? responses,
-    ChunkedStringBuffer? newContentBuffer,
-    ValueNotifier<bool>? refreshFlag,
     this.isLoading = false,
     this.isResponding = false,
+    this.stopSignal,
     this.error,
   }) {
     this.responses = responses ?? ValueNotifier(null);
     this.uploadedFilesStash = uploadedFilesStash ?? {};
-    this.newContentBuffer = newContentBuffer ?? ChunkedStringBuffer();
-    this.refreshFlag = refreshFlag ?? ValueNotifier(false);
     if (session != null) {
       this.session = session;
     }
@@ -66,10 +62,9 @@ class ChatState {
     List<ChatMessage>? messagesList,
     Map<String, List<({String sessionId, String title})>>? branchNames,
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
-    ChunkedStringBuffer? newContentBuffer,
-    ValueNotifier<bool>? refreshFlag,
     bool? isLoading,
     bool? isResponding,
+    StopSignal? stopSignal,
     AppException? error,
     ValueNotifier<List<ChatResponse>?>? responses,
   }) {
@@ -81,10 +76,9 @@ class ChatState {
       messagesList: messagesList ?? this.messagesList,
       branchNames: branchNames ?? this.branchNames,
       uploadedFilesStash: uploadedFilesStash ?? this.uploadedFilesStash,
-      newContentBuffer: newContentBuffer ?? this.newContentBuffer,
-      refreshFlag: refreshFlag ?? this.refreshFlag,
       isLoading: isLoading ?? this.isLoading,
       isResponding: isResponding ?? this.isResponding,
+      stopSignal: stopSignal ?? this.stopSignal,
       error: error ?? this.error,
     );
   }
@@ -132,16 +126,59 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     List<ChatMessage>? messagesList,
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     bool? isLoading,
+    bool? isResponding,
+    StopSignal? stopSignal,
     AppException? error,
   }) {
+    state = state.copyWith(
+      isReady: isReady,
+      session: session,
+      messages: messages,
+      uploadedFilesStash: uploadedFilesStash,
+      messagesList: messagesList,
+      isLoading: isLoading,
+      isResponding: isResponding,
+      stopSignal: stopSignal,
+      error: error,
+    );
+  }
+
+  void clearError() {
     state = ChatState(
-      isReady: isReady ?? state.isReady,
-      session: session ?? state.session,
-      messages: messages ?? state.messages,
-      uploadedFilesStash: uploadedFilesStash ?? state.uploadedFilesStash,
-      messagesList: messagesList ?? state.messagesList,
-      isLoading: isLoading ?? state.isLoading,
-      error: error ?? state.error,
+      isReady: state.isReady,
+      session: state.session,
+      messages: state.messages,
+      messagesList: state.messagesList,
+      branchNames: state.branchNames,
+      uploadedFilesStash: state.uploadedFilesStash,
+      responses: state.responses,
+      isLoading: state.isLoading,
+      isResponding: state.isResponding,
+      stopSignal: state.stopSignal,
+      error: null,
+    );
+  }
+
+  void removeFromStash(String fileName) {
+    state.uploadedFilesStash.remove(fileName);
+    stateCopyWith();
+  }
+
+  void resetGenerationState() {
+    state.stopSignal?.dispose();
+    state.responses.value = null;
+    state = ChatState(
+      isReady: state.isReady,
+      session: state.session,
+      messages: state.messages,
+      messagesList: state.messagesList,
+      branchNames: state.branchNames,
+      uploadedFilesStash: state.uploadedFilesStash,
+      responses: state.responses,
+      isLoading: false,
+      isResponding: false,
+      stopSignal: null,
+      error: state.error,
     );
   }
 
@@ -384,7 +421,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           error: ChatException(ChatExceptionType.branchSessionFailed),
         );
       }
-    } on Exception catch (e) {
+    } on Exception {
       state = state.copyWith(
         isLoading: false,
         error: ChatException(ChatExceptionType.branchSessionFailed),
@@ -606,18 +643,22 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   /// it is the user's input.Yet, it can also be a message that needs to be regenerated (eg. branch new variant)
   void sendRequest(List<ChatMessage> history, ChatMessage lastMessage) async {
     try {
+      final stopSignal = StopSignal();
+      state = state.copyWith(stopSignal: stopSignal, isResponding: true);
+
       final stream = agentNotifier.getStreamingResponse(
         state.session!,
         history,
         lastMessage,
+        stopSignal: stopSignal,
       );
       ChatMessage? finalAiMessage;
       var buffer = ChunkedStringBuffer();
       var parser = InputParser(buffer);
-      state = state.copyWith(isResponding: true);
       state.responses.value = null;
       try {
         await for (final chunk in stream) {
+          if (stopSignal.isStopped) break;
           List<ChatResponse>? newBlock;
           if (chunk.content.isNotEmpty) {
             if (chunk.type == MessageChunkType.text) {
@@ -635,6 +676,16 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           }
         }
       } on Exception catch (e) {
+        if (state.stopSignal?.isStopped != true) {
+          state = state.copyWith(
+            error: (e is AppException) ? e : ChatException.fromException(e),
+          );
+          // yes we should have a better way to handle this
+          // however it's super annoying to store this in the database (the AppException is a nested class and we need the buildContext to get the error string)
+          // so just leave it be for a while
+          // and for now just use the error handling in the state object
+          //TODO: handle this
+        }
         /*
         state.responses.value = [
           ...parser.blocksCached,
@@ -645,14 +696,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           ),
         ];
          */
-        state = state.copyWith(
-          error: (e is AppException) ? e : ChatException.fromException(e),
-        );
-        // yes we should have a better way to handle this
-        // however it's super annoying to store this in the database (the AppException is a nested class and we need the buildContext to get the error string)
-        // so just leave it be for a while
-        // and for now just use the error handling in the state object
-        //TODO: handle this
       }
       if (state.responses.value != null) {
         var c = MessageBlock.fromChatResponse(state.responses.value!);
@@ -682,15 +725,23 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           finalAiMessage,
           modifiedParent: lastMessage,
         );
-        if (state.session!.name == "New Chat") {
-          generateTitle();
-        }
       }
     } on Exception catch (e) {
-      state.error = (e is AppException) ? e : ChatException.fromException(e);
+      state = state.copyWith(
+        error: (e is AppException) ? e : ChatException.fromException(e),
+      );
     } finally {
-      state = state.copyWith(isLoading: false, isResponding: false);
+      resetGenerationState();
     }
+    // title generation has to be done after the finally
+    // or the wrong stop signal will be disposed and causes crashes (generateTitle it self will add a new stop signal)
+    if (state.session!.name == "New Chat") {
+      generateTitle();
+    }
+  }
+
+  void stopGeneration() {
+    state.stopSignal?.stop();
   }
 
   Future<void> generateTitle() async {
@@ -698,7 +749,12 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       return;
     }
     try {
-      state = state.copyWith(isLoading: true, isResponding: true);
+      final stopSignal = StopSignal();
+      state = state.copyWith(
+        isLoading: true,
+        isResponding: false,
+        stopSignal: stopSignal,
+      );
       StringBuffer sb = StringBuffer();
       // use the to string method in the chat message class to generate simple text
       for (var m in state.messagesList) {
@@ -720,7 +776,12 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         childIds: [],
         enabledChild: 0,
       );
-      final stream = agentNotifier.getStreamingResponse(state.session!, [], cm);
+      final stream = agentNotifier.getStreamingResponse(
+        state.session!,
+        [],
+        cm,
+        stopSignal: stopSignal,
+      );
       sb.clear();
       await for (final chunk in stream) {
         sb.write(chunk.content);
@@ -744,13 +805,16 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       state.session!.name = title;
       await _dbService.updateSessionTitle(state.session!.id, title);
     } on Exception catch (e) {
+      if (state.stopSignal?.isStopped == true) {
+        return;
+      }
       state = state.copyWith(
         error: (e is AppException)
             ? e
             : ChatException(ChatExceptionType.failToGenerateTitle),
       );
     } finally {
-      state = state.copyWith(isLoading: false, isResponding: false);
+      resetGenerationState();
     }
   }
 }

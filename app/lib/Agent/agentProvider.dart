@@ -262,10 +262,11 @@ class AgentProvider extends StateNotifier<Agent?> {
   Stream<ChatResponse> getStreamingResponse(
     ChatSession session,
     List<ChatMessage> history,
-    ChatMessage? usrMessage,
-  ) async* {
+    ChatMessage? usrMessage, {
+    StopSignal? stopSignal,
+  }) async* {
     if (state != null) {
-      var fm = await formatMessage(history, usrMessage);
+      var fm = await formatMessage(history, usrMessage, stopSignal: stopSignal);
       /*
       if (state!.memoryBaseIds.isNotEmpty) {
         var rgp = ref.read(ragProvider);
@@ -299,8 +300,9 @@ class AgentProvider extends StateNotifier<Agent?> {
 
   Future<ModelRequestContent> formatMessage(
     List<ChatMessage> history,
-    ChatMessage? lastMessage,
-  ) async {
+    ChatMessage? lastMessage, {
+    StopSignal? stopSignal,
+  }) async {
     if (state == null) {
       throw AgentException(AgentExceptionType.agentNotLoaded);
     }
@@ -312,6 +314,7 @@ class AgentProvider extends StateNotifier<Agent?> {
       usrMessage: [],
       modelConfigure: state!.modelConfigure,
       ragMessages: [],
+      stopSignal: stopSignal,
     );
     rc.staticSystemMessages.add(
       FormattedChatMessage(

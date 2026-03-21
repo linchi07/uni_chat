@@ -621,7 +621,6 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
 
 class _InputExpandAnimation extends StatefulWidget {
   const _InputExpandAnimation({
-    super.key,
     required this.registeredFunctions,
     required this.theme,
     required this.originContent,
@@ -983,7 +982,7 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
 }
 
 class _Loading extends StatelessWidget {
-  const _Loading({super.key, required this.color});
+  const _Loading({required this.color});
   final Color color;
 
   @override
@@ -1205,7 +1204,7 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
 }
 
 class _RagBlock extends StatefulWidget {
-  const _RagBlock({super.key, required this.isComplete, this.content});
+  const _RagBlock({required this.isComplete, this.content});
   final bool isComplete;
   final String? content;
   @override

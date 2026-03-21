@@ -23,11 +23,7 @@ class FoldableBlock extends InclusiveRange with EquatableMixin {
   });
 
   @override
-  List<Object?> get props => [
-        firstLine,
-        lastLine,
-        type,
-      ];
+  List<Object?> get props => [firstLine, lastLine, type];
 
   bool includes(FoldableBlock other) {
     return firstLine <= other.firstLine && lastLine >= other.lastLine;
@@ -44,8 +40,6 @@ class FoldableBlock extends InclusiveRange with EquatableMixin {
       default:
         return false;
     }
-
-    return false;
   }
 
   bool get isImports {
@@ -56,8 +50,6 @@ class FoldableBlock extends InclusiveRange with EquatableMixin {
       default:
         return false;
     }
-
-    return false;
   }
 
   bool isSameLines(FoldableBlock other) {
@@ -126,9 +118,11 @@ extension FoldableBlockList on List<FoldableBlock> {
 
       // And fix every violation of the hierarchy by bubbling the block up,
       // removing non-ancestors from the working list, and joining when needed.
-      for (int ancestorIndex = ancestors.length - 2;
-          ancestorIndex >= 0;
-          ancestorIndex--) {
+      for (
+        int ancestorIndex = ancestors.length - 2;
+        ancestorIndex >= 0;
+        ancestorIndex--
+      ) {
         final ancestor = ancestors[ancestorIndex];
 
         if (ancestor.lastLine < bubble.firstLine) {
@@ -142,7 +136,8 @@ extension FoldableBlockList on List<FoldableBlock> {
 
         final isDuplicate = bubble.isSameLines(ancestor);
 
-        final areIntersecting = ancestor.lastLine >= bubble.firstLine &&
+        final areIntersecting =
+            ancestor.lastLine >= bubble.firstLine &&
             ancestor.lastLine < bubble.lastLine;
 
         if (isDuplicate || areIntersecting) {

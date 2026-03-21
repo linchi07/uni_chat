@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart' show immutable;
+import 'package:flutter/foundation.dart' show ChangeNotifier, immutable;
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agent_models.dart';
 import 'package:uni_chat/database/database_service.dart';
@@ -297,6 +297,15 @@ class FormattedChatMessage {
   }
 }
 
+class StopSignal extends ChangeNotifier {
+  bool _isStopped = false;
+  bool get isStopped => _isStopped;
+  void stop() {
+    _isStopped = true;
+    notifyListeners();
+  }
+}
+
 //本来我是不想要这个类的，但是，对于各家的模型，他的输入格式实在是差的太多了
 //比如对于系统提示词，我个人为了最大化命中缓存，一般来讲，都是让不变的部分放最前，更改的部分放在后面（也就是仅次于用户消息的部分），这样，命中的概率很高
 //但是Gemini他就必须要你只能第一个是系统提示词。所以为了针对差异化，我们只好储存更加完整的信息了
@@ -309,6 +318,7 @@ class ModelRequestContent {
   List<FormattedChatMessage> usrMessage;
   List<FormattedChatMessage> ragMessages;
   ModelConfigure modelConfigure;
+  StopSignal? stopSignal;
   ModelRequestContent({
     required this.staticSystemMessages,
     required this.dynamicSystemMessages,
@@ -317,6 +327,7 @@ class ModelRequestContent {
     required this.usrMessage,
     required this.modelConfigure,
     required this.ragMessages,
+    this.stopSignal,
   });
 }
 

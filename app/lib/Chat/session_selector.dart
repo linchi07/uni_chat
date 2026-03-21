@@ -209,7 +209,6 @@ class _SessionSelectorOverlayState
   late final Animation<double> _widthAnimation;
   late final Animation<double> _heightAnimation;
   late final Animation<double> _leftAnimation; // **新增**: left 坐标的动画
-  late final Animation<double> _opacityAnimation;
   late final Size _finalSize;
 
   @override
@@ -259,13 +258,6 @@ class _SessionSelectorOverlayState
             curve: Interval(0.3, 1.0, curve: Curves.easeOutSine),
           ),
         );
-
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Interval(0.8, 1.0, curve: Curves.easeIn),
-      ),
-    );
 
     _animationController.forward();
   }
