@@ -13,7 +13,7 @@ sidebar_position: 1
 
 Since I, the humble developer, lack a $99 paid developer account, releasing it to the App Store is currently not possible. 
 
-**We no longer provide pre-signed IPA files.** To run UNIChat on your iOS device, you must build it from source and install it using Xcode on your own machine.
+To run UNIChat on your iOS device, you must build it from source and install it using Xcode on your own machine.
 
 ### 🛠️ How to Install
 

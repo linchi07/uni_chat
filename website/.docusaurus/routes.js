@@ -39,7 +39,7 @@ export default [
   },
   {
     path: '/blog',
-    component: ComponentCreator('/blog', 'b2f'),
+    component: ComponentCreator('/blog', 'e00'),
     exact: true
   },
   {
@@ -53,28 +53,8 @@ export default [
     exact: true
   },
   {
-    path: '/blog/authors/all-sebastien-lorber-articles',
-    component: ComponentCreator('/blog/authors/all-sebastien-lorber-articles', '4a1'),
-    exact: true
-  },
-  {
-    path: '/blog/authors/yangshun',
-    component: ComponentCreator('/blog/authors/yangshun', 'a68'),
-    exact: true
-  },
-  {
-    path: '/blog/first-blog-post',
-    component: ComponentCreator('/blog/first-blog-post', '89a'),
-    exact: true
-  },
-  {
-    path: '/blog/long-blog-post',
-    component: ComponentCreator('/blog/long-blog-post', '9ad'),
-    exact: true
-  },
-  {
-    path: '/blog/mdx-blog-post',
-    component: ComponentCreator('/blog/mdx-blog-post', 'e9f'),
+    path: '/blog/authors/linchi',
+    component: ComponentCreator('/blog/authors/linchi', '95a'),
     exact: true
   },
   {
@@ -83,28 +63,18 @@ export default [
     exact: true
   },
   {
-    path: '/blog/tags/docusaurus',
-    component: ComponentCreator('/blog/tags/docusaurus', '704'),
+    path: '/blog/tags/release',
+    component: ComponentCreator('/blog/tags/release', '8e7'),
     exact: true
   },
   {
-    path: '/blog/tags/facebook',
-    component: ComponentCreator('/blog/tags/facebook', '858'),
+    path: '/blog/tags/unichat',
+    component: ComponentCreator('/blog/tags/unichat', 'cad'),
     exact: true
   },
   {
-    path: '/blog/tags/hello',
-    component: ComponentCreator('/blog/tags/hello', '299'),
-    exact: true
-  },
-  {
-    path: '/blog/tags/hola',
-    component: ComponentCreator('/blog/tags/hola', '00d'),
-    exact: true
-  },
-  {
-    path: '/blog/welcome',
-    component: ComponentCreator('/blog/welcome', 'd2b'),
+    path: '/blog/welcome-to-unichat',
+    component: ComponentCreator('/blog/welcome-to-unichat', '3b5'),
     exact: true
   },
   {
@@ -119,11 +89,11 @@ export default [
   },
   {
     path: '/docs',
-    component: ComponentCreator('/docs', '805'),
+    component: ComponentCreator('/docs', '2ee'),
     routes: [
       {
         path: '/docs',
-        component: ComponentCreator('/docs', 'b2f'),
+        component: ComponentCreator('/docs', 'c9f'),
         routes: [
           {
             path: '/docs/tags',
@@ -302,8 +272,14 @@ export default [
           },
           {
             path: '/docs',
-            component: ComponentCreator('/docs', '680'),
+            component: ComponentCreator('/docs', '62c'),
             routes: [
+              {
+                path: '/docs/advanced/blog-guide',
+                component: ComponentCreator('/docs/advanced/blog-guide', 'ad4'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
               {
                 path: '/docs/agents/agent-brief',
                 component: ComponentCreator('/docs/agents/agent-brief', '744'),
@@ -337,6 +313,12 @@ export default [
               {
                 path: '/docs/agents/user-identity',
                 component: ComponentCreator('/docs/agents/user-identity', '9ce'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/category/advanced-features',
+                component: ComponentCreator('/docs/category/advanced-features', 'ccc'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },

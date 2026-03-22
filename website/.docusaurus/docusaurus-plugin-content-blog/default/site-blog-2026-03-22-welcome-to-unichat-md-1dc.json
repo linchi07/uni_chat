@@ -1,0 +1,48 @@
+{
+  "permalink": "/blog/welcome-to-unichat",
+  "source": "@site/blog/2026-03-22-welcome-to-unichat.md",
+  "title": "V1.0 Preview Version Released",
+  "description": "Banner",
+  "date": "2026-03-22T00:00:00.000Z",
+  "tags": [
+    {
+      "inline": false,
+      "label": "Release",
+      "permalink": "/blog/tags/release",
+      "description": "Official version releases and announcements."
+    },
+    {
+      "inline": false,
+      "label": "UNICHAT",
+      "permalink": "/blog/tags/unichat",
+      "description": "Everything about the UNICHAT application."
+    }
+  ],
+  "readingTime": 2.62,
+  "hasTruncateMarker": true,
+  "authors": [
+    {
+      "name": "Linchi",
+      "title": "UNIChat Creator",
+      "url": "https://github.com/linchi07",
+      "page": {
+        "permalink": "/blog/authors/linchi"
+      },
+      "imageURL": "https://github.com/linchi07.png",
+      "key": "linchi"
+    }
+  ],
+  "frontMatter": {
+    "slug": "welcome-to-unichat",
+    "title": "V1.0 Preview Version Released",
+    "authors": [
+      "linchi"
+    ],
+    "image": "/img/blogs/v1.0beta1_banner.jpg",
+    "tags": [
+      "release",
+      "unichat"
+    ]
+  },
+  "unlisted": false
+}

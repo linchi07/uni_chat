@@ -17,3 +17,13 @@ hola:
   label: Hola
   permalink: /hola
   description: Hola tag description
+
+release:
+  label: Release
+  permalink: /release
+  description: Official version releases and announcements.
+
+unichat:
+  label: UNICHAT
+  permalink: /unichat
+  description: Everything about the UNICHAT application.

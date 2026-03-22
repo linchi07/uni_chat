@@ -84,11 +84,11 @@ function HeroVisual() {
           borderRadius: '20px', // 可选：让边缘更圆润
           overflow: 'hidden'    // 确保 GIF 不会超出圆角边界
         }}>
-          <video src={useBaseUrl(i18n.currentLocale === 'zh-Hans' ? '/img/homepage/title_cn.mp4' : '/img/homepage/title_en.mp4')} autoPlay loop muted playsInline style={{ 
-      width: '100%', 
-      height: '100%', 
-      objectFit: 'cover' // 这里的关键：让视频按比例缩放并裁剪填满容器
-    }}></video>
+          <video src={useBaseUrl(i18n.currentLocale === 'zh-Hans' ? '/img/homepage/title_cn.mp4' : '/img/homepage/title_en.mp4')} autoPlay loop muted playsInline style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }}></video>
         </div>
       </div>
     </div>
@@ -100,6 +100,7 @@ interface FeatureItem {
   description: React.ReactNode;
   icon: string;
   image: string;
+  video?: string;
 }
 
 function FeatureList() {
@@ -143,12 +144,13 @@ function FeatureList() {
         </Translate>
       ),
       icon: '🔌',
-      image: i18n.currentLocale === 'zh-Hans' ? '/img/homepage/multi_provider_cn.gif' : '/img/homepage/model_provider_en.gif'
+      image: i18n.currentLocale === 'zh-Hans' ? '/img/homepage/multi_provider_cn.gif' : '/img/homepage/model_provider_en.gif',
+      video: i18n.currentLocale === 'zh-Hans' ? '/img/homepage/multi_provider_cn.mp4' : '/img/homepage/multi_provider_en.mp4'
     },
   ];
 }
 
-function FeatureRow({ title, description, icon, image }: FeatureItem) {
+function FeatureRow({ title, description, icon, image, video }: FeatureItem) {
   return (
     <div className="feature-row">
       <div className="feature-text">
@@ -166,15 +168,30 @@ function FeatureRow({ title, description, icon, image }: FeatureItem) {
           borderRadius: '20px', // 可选：让边缘更圆润
           overflow: 'hidden'    // 确保 GIF 不会超出圆角边界
         }}>
-          <img
-            src={useBaseUrl(image)}
-            alt="App UI Interface"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain' // 如果想填满但不裁剪用 contain，如果想铺满用 cover
-            }}
-          />
+          {video ? (
+            <video
+              src={useBaseUrl(video)}
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+          ) : (
+            <img
+              src={useBaseUrl(image)}
+              alt="App UI Interface"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

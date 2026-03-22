@@ -1,0 +1,23 @@
+{
+  "id": "advanced/blog-guide",
+  "title": "如何编写博客文章",
+  "description": "本文将指导你如何在 UNIChat 官网（基于 Docusaurus）上编写和发布新的博客文章。",
+  "source": "@site/docs/advanced/blog-guide.md",
+  "sourceDirName": "advanced",
+  "slug": "/advanced/blog-guide",
+  "permalink": "/docs/advanced/blog-guide",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Advanced Features",
+    "permalink": "/docs/category/advanced-features"
+  },
+  "next": {
+    "title": "Development & Installation",
+    "permalink": "/docs/category/development--installation"
+  }
+}

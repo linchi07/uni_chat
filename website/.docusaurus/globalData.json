@@ -11,6 +11,11 @@
           "mainDocId": "core-concepts/branching",
           "docs": [
             {
+              "id": "advanced/blog-guide",
+              "path": "/docs/advanced/blog-guide",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "agents/agent-brief",
               "path": "/docs/agents/agent-brief",
               "sidebar": "tutorialSidebar"
@@ -118,6 +123,11 @@
             {
               "id": "/category/models--apis",
               "path": "/docs/category/models--apis",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "/category/advanced-features",
+              "path": "/docs/category/advanced-features",
               "sidebar": "tutorialSidebar"
             },
             {
