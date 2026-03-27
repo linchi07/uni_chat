@@ -227,6 +227,30 @@ class _ApiDb extends _$_ApiDb {
     );
   }
 
+  // Token Usage Statistics
+  Future<List<ApiKeyUsage>> getProviderUsage(
+    String providerId, {
+    DateTime? start,
+    DateTime? end,
+  }) {
+    var query = select(apiKeyUsages).join([
+      innerJoin(
+        apiKeysTable,
+        apiKeysTable.id.equalsExp(apiKeyUsages.apiKeyId),
+      ),
+    ]);
+
+    query.where(apiKeysTable.providerId.equals(providerId));
+    if (start != null) {
+      query.where(apiKeyUsages.time.isBiggerOrEqualValue(start));
+    }
+    if (end != null) {
+      query.where(apiKeyUsages.time.isSmallerOrEqualValue(end));
+    }
+
+    return query.map((row) => row.readTable(apiKeyUsages)).get();
+  }
+
   Future<int> insertProviderModelConfig(ProviderModelConfig config) =>
       into(providerModelConfigs).insert(config);
 
@@ -503,4 +527,10 @@ class ApiDatabase {
       _adb.getApiProviderByModelId(modelId);
   Future<void> updateApiKeyInvokeData(ApiKey key, String dataJson) =>
       _adb.updateApiKeyInvokeData(key, dataJson);
+
+  Future<List<ApiKeyUsage>> getProviderUsage(
+    String providerId, {
+    DateTime? start,
+    DateTime? end,
+  }) => _adb.getProviderUsage(providerId, start: start, end: end);
 }

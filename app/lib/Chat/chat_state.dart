@@ -32,6 +32,7 @@ class ChatState {
   // 临时存储上传的文件，当用户点击发送按钮的时候会被合并到messages里面
   final bool isLoading;
   final bool isResponding;
+  final bool isStreamingStarted;
   final StopSignal? stopSignal;
   late final ValueNotifier<List<ChatResponse>?> responses;
 
@@ -45,6 +46,7 @@ class ChatState {
     ValueNotifier<List<ChatResponse>?>? responses,
     this.isLoading = false,
     this.isResponding = false,
+    this.isStreamingStarted = false,
     this.stopSignal,
     this.error,
   }) {
@@ -64,6 +66,7 @@ class ChatState {
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     bool? isLoading,
     bool? isResponding,
+    bool? isStreamingStarted,
     StopSignal? stopSignal,
     AppException? error,
     ValueNotifier<List<ChatResponse>?>? responses,
@@ -78,6 +81,7 @@ class ChatState {
       uploadedFilesStash: uploadedFilesStash ?? this.uploadedFilesStash,
       isLoading: isLoading ?? this.isLoading,
       isResponding: isResponding ?? this.isResponding,
+      isStreamingStarted: isStreamingStarted ?? this.isStreamingStarted,
       stopSignal: stopSignal ?? this.stopSignal,
       error: error ?? this.error,
     );
@@ -127,6 +131,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     bool? isLoading,
     bool? isResponding,
+    bool? isStreamingStarted,
     StopSignal? stopSignal,
     AppException? error,
   }) {
@@ -138,6 +143,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       messagesList: messagesList,
       isLoading: isLoading,
       isResponding: isResponding,
+      isStreamingStarted: isStreamingStarted,
       stopSignal: stopSignal,
       error: error,
     );
@@ -154,6 +160,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       responses: state.responses,
       isLoading: state.isLoading,
       isResponding: state.isResponding,
+      isStreamingStarted: state.isStreamingStarted,
       stopSignal: state.stopSignal,
       error: null,
     );
@@ -177,6 +184,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       responses: state.responses,
       isLoading: false,
       isResponding: false,
+      isStreamingStarted: false,
       stopSignal: null,
       error: state.error,
     );
@@ -659,6 +667,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       try {
         await for (final chunk in stream) {
           if (stopSignal.isStopped) break;
+          if (!state.isStreamingStarted) {
+            stateCopyWith(isStreamingStarted: true);
+          }
           List<ChatResponse>? newBlock;
           if (chunk.content.isNotEmpty) {
             if (chunk.type == MessageChunkType.text) {

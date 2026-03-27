@@ -12,6 +12,7 @@ import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/error_handling.dart';
 
 import '../Chat/chat_models.dart';
+import '../utils/tokenizer.dart';
 import 'api_key_resolver.dart';
 
 class _ApiResponse {
@@ -114,14 +115,57 @@ class ApiClient {
         modelRequestContent: modelRequestContent,
       );
       InvokeResult? invokeResult;
+      StringBuffer fullResponse = StringBuffer();
       await for (final response in s) {
         if (response.response != null) {
+          if (response.response!.type == MessageChunkType.text ||
+              response.response!.type == MessageChunkType.reasoning) {
+            fullResponse.write(response.response!.content);
+          }
           yield response.response!;
         }
         invokeResult = response.invokeResult;
       }
       if (invokeResult != null) {
-        await resolver.updateData(invokeResult);
+        // Calculate fallback usage if needed
+        TokenUsage? fallback;
+        if (invokeResult.usage == null && invokeResult.statusCode == 200) {
+          int promptTokens = 0;
+          // Estimate from all content types in modelRequestContent
+          for (var m in modelRequestContent.staticSystemMessages) {
+            promptTokens += m.tokens;
+          }
+          for (var m in modelRequestContent.dynamicSystemMessages) {
+            promptTokens += m.tokens;
+          }
+          for (var m in modelRequestContent.uiMessages) {
+            promptTokens += m.tokens;
+          }
+          for (var m in modelRequestContent.chatHistory) {
+            promptTokens += m.tokens;
+          }
+          for (var m in modelRequestContent.ragMessages) {
+            promptTokens += m.tokens;
+          }
+          for (var m in modelRequestContent.usrMessage) {
+            promptTokens += m.tokens;
+          }
+
+          int completionTokens = LLMTokenEstimator.estimateTokens(
+            fullResponse.toString(),
+          );
+          fallback = TokenUsage(
+            promptTokens: promptTokens,
+            completionTokens: completionTokens,
+          );
+        }
+
+        await resolver.updateData(
+          invokeResult,
+          modelId: model.id,
+          agentId: agentId,
+          fallbackUsage: fallback,
+        );
         if (invokeResult.statusCode == 200) break;
       } else {
         throw ApiException(ApiExceptionType.request_emptyBody);

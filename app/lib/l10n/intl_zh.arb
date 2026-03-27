@@ -494,5 +494,12 @@
   "restore": "还原",
   "close": "关闭",
   "back": "返回",
-  "version_preview": "V 1.0 Beta 预览版"
+  "version_preview": "V 1.0 Beta 预览版",
+  "token_usage": "Token 统计",
+  "usage_trend": "使用趋势",
+  "model_breakdown": "模型分布",
+  "total_tokens": "总 Token",
+  "prompt": "提示词",
+  "completion": "补全",
+  "no_data_period": "该时间段内无数据"
 }

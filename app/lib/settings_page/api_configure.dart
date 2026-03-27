@@ -11,6 +11,7 @@ import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paged_scroll/paged_scroll.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
+import 'package:uni_chat/api_configs/token_usage_dashboard.dart';
 import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
@@ -119,7 +120,11 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8.0),
                       ),
-                      onTap: () {},
+                      onTap: () {
+                        settingsMenuKey.currentState?.insertPage(
+                          TokenUsageDashboard(provider: provider),
+                        );
+                      },
                       tileColor: theme.zeroGradeColor,
                       leading: (img != null)
                           ? StdAvatar(length: 40, assetImage: AssetImage(img))

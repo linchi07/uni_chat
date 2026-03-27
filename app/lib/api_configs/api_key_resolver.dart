@@ -29,7 +29,12 @@ abstract class BaseApiKeyResolver {
   Future<ApiKey> resolveKey(Model model);
 
   /// This method will be called when an invoke is finished.Which should then write the invoke data to db.Such as 429s or 200s.
-  Future<void> updateData(InvokeResult invokeResult);
+  Future<void> updateData(
+    InvokeResult invokeResult, {
+    required String modelId,
+    String? agentId,
+    TokenUsage? fallbackUsage,
+  });
 
   /// On invoke a new call , this method will be called to select the most suitable resolver for the provider.
   /// Note that a db future containing  the keys and their invoke data (in json strings) are provided , which you can use in constructors.
@@ -206,12 +211,32 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
   }
 
   @override
-  Future<void> updateData(InvokeResult invokeResult) async {
+  Future<void> updateData(
+    InvokeResult invokeResult, {
+    required String modelId,
+    String? agentId,
+    TokenUsage? fallbackUsage,
+  }) async {
     if (selectedKey == null) return;
+
+    // Log the usage to database
+    final usage = invokeResult.usage ?? fallbackUsage;
+    if (usage != null && invokeResult.statusCode == 200) {
+      await ApiDatabase.instance.insertApikeyUsage(
+        ApiKeyUsage(
+          apiKeyId: selectedKey!.key.id,
+          modelId: modelId,
+          agentId: agentId,
+          time: DateTime.now(),
+          usage: usage,
+        ),
+      );
+    }
+
     if (invokeResult.statusCode == 200) {
       await ApiDatabase.instance.updateApiKeyInvokeData(
         selectedKey!.key,
-        jsonEncode(handleOk(invokeResult).toMap()),
+        jsonEncode(handleOk(invokeResult, fallbackUsage: fallbackUsage).toMap()),
       );
     } else if (invokeResult.statusCode == 429) {
       await ApiDatabase.instance.updateApiKeyInvokeData(
@@ -270,7 +295,10 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
     return id;
   }
 
-  GeneralApiKeyInvokeData handleOk(InvokeResult invokeData) {
+  GeneralApiKeyInvokeData handleOk(
+    InvokeResult invokeData, {
+    TokenUsage? fallbackUsage,
+  }) {
     var keyI = selectedKey!.invokeData;
     var dt = DateTime.timestamp();
     DateTime? rt;
@@ -283,7 +311,9 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
     } else {
       tut =
           keyI.todayUsedTokens +
-          ((invokeData.usage != null) ? invokeData.usage!.total : 0);
+          ((invokeData.usage != null)
+              ? invokeData.usage!.total
+              : (fallbackUsage?.total ?? 0));
       rtd = keyI.requestToday++;
     }
     var id = GeneralApiKeyInvokeData(

@@ -498,5 +498,12 @@
   "restore": "Restore",
   "close": "Close",
   "back": "Back",
-  "version_preview": "V 1.0 Beta Preview"
+  "version_preview": "V 1.0 Beta Preview",
+  "token_usage": "Token Usage",
+  "usage_trend": "Usage Trend",
+  "model_breakdown": "Model Breakdown",
+  "total_tokens": "Total Tokens",
+  "prompt": "Prompt",
+  "completion": "Completion",
+  "no_data_period": "No data in this period"
 }

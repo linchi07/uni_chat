@@ -1431,7 +1431,9 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     color: chatState.isResponding
-                        ? theme.primaryColor
+                        ? (chatState.isStreamingStarted
+                            ? theme.primaryColor
+                            : theme.errorColor)
                         : (chatState.isLoading || !chatState.isReady)
                         ? Colors.grey[600]
                         : theme.primaryColor,
@@ -1445,8 +1447,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                           ? null
                           : _sendMessage,
                       child: chatState.isResponding
-                          ? const Icon(
-                              Icons.stop,
+                          ? Icon(
+                              chatState.isStreamingStarted
+                                  ? Icons.stop
+                                  : Icons.close,
                               color: Colors.white,
                               size: 20,
                             )
