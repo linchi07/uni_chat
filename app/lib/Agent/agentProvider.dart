@@ -12,6 +12,7 @@ import 'package:uni_chat/main.dart';
 import '../Chat/chat_models.dart';
 import '../api_configs/api_models.dart';
 import '../utils/file_utils.dart';
+import '../utils/time_utils.dart';
 import 'agent_models.dart';
 
 class ModelSpecifics {
@@ -21,7 +22,7 @@ class ModelSpecifics {
   double frequencyPenalty = 0.5;
   double presencePenalty = 0.5;
   int maxGenerationTokens = 2560;
-  int maxContextTokens = 4096;
+  int maxContextTokens = 1000000000;
   bool enableTimeTelling = true;
   bool enableUsrLanguage = true;
   bool enableUsrSystemInformation = true;
@@ -32,7 +33,7 @@ class ModelSpecifics {
     this.frequencyPenalty = 0.5,
     this.presencePenalty = 0.5,
     this.maxGenerationTokens = 2560,
-    this.maxContextTokens = 4096,
+    this.maxContextTokens = 1000000000,
     this.enableTimeTelling = true,
     this.enableUsrLanguage = true,
     this.enableUsrSystemInformation = true,
@@ -292,7 +293,7 @@ class AgentProvider extends StateNotifier<Agent?> {
     int present,
   ) {
     while (present > target && messages.isNotEmpty) {
-      var toStrip = messages.removeLast();
+      var toStrip = messages.removeAt(0); // Remove the oldest message
       present -= toStrip.tokens;
     }
     return present;
@@ -316,286 +317,185 @@ class AgentProvider extends StateNotifier<Agent?> {
       ragMessages: [],
       stopSignal: stopSignal,
     );
-    rc.staticSystemMessages.add(
-      FormattedChatMessage(
-        type: ChatMessageType.text,
-        id: "systemPre",
-        sender: MessageSender.system,
-        content: "你的名字是${state!.name}",
-      ),
-    );
+
+    // 1. 构建静态系统指令 (Static Prefix)
+    StringBuffer staticPrompt = StringBuffer();
+    staticPrompt.writeln("你的名字是${state!.name}");
     if (state!.systemPrompt != null) {
-      rc.staticSystemMessages.add(
-        FormattedChatMessage(
-          type: ChatMessageType.text,
-          id: "system",
-          sender: MessageSender.system,
-          content: state!.systemPrompt!,
-        ),
-      );
+      staticPrompt.writeln(state!.systemPrompt!);
     }
+
+    // 注入人格信息
     var personaMsg = ref.read(personaProvider).getPersonaMessage();
     if (personaMsg != null) {
-      rc.staticSystemMessages.add(
-        personaMsg.copyWith(
-          content:
-              personaMsg.content +
-              (state?.personaConfigure?.personaAdditionalInfo ?? ""),
-        ),
-      );
+      for (var part in personaMsg.parts) {
+        if (part.type == MessagePartType.text) {
+          staticPrompt.writeln(part.content);
+        }
+      }
+      if (state?.personaConfigure?.personaAdditionalInfo != null) {
+        staticPrompt.writeln(state!.personaConfigure!.personaAdditionalInfo!);
+      }
     }
+
+    // 注入用户语言和系统信息 (静态，因为极少变动)
     if (state!.modelConfigure.enableUsrLanguage) {
-      //TODO: 获取用户语言
-      rc.staticSystemMessages.add(
-        FormattedChatMessage(
-          type: ChatMessageType.text,
-          id: "usr_language",
-          sender: MessageSender.system,
-          content: "用户语言为 ${PlatForm().languageCode}",
-        ),
-      );
+      staticPrompt.writeln("使用${PlatForm().languageCode}和用户交流");
     }
     if (state!.modelConfigure.enableUsrSystemInformation) {
-      rc.staticSystemMessages.add(
-        FormattedChatMessage(
-          type: ChatMessageType.text,
-          id: "usr_system_information",
-          sender: MessageSender.system,
-          content: "用户系统信息为：${PlatForm().platformInfo}",
-        ),
-      );
+      staticPrompt.writeln("用户使用${PlatForm().platformInfo}系统");
     }
+
+    // 注入 XML 标签说明
+    staticPrompt.writeln("\n[重要指令]");
+    staticPrompt.writeln(
+      "你将收到包含 <system_metadata> 标签的消息。该标签内包含的是系统注入的当前客观环境事实（如当前时间），请将其作为推断上下文的基准信息，而非用户对话内容。",
+    );
+
+    rc.staticSystemMessages.add(
+      FormattedChatMessage(
+        id: "system_static",
+        sender: MessageSender.system,
+        parts: [
+          MessagePart(
+            type: MessagePartType.text,
+            content: staticPrompt.toString(),
+          ),
+        ],
+      ),
+    );
+
+    // 2. 处理对话历史
+    var t1 = await processChatMessage(history, rc.chatHistory);
+
+    // 3. 注入动态元数据 (Dynamic Metadata - User Role)
+    // 放在历史记录之后，当前提问之前
     if (state!.modelConfigure.enableTimeTelling) {
+      final now = DateTime.now();
+      final lastMsgTime = history.isNotEmpty ? history.last.timestamp : null;
+
+      final timeStr = TimeUtils.formatTimeForCache(now);
+      final gapDesc = TimeUtils.getTimeGapDescription(now, lastMsgTime);
+
+      StringBuffer metadataBuffer = StringBuffer();
+      metadataBuffer.writeln("<system_metadata>");
+      metadataBuffer.writeln("<current_time>$timeStr</current_time>");
+      if (gapDesc != null) {
+        metadataBuffer.writeln("<time_gap>$gapDesc</time_gap>");
+      }
+      metadataBuffer.write("</system_metadata>");
+
       rc.dynamicSystemMessages.add(
         FormattedChatMessage(
-          type: ChatMessageType.text,
           id: "usr_time",
-          sender: MessageSender.system,
-          content: "当前时间为：${DateTime.now().toIso8601String()}",
+          sender: MessageSender.user, // 重写为 User 角色以符合静动分离策略
+          parts: [
+            MessagePart(
+              type: MessagePartType.text,
+              content: metadataBuffer.toString(),
+            ),
+          ],
         ),
       );
     }
-    var t1 = await processChatMessage(history, rc.chatHistory);
+
+    // 4. 处理用户当前提问
     int t2 = 0;
     if (lastMessage != null) {
       t2 = await processChatMessage([lastMessage], rc.usrMessage);
     }
+
     rc.modelConfigure = state!.modelConfigure;
-    var t3 = 0;
-    for (var i in rc.uiMessages) {
-      t3 += i.tokens;
-    }
-    var t4 = 0;
-    for (var i in rc.staticSystemMessages) {
-      t4 += i.tokens;
-    }
-    var t5 = 0;
-    for (var i in rc.dynamicSystemMessages) {
-      t5 += i.tokens;
-    }
-    if (t1 + t2 + t3 + t4 + t5 > state!.modelConfigure.maxGenerationTokens) {
-      //TODO:implement better logic
+    var t3 = rc.uiMessages.fold(0, (sum, i) => sum + i.tokens);
+    var t4 = rc.staticSystemMessages.fold(0, (sum, i) => sum + i.tokens);
+    var t5 = rc.dynamicSystemMessages.fold(0, (sum, i) => sum + i.tokens);
+
+    // 使用 maxContextTokens 判定
+    if (t1 + t2 + t3 + t4 + t5 > state!.modelConfigure.maxContextTokens) {
       var delta =
-          t1 + t2 + t3 + t4 + t5 - state!.modelConfigure.maxGenerationTokens;
+          t1 + t2 + t3 + t4 + t5 - state!.modelConfigure.maxContextTokens;
       stripTokens(rc.chatHistory, delta, t1);
     }
     return rc;
   }
 
   Future<int> processChatMessage(
-    List<ChatMessage> message,
+    List<ChatMessage> messages,
     List<FormattedChatMessage> output,
   ) async {
     if (state == null) {
       throw AgentException(AgentExceptionType.agentNotLoaded);
     }
     int totalTokens = 0;
-    for (var i in message) {
-      switch (i.sender) {
-        case MessageSender.internal:
-          continue; //skip the internal messages ,mostly message root
-        case MessageSender.user:
-          // 处理多个附件文件
-          if (i.attachedFiles != null && i.attachedFiles!.isNotEmpty) {
-            for (var at in i.attachedFiles!) {
-              var attachedFile = at;
-              switch (attachedFile.type) {
-                case FileTypeDefine.text:
-                  var fileContent = await attachedFile.getFile();
-                  output.add(
-                    FormattedChatMessage(
-                      type: ChatMessageType.text,
-                      id: i.id,
-                      sender: MessageSender.user,
-                      content:
-                          "Uploaded File： Name：${attachedFile.originalName}，fileContent：${await fileContent.readAsString(encoding: utf8)}",
-                    ),
-                  );
-                  break;
-                case FileTypeDefine.image:
-                  //当模型不支持图片识别的时候直接忽略图片
-                  if (!state!.client.model.abilities.contains(
-                    ModelAbility.visual,
-                  )) {
-                    continue;
-                  }
-                  if ( /*!state!.client.abilities.contains(
-                    ApiAbility.supportsFilesApi,
-                  )*/ true) {
-                    // 暂时fallback
-                    //当不支持文件API的时候我们必须一个个上传
-                    if (await (await attachedFile.getFile()).exists()) {
-                      var base64 = base64Encode(
-                        await (await attachedFile.getFile()).readAsBytes(),
-                      );
-                      output.add(
-                        FormattedChatMessage(
-                          type: ChatMessageType.base64Image,
-                          mimeType: attachedFile.mimeType,
-                          id: i.id,
-                          sender: MessageSender.user,
-                          content: base64,
-                        ),
-                      );
-                    }
-                    break;
-                  }
-                  var f =
-                      attachedFile.providerInfo[state!.client.provider.name];
-                  if (f == null ||
-                      !await (await attachedFile.getFile()).exists()) {
-                    break;
-                  }
-                  late String fid;
-                  if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
-                      !attachedFile.providerInfo.containsKey(
-                        state!.client.provider.id,
-                      )) {
-                    var id = await fileUpload(
-                      await attachedFile.getFile(),
-                      attachedFile.mimeType,
-                    );
+    for (var i in messages) {
+      if (i.sender == MessageSender.internal) continue;
 
-                    if (id == null) {
-                      throw Exception("上传失败");
-                    }
-                    fid = id;
-                  } else {
-                    fid = f.$1;
-                  }
-                  output.add(
-                    FormattedChatMessage(
-                      type: ChatMessageType.image,
-                      mimeType: attachedFile.mimeType,
-                      id: i.id,
-                      sender: MessageSender.user,
-                      content: fid,
-                    ),
-                  );
-                  break;
-                case FileTypeDefine.pdf:
-                  if ( /*!state!.model.abilities.contains(
-                    ApiAbility.supportsFilesApi,
-                  )*/ true) {
-                    // 暂时fallback
-                    //当不支持文件API的时候我们必须一个个上传
-                    if (await (await attachedFile.getFile()).exists()) {
-                      var base64 = base64Encode(
-                        await (await attachedFile.getFile()).readAsBytes(),
-                      );
-                      output.add(
-                        FormattedChatMessage(
-                          id: i.id,
-                          type: ChatMessageType.base64pdf,
-                          mimeType: attachedFile.mimeType,
-                          content: base64,
-                          sender: MessageSender.user,
-                        ),
-                      );
-                    }
-                    break;
-                  }
-                  var f = attachedFile.providerInfo[state!.client.provider.id];
-                  if (f == null ||
-                      !await (await attachedFile.getFile()).exists()) {
-                    break;
-                  }
-                  late String fid;
-                  if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
-                      !attachedFile.providerInfo.containsKey(
-                        state!.client.provider.id,
-                      )) {
-                    if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
-                        !attachedFile.providerInfo.containsKey(
-                          state!.client.provider.id,
-                        )) {
-                      var id = await fileUpload(
-                        await attachedFile.getFile(),
-                        attachedFile.mimeType,
-                      );
+      List<MessagePart> parts = [];
 
-                      if (id == null) {
-                        throw Exception("上传失败");
-                      }
-                      fid = id;
-                    } else {
-                      fid = f.$1;
-                    }
-                  } else {
-                    fid = f.$1;
-                  }
-                  output.add(
-                    FormattedChatMessage(
-                      mimeType: attachedFile.mimeType,
-                      type: ChatMessageType.pdf,
-                      id: i.id,
-                      sender: MessageSender.user,
-                      content: fid,
-                    ),
-                  );
-                  break;
-                default:
-                  break;
+      // 1. 处理多个附件文件
+      if (i.attachedFiles != null && i.attachedFiles!.isNotEmpty) {
+        for (var attachedFile in i.attachedFiles!) {
+          switch (attachedFile.type) {
+            case FileTypeDefine.text:
+              var fileContent = await attachedFile.getFile();
+              parts.add(
+                MessagePart(
+                  type: MessagePartType.text,
+                  content:
+                      "Uploaded File: Name: ${attachedFile.originalName}, Content: ${await fileContent.readAsString(encoding: utf8)}",
+                ),
+              );
+              break;
+            case FileTypeDefine.image:
+              if (!state!.client.model.abilities.contains(ModelAbility.visual))
+                continue;
+
+              if (await (await attachedFile.getFile()).exists()) {
+                var base64 = base64Encode(
+                  await (await attachedFile.getFile()).readAsBytes(),
+                );
+                parts.add(
+                  MessagePart(
+                    type: MessagePartType.base64Image,
+                    mimeType: attachedFile.mimeType,
+                    content: base64,
+                  ),
+                );
               }
-            }
+              break;
+            case FileTypeDefine.pdf:
+              if (await (await attachedFile.getFile()).exists()) {
+                var base64 = base64Encode(
+                  await (await attachedFile.getFile()).readAsBytes(),
+                );
+                parts.add(
+                  MessagePart(
+                    type: MessagePartType.base64pdf,
+                    mimeType: attachedFile.mimeType,
+                    content: base64,
+                  ),
+                );
+              }
+              break;
+            default:
+              break;
           }
-          if (i.content.isNotEmpty) {
-            output.add(
-              FormattedChatMessage(
-                type: ChatMessageType.text,
-                id: i.id,
-                sender: MessageSender.user,
-                content: i.content,
-              ),
-            );
-          }
-          totalTokens += output.last.tokens;
-          break;
-        case MessageSender.ai:
-          output.add(
-            FormattedChatMessage(
-              type: ChatMessageType.text,
-              id: i.id,
-              sender: MessageSender.ai,
-              content: i.content,
-            ),
-          );
-          totalTokens += output.last.tokens;
-          break;
-        /*
-          这里我们已经采用了全新的agent框架，不会在history中涉及system 消息了
-        case MessageSender.system:
-          output.add(
-            FormattedChatMessage(
-              type: ChatMessageType.text,
-              id: i.id,
-              sender: MessageSender.system,
-              content: i.content,
-            ),
-          );
-          break;*/
-        default:
-          break;
+        }
+      }
+
+      // 2. 处理文本内容
+      if (i.content.isNotEmpty) {
+        parts.add(MessagePart(type: MessagePartType.text, content: i.content));
+      }
+
+      if (parts.isNotEmpty) {
+        var formatted = FormattedChatMessage(
+          id: i.id,
+          sender: i.sender,
+          parts: parts,
+        );
+        output.add(formatted);
+        totalTokens += formatted.tokens;
       }
     }
     return totalTokens;

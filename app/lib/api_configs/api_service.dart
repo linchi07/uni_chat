@@ -1,10 +1,9 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
+import 'dart:math';
 
-import 'package:flutter/foundation.dart' show immutable;
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/api_configs/api_database.dart';
@@ -99,6 +98,8 @@ class ApiClient {
     required ModelRequestContent modelRequestContent,
     String? agentId,
   }) async* {
+    Set<String> triedKeys = {};
+    Map<String, ({String keyName, String lastError})> errorDetails = {};
     while (true) {
       if (modelRequestContent.stopSignal?.isStopped ?? false) break;
       var keysCandidate = ApiDatabase.instance.getAvailableApiKeys(provider.id);
@@ -108,24 +109,50 @@ class ApiClient {
       );
       if (modelRequestContent.stopSignal?.isStopped ?? false) break;
       var keyInfo = await resolver.resolveKey(model);
+      if (triedKeys.contains(keyInfo.id)) {
+        throw ApiKeyExhaustedException(errorDetails);
+      }
+      triedKeys.add(keyInfo.id);
+
       if (modelRequestContent.stopSignal?.isStopped ?? false) break;
-      var s = service.getStreamingResponse(
-        this,
-        keyInfo,
-        modelRequestContent: modelRequestContent,
-      );
+
       InvokeResult? invokeResult;
       StringBuffer fullResponse = StringBuffer();
-      await for (final response in s) {
-        if (response.response != null) {
-          if (response.response!.type == MessageChunkType.text ||
-              response.response!.type == MessageChunkType.reasoning) {
-            fullResponse.write(response.response!.content);
+      try {
+        var s = service.getStreamingResponse(
+          this,
+          keyInfo,
+          modelRequestContent: modelRequestContent,
+        );
+        await for (final response in s) {
+          if (response.response != null) {
+            if (response.response!.type == MessageChunkType.text ||
+                response.response!.type == MessageChunkType.reasoning) {
+              fullResponse.write(response.response!.content);
+            }
+            yield response.response!;
           }
-          yield response.response!;
+          invokeResult = response.invokeResult;
         }
-        invokeResult = response.invokeResult;
+      } catch (e) {
+        errorDetails[keyInfo.id] = (
+          keyName:
+              keyInfo.remark ??
+              "Key ${keyInfo.key.substring(0, min(8, keyInfo.key.length))}...",
+          lastError: e.toString(),
+        );
+        // 如果出错，我们需要手动更新一下数据库，否则该 key 可能会因为没有记录结果而不会进入冷却
+        await resolver.updateData(
+          InvokeResult(
+            statusCode: 500, // 假设 500，因为异常通常意味着请求层面失败
+            error: e.toString(),
+          ),
+          modelId: model.id,
+          agentId: agentId,
+        );
+        continue; // 尝试下一个 Key
       }
+
       if (invokeResult != null) {
         // Calculate fallback usage if needed
         TokenUsage? fallback;
@@ -166,9 +193,29 @@ class ApiClient {
           agentId: agentId,
           fallbackUsage: fallback,
         );
-        if (invokeResult.statusCode == 200) break;
+        if (invokeResult.statusCode == 200) {
+          break;
+        } else {
+          errorDetails[keyInfo.id] = (
+            keyName:
+                keyInfo.remark ??
+                "Key ${keyInfo.key.substring(0, min(8, keyInfo.key.length))}...",
+            lastError: "${invokeResult.statusCode}: ${invokeResult.error}",
+          );
+        }
       } else {
-        throw ApiException(ApiExceptionType.request_emptyBody);
+        errorDetails[keyInfo.id] = (
+          keyName:
+              keyInfo.remark ??
+              "Key ${keyInfo.key.substring(0, min(8, keyInfo.key.length))}...",
+          lastError: "Empty response body",
+        );
+        // 更新数据库，标记为失败
+        await resolver.updateData(
+          const InvokeResult(statusCode: 500, error: "Empty response body"),
+          modelId: model.id,
+          agentId: agentId,
+        );
       }
     }
   }
@@ -210,6 +257,20 @@ class ApiClient {
 }
 
 abstract class BaseApiService {
+  static BaseApiService fromType(ApiType type) {
+    switch (type) {
+      case ApiType.openaiResponses:
+        return OpenAiApiService();
+      case ApiType.openaiChatCompletions:
+        return OpenAiCompletionService();
+      case ApiType.google:
+        return GeminiApiService();
+    }
+  }
+
+  Future<List<String>> fetchAvailableModels(String endpoint, ApiKey apiKey) =>
+      throw UnimplementedError();
+
   Future<String?> fileUpload(
     ApiClient client,
     ApiKey apiKey, {
@@ -242,22 +303,65 @@ abstract class BaseApiService {
 }
 
 class OpenAiApiService extends BaseApiService {
+  @override
+  Future<List<String>> fetchAvailableModels(
+    String endpoint,
+    ApiKey apiKey,
+  ) async {
+    final httpClient = http.Client();
+    try {
+      final uri = Uri.parse('$endpoint/models');
+      final response = await httpClient.get(
+        uri,
+        headers: {'Authorization': 'Bearer ${apiKey.key}'},
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final List<dynamic> data = jsonResponse['data'] as List<dynamic>;
+        return data.map((e) => e['id'] as String).toList();
+      } else {
+        throw Exception(
+          'Failed to fetch models: ${response.statusCode} - ${response.body}',
+        );
+      }
+    } finally {
+      httpClient.close();
+    }
+  }
+
   void toContent(
     List<FormattedChatMessage> i,
     List<Map<String, dynamic>> contents,
   ) {
     for (final message in i) {
-      if (message.type == ChatMessageType.text) {
-        contents.add({'type': 'text', 'text': message.content});
-      } else if (message.type == ChatMessageType.image) {
-        contents.add({'type': 'input_image', 'file_id': message.content});
-      } else if (message.type == ChatMessageType.pdf) {
-        contents.add({'type': 'input_file', 'file_id': message.content});
-      } else if (message.type == ChatMessageType.base64Image) {
-        contents.add({
-          'type': 'input_image',
-          'image_url': "data:${message.mimeType};base64,${message.content}",
-        });
+      for (final part in message.parts) {
+        switch (part.type) {
+          case MessagePartType.text:
+            contents.add({'type': 'text', 'text': part.content});
+            break;
+          case MessagePartType.image:
+            throw UnimplementedError("Currently we don't support the file api");
+            contents.add({'type': 'input_image', 'file_id': part.content});
+            break;
+          case MessagePartType.pdf:
+            throw UnimplementedError("Currently we don't support the file api");
+            //暂时不支持file api，所以一切都是base64的 普通的image和 pdf 暂时都throw 错误
+            contents.add({'type': 'input_file', 'file_id': part.content});
+            break;
+          case MessagePartType.base64Image:
+            contents.add({
+              'type': 'input_image',
+              'image_url': "data:${part.mimeType};base64,${part.content}",
+            });
+            break;
+          case MessagePartType.base64pdf:
+            contents.add({
+              'type': 'input_file',
+              'file_url': "data:${part.mimeType};base64,${part.content}",
+            });
+            break;
+        }
       }
     }
   }
@@ -611,37 +715,38 @@ class OpenAiCompletionService extends OpenAiApiService {
     List<Map<String, dynamic>> contents,
   ) {
     for (final message in i) {
-      if (message.type == ChatMessageType.text) {
-        contents.add({
-          'role': getSender(message.sender),
-          'content': message.content,
-        });
-      } else if (message.type == ChatMessageType.image) {
-        /*
-        contents.add({
-          'role': getSender(message.sender),
-          'type': 'input_image',
-          'content': message.content,
-        });*/
-        //这里我也不清楚，但是根据文档没有说可以上传图片
-      } else if (message.type == ChatMessageType.pdf) {
-        /*
-        contents.add({
-          'role': getSender(message.sender),
-          'type': 'input_file',
-          'content': message.content,
-        });*/
-      } else if (message.type == ChatMessageType.base64Image) {
-        contents.add({
-          'role': getSender(message.sender),
-          'content': [
-            {
+      List<Map<String, dynamic>> messageParts = [];
+      for (final part in message.parts) {
+        switch (part.type) {
+          case MessagePartType.text:
+            messageParts.add({'type': 'text', 'text': part.content});
+            break;
+          case MessagePartType.image:
+            // Standard OpenAI doesn't use file_id for images in Chat Completions usually,
+            // but we keep consistent with what was there or what's expected.
+            break;
+          case MessagePartType.pdf:
+            break;
+          case MessagePartType.base64Image:
+            messageParts.add({
               "type": "image_url",
               "image_url": {
-                "url": "data:${message.mimeType};base64,${message.content}",
+                "url": "data:${part.mimeType};base64,${part.content}",
               },
-            },
-          ],
+            });
+            break;
+          case MessagePartType.base64pdf:
+            break;
+        }
+      }
+
+      if (messageParts.isNotEmpty) {
+        contents.add({
+          'role': getSender(message.sender),
+          'content':
+              messageParts.length == 1 && messageParts[0]['type'] == 'text'
+              ? messageParts[0]['text']
+              : messageParts,
         });
       }
     }
@@ -786,6 +891,31 @@ class OpenAiCompletionService extends OpenAiApiService {
 
 class GeminiApiService extends BaseApiService {
   @override
+  Future<List<String>> fetchAvailableModels(
+    String endpoint,
+    ApiKey apiKey,
+  ) async {
+    final httpClient = http.Client();
+    try {
+      // Gemini models endpoint: https://generativelanguage.googleapis.com/v1beta/models?key=YOUR_API_KEY
+      final uri = Uri.parse('$endpoint/models?key=${apiKey.key}');
+      final response = await httpClient.get(uri);
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final List<dynamic> models = jsonResponse['models'] as List<dynamic>;
+        return models.map((e) => e['name'] as String).toList();
+      } else {
+        throw Exception(
+          'Failed to fetch models: ${response.statusCode} - ${response.body}',
+        );
+      }
+    } finally {
+      httpClient.close();
+    }
+  }
+
+  @override
   Future<String?> fileUpload(
     ApiClient client,
     ApiKey apiKey, {
@@ -864,49 +994,35 @@ class GeminiApiService extends BaseApiService {
     List<Map<String, dynamic>> contents,
   ) {
     for (final message in prompt) {
-      if (message.type == ChatMessageType.text) {
-        contents.add({
-          'role': getRole(message.sender),
-          'parts': [
-            {'text': message.content},
-          ],
-        });
-      } else if (message.type == ChatMessageType.image) {
-        contents.add({
-          'role': getRole(message.sender),
-          'parts': [
-            {
+      List<Map<String, dynamic>> parts = [];
+      for (final part in message.parts) {
+        switch (part.type) {
+          case MessagePartType.text:
+            parts.add({'text': part.content});
+            break;
+          case MessagePartType.image:
+          case MessagePartType.pdf:
+            throw UnimplementedError('Files api has not been implemented yet');
+            parts.add({
               'file_data': {
-                'mime_type': message.mimeType!,
-                "file_uri": message.content,
+                'mime_type': part.mimeType!,
+                "file_uri": part.content,
               },
-            },
-          ],
-        });
-      } else if (message.type == ChatMessageType.pdf) {
-        contents.add({
-          'role': getRole(message.sender),
-          'parts': [
-            {
-              'file_data': {
-                'mime_type': message.mimeType!,
-                "file_uri": message.content,
-              },
-            },
-          ],
-        });
-      } else if (message.type == ChatMessageType.base64Image) {
-        contents.add({
-          'role': getRole(message.sender),
-          'parts': [
-            {
+            });
+            break;
+          case MessagePartType.base64Image:
+          case MessagePartType.base64pdf:
+            parts.add({
               'inline_data': {
-                'mime_type': message.mimeType!,
-                "data": message.content,
+                'mime_type': part.mimeType!,
+                "data": part.content,
               },
-            },
-          ],
-        });
+            });
+            break;
+        }
+      }
+      if (parts.isNotEmpty) {
+        contents.add({'role': getRole(message.sender), 'parts': parts});
       }
     }
   }
@@ -951,23 +1067,24 @@ class GeminiApiService extends BaseApiService {
     );
     buildRequestBody(modelRequestContent.usrMessage, contents);
 
-    final List<Map<String, dynamic>> sysMsg = [];
+    final List<Map<String, dynamic>> sysMsgParts = [];
     List<FormattedChatMessage> formattedSysMsg = [
       ...modelRequestContent.staticSystemMessages,
       ...modelRequestContent.dynamicSystemMessages,
     ];
 
     for (final message in formattedSysMsg) {
-      sysMsg.add({'text': message.content});
+      for (final part in message.parts) {
+        if (part.type == MessagePartType.text) {
+          sysMsgParts.add({'text': part.content});
+        }
+      }
     }
 
     request.body = jsonEncode({
       'contents': contents,
       //Gemini的系统指令是独立的，而且必须在开头，可恶的谷歌这样做就是不让我命中cache是吧。
-      "systemInstruction": {
-        'role': "咕噜咕噜",
-        'parts': sysMsg,
-      }, //根据api文档，role这里填什么都行
+      "systemInstruction": {'role': "system", 'parts': sysMsgParts},
       "generationConfig": {
         //"temperature": modelRequestContent.modelConfigure.temperature,
         //"topP": modelRequestContent.modelConfigure.topP,

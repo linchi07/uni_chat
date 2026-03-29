@@ -60,7 +60,20 @@
   "api_key":"API Key",
   "add_api_key":"Add API key",
   "api_key_set":"API key set",
+  "my_api_no_key":"My API does not need an API key",
+  "no_key_needed":"No API Key Needed",
+  "delete_keys_warning":"Checking this will delete all existing API keys. Continue?",
   "api_key_total":"{apiKey} total",
+  "auto_fetch_models":"Auto Fetch Models",
+  "fetching_models": "Fetching models...",
+  "matching_models": "Matching models...",
+  "no_models_found": "No models were found. Please verify your API configuration or endpoint.",
+  "match_review_title":"Review Model Matches",
+  "match_confirmed":"Confirmed",
+  "match_suggested":"Suggested",
+  "match_unsupported":"Unmatched",
+  "add_confirmed_models":"Add {count} models",
+  "no_api_key_added_warning":"Please add an API key or check 'No Key Needed' first.",
   "@api_key_total": {
     "placeholders": {
       "apiKey": {}
@@ -84,6 +97,12 @@
   "select_model_hint":"Please select a model",
   "no_results":"No results",
   "create_new_model":"Create new model",
+  "abandon_match_title": "Are you sure you want to abandon?",
+  "abandon_match_subtitle": "Unsaved matching results will be lost.",
+  "continue_editing": "Continue Editing",
+  "abandon_and_exit": "Abandon and Exit",
+  "fetch_failed": "Fetch Failed",
+  "retry": "Retry",
   "show_all_models": "Show all models",
   "show_available_models": "Show available models",
   "save":"Save",
@@ -114,6 +133,7 @@
   "generate_message": "Generate message",
   "message_no_content": "Something went wrong , the model returns a message without content.",
   "drop_files_hint":"Drop files here",
+  "generating_title":"Generating conversation title...",
   "send_a_message_hint":"Send a message",
   "ui_editing":"Editing UI",
   "ui_edited":"Edited UI",
@@ -434,6 +454,17 @@
   "apiEx_request_apiFail": "api failed to respond",
   "apiEx_request_other": "api error ",
   "apiEx_apikey_noAvailableKeys": "currently no keys are available for using",
+  "api_key_exhausted_title": "API Key Status Report",
+  "api_key_exhausted_subtitle": "In this round of requests,all keys have failed:",
+  "apiEx_apikey_noAvailableKeys_detailed": "All {count} available API Keys failed to request, click for details",
+  "@apiEx_apikey_noAvailableKeys_detailed": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "error_details": "Error Details",
+  "status_code": "Status Code",
+  "error_message": "Error Message",
   "ex_while" : "while {condition}",
   "@ex_while":{
     "placeholders":{

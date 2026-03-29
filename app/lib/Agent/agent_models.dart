@@ -34,7 +34,7 @@ class ModelConfigure {
     required this.modelId,
     required this.providerId,
     this.maxGenerationTokens = 2560,
-    this.maxContextTokens = 4096,
+    this.maxContextTokens = 1000000000,
     this.parameters = const [],
     this.enableTimeTelling = true,
     this.enableUsrLanguage = true,

@@ -307,7 +307,7 @@ class OverlayWrapper extends StatefulWidget {
   static void removeOverlay(BuildContext context) {
     final overlayRef = OverlayReference.of(context);
     if (overlayRef != null) {
-      overlayRef.overlayState.removeOverlay();
+      overlayRef.overlayState.closeOverlay();
       return;
     } else {
       throw Exception('No OverlayWrapper found in context');
@@ -354,17 +354,24 @@ class OverlayWrapper extends StatefulWidget {
   State<OverlayWrapper> createState() => OverlayWrapperState();
 }
 
-class OverlayWrapperState extends State<OverlayWrapper> {
+class OverlayWrapperState extends State<OverlayWrapper>
+    with TickerProviderStateMixin {
+  late AnimationController _animationController;
   OverlayEntry? _overlayEntry;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
   }
 
   @override
   void dispose() {
     removeOverlay();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -384,31 +391,33 @@ class OverlayWrapperState extends State<OverlayWrapper> {
     }
     _overlayEntry = OverlayEntry(
       builder: (context) {
-        // 这里的浮层内容通常需要定位 (如 Positioned, Align 或 Center)
-        // 这是一个简单的居中定位示例
-        return Stack(
-          key: ValueKey(ovlId),
-          children: [
-            ModalBarrier(
-              color: Colors.black.withAlpha(90),
-              dismissible: barrierDismissible,
-              onDismiss: () {
-                closeOverlay();
-              },
-            ),
-            Center(
-              child: OverlayReference(
-                overlayState: this,
-                child: OverlayWrapper(
-                  child: OverlayPortalScope(child: overlayContent),
+        return FadeTransition(
+          opacity: _animationController,
+          child: Stack(
+            key: ValueKey(ovlId),
+            children: [
+              ModalBarrier(
+                color: Colors.black.withAlpha(90),
+                dismissible: barrierDismissible,
+                onDismiss: () {
+                  closeOverlay();
+                },
+              ),
+              Center(
+                child: OverlayReference(
+                  overlayState: this,
+                  child: OverlayWrapper(
+                    child: OverlayPortalScope(child: overlayContent),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
     Overlay.of(context).insert(_overlayEntry!);
+    _animationController.forward(from: 0.0);
   }
 
   /// 移除 OverlayEntry
@@ -425,6 +434,7 @@ class OverlayWrapperState extends State<OverlayWrapper> {
     if (!(await onClose?.call() ?? true)) {
       return;
     }
+    await _animationController.reverse();
     removeOverlay();
   }
 

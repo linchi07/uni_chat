@@ -46,7 +46,7 @@ class UNIChatAbout extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            "V1.0 Beta 1",
+            "V1.0 Beta 2",
             style: TextStyle(fontSize: 16),
             textAlign: TextAlign.center,
           ),

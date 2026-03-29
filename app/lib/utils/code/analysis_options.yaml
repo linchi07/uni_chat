@@ -1,0 +1,36 @@
+# This file is generated to ignore warnings and lints in this directory
+# while preserving hard compiler errors.
+# The code in this directory is considered "legacy" or "messy" and not
+# subject to the project's overall linting standards.
+
+analyzer:
+  errors:
+    # Ignore common warnings and infos to reduce noise
+    deprecated_member_use: ignore
+    unused_import: ignore
+    file_names: ignore
+    depend_on_referenced_packages: ignore
+    use_key_in_widget_constructors: ignore
+    sort_child_properties_last: ignore
+    unnecessary_string_escapes: ignore
+    library_private_types_in_public_api: ignore
+    avoid_print: ignore
+    use_super_parameters: ignore
+    strict_top_level_inference: ignore
+    unused_element_parameter: ignore
+    curly_braces_in_flow_control_structures: ignore
+    non_constant_identifier_names: ignore
+    unnecessary_this: ignore
+    unnecessary_nullable_for_final_variable_declarations: ignore
+    unnecessary_string_interpolations: ignore
+    always_put_required_named_parameters_first: ignore
+    prefer_const_constructors: ignore
+    prefer_const_literals_to_create_immutables: ignore
+    avoid_renaming_method_parameters: ignore
+    prefer_const_constructors_in_immutables: ignore
+    annotate_overrides: ignore
+
+linter:
+  rules:
+    # Explicitly clear rules from inherited configuration
+    []

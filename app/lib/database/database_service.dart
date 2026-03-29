@@ -71,7 +71,7 @@ class DatabaseService {
 
   // --- Agent CRUD ---
   Future<void> createOrUpdateAgent(AgentData agent) async {
-    await _db.into(_db.agents).insert(agent, mode: InsertMode.insertOrReplace);
+    await _db.into(_db.agents).insertOnConflictUpdate(agent);
   }
 
   Future<AgentData?> getAgent(String agentId) async {
@@ -539,18 +539,15 @@ ORDER BY t.depth DESC;
           const PersonasCompanion(isDefault: Value(false)),
         );
       }
-      await _db
-          .into(_db.personas)
-          .insert(
-            PersonaDbModel(
-              id: persona.id,
-              name: persona.name,
-              content: persona.content,
-              data: persona.data,
-              isDefault: persona.isDefault,
-            ),
-            mode: InsertMode.insertOrReplace,
-          );
+      await _db.into(_db.personas).insertOnConflictUpdate(
+        PersonaDbModel(
+          id: persona.id,
+          name: persona.name,
+          content: persona.content,
+          data: persona.data,
+          isDefault: persona.isDefault,
+        ),
+      );
     });
   }
 

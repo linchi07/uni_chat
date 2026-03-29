@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -8,7 +8,6 @@ import 'package:uni_chat/api_configs/database_models.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 
 import '../settings_page/api_configure.dart' show ApiConfigure;
-import 'package:uni_chat/error_handling.dart';
 import 'database_converters.dart';
 
 part 'api_database.g.dart';
@@ -25,10 +24,10 @@ part 'api_database.g.dart';
 )
 class _ApiDb extends _$_ApiDb {
   _ApiDb() : super(_onOpen());
-  _ApiDb.connect(DatabaseConnection connection) : super(connection);
+  _ApiDb.connect(DatabaseConnection super.connection);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   static QueryExecutor _onOpen() {
     return driftDatabase(
@@ -52,11 +51,202 @@ class _ApiDb extends _$_ApiDb {
         await loadDefaultData();
       },
       onUpgrade: (mig, from, to) async {
-        if (from > to) {
-          throw DatabaseDowngradeException("api_config.db", from, to);
+        if (from < 2) {
+          // Add new columns to ApiKeyUsages
+          await customStatement(
+            'ALTER TABLE api_key_usages ADD COLUMN prompt_tokens INTEGER NOT NULL DEFAULT 0',
+          );
+          await customStatement(
+            'ALTER TABLE api_key_usages ADD COLUMN completion_tokens INTEGER NOT NULL DEFAULT 0',
+          );
+          await customStatement(
+            'ALTER TABLE api_key_usages ADD COLUMN total_tokens INTEGER NOT NULL DEFAULT 0',
+          );
+          await customStatement(
+            'ALTER TABLE api_key_usages ADD COLUMN cached_tokens INTEGER NOT NULL DEFAULT 0',
+          );
         }
       },
     );
+  }
+
+  // Token Stats Queries
+  Future<List<({DateTime time, int total})>> getUsageStats(
+    String providerId, {
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    var query = select(apiKeyUsages).join([
+      innerJoin(apiKeysTable, apiKeysTable.id.equalsExp(apiKeyUsages.apiKeyId)),
+    ]);
+
+    query.where(
+      apiKeysTable.providerId.equals(providerId) &
+          apiKeyUsages.time.isBetweenValues(start, end),
+    );
+
+    query.orderBy([OrderingTerm.desc(apiKeyUsages.time)]);
+
+    final results = await query.get();
+    return results.map((row) {
+      final usage = row.readTable(apiKeyUsages);
+      return (time: usage.time, total: usage.totalTokens ?? 0);
+    }).toList();
+  }
+
+  Future<List<({Model? model, String modelId, int total})>>
+  getModelUsageBuckets(
+    String providerId, {
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final totalSum = apiKeyUsages.totalTokens.sum();
+
+    var query = select(apiKeyUsages).join([
+      innerJoin(apiKeysTable, apiKeysTable.id.equalsExp(apiKeyUsages.apiKeyId)),
+      leftOuterJoin(models, models.id.equalsExp(apiKeyUsages.modelId)),
+    ]);
+
+    query.where(
+      apiKeysTable.providerId.equals(providerId) &
+          apiKeyUsages.time.isBetweenValues(start, end),
+    );
+
+    query.groupBy([apiKeyUsages.modelId]);
+    query.orderBy([OrderingTerm.desc(totalSum)]);
+
+    query.addColumns([totalSum]);
+    final results = await query.get();
+    return results.map((row) {
+      return (
+        model: row.readTableOrNull(models),
+        modelId: row.read<String>(apiKeyUsages.modelId)!,
+        total: row.read<int>(totalSum) ?? 0,
+      );
+    }).toList();
+  }
+
+  Future<List<({ApiKey key, int total})>> getKeyUsageBuckets(
+    String providerId, {
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final totalSum = apiKeyUsages.totalTokens.sum();
+
+    var query = select(apiKeyUsages).join([
+      innerJoin(apiKeysTable, apiKeysTable.id.equalsExp(apiKeyUsages.apiKeyId)),
+    ]);
+
+    query.where(
+      apiKeysTable.providerId.equals(providerId) &
+          apiKeyUsages.time.isBetweenValues(start, end),
+    );
+
+    query.groupBy([apiKeyUsages.apiKeyId]);
+    query.orderBy([OrderingTerm.desc(totalSum)]);
+
+    query.addColumns([totalSum]);
+    final results = await query.get();
+    return results.map((row) {
+      final keyData = row.readTable(apiKeysTable);
+      return (
+        key: ApiKey(
+          keyData.providerId,
+          keyData.id,
+          keyData.key,
+          remark: keyData.remark,
+          enabled: keyData.enabled,
+          rpm: keyData.rpm,
+          rpd: keyData.rpd,
+          tokenLimit: keyData.tokenLimit,
+        ),
+        total: row.read<int>(totalSum) ?? 0,
+      );
+    }).toList();
+  }
+
+  Future<({int prompt, int completion, int cached})> getUsageSummary(
+    String providerId, {
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final promptSum = apiKeyUsages.promptTokens.sum();
+    final completionSum = apiKeyUsages.completionTokens.sum();
+    final cachedSum = apiKeyUsages.cachedTokens.sum();
+
+    final query = selectOnly(apiKeyUsages).join([
+      innerJoin(apiKeysTable, apiKeysTable.id.equalsExp(apiKeyUsages.apiKeyId)),
+    ]);
+
+    query.addColumns([promptSum, completionSum, cachedSum]);
+    query.where(
+      apiKeysTable.providerId.equals(providerId) &
+          apiKeyUsages.time.isBetweenValues(start, end),
+    );
+
+    final row = await query.getSingle();
+    return (
+      prompt: row.read(promptSum) ?? 0,
+      completion: row.read(completionSum) ?? 0,
+      cached: row.read(cachedSum) ?? 0,
+    );
+  }
+
+  Future<List<({ApiKeyUsage usage, Model? model})>> getDetailedUsageLogs(
+    String providerId, {
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    var query = select(apiKeyUsages).join([
+      innerJoin(apiKeysTable, apiKeysTable.id.equalsExp(apiKeyUsages.apiKeyId)),
+      leftOuterJoin(models, models.id.equalsExp(apiKeyUsages.modelId)),
+    ]);
+
+    query.where(apiKeysTable.providerId.equals(providerId));
+    if (start != null) {
+      query.where(apiKeyUsages.time.isBiggerOrEqualValue(start));
+    }
+    if (end != null) {
+      query.where(apiKeyUsages.time.isSmallerOrEqualValue(end));
+    }
+
+    query.orderBy([OrderingTerm.desc(apiKeyUsages.time)]);
+
+    final results = await query.get();
+    return results.map((row) {
+      return (
+        usage: row.readTable(apiKeyUsages),
+        model: row.readTableOrNull(models),
+      );
+    }).toList();
+  }
+
+  Future<Map<String, ({int totalTokens, int callCount})>>
+  getAllProvidersUsageSummaries(DateTime start) async {
+    final totalSum = apiKeyUsages.totalTokens.sum();
+    final callCountCol = apiKeyUsages.apiKeyId.count();
+
+    final query = selectOnly(apiKeyUsages).join([
+      innerJoin(apiKeysTable, apiKeysTable.id.equalsExp(apiKeyUsages.apiKeyId)),
+    ]);
+
+    query.addColumns([totalSum, callCountCol, apiKeysTable.providerId]);
+    query.where(apiKeyUsages.time.isBiggerOrEqualValue(start));
+    query.groupBy([apiKeysTable.providerId]);
+
+    final results = await query.get();
+    final Map<String, ({int totalTokens, int callCount})> map = {};
+    for (final row in results) {
+      final pid = row.read(apiKeysTable.providerId);
+      if (pid != null) {
+        map[pid] = (
+          totalTokens: row.read(totalSum) ?? 0,
+          callCount: row.read(callCountCol) ?? 0,
+        );
+      }
+    }
+    return map;
+    // gemini 是先找记录再match 提供商，思路很奇怪，但是这样确实性能会更好一点
   }
 
   Future<void> insertModel(Model model) {
@@ -228,16 +418,14 @@ class _ApiDb extends _$_ApiDb {
   }
 
   // Token Usage Statistics
-  Future<List<ApiKeyUsage>> getProviderUsage(
+  Future<List<TypedResult>> getProviderUsage(
     String providerId, {
     DateTime? start,
     DateTime? end,
   }) {
     var query = select(apiKeyUsages).join([
-      innerJoin(
-        apiKeysTable,
-        apiKeysTable.id.equalsExp(apiKeyUsages.apiKeyId),
-      ),
+      innerJoin(apiKeysTable, apiKeysTable.id.equalsExp(apiKeyUsages.apiKeyId)),
+      leftOuterJoin(models, models.id.equalsExp(apiKeyUsages.modelId)),
     ]);
 
     query.where(apiKeysTable.providerId.equals(providerId));
@@ -248,7 +436,7 @@ class _ApiDb extends _$_ApiDb {
       query.where(apiKeyUsages.time.isSmallerOrEqualValue(end));
     }
 
-    return query.map((row) => row.readTable(apiKeyUsages)).get();
+    return query.get();
   }
 
   Future<int> insertProviderModelConfig(ProviderModelConfig config) =>
@@ -460,6 +648,7 @@ class ApiDatabase {
   }
 
   Future<void> init() async {
+    //触发检测，防止数据库版本不对导致的问题
     await _adb.customSelect('SELECT 1').get();
   }
 
@@ -528,9 +717,38 @@ class ApiDatabase {
   Future<void> updateApiKeyInvokeData(ApiKey key, String dataJson) =>
       _adb.updateApiKeyInvokeData(key, dataJson);
 
-  Future<List<ApiKeyUsage>> getProviderUsage(
+  Future<List<({DateTime time, int total})>> getTrendBuckets(
+    String providerId, {
+    required DateTime start,
+    required DateTime end,
+  }) => _adb.getUsageStats(providerId, start: start, end: end);
+
+  Future<({int prompt, int completion, int cached})> getUsageSummary(
+    String providerId, {
+    required DateTime start,
+    required DateTime end,
+  }) => _adb.getUsageSummary(providerId, start: start, end: end);
+
+  Future<List<({Model? model, String modelId, int total})>>
+  getModelUsageBuckets(
+    String providerId, {
+    required DateTime start,
+    required DateTime end,
+  }) => _adb.getModelUsageBuckets(providerId, start: start, end: end);
+
+  Future<List<({ApiKey key, int total})>> getKeyUsageBuckets(
+    String providerId, {
+    required DateTime start,
+    required DateTime end,
+  }) => _adb.getKeyUsageBuckets(providerId, start: start, end: end);
+
+  Future<List<({ApiKeyUsage usage, Model? model})>> getDetailedUsageLogs(
     String providerId, {
     DateTime? start,
     DateTime? end,
-  }) => _adb.getProviderUsage(providerId, start: start, end: end);
+  }) => _adb.getDetailedUsageLogs(providerId, start: start, end: end);
+
+  Future<Map<String, ({int totalTokens, int callCount})>>
+  getAllProvidersUsageSummaries(DateTime start) =>
+      _adb.getAllProvidersUsageSummaries(start);
 }

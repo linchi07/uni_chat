@@ -1032,6 +1032,113 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     });
   }
 
+  void _showErrorDetails(
+    BuildContext context,
+    ApiKeyExhaustedException exception,
+  ) {
+    OverlayPortalService.showDialog(
+      context,
+      height: 480,
+      width: 450,
+      backGroundColor: theme.zeroGradeColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Icon(Icons.report_problem_outlined, color: theme.errorColor),
+                const SizedBox(width: 8),
+                Text(
+                  S.of(context).api_key_exhausted_title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              S.of(context).api_key_exhausted_subtitle,
+              style: TextStyle(
+                color: theme.textColor.withAlpha(180),
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              itemCount: exception.details.length,
+              separatorBuilder: (context, index) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                var entry = exception.details.entries.elementAt(index);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.thirdGradeColor,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              entry.value.keyName,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            S.of(context).status_code,
+                            style: TextStyle(
+                              color: theme.textColor.withAlpha(120),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        entry.value.lastError,
+                        style: TextStyle(
+                          color: theme.errorColor,
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: StdButton(
+              onPressed: () => OverlayPortalService.hide(context),
+              child: Text(S.of(context).confirm),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _readAndAttachFile(NativeData f) async {
     //经过改造之后，就这样简单几行代码就能完成之前超长if的事情，而且还更准，更好用……
     var previewId = _uuid.v7();
@@ -1247,7 +1354,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               alignment: Alignment.center,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(right: 30),
+                  padding: EdgeInsets.only(
+                    right:
+                        (chatState.error is ApiKeyExhaustedException) ? 100 : 35,
+                  ),
                   child: Text(
                     chatState.error!.unwrapAndGetMessage(context),
                     maxLines: 1,
@@ -1258,6 +1368,26 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                     ),
                   ),
                 ),
+                if (chatState.error is ApiKeyExhaustedException)
+                  Positioned(
+                    right: 32,
+                    child: SizedBox(
+                      height: 28,
+                      child: StdButton(
+                        color: theme.errorColor,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        onPressed:
+                            () => _showErrorDetails(
+                              context,
+                              chatState.error as ApiKeyExhaustedException,
+                            ),
+                        child: Text(
+                          S.of(context).error_details,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ),
+                  ),
                 Positioned(
                   right: 2,
                   child: StdIconButton(
@@ -1265,6 +1395,62 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                     icon: Icons.cancel_outlined,
                     onPressed: () {
                       ref.read(chatStateProvider.notifier).clearError();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (chatState.isGeneratingTitle)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            height: 35,
+            decoration: BoxDecoration(
+              color: theme.primaryColor.withAlpha(50),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      S.of(context).generating_title,
+                      style: TextStyle(
+                        color: theme.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                Positioned(
+                  right: 2,
+                  height: 28,
+                  child: StdButton(
+                    color: theme.primaryColor,
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Text(
+                      textAlign: TextAlign.center,
+                      S.of(context).cancel,
+                      style: TextStyle(fontSize: 13),
+                    ),
+                    onPressed: () {
+                      ref
+                          .read(chatStateProvider.notifier)
+                          .stopTitleGeneration();
                     },
                   ),
                 ),
@@ -1425,59 +1611,30 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 child: SizedBox(
                   height: 35,
                   width: 35,
-                  child: Material(
-                    clipBehavior: Clip.hardEdge,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    color: chatState.isResponding
-                        ? (chatState.isStreamingStarted
-                            ? theme.primaryColor
-                            : theme.errorColor)
-                        : (chatState.isLoading || !chatState.isReady)
-                        ? Colors.grey[600]
-                        : theme.primaryColor,
-                    child: InkWell(
-                      splashColor: Colors.grey,
-                      onTap: chatState.isResponding
-                          ? () => ref
-                                .read(chatStateProvider.notifier)
-                                .stopGeneration()
-                          : (!chatState.isReady)
-                          ? null
-                          : _sendMessage,
-                      child: chatState.isResponding
-                          ? Icon(
-                              chatState.isStreamingStarted
-                                  ? Icons.stop
-                                  : Icons.close,
-                              color: Colors.white,
-                              size: 20,
-                            )
-                          : chatState.isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: Padding(
-                                padding: EdgeInsets.all(7.0),
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 3,
-                                ),
-                              ),
-                            )
-                          : (chatState.isReady)
-                          ? const Icon(
-                              Icons.arrow_forward_sharp,
-                              color: Colors.white,
-                              size: 20,
-                            )
-                          : const Icon(
-                              Icons.do_not_disturb_alt_sharp,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                    ),
+                  child: Builder(
+                    builder: (context) {
+                      var visual = _sendButtonState();
+                      return Material(
+                        clipBehavior: Clip.hardEdge,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        color: visual.color,
+                        child: InkWell(
+                          splashColor: Colors.grey,
+                          onTap: chatState.isResponding
+                              ? () => ref
+                                    .read(chatStateProvider.notifier)
+                                    .stopGeneration()
+                              : (!chatState.isReady ||
+                                    chatState.isGeneratingTitle ||
+                                    chatState.isLoading)
+                              ? null
+                              : _sendMessage,
+                          child: visual.icon,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -1485,6 +1642,49 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           ),
         ),
       ],
+    );
+  }
+
+  ({Widget icon, Color color}) _sendButtonState() {
+    if (!chatState.isReady) {
+      return (
+        icon: const Icon(
+          Icons.do_not_disturb_alt_sharp,
+          size: 20,
+          color: Colors.white,
+        ),
+        color: Colors.grey[600]!,
+      );
+    }
+    if (chatState.isResponding) {
+      if (chatState.isStreamingStarted) {
+        return (
+          icon: const Icon(Icons.stop, size: 20, color: Colors.white),
+          color: theme.primaryColor,
+        );
+      } else {
+        return (
+          icon: const Icon(Icons.close, size: 20, color: Colors.white),
+          color: theme.errorColor,
+        );
+      }
+    }
+    if (chatState.isLoading || chatState.isGeneratingTitle) {
+      return (
+        icon: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+        ),
+        color: theme.primaryColor,
+      );
+    }
+    return (
+      icon: const Icon(
+        Icons.arrow_forward_sharp,
+        size: 20,
+        color: Colors.white,
+      ),
+      color: theme.primaryColor,
     );
   }
 

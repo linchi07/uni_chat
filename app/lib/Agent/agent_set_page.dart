@@ -857,7 +857,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                           onSelect: (p, m) async {
                             var n = ref.read(agentEditState.notifier);
                             var ms = n.state.modelSettings;
-                            ms.maxContextTokens = m.contextLength ?? 4096;
+                            ms.maxContextTokens = m.contextLength ?? 1000000000;
                             ms.maxGenerationTokens =
                                 m.maxCompletionTokens ?? 1024;
                             n.state = n.state.copyWith(provider: p, model: m);
@@ -893,7 +893,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                               onSelect: (p, m) async {
                                 var n = ref.read(agentEditState.notifier);
                                 var ms = n.state.modelSettings;
-                                ms.maxContextTokens = m.contextLength ?? 4096;
+                                ms.maxContextTokens = m.contextLength ?? 1000000000;
                                 ms.maxGenerationTokens =
                                     m.maxCompletionTokens ?? 1024;
                                 n.state = n.state.copyWith(

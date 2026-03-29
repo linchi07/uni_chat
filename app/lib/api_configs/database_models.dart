@@ -81,6 +81,10 @@ class ApiKeyUsages extends Table {
   TextColumn get agentId => text().nullable()();
   DateTimeColumn get time => dateTime()();
   TextColumn get usage => text().map(TokenUsageConverter())();
+  IntColumn get promptTokens => integer().withDefault(const Constant(0))();
+  IntColumn get completionTokens => integer().withDefault(const Constant(0))();
+  IntColumn get totalTokens => integer().withDefault(const Constant(0))();
+  IntColumn get cachedTokens => integer().withDefault(const Constant(0))();
 }
 
 class ApiKeysTable extends Table {

@@ -85,13 +85,16 @@ class StdButtonOutlined extends ConsumerWidget {
         splashColor: c.withAlpha(50),
         onTap: onPressed,
         onLongPress: onLongPress,
-        child: IconTheme(
-          data: IconThemeData(
-            color: (enabled) ? theme.getTextColor(c) : c,
-            size: 20,
-            weight: 300,
+        child: Padding(
+          padding: padding ?? const EdgeInsets.all(4.0),
+          child: IconTheme(
+            data: IconThemeData(
+              color: (enabled) ? theme.getTextColor(c) : c,
+              size: 20,
+              weight: 300,
+            ),
+            child: Center(child: child),
           ),
-          child: Center(child: child),
         ),
       ),
     );

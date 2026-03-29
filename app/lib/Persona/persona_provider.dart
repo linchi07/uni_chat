@@ -73,10 +73,9 @@ class Persona {
     }
     var msgContent = "用户的名字是$name，$content,$dataToString";
     return FormattedChatMessage(
-      type: ChatMessageType.text,
       id: "persona",
       sender: MessageSender.system,
-      content: msgContent,
+      parts: [MessagePart(type: MessagePartType.text, content: msgContent)],
     );
   }
 

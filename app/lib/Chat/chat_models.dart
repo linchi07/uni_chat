@@ -225,53 +225,65 @@ class ChatMessage {
   }
 }
 
-enum ChatMessageType { text, image, pdf, base64Image, base64pdf }
+enum MessagePartType { text, image, pdf, base64Image, base64pdf }
+
+class MessagePart {
+  final MessagePartType type;
+  final String content;
+  final String? mimeType;
+
+  MessagePart({required this.type, required this.content, this.mimeType});
+
+  int get tokens {
+    switch (type) {
+      case MessagePartType.text:
+        return LLMTokenEstimator.estimateTokens(content);
+      case MessagePartType.image:
+      case MessagePartType.pdf:
+      case MessagePartType.base64Image:
+      case MessagePartType.base64pdf:
+        return 200;
+    }
+  }
+
+  Map<String, dynamic> toMap() {
+    return {'type': type.index, 'content': content, 'mimeType': mimeType};
+  }
+
+  factory MessagePart.fromMap(Map<String, dynamic> map) {
+    return MessagePart(
+      type: MessagePartType.values[map['type']],
+      content: map['content'],
+      mimeType: map['mimeType'],
+    );
+  }
+}
 
 //file实际上只是pdf而已，因为所有文本类型的文件都会直接转换为提示词插入
 class FormattedChatMessage {
   final String id;
   final MessageSender sender;
-  final ChatMessageType type;
-  final String content;
-  final String? mimeType;
+  final List<MessagePart> parts;
 
   FormattedChatMessage({
-    required this.type,
     required this.id,
-    this.mimeType,
     required this.sender,
-    required this.content,
+    required this.parts,
   });
 
   int get tokens {
-    if (type == ChatMessageType.text) {
-      return LLMTokenEstimator.estimateTokens(content);
-    } else if (type == ChatMessageType.image) {
-      return 200;
-    } else if (type == ChatMessageType.pdf) {
-      return 200;
-    } else if (type == ChatMessageType.base64Image) {
-      return 200;
-    } else if (type == ChatMessageType.base64pdf) {
-      return 200;
-    } else {
-      return 0;
-    }
+    return parts.fold(0, (sum, part) => sum + part.tokens);
   }
 
   FormattedChatMessage copyWith({
     String? id,
     MessageSender? sender,
-    ChatMessageType? type,
-    String? content,
-    String? mimeType,
+    List<MessagePart>? parts,
   }) {
     return FormattedChatMessage(
-      type: type ?? this.type,
       id: id ?? this.id,
       sender: sender ?? this.sender,
-      content: content ?? this.content,
-      mimeType: mimeType ?? this.mimeType,
+      parts: parts ?? this.parts,
     );
   }
 
@@ -279,10 +291,14 @@ class FormattedChatMessage {
     List<FormattedChatMessage> messages,
   ) {
     return FormattedChatMessage(
-      type: ChatMessageType.text,
       id: messages[0].id,
       sender: messages[0].sender,
-      content: messages.map((e) => e.content).join('\n'),
+      parts: [
+        MessagePart(
+          type: MessagePartType.text,
+          content: messages.expand((m) => m.parts).where((p) => p.type == MessagePartType.text).map((p) => p.content).join('\n'),
+        )
+      ],
     );
   }
 
@@ -290,10 +306,7 @@ class FormattedChatMessage {
     MessageSender sender,
     List<FormattedChatMessage> messages,
   ) {
-    for (int i = 0; i < messages.length; i++) {
-      messages[i] = messages[i].copyWith(sender: sender);
-    }
-    return messages;
+    return messages.map((m) => m.copyWith(sender: sender)).toList();
   }
 }
 

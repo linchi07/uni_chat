@@ -4,14 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
+import 'package:uni_chat/api_configs/api_service.dart';
 import 'package:uni_chat/main.dart';
+import 'package:uni_chat/settings_page/model_discovery_widget.dart';
 import 'package:uni_chat/settings_page/settings.dart' show settingsMenuKey;
+import 'package:uni_chat/settings_page/token_usage_dashboard.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paged_scroll/paged_scroll.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
-import 'package:uni_chat/api_configs/token_usage_dashboard.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
@@ -102,12 +105,21 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
         ),
         Expanded(
           child: FutureBuilder(
-            future: ApiDatabase.instance.getAllProviders(),
+            future: Future.wait([
+              ApiDatabase.instance.getAllProviders(),
+              ApiDatabase.instance.getAllProvidersUsageSummaries(
+                DateTime.now().subtract(const Duration(days: 7)),
+              ),
+            ]),
             builder: (context, f) {
               if (!f.hasData) {
                 return const SizedBox();
               }
-              var providers = f.data!;
+              final providers = f.data![0] as List<ApiProvider>;
+              final summaries = f.data![1] as Map<String, ({int totalTokens, int callCount})>;
+              
+              final numberFormat = NumberFormat.compact();
+
               return ListView.builder(
                 padding: const EdgeInsets.all(16.0),
                 itemCount: providers.length,
@@ -122,7 +134,7 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                       ),
                       onTap: () {
                         settingsMenuKey.currentState?.insertPage(
-                          TokenUsageDashboard(provider: provider),
+                          TokenUsageDashboard(providerId: provider.id),
                         );
                       },
                       tileColor: theme.zeroGradeColor,
@@ -130,6 +142,27 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                           ? StdAvatar(length: 40, assetImage: AssetImage(img))
                           : null,
                       title: Text(provider.name),
+                      subtitle: Builder(
+                        builder: (context) {
+                          final stats = summaries[provider.id];
+                          if (stats == null || stats.callCount == 0) {
+                            return Text(
+                              "暂无近期使用记录",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.textColor.withAlpha(100),
+                              ),
+                            );
+                          }
+                          return Text(
+                            "7天消耗: ${numberFormat.format(stats.totalTokens)} tokens | 调用: ${stats.callCount} 次",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.textColor.withAlpha(150),
+                            ),
+                          );
+                        },
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -283,6 +316,7 @@ class ApiConfigure {
   late final String id;
   ProviderPresetType? type;
   bool showVerFlags;
+  bool noKeyNeeded;
   String? name;
   String? endpoint;
   ApiType? apiType;
@@ -301,6 +335,7 @@ class ApiConfigure {
     this.name,
     this.endpoint,
     this.showVerFlags = true,
+    this.noKeyNeeded = false,
     this.apiType,
     List<ApiKey>? keys,
     List<({Model model, ProviderModelConfig config})>? models,
@@ -373,6 +408,7 @@ class ApiConfigure {
         name: apip.name,
         endpoint: apip.endpoint,
         keys: keys,
+        noKeyNeeded: keys.any((k) => k.id.startsWith("@nokey+")),
         models: m,
       );
     }
@@ -387,6 +423,7 @@ class ApiConfigure {
     String? endpoint,
     ApiType? apiType,
     bool? showVerFlags,
+    bool? noKeyNeeded,
     List<ApiKey>? keys,
     List<({Model model, ProviderModelConfig config})>? models,
   }) {
@@ -397,6 +434,7 @@ class ApiConfigure {
       name: name ?? this.name,
       endpoint: endpoint ?? this.endpoint,
       showVerFlags: showVerFlags ?? this.showVerFlags,
+      noKeyNeeded: noKeyNeeded ?? this.noKeyNeeded,
       apiType: apiType ?? this.apiType,
       keys: keys ?? this.keys,
       models: models ?? this.models,
@@ -407,7 +445,7 @@ class ApiConfigure {
     return name != null &&
         endpoint != null &&
         apiType != null &&
-        keys.isNotEmpty &&
+        (noKeyNeeded || keys.isNotEmpty) &&
         models.isNotEmpty;
   }
 
@@ -426,7 +464,19 @@ class ApiConfigure {
     );
   }
 
-  Future<void> save() => ApiDatabase.instance.saveApiConfigure(this);
+  Future<void> save() async {
+    if (noKeyNeeded) {
+      keys = [
+        ApiKey(
+          id,
+          "@nokey+${Uuid().v7()}",
+          "request from unichat",
+          remark: "@nokey",
+        ),
+      ];
+    }
+    await ApiDatabase.instance.saveApiConfigure(this);
+  }
 }
 
 final StateProvider<ApiConfigure> apiConfigureProvider =
@@ -456,17 +506,39 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
     } else {
       indexShift = -1;
     }
+    spc = SplitViewController(
+      onPop: () {
+        _currentPage.value = -1;
+      },
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     children = [
       if (showBasic) SingleChildScrollView(child: _BaseInfo(theme: theme)),
-      ListView.builder(
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: ApiKeyInfo(theme: theme, apiKey: ac.keys[index]),
-          );
-        },
-        itemCount: ac.keys.length,
-      ),
+      if (ac.noKeyNeeded)
+        Center(
+          child: Text(
+            S.of(context).no_key_needed,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: theme.darkTextColor.withAlpha(150),
+            ),
+          ),
+        )
+      else
+        ListView.builder(
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: ApiKeyInfo(theme: theme, apiKey: ac.keys[index]),
+            );
+          },
+          itemCount: ac.keys.length,
+        ),
       ListView.builder(
         itemBuilder: (context, index) {
           return Padding(
@@ -481,11 +553,6 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
         itemCount: ac.models.length,
       ),
     ];
-    spc = SplitViewController(
-      onPop: () {
-        _currentPage.value = -1;
-      },
-    );
   }
 
   final ValueNotifier<int> _currentPage = ValueNotifier(0);
@@ -649,9 +716,13 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                             title: Text(S.of(context).api_keys_configure),
                             isSelected: page == 1 + indexShift,
                             subtitle: _indicator(
-                              ac.keys.isNotEmpty,
+                              ac.noKeyNeeded || ac.keys.isNotEmpty,
                               ValueKey("api key set"),
-                              S.of(context).api_keys_configured(ac.keys.length),
+                              ac.noKeyNeeded
+                                  ? S.of(context).no_key_needed
+                                  : S
+                                        .of(context)
+                                        .api_keys_configured(ac.keys.length),
                               S.of(context).api_keys_not_set,
                             ),
                             onTap: () {
@@ -905,16 +976,33 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
     main = _buildMain();
     ref.listen(apiConfigureProvider, (previous, next) {
       ac = next;
-      if (ac.keys != previous?.keys) {
-        children[1 + indexShift] = ListView.builder(
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-              child: ApiKeyInfo(theme: theme, apiKey: ac.keys[index]),
-            );
-          },
-          itemCount: ac.keys.length,
-        );
+      if (ac.keys != previous?.keys ||
+          ac.noKeyNeeded != previous?.noKeyNeeded) {
+        if (ac.noKeyNeeded) {
+          children[1 + indexShift] = Center(
+            child: Text(
+              S.of(context).no_key_needed,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: theme.darkTextColor.withAlpha(150),
+              ),
+            ),
+          );
+        } else {
+          children[1 + indexShift] = ListView.builder(
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 3,
+                ),
+                child: ApiKeyInfo(theme: theme, apiKey: ac.keys[index]),
+              );
+            },
+            itemCount: ac.keys.length,
+          );
+        }
         mainSetState?.call(() {});
       }
       if (ac.models != previous?.models) {
@@ -1217,15 +1305,15 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
   }
 }
 
-class ApiKeyHeader extends StatefulWidget {
+class ApiKeyHeader extends ConsumerStatefulWidget {
   const ApiKeyHeader({super.key, required this.theme});
   final ThemeConfig theme;
 
   @override
-  State<ApiKeyHeader> createState() => _ApiKeyState();
+  ConsumerState<ApiKeyHeader> createState() => _ApiKeyState();
 }
 
-class _ApiKeyState extends State<ApiKeyHeader> {
+class _ApiKeyState extends ConsumerState<ApiKeyHeader> {
   @override
   initState() {
     super.initState();
@@ -1233,6 +1321,7 @@ class _ApiKeyState extends State<ApiKeyHeader> {
 
   @override
   Widget build(BuildContext context) {
+    var ac = ref.watch(apiConfigureProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -1248,47 +1337,98 @@ class _ApiKeyState extends State<ApiKeyHeader> {
                   color: widget.theme.darkTextColor,
                 ),
               ),
-              Expanded(child: const SizedBox(width: 10)),
-              StdButton(
-                text: S.of(context).add_api_key,
-                onPressed: () {
-                  OverlayPortalService.showDialog(
-                    context,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 20,
-                    ),
-                    width: 450,
-                    child: Consumer(
-                      builder: (context, ref, c) {
-                        return ApiKeyEditMenu(
-                          theme: widget.theme,
-                          apiKey: ApiKey(
-                            ref.read(apiConfigureProvider).id,
-                            Uuid().v7(),
-                            "",
-                          ),
-                          onSave: (k) {
-                            var n = ref.read(apiConfigureProvider.notifier);
-                            n.state = n.state.copyWith(
-                              keys: [...n.state.keys, k],
-                            );
+              const SizedBox(width: 20),
+              StdCheckbox(
+                text: S.of(context).my_api_no_key,
+                value: ac.noKeyNeeded,
+                onChanged: (v) {
+                  if (v == true && ac.keys.isNotEmpty) {
+                    OverlayPortalService.showDialog(
+                      context,
+                      width: 400,
+                      backGroundColor: widget.theme.zeroGradeColor,
+                      child: Text(
+                        S.of(context).delete_keys_warning,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: widget.theme.darkTextColor,
+                        ),
+                      ),
+                      actions: [
+                        StdButton(
+                          text: S.of(context).cancel,
+                          onPressed: () => OverlayPortalService.hide(context),
+                        ),
+                        const SizedBox(width: 8),
+                        StdButton(
+                          text: S.of(context).confirm,
+                          color: widget.theme.errorColor,
+                          onPressed: () {
+                            ref.read(apiConfigureProvider.notifier).state = ac
+                                .copyWith(noKeyNeeded: true);
                             OverlayPortalService.hide(context);
                           },
-                          onCancel: () {
-                            OverlayPortalService.hide(context);
-                          },
-                        );
-                      },
-                    ),
-                    backGroundColor: widget.theme.zeroGradeColor,
-                  );
+                        ),
+                      ],
+                    );
+                  } else {
+                    bool clearAll = false;
+                    clearAll =
+                        (ac.noKeyNeeded &&
+                        !(v ?? true) &&
+                        ac.keys.isNotEmpty &&
+                        ac.keys.any((k) => k.id.startsWith("@nokey")));
+                    ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
+                      noKeyNeeded: v,
+                      keys: clearAll ? [] : null,
+                    );
+                  }
                 },
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 12,
-                ),
               ),
+              Expanded(child: const SizedBox(width: 10)),
+              if (!ac.noKeyNeeded)
+                StdButton(
+                  text: S.of(context).add_api_key,
+                  onPressed: () {
+                    OverlayPortalService.showDialog(
+                      context,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 20,
+                      ),
+                      width: 450,
+                      child: Consumer(
+                        builder: (context, ref, c) {
+                          return ApiKeyEditMenu(
+                            theme: widget.theme,
+                            apiKey: ApiKey(
+                              ref.read(apiConfigureProvider).id,
+                              Uuid().v7(),
+                              "",
+                            ),
+                            onSave: (k) {
+                              var n = ref.read(apiConfigureProvider.notifier);
+                              n.state = n.state.copyWith(
+                                keys: [...n.state.keys, k],
+                              );
+                              OverlayPortalService.hide(context);
+                            },
+                            onCancel: () {
+                              OverlayPortalService.hide(context);
+                            },
+                          );
+                        },
+                      ),
+                      backGroundColor: widget.theme.zeroGradeColor,
+                    );
+                  },
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
+                ),
               const SizedBox(width: 20),
             ],
           ),
@@ -1766,14 +1906,15 @@ class _ApiKeyEditMenuState extends State<ApiKeyEditMenu> {
   }
 }
 
-class ModelAddPageHeader extends StatefulWidget {
+class ModelAddPageHeader extends ConsumerStatefulWidget {
   const ModelAddPageHeader({super.key, required this.theme});
   final ThemeConfig theme;
   @override
-  State<ModelAddPageHeader> createState() => _ModelAddPageHeaderState();
+  ConsumerState<ModelAddPageHeader> createState() => _ModelAddPageHeaderState();
 }
 
-class _ModelAddPageHeaderState extends State<ModelAddPageHeader> {
+class _ModelAddPageHeaderState extends ConsumerState<ModelAddPageHeader> {
+  bool isLoading = false;
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -1796,35 +1937,140 @@ class _ModelAddPageHeaderState extends State<ModelAddPageHeader> {
               Consumer(
                 builder: (context, ref, child) {
                   var theme = ref.watch(themeProvider);
-                  var ac = ref.read(apiConfigureProvider);
-                  return StdButton(
-                    text: S.of(context).add_model,
-                    onPressed: () {
-                      OverlayPortalService.showDialog(
-                        context,
-                        child: ModelAddWidget(
-                          theme: theme,
-                          modelConfig: ProviderModelConfig(
-                            providerId: ac.id,
-                            modelId: "",
-                            callName: "",
-                          ),
-                          onSave: (m, p) {
-                            ref.read(apiConfigureProvider.notifier).state = ac
-                                .copyWith(
+                  var ac = ref.watch(apiConfigureProvider);
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      StdButton(
+                        text: S.of(context).auto_fetch_models,
+                        onPressed: () async {
+                          if (!ac.noKeyNeeded &&
+                              !ac.keys.any((k) => k.enabled)) {
+                            OverlayPortalService.showDialog(
+                              context,
+                              child: Text(
+                                S.of(context).no_api_key_added_warning,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: widget.theme.darkTextColor,
+                                ),
+                              ),
+                              backGroundColor: theme.zeroGradeColor,
+                            );
+                            return;
+                          }
+
+                          try {
+                            final protocolService = BaseApiService.fromType(
+                              ac.apiType!,
+                            );
+
+                            OverlayWrapper.showOverlay(
+                              context,
+                              overlayContent: ModelDiscoveryWidget(
+                                theme: theme,
+                                service: protocolService,
+                                endpoint: ac.endpoint!,
+                                apiKey: ac.noKeyNeeded
+                                    ? ac.keys.first
+                                    : ac.keys.firstWhere((k) => k.enabled),
+                                onSave: (confirmedResults) {
+                                  final currentModels =
+                                      List<
+                                        ({
+                                          Model model,
+                                          ProviderModelConfig config,
+                                        })
+                                      >.from(ac.models);
+
+                                  for (var res in confirmedResults) {
+                                    if (res.config != null &&
+                                        res.localModel != null) {
+                                      final existingIndex = currentModels
+                                          .indexWhere(
+                                            (m) =>
+                                                m.model.id ==
+                                                res.localModel!.id,
+                                          );
+
+                                      res.config!.providerId = ac.id;
+
+                                      if (existingIndex != -1) {
+                                        currentModels[existingIndex] = (
+                                          model: res.localModel!,
+                                          config: res.config!,
+                                        );
+                                      } else {
+                                        currentModels.add((
+                                          model: res.localModel!,
+                                          config: res.config!,
+                                        ));
+                                      }
+                                    }
+                                  }
+
+                                  ref
+                                      .read(apiConfigureProvider.notifier)
+                                      .state = ac.copyWith(
+                                    models: currentModels,
+                                  );
+                                },
+                              ),
+                            );
+                          } catch (e) {
+                            OverlayPortalService.showDialog(
+                              context,
+                              child: Text(
+                                e.toString(),
+                                style: TextStyle(
+                                  color: widget.theme.errorColor,
+                                ),
+                              ),
+                              backGroundColor: theme.zeroGradeColor,
+                            );
+                          } finally {
+                            if (mounted) setState(() => isLoading = false);
+                          }
+                        },
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      StdButton(
+                        text: S.of(context).add_model,
+                        onPressed: () {
+                          OverlayPortalService.showDialog(
+                            context,
+                            child: ModelAddWidget(
+                              theme: theme,
+                              modelConfig: ProviderModelConfig(
+                                providerId: ac.id,
+                                modelId: "",
+                                callName: "",
+                              ),
+                              onSave: (m, p) {
+                                ref
+                                    .read(apiConfigureProvider.notifier)
+                                    .state = ac.copyWith(
                                   models: [...ac.models, (model: m, config: p)],
                                 );
-                            OverlayPortalService.hide(context);
-                          },
+                                OverlayPortalService.hide(context);
+                              },
+                            ),
+                            backGroundColor: theme.zeroGradeColor,
+                            width: 450,
+                          );
+                        },
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 12,
                         ),
-                        backGroundColor: theme.zeroGradeColor,
-                        width: 450,
-                      );
-                    },
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12,
-                    ),
+                      ),
+                    ],
                   );
                 },
               ),

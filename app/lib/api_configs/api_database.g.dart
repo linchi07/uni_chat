@@ -2054,6 +2054,54 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
         type: DriftSqlType.string,
         requiredDuringInsert: true,
       ).withConverter<TokenUsage>($ApiKeyUsagesTable.$converterusage);
+  static const VerificationMeta _promptTokensMeta = const VerificationMeta(
+    'promptTokens',
+  );
+  @override
+  late final GeneratedColumn<int> promptTokens = GeneratedColumn<int>(
+    'prompt_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _completionTokensMeta = const VerificationMeta(
+    'completionTokens',
+  );
+  @override
+  late final GeneratedColumn<int> completionTokens = GeneratedColumn<int>(
+    'completion_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _totalTokensMeta = const VerificationMeta(
+    'totalTokens',
+  );
+  @override
+  late final GeneratedColumn<int> totalTokens = GeneratedColumn<int>(
+    'total_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _cachedTokensMeta = const VerificationMeta(
+    'cachedTokens',
+  );
+  @override
+  late final GeneratedColumn<int> cachedTokens = GeneratedColumn<int>(
+    'cached_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     apiKeyId,
@@ -2061,6 +2109,10 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
     agentId,
     time,
     usage,
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    cachedTokens,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2104,6 +2156,42 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
     } else if (isInserting) {
       context.missing(_timeMeta);
     }
+    if (data.containsKey('prompt_tokens')) {
+      context.handle(
+        _promptTokensMeta,
+        promptTokens.isAcceptableOrUnknown(
+          data['prompt_tokens']!,
+          _promptTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('completion_tokens')) {
+      context.handle(
+        _completionTokensMeta,
+        completionTokens.isAcceptableOrUnknown(
+          data['completion_tokens']!,
+          _completionTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_tokens')) {
+      context.handle(
+        _totalTokensMeta,
+        totalTokens.isAcceptableOrUnknown(
+          data['total_tokens']!,
+          _totalTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cached_tokens')) {
+      context.handle(
+        _cachedTokensMeta,
+        cachedTokens.isAcceptableOrUnknown(
+          data['cached_tokens']!,
+          _cachedTokensMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2135,6 +2223,22 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
           data['${effectivePrefix}usage'],
         )!,
       ),
+      promptTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}prompt_tokens'],
+      )!,
+      completionTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}completion_tokens'],
+      )!,
+      totalTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_tokens'],
+      )!,
+      cachedTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cached_tokens'],
+      )!,
     );
   }
 
@@ -2153,6 +2257,10 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
   final Value<String?> agentId;
   final Value<DateTime> time;
   final Value<TokenUsage> usage;
+  final Value<int> promptTokens;
+  final Value<int> completionTokens;
+  final Value<int> totalTokens;
+  final Value<int> cachedTokens;
   final Value<int> rowid;
   const ApiKeyUsagesCompanion({
     this.apiKeyId = const Value.absent(),
@@ -2160,6 +2268,10 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
     this.agentId = const Value.absent(),
     this.time = const Value.absent(),
     this.usage = const Value.absent(),
+    this.promptTokens = const Value.absent(),
+    this.completionTokens = const Value.absent(),
+    this.totalTokens = const Value.absent(),
+    this.cachedTokens = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ApiKeyUsagesCompanion.insert({
@@ -2168,6 +2280,10 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
     this.agentId = const Value.absent(),
     required DateTime time,
     required TokenUsage usage,
+    this.promptTokens = const Value.absent(),
+    this.completionTokens = const Value.absent(),
+    this.totalTokens = const Value.absent(),
+    this.cachedTokens = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : apiKeyId = Value(apiKeyId),
        modelId = Value(modelId),
@@ -2179,6 +2295,10 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
     Expression<String>? agentId,
     Expression<DateTime>? time,
     Expression<String>? usage,
+    Expression<int>? promptTokens,
+    Expression<int>? completionTokens,
+    Expression<int>? totalTokens,
+    Expression<int>? cachedTokens,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2187,6 +2307,10 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
       if (agentId != null) 'agent_id': agentId,
       if (time != null) 'time': time,
       if (usage != null) 'usage': usage,
+      if (promptTokens != null) 'prompt_tokens': promptTokens,
+      if (completionTokens != null) 'completion_tokens': completionTokens,
+      if (totalTokens != null) 'total_tokens': totalTokens,
+      if (cachedTokens != null) 'cached_tokens': cachedTokens,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2197,6 +2321,10 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
     Value<String?>? agentId,
     Value<DateTime>? time,
     Value<TokenUsage>? usage,
+    Value<int>? promptTokens,
+    Value<int>? completionTokens,
+    Value<int>? totalTokens,
+    Value<int>? cachedTokens,
     Value<int>? rowid,
   }) {
     return ApiKeyUsagesCompanion(
@@ -2205,6 +2333,10 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
       agentId: agentId ?? this.agentId,
       time: time ?? this.time,
       usage: usage ?? this.usage,
+      promptTokens: promptTokens ?? this.promptTokens,
+      completionTokens: completionTokens ?? this.completionTokens,
+      totalTokens: totalTokens ?? this.totalTokens,
+      cachedTokens: cachedTokens ?? this.cachedTokens,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2229,6 +2361,18 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
         $ApiKeyUsagesTable.$converterusage.toSql(usage.value),
       );
     }
+    if (promptTokens.present) {
+      map['prompt_tokens'] = Variable<int>(promptTokens.value);
+    }
+    if (completionTokens.present) {
+      map['completion_tokens'] = Variable<int>(completionTokens.value);
+    }
+    if (totalTokens.present) {
+      map['total_tokens'] = Variable<int>(totalTokens.value);
+    }
+    if (cachedTokens.present) {
+      map['cached_tokens'] = Variable<int>(cachedTokens.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2243,6 +2387,10 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
           ..write('agentId: $agentId, ')
           ..write('time: $time, ')
           ..write('usage: $usage, ')
+          ..write('promptTokens: $promptTokens, ')
+          ..write('completionTokens: $completionTokens, ')
+          ..write('totalTokens: $totalTokens, ')
+          ..write('cachedTokens: $cachedTokens, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4346,6 +4494,10 @@ typedef $$ApiKeyUsagesTableCreateCompanionBuilder =
       Value<String?> agentId,
       required DateTime time,
       required TokenUsage usage,
+      Value<int> promptTokens,
+      Value<int> completionTokens,
+      Value<int> totalTokens,
+      Value<int> cachedTokens,
       Value<int> rowid,
     });
 typedef $$ApiKeyUsagesTableUpdateCompanionBuilder =
@@ -4355,6 +4507,10 @@ typedef $$ApiKeyUsagesTableUpdateCompanionBuilder =
       Value<String?> agentId,
       Value<DateTime> time,
       Value<TokenUsage> usage,
+      Value<int> promptTokens,
+      Value<int> completionTokens,
+      Value<int> totalTokens,
+      Value<int> cachedTokens,
       Value<int> rowid,
     });
 
@@ -4412,6 +4568,26 @@ class $$ApiKeyUsagesTableFilterComposer
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
 
+  ColumnFilters<int> get promptTokens => $composableBuilder(
+    column: $table.promptTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get completionTokens => $composableBuilder(
+    column: $table.completionTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalTokens => $composableBuilder(
+    column: $table.totalTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cachedTokens => $composableBuilder(
+    column: $table.cachedTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$ApiKeysTableTableFilterComposer get apiKeyId {
     final $$ApiKeysTableTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -4465,6 +4641,26 @@ class $$ApiKeyUsagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get promptTokens => $composableBuilder(
+    column: $table.promptTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get completionTokens => $composableBuilder(
+    column: $table.completionTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalTokens => $composableBuilder(
+    column: $table.totalTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cachedTokens => $composableBuilder(
+    column: $table.cachedTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ApiKeysTableTableOrderingComposer get apiKeyId {
     final $$ApiKeysTableTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4509,6 +4705,26 @@ class $$ApiKeyUsagesTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<TokenUsage, String> get usage =>
       $composableBuilder(column: $table.usage, builder: (column) => column);
+
+  GeneratedColumn<int> get promptTokens => $composableBuilder(
+    column: $table.promptTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get completionTokens => $composableBuilder(
+    column: $table.completionTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get totalTokens => $composableBuilder(
+    column: $table.totalTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get cachedTokens => $composableBuilder(
+    column: $table.cachedTokens,
+    builder: (column) => column,
+  );
 
   $$ApiKeysTableTableAnnotationComposer get apiKeyId {
     final $$ApiKeysTableTableAnnotationComposer composer = $composerBuilder(
@@ -4567,6 +4783,10 @@ class $$ApiKeyUsagesTableTableManager
                 Value<String?> agentId = const Value.absent(),
                 Value<DateTime> time = const Value.absent(),
                 Value<TokenUsage> usage = const Value.absent(),
+                Value<int> promptTokens = const Value.absent(),
+                Value<int> completionTokens = const Value.absent(),
+                Value<int> totalTokens = const Value.absent(),
+                Value<int> cachedTokens = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ApiKeyUsagesCompanion(
                 apiKeyId: apiKeyId,
@@ -4574,6 +4794,10 @@ class $$ApiKeyUsagesTableTableManager
                 agentId: agentId,
                 time: time,
                 usage: usage,
+                promptTokens: promptTokens,
+                completionTokens: completionTokens,
+                totalTokens: totalTokens,
+                cachedTokens: cachedTokens,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4583,6 +4807,10 @@ class $$ApiKeyUsagesTableTableManager
                 Value<String?> agentId = const Value.absent(),
                 required DateTime time,
                 required TokenUsage usage,
+                Value<int> promptTokens = const Value.absent(),
+                Value<int> completionTokens = const Value.absent(),
+                Value<int> totalTokens = const Value.absent(),
+                Value<int> cachedTokens = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ApiKeyUsagesCompanion.insert(
                 apiKeyId: apiKeyId,
@@ -4590,6 +4818,10 @@ class $$ApiKeyUsagesTableTableManager
                 agentId: agentId,
                 time: time,
                 usage: usage,
+                promptTokens: promptTokens,
+                completionTokens: completionTokens,
+                totalTokens: totalTokens,
+                cachedTokens: cachedTokens,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:collection/collection.dart';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/widgets.dart';
@@ -216,6 +217,10 @@ class ApiKeyUsage implements Insertable<ApiKeyUsage> {
   final String? agentId;
   final DateTime time;
   final TokenUsage usage;
+  final int? promptTokens;
+  final int? completionTokens;
+  final int? totalTokens;
+  final int? cachedTokens;
 
   const ApiKeyUsage({
     required this.apiKeyId,
@@ -223,6 +228,10 @@ class ApiKeyUsage implements Insertable<ApiKeyUsage> {
     this.agentId,
     required this.time,
     required this.usage,
+    this.promptTokens,
+    this.completionTokens,
+    this.totalTokens,
+    this.cachedTokens,
   });
 
   @override
@@ -233,6 +242,10 @@ class ApiKeyUsage implements Insertable<ApiKeyUsage> {
       agentId: Value(agentId),
       time: Value(time),
       usage: Value(usage),
+      promptTokens: Value(promptTokens ?? usage.promptTokens),
+      completionTokens: Value(completionTokens ?? usage.completionTokens),
+      totalTokens: Value(totalTokens ?? usage.total),
+      cachedTokens: Value(cachedTokens ?? usage.cachedTokens),
     ).toColumns(nullToAbsent);
   }
 }
@@ -368,6 +381,23 @@ class ModelPricing {
       'web_search': webSearch,
     };
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ModelPricing &&
+          runtimeType == other.runtimeType &&
+          prompt == other.prompt &&
+          completion == other.completion &&
+          image == other.image &&
+          webSearch == other.webSearch;
+
+  @override
+  int get hashCode =>
+      prompt.hashCode ^
+      completion.hashCode ^
+      image.hashCode ^
+      webSearch.hashCode;
 }
 
 class Model implements Insertable<Model> {
@@ -529,6 +559,27 @@ class ProviderModelConfig implements Insertable<ProviderModelConfig> {
       parametersOverride: Value(parametersOverride),
     ).toColumns(nullToAbsent);
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProviderModelConfig &&
+          runtimeType == other.runtimeType &&
+          providerId == other.providerId &&
+          modelId == other.modelId &&
+          callName == other.callName &&
+          const SetEquality().equals(abilitiesOverride, other.abilitiesOverride) &&
+          pricingOverride == other.pricingOverride &&
+          const ListEquality().equals(parametersOverride, other.parametersOverride);
+
+  @override
+  int get hashCode =>
+      providerId.hashCode ^
+      modelId.hashCode ^
+      callName.hashCode ^
+      abilitiesOverride.hashCode ^
+      pricingOverride.hashCode ^
+      parametersOverride.hashCode;
 }
 
 enum ApiType { openaiResponses, openaiChatCompletions, google }
@@ -831,6 +882,18 @@ abstract class ModelParameters {
     }
     return list;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ModelParameters &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          value == other.value &&
+          defaultValue == other.defaultValue;
+
+  @override
+  int get hashCode => name.hashCode ^ value.hashCode ^ defaultValue.hashCode;
 }
 
 class Temperature extends ModelParameters {
