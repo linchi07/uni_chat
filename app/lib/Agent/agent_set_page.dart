@@ -1046,7 +1046,7 @@ class ModelSelect extends StatefulWidget {
     return LayoutBuilder(
       builder: (context, c) {
         return ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: 330),
+          constraints: BoxConstraints(maxWidth: 330,minHeight: height),
           child: StdButton(
             onPressed: onTap,
             padding: padding,
@@ -1055,7 +1055,7 @@ class ModelSelect extends StatefulWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (imgP != null)
-                        StdAvatar(length: height, assetImage: AssetImage(imgP)),
+                        StdAvatar(length: height - 10, assetImage: AssetImage(imgP)),
                       const SizedBox(width: 10),
                       Flexible(
                         child: Text(

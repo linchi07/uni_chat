@@ -763,7 +763,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     }
     // title generation has to be done after the finally
     // or the wrong stop signal will be disposed and causes crashes (generateTitle it self will add a new stop signal)
-    if (state.session!.name == "New Chat") {
+    if (state.session!.name == "New Chat"&&!state.isGeneratingTitle) {
       generateTitle();
     }
   }

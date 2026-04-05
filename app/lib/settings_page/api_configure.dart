@@ -2115,6 +2115,7 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
   late TextStyle tStyle;
   @override
   Widget build(BuildContext context) {
+    var imgP = LLMImageIndexer.tryGetImagePath(model.family);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
       decoration: BoxDecoration(
@@ -2123,9 +2124,10 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
       ),
       child: Row(
         children: [
+          if(imgP != null)
           StdAvatar(
             length: 50,
-            assetImage: AssetImage(LLMImageIndexer.getImagePath(model.family)),
+            assetImage: AssetImage(imgP),
           ),
           const SizedBox(width: 15),
           Expanded(

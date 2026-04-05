@@ -1550,7 +1550,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                     alignment: Alignment.centerRight,
                     child: ModelSelect.buildPreview(
                       context,
-                      26,
+                      35,
                       EdgeInsets.symmetric(horizontal: 6, vertical: 5),
                       agent!.client.provider,
                       agent!.client.model,

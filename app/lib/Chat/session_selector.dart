@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipe_action_cell/core/cell.dart';
+import 'package:intl/intl.dart';
 import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/main.dart';
@@ -938,7 +939,7 @@ class _SessionTileState extends State<_SessionTile> {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        widget.session.creationTime.toString(),
+        DateFormat("yy/MM/dd-HH:mm").format(widget.session.creationTime),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
