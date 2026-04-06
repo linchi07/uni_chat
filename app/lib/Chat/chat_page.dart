@@ -1355,8 +1355,9 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               children: [
                 Padding(
                   padding: EdgeInsets.only(
-                    right:
-                        (chatState.error is ApiKeyExhaustedException) ? 100 : 35,
+                    right: (chatState.error is ApiKeyExhaustedException)
+                        ? 100
+                        : 35,
                   ),
                   child: Text(
                     chatState.error!.unwrapAndGetMessage(context),
@@ -1376,11 +1377,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                       child: StdButton(
                         color: theme.errorColor,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        onPressed:
-                            () => _showErrorDetails(
-                              context,
-                              chatState.error as ApiKeyExhaustedException,
-                            ),
+                        onPressed: () => _showErrorDetails(
+                          context,
+                          chatState.error as ApiKeyExhaustedException,
+                        ),
                         child: Text(
                           S.of(context).error_details,
                           style: const TextStyle(fontSize: 12),
@@ -1460,7 +1460,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
         if (chatState.uploadedFilesStash.isNotEmpty) _buildAttachmentPreview(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 2),
-          child: TextField(
+          child: /*TextField(
             onTapOutside: (event) {
               _focusNode.unfocus();
             },
@@ -1490,6 +1490,10 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
               hintText: S.of(context).send_a_message_hint,
             ),
             textCapitalization: TextCapitalization.sentences,
+          ),
+          */ MDEditor(
+            minHeight: 40,
+            maxHeight: 400,
           ),
         ),
         const SizedBox(height: 6),

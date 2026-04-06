@@ -11,7 +11,7 @@ import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
-import '../utils/llm_image_indexer.dart';
+import '../utils/llm_icons.dart';
 import 'api_configure.dart' show ModelAddWidget;
 
 enum DiscoveryStatus { fetching, reviewing, empty, error }

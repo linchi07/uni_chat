@@ -1,0 +1,156 @@
+name: Flutter Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: android
+            artifact_name: android-apk
+          - os: windows-latest
+            platform: windows
+            artifact_name: windows-setup
+          - os: macos-latest
+            platform: macos
+            artifact_name: macos-app
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java (Android only)
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+        working-directory: app
+
+      # Skip build_runner by default since generated files are in repo.
+      # Uncomment if needed for future builds:
+      # - name: Run build_runner
+      #   run: dart run build_runner build --delete-conflicting-outputs
+      #   working-directory: app
+
+      # --- Platform Specific Build Steps ---
+
+      # Android Build
+      - name: Build Android APK
+        if: matrix.platform == 'android'
+        run: |
+          flutter build apk --release
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/UNIChat_${{ github.ref_name }}_android.apk
+        working-directory: app
+
+      # Windows Build
+      - name: Build Windows Executable
+        if: matrix.platform == 'windows'
+        run: flutter build windows --release
+        working-directory: app
+
+      - name: Download VCRuntime (Windows only)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "app/VC_redist.x64.exe"
+
+      - name: Build Inno Setup (Windows only)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\iscc.exe" app/windows_setup.iss
+          Get-ChildItem -Path app/Installer/*.exe | Rename-Item -NewName { "UNIChat_${{ github.ref_name }}_windows_setup.exe" }
+
+      # macOS Build
+      - name: Build macOS App
+        if: matrix.platform == 'macos'
+        run: |
+          flutter build macos --release
+          # Simple zip of the .app for basic distribution if no DMG tool is setup
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../UNIChat_${{ github.ref_name }}_macos.zip UNIChat.app
+        working-directory: app
+
+      # --- Upload Artifacts ---
+
+      - name: Upload Android Artifact
+        if: matrix.platform == 'android'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: app/build/app/outputs/flutter-apk/UNIChat_${{ github.ref_name }}_android.apk
+
+      - name: Upload Windows Artifact
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: app/Installer/*.exe
+
+      - name: Upload macOS Artifact
+        if: matrix.platform == 'macos'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: app/UNIChat_${{ github.ref_name }}_macos.zip
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Clean up old pre-releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 查找最近的一个 pre-release
+          PRE_RELEASE_TAG=$(gh release list --limit 10 | grep "Pre-release" | head -n 1 | awk '{print $1}')
+          if [ ! -z "$PRE_RELEASE_TAG" ]; then
+            echo "Deleting old pre-release: $PRE_RELEASE_TAG"
+            gh release delete $PRE_RELEASE_TAG --yes || true
+            # 同时也尝试从 git tag 中删除（可选，但推荐清理）
+            git push --delete origin $PRE_RELEASE_TAG || true
+          else
+            echo "No previous pre-release found."
+          fi
+
+      - name: Push new release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/android-apk/*.apk
+            artifacts/windows-setup/*.exe
+            artifacts/macos-app/*.zip
+          prerelease: true
+          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}

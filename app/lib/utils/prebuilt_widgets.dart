@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -624,6 +625,7 @@ class StdSlider extends ConsumerWidget {
             },
           ),
         ),
+        const SizedBox(width: 8),
       ],
     );
   }
@@ -1225,6 +1227,48 @@ class StdIconButton extends StatelessWidget {
       onPressed: onPressed,
       iconSize: iconSize ?? 20,
       icon: Icon(icon),
+    );
+  }
+}
+
+class MDEditor extends StatefulWidget {
+  const MDEditor({super.key, required this.maxHeight, required this.minHeight});
+  final double maxHeight;
+  final double minHeight;
+  @override
+  State<MDEditor> createState() => _MDEditorState();
+}
+
+class _MDEditorState extends State<MDEditor> {
+  late EditorState editorState;
+
+  @override
+  void initState() {
+    super.initState();
+    editorState = EditorState.blank();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: widget.minHeight,
+        maxHeight: widget.maxHeight,
+      ),
+      child: IntrinsicHeight(
+        child: AppFlowyEditor(
+          editorState: editorState,
+          shrinkWrap: true,
+          autoFocus: true,
+          blockComponentBuilders: {...standardBlockComponentBuilderMap},
+          editorStyle: EditorStyle.desktop(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            cursorColor: Colors.blue,
+            selectionColor: Colors.blue.withValues(alpha: 0.2),
+          ),
+          commandShortcutEvents: [...standardCommandShortcutEvents],
+        ),
+      ),
     );
   }
 }

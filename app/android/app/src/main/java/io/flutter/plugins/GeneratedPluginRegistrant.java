@@ -41,6 +41,11 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin irondash_engine_context, dev.irondash.engine_context.IrondashEngineContextPlugin", e);
     }
     try {
+      flutterEngine.getPlugins().add(new com.nschairer.keyboard_height_plugin.KeyboardHeightPlugin());
+    } catch (Exception e) {
+      Log.e(TAG, "Error registering plugin keyboard_height_plugin, com.nschairer.keyboard_height_plugin.KeyboardHeightPlugin", e);
+    }
+    try {
       flutterEngine.getPlugins().add(new dev.fluttercommunity.plus.packageinfo.PackageInfoPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin package_info_plus, dev.fluttercommunity.plus.packageinfo.PackageInfoPlugin", e);

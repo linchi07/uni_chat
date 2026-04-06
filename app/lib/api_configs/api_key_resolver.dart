@@ -250,6 +250,27 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
     // Log the usage to database
     final usage = invokeResult.usage ?? fallbackUsage;
     if (usage != null && invokeResult.statusCode == 200) {
+      double? cost;
+      String? currency;
+
+      // Calculate cost if pricing is available
+      final config = await ApiDatabase.instance.getProviderModelConfig(
+        selectedKey!.key.providerId,
+        modelId,
+      );
+
+      if (config != null && config.pricing != null) {
+        final pricing = config.pricing!;
+        final nonCachedPromptTokens = usage.promptTokens - usage.cachedTokens;
+        final promptCost = (nonCachedPromptTokens * pricing.prompt) / 1000000;
+        final cachedCost =
+            (usage.cachedTokens * (pricing.cached ?? pricing.prompt)) / 1000000;
+        final outputCost =
+            (usage.completionTokens * pricing.completion) / 1000000;
+        cost = promptCost + cachedCost + outputCost;
+        currency = pricing.currency;
+      }
+
       await ApiDatabase.instance.insertApikeyUsage(
         ApiKeyUsage(
           apiKeyId: selectedKey!.key.id,
@@ -261,6 +282,8 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
           completionTokens: usage.completionTokens,
           totalTokens: usage.total,
           cachedTokens: usage.cachedTokens,
+          cost: cost,
+          currency: currency,
         ),
       );
     }

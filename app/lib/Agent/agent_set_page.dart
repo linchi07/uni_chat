@@ -12,7 +12,7 @@ import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
 import '../utils/file_utils.dart';
-import '../utils/llm_image_indexer.dart' show LLMImageIndexer;
+import '../utils/llm_icons.dart';
 import '../utils/overlays.dart';
 import 'agentProvider.dart';
 import 'agent_models.dart';
@@ -595,6 +595,7 @@ class AgentEditState {
       providerId: provider!.id,
       maxContextTokens: modelSettings.maxContextTokens,
       maxGenerationTokens: modelSettings.maxGenerationTokens,
+      customParameters: modelSettings.customParameters,
       enableTimeTelling: modelSettings.enableTimeTelling,
       enableUsrLanguage: modelSettings.enableUsrLanguage,
       enableUsrSystemInformation: modelSettings.enableUsrSystemInformation,
@@ -631,6 +632,7 @@ class AgentEditState {
       modelSettings: ModelSpecifics(
         maxContextTokens: agentData.modelConfigure.maxContextTokens,
         maxGenerationTokens: agentData.modelConfigure.maxGenerationTokens,
+        customParameters: agentData.modelConfigure.customParameters,
         enableTimeTelling: agentData.modelConfigure.enableTimeTelling,
         enableUsrLanguage: agentData.modelConfigure.enableUsrLanguage,
         enableUsrSystemInformation:
@@ -893,7 +895,8 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                               onSelect: (p, m) async {
                                 var n = ref.read(agentEditState.notifier);
                                 var ms = n.state.modelSettings;
-                                ms.maxContextTokens = m.contextLength ?? 1000000000;
+                                ms.maxContextTokens =
+                                    m.contextLength ?? 1000000000;
                                 ms.maxGenerationTokens =
                                     m.maxCompletionTokens ?? 1024;
                                 n.state = n.state.copyWith(
@@ -976,50 +979,137 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 },
               ),
               const SizedBox(height: 8),
-              Text(
-                S.of(context).model_advance_properties,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              StdSlider(
-                label: S.of(context).temperature,
-                value: modelConf.temperature,
-                onChanged: (value) {
-                  modelConf.temperature = value;
-                  _notifyListeners();
-                },
-                min: 0,
-                max: 2,
-              ),
-              StdSlider(
-                label: S.of(context).freq_penalty,
-                value: modelConf.frequencyPenalty,
-                min: -2,
-                max: 2,
-                onChanged: (value) {
-                  modelConf.frequencyPenalty = value;
-                  _notifyListeners();
-                },
-              ),
-              StdSlider(
-                label: S.of(context).pres_penalty,
-                value: modelConf.presencePenalty,
-                min: -2,
-                max: 2,
-                onChanged: (value) {
-                  modelConf.presencePenalty = value;
-                  _notifyListeners();
-                },
-              ),
-              StdSlider(
-                label: S.of(context).top_p,
-                value: modelConf.topP,
-                min: 0,
-                max: 1,
-                onChanged: (value) {
-                  modelConf.topP = value;
-                  _notifyListeners();
-                },
-              ),
+              const SizedBox(height: 8),
+              if (edit.model != null && edit.model!.parameters != null) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      S.of(context).model_advance_properties,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    StdButton(
+                      text: S.of(context).select_parameter,
+                      onPressed: () {
+                        final availableParams = edit.model!.parameters!
+                            .where(
+                              (p) => !modelConf.customParameters.containsKey(p),
+                            )
+                            .toList();
+
+                        if (availableParams.isEmpty) return;
+
+                        OverlayPortalService.showDialog(
+                          width: 400,
+                          height: 600,
+                          context,
+                          backGroundColor: theme.zeroGradeColor,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                S.of(context).select_parameter,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Expanded(
+                                child: ListView.builder(
+                                  itemBuilder: (context, index) {
+                                    var param = availableParams[index];
+                                    return ListTile(
+                                      title: Text(param.friendlyName(context)),
+                                      subtitle: Text(param.apiName),
+                                      onTap: () {
+                                        modelConf.customParameters[param] =
+                                            param.initialValue;
+                                        OverlayPortalService.hide(context);
+                                        _notifyListeners();
+                                      },
+                                    );
+                                  },
+                                  itemCount: availableParams.length,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
+                ...modelConf.customParameters.entries.map((entry) {
+                  final param = entry.key;
+                  final value = entry.value;
+
+                  Widget input;
+                  if (param.uiType == ParamUIType.doubleSlider ||
+                      param.uiType == ParamUIType.intSlider) {
+                    input = Expanded(
+                      child: StdSlider(
+                        label: param.friendlyName(context),
+                        value: (value as num).toDouble(),
+                        toInt: param.uiType == ParamUIType.intSlider,
+                        min: param.min,
+                        max: param.max,
+                        onChanged: (val) {
+                          modelConf.customParameters[param] =
+                              param.uiType == ParamUIType.intSlider
+                              ? val.toInt()
+                              : val;
+                          _notifyListeners();
+                        },
+                      ),
+                    );
+                  } else if (param.uiType == ParamUIType.boolean) {
+                    input = Expanded(
+                      child: StdCheckbox(
+                        text: param.friendlyName(context),
+                        value: value as bool,
+                        onChanged: (val) {
+                          if (val != null) {
+                            modelConf.customParameters[param] = val;
+                            _notifyListeners();
+                          }
+                        },
+                      ),
+                    );
+                  } else {
+                    input = Expanded(
+                      child: Text(
+                        "${param.friendlyName(context)}: ${value.toString()}",
+                      ),
+                    );
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        input,
+                        const SizedBox(width: 8),
+                        StdIconButton(
+                          icon: Icons.delete_outline,
+                          color: Colors.redAccent,
+                          onPressed: () {
+                            modelConf.customParameters.remove(param);
+                            _notifyListeners();
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
+                  );
+                }),
+              ],
             ],
           ),
         ),
@@ -1046,7 +1136,7 @@ class ModelSelect extends StatefulWidget {
     return LayoutBuilder(
       builder: (context, c) {
         return ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: 330,minHeight: height),
+          constraints: BoxConstraints(maxWidth: 330, minHeight: height),
           child: StdButton(
             onPressed: onTap,
             padding: padding,
@@ -1055,7 +1145,10 @@ class ModelSelect extends StatefulWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (imgP != null)
-                        StdAvatar(length: height - 10, assetImage: AssetImage(imgP)),
+                        StdAvatar(
+                          length: height - 10,
+                          assetImage: AssetImage(imgP),
+                        ),
                       const SizedBox(width: 10),
                       Flexible(
                         child: Text(

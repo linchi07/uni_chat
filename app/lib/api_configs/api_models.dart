@@ -1,11 +1,13 @@
 import 'dart:convert';
-import 'package:collection/collection.dart';
 
+import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 
 import '../generated/l10n.dart' show S;
+import '../utils/llm_icons.dart';
 
 class ApiProvider implements Insertable<ApiProvider> {
   final String id;
@@ -221,6 +223,8 @@ class ApiKeyUsage implements Insertable<ApiKeyUsage> {
   final int? completionTokens;
   final int? totalTokens;
   final int? cachedTokens;
+  final double? cost;
+  final String? currency;
 
   const ApiKeyUsage({
     required this.apiKeyId,
@@ -232,6 +236,8 @@ class ApiKeyUsage implements Insertable<ApiKeyUsage> {
     this.completionTokens,
     this.totalTokens,
     this.cachedTokens,
+    this.cost,
+    this.currency,
   });
 
   @override
@@ -246,6 +252,8 @@ class ApiKeyUsage implements Insertable<ApiKeyUsage> {
       completionTokens: Value(completionTokens ?? usage.completionTokens),
       totalTokens: Value(totalTokens ?? usage.total),
       cachedTokens: Value(cachedTokens ?? usage.cachedTokens),
+      cost: Value(cost),
+      currency: Value(currency),
     ).toColumns(nullToAbsent);
   }
 }
@@ -261,115 +269,31 @@ enum ModelAbility {
   video,
 }
 
-extension XModelAlibity on ModelAbility {
-  String name(BuildContext context) {
-    switch (this) {
-      case ModelAbility.textGenerate:
-        return S.of(context).textGenerate;
-      case ModelAbility.imageGenerate:
-        return S.of(context).imageGenerate;
-      case ModelAbility.image2imageGenerate:
-        return S.of(context).image2imageGenerate;
-      case ModelAbility.visual:
-        return S.of(context).visual;
-      case ModelAbility.file:
-        return S.of(context).file;
-      case ModelAbility.embedding:
-        return S.of(context).embedding;
-      case ModelAbility.audio:
-        return S.of(context).audio;
-      case ModelAbility.video:
-        return S.of(context).video;
-    }
-  }
-
-  String get simpleString {
-    switch (this) {
-      case ModelAbility.textGenerate:
-        return 'text';
-      case ModelAbility.imageGenerate:
-        return 'imageGenerate';
-      case ModelAbility.image2imageGenerate:
-        return 'image2imageGenerate';
-      case ModelAbility.file:
-        return 'file';
-      case ModelAbility.visual:
-        return 'visual';
-      case ModelAbility.embedding:
-        return 'embedding';
-      case ModelAbility.audio:
-        return 'audio';
-      case ModelAbility.video:
-        return 'video';
-    }
-  }
-
-  static String toDatabaseSet(Iterable<ModelAbility> abilities) {
-    return abilities.map((e) => e.simpleString).join(',');
-  }
-
-  static Set<ModelAbility> fromList(List<dynamic> list) {
-    Map<String, ModelAbility> map = {
-      'text': ModelAbility.textGenerate,
-      'imageGenerate': ModelAbility.imageGenerate,
-      'image2imageGenerate': ModelAbility.image2imageGenerate,
-      'file': ModelAbility.file,
-      'visual': ModelAbility.visual,
-      'embedding': ModelAbility.embedding,
-      'audio': ModelAbility.audio,
-      'video': ModelAbility.video,
-    };
-    Set<ModelAbility> abilities = {};
-    for (var ability in list) {
-      if (map.containsKey(ability as String)) {
-        abilities.add(map[ability]!);
-      }
-    }
-    return abilities;
-  }
-
-  //验证互斥的能力
-  Set<ModelAbility> validate(Set<ModelAbility> abilities) {
-    if (abilities.contains(ModelAbility.embedding)) {
-      return {ModelAbility.embedding};
-    }
-    return abilities;
-  }
-
-  ///在勾选能力的时候验证互斥能力
-  Set<ModelAbility> checkIfValid(
-    Set<ModelAbility> abilities,
-    ModelAbility ability,
-  ) {
-    if (ability == ModelAbility.embedding) {
-      return {ModelAbility.embedding};
-    } else if (abilities.contains(ModelAbility.embedding)) {
-      abilities.remove(ModelAbility.embedding);
-    }
-    abilities.add(ability);
-    return abilities;
-  }
-}
-
 class ModelPricing {
   final double prompt;
   final double completion;
+  final double? cached;
   final double? image;
   final double? webSearch;
+  final String currency;
 
   ModelPricing({
     required this.prompt,
     required this.completion,
-    required this.image,
-    required this.webSearch,
+    this.cached,
+    this.image,
+    this.webSearch,
+    this.currency = 'USD',
   });
 
   factory ModelPricing.fromMap(Map<String, dynamic> map) {
     return ModelPricing(
       prompt: map['prompt'],
       completion: map['completion'],
+      cached: map['cached'],
       image: map['image'],
       webSearch: map['web_search'],
+      currency: map['currency'] ?? 'USD',
     );
   }
 
@@ -377,8 +301,10 @@ class ModelPricing {
     return {
       'prompt': prompt,
       'completion': completion,
+      'cached': cached,
       'image': image,
       'web_search': webSearch,
+      'currency': currency,
     };
   }
 
@@ -389,6 +315,7 @@ class ModelPricing {
           runtimeType == other.runtimeType &&
           prompt == other.prompt &&
           completion == other.completion &&
+          cached == other.cached &&
           image == other.image &&
           webSearch == other.webSearch;
 
@@ -396,8 +323,10 @@ class ModelPricing {
   int get hashCode =>
       prompt.hashCode ^
       completion.hashCode ^
+      cached.hashCode ^
       image.hashCode ^
-      webSearch.hashCode;
+      webSearch.hashCode ^
+      currency.hashCode;
 }
 
 class Model implements Insertable<Model> {
@@ -407,8 +336,7 @@ class Model implements Insertable<Model> {
   final Set<ModelAbility> abilities;
   final int? contextLength;
   final int? maxCompletionTokens;
-  final ModelPricing? pricing;
-  final List<ModelParameters>? parameters;
+  final List<ModelParamName>? parameters;
 
   Model({
     required this.id,
@@ -417,7 +345,6 @@ class Model implements Insertable<Model> {
     required this.abilities,
     this.contextLength,
     this.maxCompletionTokens,
-    this.pricing,
     this.parameters,
   });
 
@@ -431,16 +358,20 @@ class Model implements Insertable<Model> {
       ),
       'context_length': contextLength,
       'max_completion_tokens': maxCompletionTokens,
-      'pricing': jsonEncode(pricing?.toMap()),
-      'parameters': parameters?.map((parameter) => parameter.toMap()).toList(),
+      'parameters': parameters?.map((e) => e.name).toList(),
     };
   }
 
   factory Model.fromMap(Map<String, dynamic> map) {
-    List<ModelParameters>? parameters;
+    List<ModelParamName>? parameters;
     var pr = map['parameters'];
     if (pr != null) {
-      parameters = ModelParameters.fromMap(pr);
+      parameters = (pr as List)
+          .map(
+            (e) => ModelParamName.values.firstWhereOrNull((p) => p.name == e),
+          )
+          .whereType<ModelParamName>()
+          .toList();
       if (parameters.isEmpty) {
         parameters = null;
       }
@@ -452,9 +383,6 @@ class Model implements Insertable<Model> {
       abilities: XModelAlibity.fromList((jsonDecode(map['abilities']) as List)),
       contextLength: map['context_length'],
       maxCompletionTokens: map['max_completion_tokens'],
-      pricing: map['pricing'] != null
-          ? ModelPricing.fromMap(jsonDecode(map['pricing']))
-          : null,
       parameters: parameters,
     );
   }
@@ -468,7 +396,6 @@ class Model implements Insertable<Model> {
       abilities: Value(abilities),
       contextLength: Value(contextLength),
       maxCompletionTokens: Value(maxCompletionTokens),
-      pricing: Value(pricing),
       parameters: Value(parameters),
     ).toColumns(nullToAbsent);
   }
@@ -479,14 +406,14 @@ class ProviderModelConfig implements Insertable<ProviderModelConfig> {
   String modelId;
   String callName;
   Set<ModelAbility>? abilitiesOverride;
-  ModelPricing? pricingOverride;
-  List<ModelParameters>? parametersOverride;
+  ModelPricing? pricing;
+  List<ModelParamName>? parametersOverride;
   ProviderModelConfig({
     required this.providerId,
     required this.modelId,
     required this.callName,
     this.abilitiesOverride,
-    this.pricingOverride,
+    this.pricing,
     this.parametersOverride,
   });
 
@@ -495,15 +422,15 @@ class ProviderModelConfig implements Insertable<ProviderModelConfig> {
     String? modelId,
     String? callName,
     Set<ModelAbility>? abilitiesOverride,
-    ModelPricing? pricingOverride,
-    List<ModelParameters>? parametersOverride,
+    ModelPricing? pricing,
+    List<ModelParamName>? parametersOverride,
   }) {
     return ProviderModelConfig(
       providerId: providerId ?? this.providerId,
       modelId: modelId ?? this.modelId,
       callName: callName ?? this.callName,
       abilitiesOverride: abilitiesOverride ?? this.abilitiesOverride,
-      pricingOverride: pricingOverride ?? this.pricingOverride,
+      pricing: pricing ?? this.pricing,
       parametersOverride: parametersOverride ?? this.parametersOverride,
     );
   }
@@ -520,16 +447,24 @@ class ProviderModelConfig implements Insertable<ProviderModelConfig> {
                   .toList(),
             )
           : null,
-      'pricing_override': (pricingOverride != null)
-          ? jsonEncode(pricingOverride!.toMap())
-          : null,
+      'pricing': (pricing != null) ? jsonEncode(pricing!.toMap()) : null,
       'parameters_override': (parametersOverride != null)
-          ? jsonEncode(parametersOverride!)
+          ? jsonEncode(parametersOverride!.map((e) => e.name).toList())
           : null,
     };
   }
 
   factory ProviderModelConfig.fromMap(Map<String, dynamic> map) {
+    List<ModelParamName>? parameters;
+    var pr = map['parameters_override'];
+    if (pr != null) {
+      if (pr is String) {
+        pr = jsonDecode(pr);
+      }
+      parameters = (pr as List)
+          .map((e) => ModelParamName.values.byName(e))
+          .toList();
+    }
     return ProviderModelConfig(
       providerId: map['provider_id'],
       modelId: map['model_id'],
@@ -539,12 +474,10 @@ class ProviderModelConfig implements Insertable<ProviderModelConfig> {
               (jsonDecode(map['abilities_override']) as List),
             )
           : null,
-      pricingOverride: map['pricing_override'] != null
-          ? ModelPricing.fromMap(jsonDecode(map['pricing_override']))
+      pricing: map['pricing'] != null
+          ? ModelPricing.fromMap(jsonDecode(map['pricing']))
           : null,
-      parametersOverride: map['parameters_override'] != null
-          ? ModelParameters.fromMap(jsonDecode(map['parameters_override']))
-          : null,
+      parametersOverride: parameters,
     );
   }
 
@@ -555,7 +488,7 @@ class ProviderModelConfig implements Insertable<ProviderModelConfig> {
       modelId: Value(modelId),
       callName: Value(callName),
       abilitiesOverride: Value(abilitiesOverride),
-      pricingOverride: Value(pricingOverride),
+      pricing: Value(pricing),
       parametersOverride: Value(parametersOverride),
     ).toColumns(nullToAbsent);
   }
@@ -568,9 +501,15 @@ class ProviderModelConfig implements Insertable<ProviderModelConfig> {
           providerId == other.providerId &&
           modelId == other.modelId &&
           callName == other.callName &&
-          const SetEquality().equals(abilitiesOverride, other.abilitiesOverride) &&
-          pricingOverride == other.pricingOverride &&
-          const ListEquality().equals(parametersOverride, other.parametersOverride);
+          const SetEquality().equals(
+            abilitiesOverride,
+            other.abilitiesOverride,
+          ) &&
+          pricing == other.pricing &&
+          const ListEquality().equals(
+            parametersOverride,
+            other.parametersOverride,
+          );
 
   @override
   int get hashCode =>
@@ -578,8 +517,302 @@ class ProviderModelConfig implements Insertable<ProviderModelConfig> {
       modelId.hashCode ^
       callName.hashCode ^
       abilitiesOverride.hashCode ^
-      pricingOverride.hashCode ^
+      pricing.hashCode ^
       parametersOverride.hashCode;
+}
+
+enum ParamUIType {
+  doubleSlider,
+  intSlider,
+  integerInput,
+  boolean,
+  stringList,
+  none,
+}
+
+enum ModelParamName {
+  temperature,
+  topP,
+  topK,
+  presencePenalty,
+  frequencyPenalty,
+  repetitionPenalty,
+  minP,
+  topA,
+  seed,
+  maxTokens,
+  stop,
+  includeReasoning,
+  logitBias,
+  reasoning,
+  responseFormat,
+  structuredOutputs,
+  toolChoice,
+  tools,
+}
+
+extension XModelParamName on ModelParamName {
+  ParamUIType get uiType {
+    switch (this) {
+      case ModelParamName.temperature:
+      case ModelParamName.topP:
+      case ModelParamName.presencePenalty:
+      case ModelParamName.frequencyPenalty:
+      case ModelParamName.repetitionPenalty:
+      case ModelParamName.minP:
+      case ModelParamName.topA:
+        return ParamUIType.doubleSlider;
+      case ModelParamName.topK:
+      case ModelParamName.maxTokens:
+        return ParamUIType.intSlider;
+      case ModelParamName.seed:
+        return ParamUIType.integerInput;
+      case ModelParamName.includeReasoning:
+        return ParamUIType.boolean;
+      case ModelParamName.stop:
+        return ParamUIType.stringList;
+      case ModelParamName.reasoning:
+      case ModelParamName.structuredOutputs:
+        return ParamUIType.boolean;
+      case ModelParamName.logitBias:
+      case ModelParamName.responseFormat:
+      case ModelParamName.toolChoice:
+      case ModelParamName.tools:
+        return ParamUIType.none;
+    }
+  }
+
+  String get apiName {
+    switch (this) {
+      case ModelParamName.temperature:
+        return 'temperature';
+      case ModelParamName.topP:
+        return 'top_p';
+      case ModelParamName.topK:
+        return 'top_k';
+      case ModelParamName.presencePenalty:
+        return 'presence_penalty';
+      case ModelParamName.frequencyPenalty:
+        return 'frequency_penalty';
+      case ModelParamName.repetitionPenalty:
+        return 'repetition_penalty';
+      case ModelParamName.minP:
+        return 'min_p';
+      case ModelParamName.topA:
+        return 'top_a';
+      case ModelParamName.seed:
+        return 'seed';
+      case ModelParamName.maxTokens:
+        return 'max_tokens';
+      case ModelParamName.stop:
+        return 'stop';
+      case ModelParamName.includeReasoning:
+        return 'include_reasoning';
+      case ModelParamName.logitBias:
+        return 'logit_bias';
+      case ModelParamName.reasoning:
+        return 'reasoning';
+      case ModelParamName.responseFormat:
+        return 'response_format';
+      case ModelParamName.structuredOutputs:
+        return 'structured_outputs';
+      case ModelParamName.toolChoice:
+        return 'tool_choice';
+      case ModelParamName.tools:
+        return 'tools';
+    }
+  }
+
+  String get geminiName {
+    switch (this) {
+      case ModelParamName.temperature:
+        return 'temperature';
+      case ModelParamName.topP:
+        return 'topP';
+      case ModelParamName.topK:
+        return 'topK';
+      case ModelParamName.maxTokens:
+        return 'maxOutputTokens';
+      case ModelParamName.stop:
+        return 'stopSequences';
+      case ModelParamName.responseFormat:
+        return 'responseFormat';
+      case ModelParamName.presencePenalty:
+      case ModelParamName.frequencyPenalty:
+      case ModelParamName.repetitionPenalty:
+      case ModelParamName.minP:
+      case ModelParamName.topA:
+      case ModelParamName.seed:
+      case ModelParamName.includeReasoning:
+      case ModelParamName.logitBias:
+      case ModelParamName.reasoning:
+      case ModelParamName.structuredOutputs:
+      case ModelParamName.toolChoice:
+      case ModelParamName.tools:
+        return apiName;
+    }
+  }
+
+  String friendlyName(BuildContext context) {
+    switch (this) {
+      case ModelParamName.temperature:
+        return S.of(context).model_param_temperature;
+      case ModelParamName.topP:
+        return S.of(context).model_param_top_p;
+      case ModelParamName.topK:
+        return S.of(context).model_param_top_k;
+      case ModelParamName.presencePenalty:
+        return S.of(context).model_param_presence_penalty;
+      case ModelParamName.frequencyPenalty:
+        return S.of(context).model_param_frequency_penalty;
+      case ModelParamName.repetitionPenalty:
+        return S.of(context).model_param_repetition_penalty;
+      case ModelParamName.minP:
+        return S.of(context).model_param_min_p;
+      case ModelParamName.topA:
+        return S.of(context).model_param_top_a;
+      case ModelParamName.seed:
+        return S.of(context).model_param_seed;
+      case ModelParamName.maxTokens:
+        return S.of(context).model_param_max_tokens;
+      case ModelParamName.stop:
+        return S.of(context).model_param_stop;
+      case ModelParamName.includeReasoning:
+        return S.of(context).model_param_include_reasoning;
+      case ModelParamName.logitBias:
+        return S.of(context).model_param_logit_bias;
+      case ModelParamName.reasoning:
+        return S.of(context).model_param_reasoning;
+      case ModelParamName.responseFormat:
+        return S.of(context).model_param_response_format;
+      case ModelParamName.structuredOutputs:
+        return S.of(context).model_param_structured_outputs;
+      case ModelParamName.toolChoice:
+        return S.of(context).model_param_tool_choice;
+      case ModelParamName.tools:
+        return S.of(context).model_param_tools;
+    }
+  }
+
+  String description(BuildContext context) {
+    switch (this) {
+      case ModelParamName.temperature:
+        return 'Controls randomness: 0.0=deterministic, 1.0=random';
+      case ModelParamName.topP:
+        return 'Controls diversity via nucleus sampling';
+      case ModelParamName.topK:
+        return 'Limits the next token selection to the top K most likely tokens';
+      case ModelParamName.presencePenalty:
+        return 'Penalizes new tokens based on whether they appear in the text so far';
+      case ModelParamName.frequencyPenalty:
+        return 'Penalizes new tokens based on their existing frequency in the text';
+      case ModelParamName.repetitionPenalty:
+        return 'Penalizes repeated tokens';
+      case ModelParamName.minP:
+        return 'Alternative to Top P, sets a minimum probability threshold relative to the top token';
+      case ModelParamName.topA:
+        return 'Alternative to Top P, adaptive top-A sampling';
+      case ModelParamName.seed:
+        return 'Deterministic seed for generation';
+      case ModelParamName.maxTokens:
+        return 'Maximum number of tokens to generate';
+      case ModelParamName.stop:
+        return 'Strings where the model will stop generating';
+      case ModelParamName.includeReasoning:
+        return 'Whether to include the model\'s reasoning process';
+      case ModelParamName.logitBias:
+        return 'Probability adjustment for specific tokens';
+      case ModelParamName.reasoning:
+        return 'Controls advanced reasoning logic';
+      case ModelParamName.responseFormat:
+        return 'Specifies the format of the response (e.g., JSON)';
+      case ModelParamName.structuredOutputs:
+        return 'Enables structured matching for outputs';
+      case ModelParamName.toolChoice:
+        return 'Controls which tool is used by the model';
+      case ModelParamName.tools:
+        return 'List of tools available to the model';
+    }
+  }
+
+  double get min {
+    switch (this) {
+      case ModelParamName.temperature:
+      case ModelParamName.topP:
+      case ModelParamName.minP:
+      case ModelParamName.topA:
+        return 0.0;
+      case ModelParamName.presencePenalty:
+      case ModelParamName.frequencyPenalty:
+        return -2.0;
+      case ModelParamName.repetitionPenalty:
+        return 0.0;
+      case ModelParamName.topK:
+        return 1.0;
+      case ModelParamName.maxTokens:
+        return 1.0;
+      default:
+        return 0.0;
+    }
+  }
+
+  double get max {
+    switch (this) {
+      case ModelParamName.temperature:
+        return 2.0;
+      case ModelParamName.topP:
+      case ModelParamName.minP:
+      case ModelParamName.topA:
+        return 1.0;
+      case ModelParamName.presencePenalty:
+      case ModelParamName.frequencyPenalty:
+        return 2.0;
+      case ModelParamName.repetitionPenalty:
+        return 2.0;
+      case ModelParamName.topK:
+        return 100.0;
+      case ModelParamName.maxTokens:
+        return 4096.0;
+      default:
+        return 1.0;
+    }
+  }
+
+  dynamic get initialValue {
+    switch (this) {
+      case ModelParamName.temperature:
+      case ModelParamName.topP:
+      case ModelParamName.repetitionPenalty:
+        return 1.0;
+      case ModelParamName.topK:
+        return 40;
+      case ModelParamName.presencePenalty:
+      case ModelParamName.frequencyPenalty:
+      case ModelParamName.minP:
+      case ModelParamName.topA:
+        return 0.0;
+      case ModelParamName.seed:
+        return null;
+      case ModelParamName.maxTokens:
+        return 2048;
+      case ModelParamName.stop:
+        return <String>[];
+      case ModelParamName.includeReasoning:
+        return false;
+      case ModelParamName.logitBias:
+        return null;
+      case ModelParamName.reasoning:
+        return false;
+      case ModelParamName.responseFormat:
+        return null;
+      case ModelParamName.structuredOutputs:
+        return false;
+      case ModelParamName.toolChoice:
+        return null;
+      case ModelParamName.tools:
+        return <dynamic>[];
+    }
+  }
 }
 
 enum ApiType { openaiResponses, openaiChatCompletions, google }
@@ -771,6 +1004,8 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
     ),
   ];
 
+  Map<String, String> get i18nName => _i18nName;
+
   ProviderPreset({
     required this.id,
     required Map<String, String> i18nName,
@@ -840,194 +1075,5 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
       apiType: Value(apiType),
       models: Value(models),
     ).toColumns(nullToAbsent);
-  }
-}
-
-abstract class ModelParameters {
-  ModelParameters({this.value, double? defaultValue}) {
-    _defaultValue = defaultValue;
-  }
-
-  late final double? _defaultValue;
-  double? get defaultValue => _defaultValue;
-  double? value;
-  String get name;
-  String getFriendlyName();
-  String getDescription();
-
-  Map<String, dynamic> toMap();
-
-  static List<ModelParameters> fromMap(List<dynamic> maps) {
-    if (maps.isEmpty) {
-      return [];
-    }
-    var list = <ModelParameters>[];
-    for (var map in maps) {
-      switch (map['name']) {
-        case 'temperature':
-          list.add(Temperature.fromMap(map));
-          continue;
-        case 'top_p':
-          list.add(TopP.fromMap(map));
-          continue;
-        case 'presence_penalty':
-          list.add(PresencePenalty.fromMap(map));
-          continue;
-        case 'frequency_penalty':
-          list.add(FrequencyPenalty.fromMap(map));
-          continue;
-        default:
-          continue;
-      }
-    }
-    return list;
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ModelParameters &&
-          runtimeType == other.runtimeType &&
-          name == other.name &&
-          value == other.value &&
-          defaultValue == other.defaultValue;
-
-  @override
-  int get hashCode => name.hashCode ^ value.hashCode ^ defaultValue.hashCode;
-}
-
-class Temperature extends ModelParameters {
-  Temperature({super.value, super.defaultValue});
-
-  @override
-  String get name => 'temperature';
-
-  @override
-  String getFriendlyName() {
-    return 'Temperature';
-  }
-
-  @override
-  String getDescription() {
-    return 'Controls randomness: 0.0=deterministic, 1.0=random';
-  }
-
-  @override
-  Map<String, dynamic> toMap() {
-    return {'name': name, 'value': value, 'default_value': defaultValue};
-  }
-
-  factory Temperature.fromMap(Map<String, dynamic> map) {
-    return Temperature(value: map['value'], defaultValue: map['default_value']);
-  }
-}
-
-class TopP extends ModelParameters {
-  TopP({super.value, super.defaultValue});
-
-  @override
-  String get name => 'top_p';
-
-  @override
-  String getFriendlyName() {
-    return 'Top P';
-  }
-
-  @override
-  String getDescription() {
-    return 'Controls diversity via nucleus sampling: 0.0=deterministic, 1.0=maximum diversity';
-  }
-
-  @override
-  Map<String, dynamic> toMap() {
-    return {'name': name, 'value': value, 'default_value': defaultValue};
-  }
-
-  factory TopP.fromMap(Map<String, dynamic> map) {
-    return TopP(value: map['value'], defaultValue: map['default_value']);
-  }
-}
-
-class TopK extends ModelParameters {
-  TopK({super.value, super.defaultValue});
-
-  @override
-  String get name => 'top_k';
-
-  @override
-  String getFriendlyName() {
-    return 'Top K';
-  }
-
-  @override
-  String getDescription() {
-    return 'Controls diversity via nucleus sampling: 0.0=deterministic, 1.0=maximum diversity';
-  }
-
-  @override
-  Map<String, dynamic> toMap() {
-    return {'name': name, 'value': value, 'default_value': defaultValue};
-  }
-
-  factory TopK.fromMap(Map<String, dynamic> map) {
-    return TopK(value: map['value'], defaultValue: map['default_value']);
-  }
-}
-
-class PresencePenalty extends ModelParameters {
-  PresencePenalty({super.value, super.defaultValue});
-
-  @override
-  String get name => 'presence_penalty';
-
-  @override
-  String getFriendlyName() {
-    return 'Presence Penalty';
-  }
-
-  @override
-  String getDescription() {
-    return 'Penalizes new tokens based on whether they appear in the text so far';
-  }
-
-  @override
-  Map<String, dynamic> toMap() {
-    return {'name': name, 'value': value, 'default_value': defaultValue};
-  }
-
-  factory PresencePenalty.fromMap(Map<String, dynamic> map) {
-    return PresencePenalty(
-      value: map['value'],
-      defaultValue: map['default_value'],
-    );
-  }
-}
-
-class FrequencyPenalty extends ModelParameters {
-  FrequencyPenalty({super.value, super.defaultValue});
-
-  @override
-  String get name => 'frequency_penalty';
-
-  @override
-  String getFriendlyName() {
-    return 'Frequency Penalty';
-  }
-
-  @override
-  String getDescription() {
-    return 'Penalizes new tokens based on their existing frequency in the text so far';
-  }
-
-  @override
-  Map<String, dynamic> toMap() {
-    return {'name': name, 'value': value, 'default_value': defaultValue};
-  }
-
-  factory FrequencyPenalty.fromMap(Map<String, dynamic> map) {
-    return FrequencyPenalty(
-      value: map['value'],
-      defaultValue: map['default_value'],
-    );
   }
 }

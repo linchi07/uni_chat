@@ -23,7 +23,7 @@ class ModelConfigure {
   final int maxContextTokens;
 
   //parameters (such as temperature)
-  final List<ModelParameters> parameters;
+  final Map<ModelParamName, dynamic> customParameters;
 
   // basic info pass
   final bool enableTimeTelling;
@@ -35,7 +35,7 @@ class ModelConfigure {
     required this.providerId,
     this.maxGenerationTokens = 2560,
     this.maxContextTokens = 1000000000,
-    this.parameters = const [],
+    this.customParameters = const {},
     this.enableTimeTelling = true,
     this.enableUsrLanguage = true,
     this.enableUsrSystemInformation = true,
@@ -46,7 +46,7 @@ class ModelConfigure {
     String? providerId,
     int? maxGenerationTokens,
     int? maxContextTokens,
-    List<ModelParameters>? parameters,
+    Map<ModelParamName, dynamic>? customParameters,
     bool? enableTimeTelling,
     bool? enableUsrLanguage,
     bool? enableUsrSystemInformation,
@@ -56,7 +56,7 @@ class ModelConfigure {
       providerId: providerId ?? this.providerId,
       maxGenerationTokens: maxGenerationTokens ?? this.maxGenerationTokens,
       maxContextTokens: maxContextTokens ?? this.maxContextTokens,
-      parameters: parameters ?? this.parameters,
+      customParameters: customParameters ?? this.customParameters,
       enableTimeTelling: enableTimeTelling ?? this.enableTimeTelling,
       enableUsrLanguage: enableUsrLanguage ?? this.enableUsrLanguage,
       enableUsrSystemInformation:
@@ -71,7 +71,9 @@ class ModelConfigure {
       'provider_id': providerId,
       'max_generation_tokens': maxGenerationTokens,
       'max_context_tokens': maxContextTokens,
-      'parameters': parameters.map((e) => e.toMap()).toList(),
+      'custom_parameters': customParameters.map(
+        (key, value) => MapEntry(key.name, value),
+      ),
       'enable_time_telling': enableTimeTelling,
       'enable_usr_language': enableUsrLanguage,
       'enable_usr_system_information': enableUsrSystemInformation,
@@ -86,12 +88,24 @@ class ModelConfigure {
         message: "Model config version mismatch: $version",
       );
     }
+    Map<ModelParamName, dynamic> params = {};
+    if (map.containsKey('custom_parameters')) {
+      var cp = map['custom_parameters'] as Map<String, dynamic>;
+      cp.forEach((key, value) {
+        try {
+          params[ModelParamName.values.byName(key)] = value;
+        } catch (e) {
+          // Ignore unknown parameters
+        }
+      });
+    }
+
     return ModelConfigure(
       modelId: map['model_id'] as String,
       providerId: map['provider_id'] as String,
       maxGenerationTokens: map['max_generation_tokens'] as int,
       maxContextTokens: map['max_context_tokens'] as int,
-      parameters: ModelParameters.fromMap((map['parameters'] as List)),
+      customParameters: params,
       enableTimeTelling: map['enable_time_telling'] as bool,
     );
   }

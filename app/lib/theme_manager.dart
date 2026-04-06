@@ -24,8 +24,8 @@ class ThemeConfig {
     required this.warningColor,
     required this.errorColor,
   }) {
-    this.brightTextColor = brightTextColor ?? Colors.black;
-    this.darkTextColor = darkTextColor ?? Colors.white;
+    this.brightTextColor = brightTextColor;
+    this.darkTextColor = darkTextColor;
   }
 
   TextStyle get bodyTextStyle {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
@@ -14,11 +15,10 @@ import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paged_scroll/paged_scroll.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
-import '../utils/llm_image_indexer.dart';
+import '../utils/llm_icons.dart';
 
 class ApiSettings extends ConsumerStatefulWidget {
   const ApiSettings({super.key});
@@ -116,8 +116,17 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                 return const SizedBox();
               }
               final providers = f.data![0] as List<ApiProvider>;
-              final summaries = f.data![1] as Map<String, ({int totalTokens, int callCount})>;
-              
+              final summaries =
+                  f.data![1]
+                      as Map<
+                        String,
+                        ({
+                          int totalTokens,
+                          int callCount,
+                          Map<String, double> costs,
+                        })
+                      >;
+
               final numberFormat = NumberFormat.compact();
 
               return ListView.builder(
@@ -154,8 +163,19 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                               ),
                             );
                           }
+
+                          // Format costs string
+                          String costStr = "";
+                          if (stats.costs.isNotEmpty) {
+                            costStr =
+                                " | 支出: ${stats.costs.entries.map((e) {
+                                  final fmt = NumberFormat.simpleCurrency(name: e.key, decimalDigits: 2);
+                                  return fmt.format(e.value);
+                                }).join(", ")}";
+                          }
+
                           return Text(
-                            "7天消耗: ${numberFormat.format(stats.totalTokens)} tokens | 调用: ${stats.callCount} 次",
+                            "7天消耗: ${numberFormat.format(stats.totalTokens)} tokens | 调用: ${stats.callCount} 次$costStr",
                             style: TextStyle(
                               fontSize: 12,
                               color: theme.textColor.withAlpha(150),
@@ -2124,141 +2144,236 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
       ),
       child: Row(
         children: [
-          if(imgP != null)
-          StdAvatar(
-            length: 50,
-            assetImage: AssetImage(imgP),
-          ),
+          if (imgP != null) StdAvatar(length: 50, assetImage: AssetImage(imgP)),
           const SizedBox(width: 15),
           Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SelectionArea(
-                  child: Row(
-                    children: [
-                      Flexible(
+            child: SelectionArea(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      model.friendlyName,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 25,
+                        color: widget.theme.darkTextColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  _buildPricingWidget(context, ref, model),
+                  StdIconButton(
+                    icon: Icons.edit_outlined,
+                    onPressed: () {
+                      OverlayPortalService.showDialog(
+                        context,
+                        width: 450,
+                        backGroundColor: widget.theme.zeroGradeColor,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 20,
+                        ),
+                        child: ModelConfigureWidget(
+                          providerConfig: widget.modelConfig,
+                          model: model,
+                          theme: widget.theme,
+                          onSave: (c) {
+                            var n = ref.read(apiConfigureProvider.notifier);
+                            var ac = n.state;
+                            for (int i = 0; i < ac.models.length; i++) {
+                              if (ac.models[i].model.id == model.id) {
+                                ac.models[i] = (model: model, config: c);
+                              }
+                            }
+                            n.state = ac.copyWith(models: [...ac.models]);
+                            OverlayPortalService.hide(context);
+                          },
+                          onCancel: () {
+                            OverlayPortalService.hide(context);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  StdIconButton(
+                    icon: Icons.delete_outline,
+                    onPressed: () {
+                      OverlayPortalService.showDialog(
+                        context,
                         child: Text(
-                          model.friendlyName,
-                          overflow: TextOverflow.ellipsis,
+                          S.of(context).delete_confirm,
                           style: TextStyle(
                             fontSize: 25,
-                            color: widget.theme.darkTextColor,
                             fontWeight: FontWeight.bold,
+                            color: widget.theme.darkTextColor,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 5),
-                      Expanded(
-                        child: Text(
-                          model.family,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: widget.theme.darkTextColor.withAlpha(150),
+                        actions: [
+                          StdButton(
+                            text: S.of(context).cancel,
+                            onPressed: () {
+                              OverlayPortalService.hide(context);
+                            },
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      StdIconButton(
-                        icon: Icons.edit_outlined,
-                        onPressed: () {
-                          OverlayPortalService.showDialog(
-                            context,
-                            width: 450,
-                            backGroundColor: widget.theme.zeroGradeColor,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 20,
-                            ),
-                            child: ModelConfigureWidget(
-                              providerConfig: widget.modelConfig,
-                              model: model,
-                              theme: widget.theme,
-                              onSave: (c) {
-                                var n = ref.read(apiConfigureProvider.notifier);
-                                var ac = n.state;
-                                for (int i = 0; i < ac.models.length; i++) {
-                                  if (ac.models[i].model.id == model.id) {
-                                    ac.models[i] = (model: model, config: c);
-                                  }
-                                }
-                                n.state = ac.copyWith(models: [...ac.models]);
-                                OverlayPortalService.hide(context);
-                              },
-                              onCancel: () {
-                                OverlayPortalService.hide(context);
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                      StdIconButton(
-                        icon: Icons.delete_outline,
-                        onPressed: () {
-                          OverlayPortalService.showDialog(
-                            context,
-                            child: Text(
-                              S.of(context).delete_confirm,
-                              style: TextStyle(
-                                fontSize: 25,
-                                fontWeight: FontWeight.bold,
-                                color: widget.theme.darkTextColor,
-                              ),
-                            ),
-                            actions: [
-                              StdButton(
-                                text: S.of(context).cancel,
-                                onPressed: () {
-                                  OverlayPortalService.hide(context);
-                                },
-                              ),
-                              const SizedBox(width: 10),
-                              StdButton(
-                                text: S.of(context).confirm_long_press,
-                                onLongPress: () {
-                                  var n = ref.read(
-                                    apiConfigureProvider.notifier,
-                                  );
-                                  n.state = n.state.copyWith(
-                                    models: [
-                                      ...n.state.models.where(
-                                        (element) =>
-                                            element.model.id != model.id,
-                                      ),
-                                    ],
-                                  );
-                                  OverlayPortalService.hide(context);
-                                },
-                                color: widget.theme.errorColor,
-                              ),
-                            ],
-                            backGroundColor: widget.theme.zeroGradeColor,
-                          );
-                        },
-                      ),
-                    ],
+                          const SizedBox(width: 10),
+                          StdButton(
+                            text: S.of(context).confirm_long_press,
+                            onLongPress: () {
+                              var n = ref.read(apiConfigureProvider.notifier);
+                              n.state = n.state.copyWith(
+                                models: [
+                                  ...n.state.models.where(
+                                    (element) => element.model.id != model.id,
+                                  ),
+                                ],
+                              );
+                              OverlayPortalService.hide(context);
+                            },
+                            color: widget.theme.errorColor,
+                          ),
+                        ],
+                        backGroundColor: widget.theme.zeroGradeColor,
+                      );
+                    },
                   ),
-                ),
-                const SizedBox(height: 5),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children:
-                        (widget.modelConfig.abilitiesOverride ??
-                                model.abilities)
-                            .map((e) => getInfoTags(e))
-                            .toList(),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildPricingWidget(BuildContext context, WidgetRef ref, Model model) {
+    void showPricingEditor() {
+      OverlayPortalService.showDialog(
+        context,
+        width: 450,
+        backGroundColor: widget.theme.zeroGradeColor,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        child: ModelPricingWidget(
+          theme: widget.theme,
+          pricing: widget.modelConfig.pricing,
+          onSave: (p) {
+            updatePricing(ref, model, p);
+            OverlayPortalService.hide(context);
+          },
+          onCancel: () => OverlayPortalService.hide(context),
+        ),
+      );
+    }
+
+    final pricing = widget.modelConfig.pricing;
+    if (pricing == null) {
+      return StdIconButton(
+        icon: Icons.payments_outlined,
+        onPressed: showPricingEditor,
+      );
+    }
+
+    // Pricing Capsule
+    return GestureDetector(
+      onTap: showPricingEditor,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 300),
+        padding: const EdgeInsets.only(left: 10, right: 2, top: 2, bottom: 2),
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        decoration: BoxDecoration(
+          color: widget.theme.primaryColor.withAlpha(30),
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: widget.theme.primaryColor.withAlpha(50)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.arrow_upward_rounded,
+              size: 14,
+              color: widget.theme.primaryColor,
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                pricing.prompt.toString(),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: widget.theme.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 1,
+              height: 12,
+              color: widget.theme.primaryColor.withAlpha(80),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.arrow_downward_rounded,
+              size: 14,
+              color: widget.theme.primaryColor,
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                pricing.completion.toString(),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: widget.theme.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            StdIconButton(
+              icon: Icons.close_rounded,
+              onPressed: () => updatePricing(ref, model, null, isDelete: true),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void updatePricing(
+    WidgetRef ref,
+    Model model,
+    ModelPricing? p, {
+    bool isDelete = false,
+  }) {
+    var n = ref.read(apiConfigureProvider.notifier);
+    var ac = n.state;
+    var models = List<({Model model, ProviderModelConfig config})>.from(
+      ac.models,
+    );
+    for (int i = 0; i < models.length; i++) {
+      if (models[i].model.id == model.id) {
+        if (isDelete) {
+          var old = models[i].config;
+          var nC = ProviderModelConfig(
+            providerId: old.providerId,
+            modelId: old.modelId,
+            callName: old.callName,
+            parametersOverride: old.parametersOverride,
+            abilitiesOverride: old.abilitiesOverride,
+          );
+          models[i] = (model: model, config: nC);
+        }
+        models[i] = (
+          model: model,
+          config: models[i].config.copyWith(pricing: p),
+        );
+        break;
+      }
+    }
+    n.state = ac.copyWith(models: models);
   }
 
   Widget getInfoTags(ModelAbility ability) {
@@ -2463,6 +2578,12 @@ class _AddNewModelState extends State<AddNewModel> {
   @override
   Widget build(BuildContext context) {
     return addNew();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    modelNameController.text = widget.modelConfig.callName;
   }
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -2753,6 +2874,176 @@ class _ModelConfigureWidgetState extends State<ModelConfigureWidget> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class ModelPricingWidget extends StatefulWidget {
+  const ModelPricingWidget({
+    super.key,
+    required this.theme,
+    this.pricing,
+    required this.onSave,
+    required this.onCancel,
+  });
+  final ThemeConfig theme;
+  final ModelPricing? pricing;
+  final void Function(ModelPricing?) onSave;
+  final void Function() onCancel;
+
+  @override
+  State<ModelPricingWidget> createState() => _ModelPricingWidgetState();
+}
+
+class _ModelPricingWidgetState extends State<ModelPricingWidget> {
+  final _formKey = GlobalKey<FormState>();
+  final promptController = TextEditingController();
+  final completionController = TextEditingController();
+  final cacheController = TextEditingController();
+  String currency = 'USD';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.pricing != null) {
+      promptController.text = widget.pricing!.prompt.toString();
+      completionController.text = widget.pricing!.completion.toString();
+      cacheController.text = (widget.pricing!.cached ?? "").toString();
+      currency = widget.pricing!.currency;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ts = TextStyle(fontSize: 15, color: widget.theme.darkTextColor);
+    final currencies = ['USD', 'CNY'];
+    int currencyIndex = currencies.indexOf(currency);
+    if (currencyIndex == -1) currencyIndex = 0;
+
+    return OverlayPortalScope(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              S.of(context).model_pricing_settings,
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+                color: widget.theme.darkTextColor,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(S.of(context).prompt_price_per_1k, style: ts),
+            const SizedBox(height: 8),
+            StdTextFormFieldOutlined(
+              controller: promptController,
+              hintText: S.of(context).enter_prompt_price,
+              inputFormat: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
+              validator: (v) {
+                if (v == null || v.isEmpty) return S.of(context).price_not_empty;
+                if (double.tryParse(v) == null) return S.of(context).invalid_number;
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(S.of(context).completion_price_per_1k, style: ts),
+            const SizedBox(height: 8),
+            StdTextFormFieldOutlined(
+              controller: completionController,
+              hintText: S.of(context).enter_completion_price,
+              inputFormat: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
+              validator: (v) {
+                if (v == null || v.isEmpty) return S.of(context).price_not_empty;
+                if (double.tryParse(v) == null) return S.of(context).invalid_number;
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(S.of(context).cache_price_per_1k, style: ts),
+            const SizedBox(height: 8),
+            StdTextFormFieldOutlined(
+              controller: cacheController,
+              hintText: S.of(context).enter_cache_price,
+              inputFormat: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
+              validator: (v) {
+                if (v != null && v.isNotEmpty && double.tryParse(v) == null) {
+                  return S.of(context).invalid_number;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(S.of(context).currency, style: ts),
+            const SizedBox(height: 8),
+            StdDropDown(
+              width: double.infinity,
+              height: 48,
+              initialIndex: currencyIndex,
+              itemCount: currencies.length,
+              itemBuilder: (context, index, onTap) {
+                return InkWell(
+                  onTap: () => onTap(index),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    alignment: Alignment.centerLeft,
+                    child: StdListTile(
+                      title: Text(
+                        currencies[index],
+                        style: TextStyle(color: widget.theme.darkTextColor),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              onChanged: (index) {
+                setState(() {
+                  currency = currencies[index];
+                });
+              },
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                StdButton(
+                  text: S.of(context).cancel,
+                  onPressed: widget.onCancel,
+                ),
+                const SizedBox(width: 12),
+                StdButton(
+                  text: S.of(context).save,
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      final prompt =
+                          double.tryParse(promptController.text) ?? 0.0;
+                      final completion =
+                          double.tryParse(completionController.text) ?? 0.0;
+                      final cached = double.tryParse(cacheController.text);
+                      widget.onSave(
+                        ModelPricing(
+                          prompt: prompt,
+                          completion: completion,
+                          cached: cached,
+                          currency: currency,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

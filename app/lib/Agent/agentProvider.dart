@@ -17,10 +17,7 @@ import 'agent_models.dart';
 
 class ModelSpecifics {
   String? modelName;
-  double temperature = 0.8;
-  double topP = 0.5;
-  double frequencyPenalty = 0.5;
-  double presencePenalty = 0.5;
+  Map<ModelParamName, dynamic> customParameters = {};
   int maxGenerationTokens = 2560;
   int maxContextTokens = 1000000000;
   bool enableTimeTelling = true;
@@ -28,23 +25,17 @@ class ModelSpecifics {
   bool enableUsrSystemInformation = true;
   ModelSpecifics({
     this.modelName,
-    this.temperature = 0.8,
-    this.topP = 0.5,
-    this.frequencyPenalty = 0.5,
-    this.presencePenalty = 0.5,
+    Map<ModelParamName, dynamic>? customParameters,
     this.maxGenerationTokens = 2560,
     this.maxContextTokens = 1000000000,
     this.enableTimeTelling = true,
     this.enableUsrLanguage = true,
     this.enableUsrSystemInformation = true,
-  });
+  }) : customParameters = customParameters ?? {};
 
   ModelSpecifics copyWith({
     String? modelName,
-    double? temperature,
-    double? topP,
-    double? frequencyPenalty,
-    double? presencePenalty,
+    Map<ModelParamName, dynamic>? customParameters,
     int? maxGenerationTokens,
     int? maxContextTokens,
     bool? enableTimeTelling,
@@ -53,10 +44,7 @@ class ModelSpecifics {
   }) {
     return ModelSpecifics(
       modelName: modelName ?? this.modelName,
-      temperature: temperature ?? this.temperature,
-      topP: topP ?? this.topP,
-      frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty,
-      presencePenalty: presencePenalty ?? this.presencePenalty,
+      customParameters: customParameters ?? Map.from(this.customParameters),
       maxGenerationTokens: maxGenerationTokens ?? this.maxGenerationTokens,
       maxContextTokens: maxContextTokens ?? this.maxContextTokens,
       enableTimeTelling: enableTimeTelling ?? this.enableTimeTelling,
@@ -69,10 +57,7 @@ class ModelSpecifics {
   Map<String, dynamic> toJson() {
     return {
       "modelName": modelName,
-      "temperature": temperature,
-      "topP": topP,
-      "frequencyPenalty": frequencyPenalty,
-      "presencePenalty": presencePenalty,
+      "customParameters": customParameters.map((k, v) => MapEntry(k.name, v)),
       "maxGenerationTokens": maxGenerationTokens,
       "maxContextTokens": maxContextTokens,
       "enableTimeTelling": enableTimeTelling,
@@ -82,12 +67,30 @@ class ModelSpecifics {
   }
 
   factory ModelSpecifics.fromJson(Map<String, dynamic> json) {
+    Map<ModelParamName, dynamic> params = {};
+    if (json.containsKey("customParameters")) {
+      var cp = json["customParameters"] as Map<String, dynamic>;
+      cp.forEach((key, value) {
+        try {
+          params[ModelParamName.values.byName(key)] = value;
+        } catch (e) {
+          // Ignore
+        }
+      });
+    } else {
+      // Legacy format migration
+      if (json.containsKey("temperature"))
+        params[ModelParamName.temperature] = json["temperature"];
+      if (json.containsKey("topP")) params[ModelParamName.topP] = json["topP"];
+      if (json.containsKey("frequencyPenalty"))
+        params[ModelParamName.frequencyPenalty] = json["frequencyPenalty"];
+      if (json.containsKey("presencePenalty"))
+        params[ModelParamName.presencePenalty] = json["presencePenalty"];
+    }
+
     return ModelSpecifics(
       modelName: json["modelName"] as String?,
-      temperature: json["temperature"] as double,
-      topP: json["topP"] as double,
-      frequencyPenalty: json["frequencyPenalty"] as double,
-      presencePenalty: json["presencePenalty"] as double,
+      customParameters: params,
       maxGenerationTokens: json["maxGenerationTokens"] as int,
       maxContextTokens: json["maxContextTokens"] as int,
       enableTimeTelling: json["enableTimeTelling"] as bool,

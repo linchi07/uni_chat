@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,14 +23,13 @@ class _TokenUsageDashboardState extends ConsumerState<TokenUsageDashboard> {
   bool _isLoading = true;
 
   // Data using Records
-  ({int prompt, int completion, int cached}) _summary = (
-    prompt: 0,
-    completion: 0,
-    cached: 0,
-  );
-  List<({DateTime time, int total})> _trendBuckets = [];
-  List<({Model? model, String modelId, int total})> _modelBuckets = [];
-  List<({ApiKey key, int total})> _keyBuckets = [];
+  ({int prompt, int completion, int cached, Map<String, double> costs})
+  _summary = (prompt: 0, completion: 0, cached: 0, costs: {});
+  List<({DateTime time, int total, double cost, String? currency})>
+  _trendBuckets = [];
+  List<({Model? model, String modelId, int total, double cost})>
+  _modelBuckets = [];
+  List<({ApiKey key, int total, double cost})> _keyBuckets = [];
   List<({ApiKeyUsage usage, Model? model})> _detailedLogs = [];
 
   int _selectedBarIndex = -1;
@@ -85,17 +85,30 @@ class _TokenUsageDashboardState extends ConsumerState<TokenUsageDashboard> {
         end: now,
       );
 
-      final groupedTrend = <DateTime, int>{};
+      final groupedTrend =
+          <DateTime, ({int total, double cost, String? currency})>{};
       for (var item in trendRaw) {
         final t = item.time;
         final bucketTime = groupByDay
             ? DateTime(t.year, t.month, t.day)
             : DateTime(t.year, t.month, t.day, t.hour);
-        groupedTrend[bucketTime] = (groupedTrend[bucketTime] ?? 0) + item.total;
+        final existing = groupedTrend[bucketTime];
+        groupedTrend[bucketTime] = (
+          total: (existing?.total ?? 0) + item.total,
+          cost: (existing?.cost ?? 0) + (item.cost ?? 0.0),
+          currency: item.currency ?? existing?.currency,
+        );
       }
       final trend =
           groupedTrend.entries
-              .map((e) => (time: e.key, total: e.value))
+              .map(
+                (e) => (
+                  time: e.key,
+                  total: e.value.total,
+                  cost: e.value.cost,
+                  currency: e.value.currency,
+                ),
+              )
               .toList()
             ..sort((a, b) => a.time.compareTo(b.time));
 
@@ -178,35 +191,56 @@ class _TokenUsageDashboardState extends ConsumerState<TokenUsageDashboard> {
 
   Widget _buildSummarySection() {
     final total = _summary.prompt + _summary.completion;
-    return Row(
+    return Column(
       children: [
-        _SummaryCard(
-          title: '总 Prompt',
-          value: _summary.prompt.toString(),
-          icon: Icons.upload_file,
-          color: Colors.blue,
+        Row(
+          children: [
+            _SummaryCard(
+              title: '总 Prompt',
+              value: NumberFormat.compact().format(_summary.prompt),
+              icon: Icons.upload_file,
+              color: Colors.blue,
+            ),
+            const SizedBox(width: 12),
+            _SummaryCard(
+              title: '总 Completion',
+              value: NumberFormat.compact().format(_summary.completion),
+              icon: Icons.download_done,
+              color: Colors.green,
+            ),
+            const SizedBox(width: 12),
+            _SummaryCard(
+              title: '总消耗',
+              value: NumberFormat.compact().format(total),
+              icon: Icons.summarize,
+              color: Colors.orange,
+            ),
+            const SizedBox(width: 12),
+            _SummaryCard(
+              title: '缓存节省',
+              value: NumberFormat.compact().format(_summary.cached),
+              icon: Icons.bolt,
+              color: Colors.purple,
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        _SummaryCard(
-          title: '总 Completion',
-          value: _summary.completion.toString(),
-          icon: Icons.download_done,
-          color: Colors.green,
-        ),
-        const SizedBox(width: 12),
-        _SummaryCard(
-          title: '总消耗',
-          value: total.toString(),
-          icon: Icons.summarize,
-          color: Colors.orange,
-        ),
-        const SizedBox(width: 12),
-        _SummaryCard(
-          title: '缓存节省',
-          value: _summary.cached.toString(),
-          icon: Icons.bolt,
-          color: Colors.purple,
-        ),
+        if (_summary.costs.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Row(
+            children:
+                _summary.costs.entries.map((e) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12.0),
+                    child: _SummaryCard(
+                      title: '预估费用 (${e.key})',
+                      value: e.value.toStringAsFixed(4),
+                      icon: Icons.account_balance_wallet,
+                      color: Colors.redAccent,
+                    ),
+                  );
+                }).toList(),
+          ),
+        ],
       ],
     );
   }
@@ -317,7 +351,22 @@ class _TokenUsageDashboardState extends ConsumerState<TokenUsageDashboard> {
               ),
             ),
             title: Text(log.model?.friendlyName ?? log.usage.modelId),
-            subtitle: Text(DateFormat('MM-dd HH:mm:ss').format(log.usage.time)),
+            subtitle: Row(
+              children: [
+                Text(DateFormat('MM-dd HH:mm:ss').format(log.usage.time)),
+                if (log.usage.cost != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '${log.usage.cost!.toStringAsFixed(4)} ${log.usage.currency ?? ''}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.redAccent.withAlpha(200),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
             trailing: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -421,7 +470,7 @@ class _DashboardCard extends StatelessWidget {
 }
 
 class _ModelDistributionPieChart extends StatelessWidget {
-  final List<({Model? model, String modelId, int total})> buckets;
+  final List<({Model? model, String modelId, int total, double cost})> buckets;
   final int? touchedIndex;
   final Function(int?) onTouch;
 
@@ -480,7 +529,7 @@ class _ModelDistributionPieChart extends StatelessWidget {
 }
 
 class _KeyDistributionPieChart extends StatelessWidget {
-  final List<({ApiKey key, int total})> buckets;
+  final List<({ApiKey key, int total, double cost})> buckets;
   final int? touchedIndex;
   final Function(int?) onTouch;
 
@@ -538,7 +587,8 @@ class _KeyDistributionPieChart extends StatelessWidget {
 }
 
 class _TrendBarChart extends StatelessWidget {
-  final List<({DateTime time, int total})> buckets;
+  final List<({DateTime time, int total, double cost, String? currency})>
+  buckets;
   final int selectedIndex;
   final bool groupByDay;
   final Function(int) onTap;

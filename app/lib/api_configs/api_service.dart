@@ -342,12 +342,12 @@ class OpenAiApiService extends BaseApiService {
             break;
           case MessagePartType.image:
             throw UnimplementedError("Currently we don't support the file api");
-            contents.add({'type': 'input_image', 'file_id': part.content});
+            // contents.add({'type': 'input_image', 'file_id': part.content});
             break;
           case MessagePartType.pdf:
             throw UnimplementedError("Currently we don't support the file api");
             //暂时不支持file api，所以一切都是base64的 普通的image和 pdf 暂时都throw 错误
-            contents.add({'type': 'input_file', 'file_id': part.content});
+            // contents.add({'type': 'input_file', 'file_id': part.content});
             break;
           case MessagePartType.base64Image:
             contents.add({
@@ -396,11 +396,14 @@ class OpenAiApiService extends BaseApiService {
       'model': client.providerConfig.callName,
       'input': contents,
       'stream': true,
-      //'temperature': modelRequestContent.modelConfigure.temperature,
-      //'top_p': modelRequestContent.modelConfigure.topP,
       'max_output_tokens':
           modelRequestContent.modelConfigure.maxGenerationTokens,
     };
+
+    // Inject custom parameters
+    modelRequestContent.modelConfigure.customParameters.forEach((param, value) {
+      requestBody[param.apiName] = value;
+    });
 
     request.body = jsonEncode(requestBody);
 
@@ -782,11 +785,13 @@ class OpenAiCompletionService extends OpenAiApiService {
       'model': client.providerConfig.callName,
       'messages': contents,
       'stream': true,
-      //'frequency_penalty': modelRequestContent.modelConfigure.frequencyPenalty,
-      //'presence_penalty': modelRequestContent.modelConfigure.presencePenalty,
-      //'temperature': modelRequestContent.modelConfigure.temperature,
-      //'top_p': modelRequestContent.modelConfigure.topP,
+      'max_tokens': modelRequestContent.modelConfigure.maxGenerationTokens,
     };
+
+    // Inject custom parameters
+    modelRequestContent.modelConfigure.customParameters.forEach((param, value) {
+      requestBody[param.apiName] = value;
+    });
 
     request.body = jsonEncode(requestBody);
 
@@ -1003,12 +1008,14 @@ class GeminiApiService extends BaseApiService {
           case MessagePartType.image:
           case MessagePartType.pdf:
             throw UnimplementedError('Files api has not been implemented yet');
+            /*
             parts.add({
               'file_data': {
                 'mime_type': part.mimeType!,
                 "file_uri": part.content,
               },
             });
+            */
             break;
           case MessagePartType.base64Image:
           case MessagePartType.base64pdf:
@@ -1081,20 +1088,25 @@ class GeminiApiService extends BaseApiService {
       }
     }
 
-    request.body = jsonEncode({
+    final requestBody = {
       'contents': contents,
       //Gemini的系统指令是独立的，而且必须在开头，可恶的谷歌这样做就是不让我命中cache是吧。
       "systemInstruction": {'role': "system", 'parts': sysMsgParts},
       "generationConfig": {
-        //"temperature": modelRequestContent.modelConfigure.temperature,
-        //"topP": modelRequestContent.modelConfigure.topP,
         "maxOutputTokens":
             modelRequestContent.modelConfigure.maxGenerationTokens,
-        //"frequencyPenalty": modelRequestContent.modelSpecifics.frequencyPenalty,
-        //google的逆天操作，2.5系列是不支持的，但是tm的Api文档上是有这个设置选择的，劳资难道给你正则匹配到2.5就禁用吗？
-        //它家的api一团糟，还有各种不支持，这下知道openai 的好了。
-        //所以这里直接一刀切，google的模型全部忽略这个选择（当然现在应该大家用的都是2.5，所以基本上没啥大影响（本来就禁用））
       },
+    };
+    //"frequencyPenalty": modelRequestContent.modelSpecifics.frequencyPenalty,
+    //google的逆天操作，2.5系列是不支持的，但是tm的Api文档上是有这个设置选择的，劳资难道给你正则匹配到2.5就禁用吗？
+    //它家的api一团糟，还有各种不支持，这下知道openai 的好了。
+    //所以这里直接一刀切，google的模型全部忽略这个选择（当然现在应该大家用的都是2.5，所以基本上没啥大影响（本来就禁用））
+    // Inject custom parameters for Gemini using unified geminiName mapping
+    final genConfig = requestBody['generationConfig'] as Map<String, dynamic>;
+    modelRequestContent.modelConfigure.customParameters.forEach((param, value) {
+      if (value != null) {
+        genConfig[param.geminiName] = value;
+      }
     });
 
     if (modelRequestContent.stopSignal?.isStopped ?? false) {

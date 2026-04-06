@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' as io show Platform;
 
+import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -257,6 +258,7 @@ class _UNIChatState extends State<UNIChat> {
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
+          AppFlowyEditorLocalizations.delegate,
         ],
         supportedLocales: S.delegate.supportedLocales,
         navigatorKey: navigatorKey,
