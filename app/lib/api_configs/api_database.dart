@@ -359,12 +359,9 @@ class _ApiDb extends _$_ApiDb {
   }
 
   Future<void> upsertProviderPreset(ProviderPreset preset) {
-    return into(providerPresetsTable).insert(
-      preset.companion,
-      onConflict: DoUpdate(
-        (old) => preset.companion,
-      ),
-    );
+    return into(
+      providerPresetsTable,
+    ).insert(preset.companion, onConflict: DoUpdate((old) => preset.companion));
   }
 
   Future<List<ApiProvider>> getAllApiProviders() => select(apiProviders).get();
@@ -428,12 +425,11 @@ class _ApiDb extends _$_ApiDb {
 
         for (var m in configure.models) {
           if (osConfigs.containsKey(m.config.modelId)) {
-            await (update(providerModelConfigs)
-                  ..where(
-                    (e) =>
-                        e.providerId.equals(pv.id) &
-                        e.modelId.equals(m.config.modelId),
-                  ))
+            await (update(providerModelConfigs)..where(
+                  (e) =>
+                      e.providerId.equals(pv.id) &
+                      e.modelId.equals(m.config.modelId),
+                ))
                 .write(m.config);
             osConfigs[m.config.modelId] = true;
           } else {
@@ -442,12 +438,10 @@ class _ApiDb extends _$_ApiDb {
         }
         for (var entry in osConfigs.entries) {
           if (!entry.value) {
-            await (delete(providerModelConfigs)
-                  ..where(
-                    (e) =>
-                        e.providerId.equals(pv.id) &
-                        e.modelId.equals(entry.key),
-                  ))
+            await (delete(providerModelConfigs)..where(
+                  (e) =>
+                      e.providerId.equals(pv.id) & e.modelId.equals(entry.key),
+                ))
                 .go();
           }
         }
@@ -701,39 +695,48 @@ class _ApiDb extends _$_ApiDb {
       computation: (db) async {
         await db.transaction(() async {
           for (var map in dataList) {
-            List<ModelParamName>? parameters;
-            var pr = map['parameters'];
-            if (pr != null) {
-              parameters = (pr as List)
-                  .map((e) => ModelParamName.values.byName(e))
-                  .toList();
-              if (parameters.isEmpty) {
-                parameters = null;
+            try {
+              List<ModelParamName>? parameters;
+              var pr = map['parameters'];
+              if (pr != null) {
+                parameters = (pr as List)
+                    .map((e) => ModelParamName.values.byName(e))
+                    .toList();
+                if (parameters.isEmpty) {
+                  parameters = null;
+                }
               }
-            }
 
-            var m = Model(
-              id: map['id'],
-              family: map['family'],
-              friendlyName: map['friendly_name'],
-              abilities: XModelAlibity.fromList((map['abilities'] as List)),
-              contextLength: map['context_length'],
-              maxCompletionTokens: map['max_completion_tokens'],
-              parameters: parameters,
-            );
-            await db.into(db.models).insert(
-              m,
-              onConflict: DoUpdate(
-                (old) => ModelsCompanion(
-                  friendlyName: Value(m.friendlyName),
-                  family: Value(m.family),
-                  abilities: Value(m.abilities),
-                  contextLength: Value(m.contextLength),
-                  maxCompletionTokens: Value(m.maxCompletionTokens),
-                  parameters: Value(m.parameters),
-                ),
-              ),
-            );
+              var m = Model(
+                id: map['id'],
+                family: map['family'],
+                friendlyName: map['friendly_name'],
+                abilities: XModelAlibity.fromList((map['abilities'] as List)),
+                contextLength: map['context_length'],
+                maxCompletionTokens: map['max_completion_tokens'],
+                parameters: parameters,
+              );
+              await db
+                  .into(db.models)
+                  .insert(
+                    m,
+                    onConflict: DoUpdate(
+                      (old) => ModelsCompanion(
+                        friendlyName: Value(m.friendlyName),
+                        family: Value(m.family),
+                        abilities: Value(m.abilities),
+                        contextLength: Value(m.contextLength),
+                        maxCompletionTokens: Value(m.maxCompletionTokens),
+                        parameters: Value(m.parameters),
+                      ),
+                    ),
+                  );
+              // if the user set a model that has the same friendly name as the official ones
+              // this makes sure that we will skip the conflict model update will still update the other models
+            } catch (e) {
+              print(e);
+              continue;
+            }
           }
         });
       },
@@ -747,12 +750,12 @@ class _ApiDb extends _$_ApiDb {
         await db.transaction(() async {
           for (var map in dataList) {
             var p = ProviderPreset.fromMap(map);
-            await db.into(db.providerPresetsTable).insert(
-              p.companion,
-              onConflict: DoUpdate(
-                (old) => p.companion,
-              ),
-            );
+            await db
+                .into(db.providerPresetsTable)
+                .insert(
+                  p.companion,
+                  onConflict: DoUpdate((old) => p.companion),
+                );
           }
         });
       },

@@ -955,7 +955,7 @@ class ChatPanelInputBox extends ConsumerStatefulWidget {
     this.afterSubmit,
     this.cancelCallback,
   });
-  final void Function(TextEditingController)? textInject;
+  final void Function(MDEditorController)? textInject;
   final void Function()? beforeSubmit;
   final void Function()? afterSubmit;
   final void Function()? cancelCallback;
@@ -974,7 +974,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   initState() {
     super.initState();
     chatState = ref.read(chatStateProvider);
-    widget.textInject?.call(_textController);
+    widget.textInject?.call(_mdEditorController);
   }
 
   late ChatState chatState;
@@ -1021,7 +1021,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   }
 
   void _sendMessage() {
-    final text = _textController.text.trim();
+    var text = _mdEditorController.text.trim();
     if (text.isEmpty) return;
     widget.beforeSubmit?.call();
     ref.read(chatStateProvider.notifier).sendMessage(text);
@@ -1271,6 +1271,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           }
         }
       }
+      /*
       if (HardwareKeyboard.instance.isShiftPressed &&
           evt.logicalKey == LogicalKeyboardKey.enter) {
         if (evt is KeyDownEvent) {
@@ -1331,10 +1332,13 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           return KeyEventResult.handled;
         }
       }
+      
+       */
       return KeyEventResult.ignored;
     },
   );
   final ScrollController _inputScrollController = ScrollController();
+  final MDEditorController _mdEditorController = MDEditorController();
   Widget _buildChatPanel() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1492,8 +1496,18 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
             textCapitalization: TextCapitalization.sentences,
           ),
           */ MDEditor(
+            controller: _mdEditorController,
             minHeight: 40,
+            focusNode: _focusNode,
+            hintText: S.of(context).send_a_message_hint,
+            multiLine: true,
             maxHeight: 400,
+            onSend: (text) {
+              if (text.isEmpty || chatState.isLoading || !chatState.isReady) {
+                return;
+              }
+              _sendMessage();
+            },
           ),
         ),
         const SizedBox(height: 6),

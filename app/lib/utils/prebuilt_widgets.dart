@@ -1231,44 +1231,112 @@ class StdIconButton extends StatelessWidget {
   }
 }
 
-class MDEditor extends StatefulWidget {
-  const MDEditor({super.key, required this.maxHeight, required this.minHeight});
-  final double maxHeight;
-  final double minHeight;
-  @override
-  State<MDEditor> createState() => _MDEditorState();
+class MDEditorController {
+  MDEditorController(){
+    editorState = EditorState.blank();
+  }
+  late EditorState editorState;
+  String get text {
+    return editorState.document.root.children.map((e)=>e.delta?.toPlainText()).join("\n");
+  }
+  
+  void clear() {
+    editorState.dispose();
+    editorState = EditorState.blank();
+  }
+  
+  void setText(String text){
+    editorState.dispose();
+    editorState = EditorState.blank(withInitialText: true);
+    editorState.insertText(0, text);
+  }
 }
 
-class _MDEditorState extends State<MDEditor> {
-  late EditorState editorState;
+class MDEditor extends ConsumerStatefulWidget {
+  const MDEditor({
+    super.key,
+    required this.controller,
+    this.multiLine = false,
+    this.maxHeight,
+    this.minHeight,
+    this.hintText,
+    this.onSend,
+    this.onDisposeCallback,
+    this.focusNode,
+  });
+  final bool multiLine;
+  final MDEditorController controller;
+  final double? maxHeight;
+  final double? minHeight;
+  final String? hintText;
+  final FocusNode? focusNode;
+  final void Function()? onDisposeCallback;
+  final void Function(String)? onSend;
+  @override
+  ConsumerState<MDEditor> createState() => _MDEditorState();
+}
 
+class _MDEditorState extends ConsumerState<MDEditor> {
+  EditorState get editorState => widget.controller.editorState;
   @override
   void initState() {
     super.initState();
-    editorState = EditorState.blank();
+  }
+  
+  @override
+  void dispose() {
+    widget.onDisposeCallback?.call();
+    super.dispose();
+  }
+
+  void onSend() {
+    var text = editorState.document.root.children.map((e)=>e.delta?.toPlainText()).join("\n");
+    widget.onSend?.call(text);
   }
 
   @override
   Widget build(BuildContext context) {
+    var theme = ref.watch(themeProvider);
+    Widget e =  AppFlowyEditor(
+      editorState: editorState,
+      shrinkWrap: true,
+      focusNode: widget.focusNode,
+      autoFocus: true,
+      blockComponentBuilders: {
+        ...standardBlockComponentBuilderMap,
+        ParagraphBlockKeys.type: MarkdownBlockComponentBuilder(
+          configuration: BlockComponentConfiguration(
+            placeholderText: (node) => widget.hintText ?? "",
+          ),
+        ),
+      },
+      editorStyle: EditorStyle.desktop(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+        cursorColor: theme.primaryColor,
+        selectionColor: theme.primaryColor.withAlpha(40),
+        
+        
+      ),
+      commandShortcutEvents: [
+        
+        if (widget.onSend != null) ...[
+          sendShortcutEvent(onSend: onSend),
+          newlineMarkdownShortcutEvent,
+          ...standardCommandShortcutEvents.where((element) => element.key != "enter"),
+        ]else ...standardCommandShortcutEvents,
+      ],
+    );
+    if(widget.multiLine){
+      e = IntrinsicHeight(
+          child:e
+      );
+    }
     return ConstrainedBox(
       constraints: BoxConstraints(
-        minHeight: widget.minHeight,
-        maxHeight: widget.maxHeight,
+        minHeight: widget.minHeight??40,
+        maxHeight: widget.maxHeight??double.infinity,
       ),
-      child: IntrinsicHeight(
-        child: AppFlowyEditor(
-          editorState: editorState,
-          shrinkWrap: true,
-          autoFocus: true,
-          blockComponentBuilders: {...standardBlockComponentBuilderMap},
-          editorStyle: EditorStyle.desktop(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-            cursorColor: Colors.blue,
-            selectionColor: Colors.blue.withValues(alpha: 0.2),
-          ),
-          commandShortcutEvents: [...standardCommandShortcutEvents],
-        ),
-      ),
+      child: e
     );
   }
 }

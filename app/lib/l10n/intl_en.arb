@@ -134,7 +134,7 @@
   "message_no_content": "Something went wrong , the model returns a message without content.",
   "drop_files_hint":"Drop files here",
   "generating_title":"Generating conversation title...",
-  "send_a_message_hint":"Send a message",
+  "send_a_message_hint":"Send a message (MD  supported), enter \"/\" for more options",
   "ui_editing":"Editing UI",
   "ui_edited":"Edited UI",
   "show_source_code":"Show source code",
@@ -225,7 +225,7 @@
   "no_model":"No model yet",
   "no_embedding_model": "No embedding model \n Embedding models are different from chat models,check whether you really got one.",
   "plz_select_provider":"Please select a provider",
-  "enter_sys_prompt_here":"Enter system prompt here...",
+  "enter_sys_prompt_here":"Enter system prompt here... \n MarkDown is supported , enter \"/\" for more options.",
   "enter_opening_here":"Enter opening here...",
   "over_maximum_context_length_hint" :"You have exceeded the maximum context length of {charCount}/{maxCount} characters.",
   "@over_maximum_context_length_hint":{

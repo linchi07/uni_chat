@@ -126,8 +126,8 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
         //and it's too inefficient to inject a provider
         //so I just pack them into a obj and pass it to the animation widget
         var functionPT = (
-          (con) {
-            con.text = message.content;
+          (MDEditorController con) {
+            con.setText(message.content);
             if (message.attachedFiles != null &&
                 message.attachedFiles!.isNotEmpty) {
               WidgetsBinding.instance.addPostFrameCallback((_) {

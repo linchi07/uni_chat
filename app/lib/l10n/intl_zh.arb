@@ -135,7 +135,7 @@
   "message_no_content": "发生错误，模型返回了一条空消息",
   "drop_files_hint": "在这里拖放文件",
   "generating_title": "正在生成对话标题……",
-  "send_a_message_hint": "发送一条消息",
+  "send_a_message_hint": "发送一条消息（支持MD）,键入\"/\"以查看更多选项",
   "ui_editing": "正在编辑UI...",
   "ui_edited": "编辑了UI",
   "show_source_code": "显示源码",
@@ -230,7 +230,7 @@
   "no_model": "无模型",
   "no_embedding_model": "无模型 \n 嵌入模型和聊天模型不同，请检查你是否添加了一个嵌入模型？",
   "plz_select_provider": "请选择提供商",
-  "enter_sys_prompt_here": "在这里输入系统提示词",
+  "enter_sys_prompt_here": "在这里输入系统提示词, \n 支持Markdown，键入\"/\"以打开菜单",
   "enter_opening_here": "在这里输入开场白",
   "over_maximum_context_length_hint" : "你已超出最大系统提示词上限，多余部分将会被截断，请增大模型上下文或者精简提示词{charCount}/{maxCount}",
   "@over_maximum_context_length_hint":{

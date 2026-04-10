@@ -1352,6 +1352,7 @@ class _SysPromptEdit extends ConsumerStatefulWidget {
 
 class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
   late TextEditingController controller;
+  late MDEditorController mdController = MDEditorController();
   int charCount = 0;
 
   @override
@@ -1392,6 +1393,7 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
           ),
           const SizedBox(height: 16),
           Expanded(
+            /*
             child: TextField(
               controller: controller,
               onTapOutside: (e) {
@@ -1445,6 +1447,22 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
               expands: true,
               maxLines: null,
               textAlignVertical: TextAlignVertical.top,
+            ),
+            
+             */
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: theme.primaryColor,
+                  width: 1.5,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: MDEditor(
+                controller: mdController,
+                hintText: S.of(context).enter_sys_prompt_here,
+              ),
             ),
           ),
           const SizedBox(height: 16),

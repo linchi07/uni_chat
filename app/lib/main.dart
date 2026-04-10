@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' as io show Platform;
+import 'dart:math';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -40,8 +41,7 @@ Future<void> main() async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      await LogManager.instance.init();
-      if (io.Platform.isAndroid) {
+            if (io.Platform.isAndroid) {
         PlatForm().platform = RunningPlatform.android;
         var di = await DeviceInfoPlugin().androidInfo;
         PlatForm().platformInfo = "${di.model} running on ${di.version}";
@@ -78,6 +78,7 @@ Future<void> main() async {
         sqfliteFfiInit();
         databaseFactory = databaseFactoryFfi;
       }
+      await LogManager.instance.init();
 
       final prefs = await SharedPreferences.getInstance();
       var l = prefs.getString("language");
@@ -269,7 +270,17 @@ class _UNIChatState extends State<UNIChat> {
             ? const ScrollBehavior().copyWith(physics: const IOSScrollPhysics())
             : null,
         theme: ThemeData(
-          fontFamilyFallback: (PlatForm().isWindows) ? ["DengXian"] : null,
+          fontFamily: (PlatForm().isWindows) ? "Segoe UI" : null,
+          fontFamilyFallback: (PlatForm().isWindows)
+              ? [
+                  "Microsoft YaHei",
+                  "Yu Gothic UI",
+                  "Malgun Gothic",
+                  "Segoe UI Emoji",
+                  "Segoe UI Symbol",
+                  "NotoSymbols",
+                ]
+              : null,
           // fix the font glitches in windows when displaying SC
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
@@ -323,19 +334,21 @@ class _UNIChatState extends State<UNIChat> {
                   isSetUp =
                       true; // or the setup menu will re-popout when you resize the window
                 }
+                mainContent = AppBarTheme(
+                  scrolledUnderElevation: 0,
+                  child: mainContent,
+                );
                 if (PlatForm().isWindows) {
                   // windows will force the window to get too small when showing desktop even when window size is set
                   // so we need to avoid the negative constrained error
                   var mdof = MediaQuery.of(context);
                   var s = mdof.size;
-                  if (s.height < 480 || s.width < 640) {
-                    return const SizedBox.shrink();
-                  }
+                  mainContent = ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: 480, minWidth: 640),
+                    child: mainContent,
+                  );
                 }
-                return AppBarTheme(
-                  scrolledUnderElevation: 0,
-                  child: mainContent,
-                );
+                return mainContent;
               },
             ),
           ),
