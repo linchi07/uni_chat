@@ -345,7 +345,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           throw ChatException(ChatExceptionType.sessionNotFound);
         }
         //TODO: 最好让这里的逻辑都放到agent_provider里面
-        await _ref.read(agentProvider.notifier).loadAgentById(session.agentId);
+        await _ref
+            .read(agentProvider.notifier)
+            .loadAgentById(session.agentId, overrideJson: session.agentOverride);
         final msg = await _dbService.getMessagesForSession(sessionId);
         if (msg.root == null || msg.messages.isEmpty) {
           throw ChatException(ChatExceptionType.messageNotFound);
@@ -763,7 +765,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     }
     // title generation has to be done after the finally
     // or the wrong stop signal will be disposed and causes crashes (generateTitle it self will add a new stop signal)
-    if (state.session!.name == "New Chat"&&!state.isGeneratingTitle) {
+    if (state.session!.name == "New Chat" && !state.isGeneratingTitle) {
       generateTitle();
     }
   }

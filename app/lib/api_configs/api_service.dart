@@ -396,9 +396,12 @@ class OpenAiApiService extends BaseApiService {
       'model': client.providerConfig.callName,
       'input': contents,
       'stream': true,
-      'max_output_tokens':
-          modelRequestContent.modelConfigure.maxGenerationTokens,
     };
+
+    if (modelRequestContent.modelConfigure.maxGenerationTokens != -1) {
+      requestBody['max_output_tokens'] =
+          modelRequestContent.modelConfigure.maxGenerationTokens;
+    }
 
     // Inject custom parameters
     modelRequestContent.modelConfigure.customParameters.forEach((param, value) {
@@ -785,8 +788,12 @@ class OpenAiCompletionService extends OpenAiApiService {
       'model': client.providerConfig.callName,
       'messages': contents,
       'stream': true,
-      'max_tokens': modelRequestContent.modelConfigure.maxGenerationTokens,
     };
+
+    if (modelRequestContent.modelConfigure.maxGenerationTokens != -1) {
+      requestBody['max_tokens'] =
+          modelRequestContent.modelConfigure.maxGenerationTokens;
+    }
 
     // Inject custom parameters
     modelRequestContent.modelConfigure.customParameters.forEach((param, value) {
@@ -1092,11 +1099,14 @@ class GeminiApiService extends BaseApiService {
       'contents': contents,
       //Gemini的系统指令是独立的，而且必须在开头，可恶的谷歌这样做就是不让我命中cache是吧。
       "systemInstruction": {'role': "system", 'parts': sysMsgParts},
-      "generationConfig": {
-        "maxOutputTokens":
-            modelRequestContent.modelConfigure.maxGenerationTokens,
-      },
+      "generationConfig": {},
     };
+
+    if (modelRequestContent.modelConfigure.maxGenerationTokens != -1) {
+      (requestBody['generationConfig'] as Map<String, dynamic>)[
+        "maxOutputTokens"
+      ] = modelRequestContent.modelConfigure.maxGenerationTokens;
+    }
     //"frequencyPenalty": modelRequestContent.modelSpecifics.frequencyPenalty,
     //google的逆天操作，2.5系列是不支持的，但是tm的Api文档上是有这个设置选择的，劳资难道给你正则匹配到2.5就禁用吗？
     //它家的api一团糟，还有各种不支持，这下知道openai 的好了。

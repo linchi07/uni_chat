@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
@@ -414,7 +415,7 @@ class _ModelMatchReviewDialogState extends State<ModelMatchReviewDialog> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          _buildTag(result.category, result.similarity),
+                          _buildTag(result),
                         ],
                       ),
                     ),
@@ -427,57 +428,152 @@ class _ModelMatchReviewDialogState extends State<ModelMatchReviewDialog> {
                     const SizedBox(width: 8),
                     Expanded(
                       flex: 3,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: widget.theme.primaryColor.withAlpha(80),
-                          ),
-                        ),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(7),
-                          onTap: () => _showModelPicker(index),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            child: Row(
-                              children: [
-                                if (imgP != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: StdAvatar(
-                                      assetImage: AssetImage(imgP),
-                                    ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (result.localModel != null)
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: result.isConflictLoss
+                                      ? widget.theme.errorColor.withAlpha(120)
+                                      : widget.theme.primaryColor.withAlpha(80),
+                                  width: result.isConflictLoss ? 1.5 : 1.0,
+                                ),
+                              ),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(7),
+                                onTap: () => _showModelPicker(index),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
                                   ),
-                                Expanded(
-                                  child: Text(
-                                    result.localModel?.friendlyName ??
-                                        S.of(context).no_model,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: result.localModel != null
-                                          ? widget.theme.darkTextColor
-                                          : widget.theme.darkTextColor
-                                                .withAlpha(120),
-                                    ),
+                                  child: Row(
+                                    children: [
+                                      if (imgP != null)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(right: 8),
+                                          child: StdAvatar(
+                                            assetImage: AssetImage(imgP),
+                                          ),
+                                        ),
+                                      Expanded(
+                                        child: Text(
+                                          result.localModel?.friendlyName ??
+                                              S.of(context).no_model,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: widget.theme.darkTextColor,
+                                          ),
+                                        ),
+                                      ),
+                                      if (result.localModel != null)
+                                        StdIconButton(
+                                          padding: const EdgeInsets.all(2),
+                                          icon: Icons.close,
+                                          onPressed: () {
+                                            setState(() {
+                                              _results[index].localModel = null;
+                                              _results[index].config = null;
+                                            });
+                                          },
+                                        ),
+                                    ],
                                   ),
                                 ),
-                                if (result.localModel != null)
-                                  StdIconButton(
-                                    padding: const EdgeInsets.all(2),
-                                    icon: Icons.close,
-                                    onPressed: () {
-                                      setState(() {
-                                        _results[index].localModel = null;
-                                      });
+                              ),
+                            ),
+                          if (result.localModel != null && result.isConflictLoss)
+                            const SizedBox(height: 8),
+                          if (result.localModel == null || result.isConflictLoss)
+                            Row(
+                              children: [
+                                if (result.localModel == null)
+                                  Expanded(
+                                    child: StdButton(
+                                      text: S.of(context).select_model,
+                                      onPressed: () => _showModelPicker(index),
+                                    ),
+                                  ),
+                                if (result.localModel == null)
+                                  const SizedBox(width: 8),
+                                Expanded(
+                                  child: StdButton(
+                                    text: S.of(context).create_variant,
+                                    color: widget.theme.primaryColor.withAlpha(
+                                      result.localModel != null ? 30 : 50,
+                                    ),
+                                    onPressed: () async {
+                                      Model? baseModel = result.localModel;
+                                      // If it has a similarity > 0, find which model it almost matched
+                                      if (baseModel == null &&
+                                          result.similarity > 0) {
+                                        // Find the best matching model from all models
+                                        Model? best;
+                                        double maxSim = 0;
+                                        for (var m in widget.allModels) {
+                                          double simId =
+                                              ModelMatcher.calculateSimilarity(
+                                                result.remoteName,
+                                                m.id,
+                                              );
+                                          double simName =
+                                              ModelMatcher.calculateSimilarity(
+                                                result.remoteName,
+                                                m.friendlyName,
+                                              );
+                                          double current = max(simId, simName);
+                                          if (current > maxSim) {
+                                            maxSim = current;
+                                            best = m;
+                                          }
+                                        }
+                                        if (maxSim > 0.3) {
+                                          baseModel = best;
+                                        }
+                                      }
+
+                                      final initialConfig = ProviderModelConfig(
+                                        providerId: "",
+                                        modelId: "",
+                                        callName: result.remoteName,
+                                      );
+
+                                      OverlayPortalService.showDialog(
+                                        context,
+                                        width: 450,
+                                        backGroundColor:
+                                            widget.theme.zeroGradeColor,
+                                        child: ModelAddWidget(
+                                          theme: widget.theme,
+                                          modelConfig: initialConfig,
+                                          initialModel: baseModel,
+                                          startWithAdding: true,
+                                          onSave: (model, config) {
+                                            setState(() {
+                                              _results[index] =
+                                                  ModelMatchResult(
+                                                    remoteName: result.remoteName,
+                                                    localModel: model,
+                                                    config: config,
+                                                    category: MatchCategory
+                                                        .suggested,
+                                                    similarity: 1.0,
+                                                  );
+                                            });
+                                            OverlayPortalService.hide(context);
+                                          },
+                                        ),
+                                      );
                                     },
                                   ),
+                                ),
                               ],
                             ),
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                   ],
@@ -509,11 +605,16 @@ class _ModelMatchReviewDialogState extends State<ModelMatchReviewDialog> {
     );
   }
 
-  Widget _buildTag(MatchCategory category, double similarity) {
+  Widget _buildTag(ModelMatchResult result) {
+    MatchCategory category = result.category;
+    double similarity = result.similarity;
     Color color;
     String text;
 
-    if (category == MatchCategory.confirmed || similarity >= 0.85) {
+    if (result.isConflictLoss) {
+      color = widget.theme.errorColor;
+      text = S.of(context).match_conflict;
+    } else if (category == MatchCategory.confirmed || similarity >= 0.85) {
       color = widget.theme.okColor;
       text = S.of(context).match_confirmed;
     } else if (similarity >= 0.65) {
@@ -546,7 +647,7 @@ class _ModelMatchReviewDialogState extends State<ModelMatchReviewDialog> {
           Padding(
             padding: const EdgeInsets.only(left: 6),
             child: Text(
-              "${(similarity * 100).toStringAsFixed(0)}% 相关",
+              S.of(context).match_similarity((similarity * 100).toStringAsFixed(0)),
               style: TextStyle(
                 fontSize: 10,
                 color: widget.theme.darkTextColor.withAlpha(150),

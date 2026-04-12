@@ -14,6 +14,8 @@ const int CURRENT_PERSONA_CONFIG_VERSION = 1;
 const int CURRENT_OPENING_CONFIG_VERSION = 1;
 const int CURRENT_AGENT_DATA_VERSION = 1;
 
+const String INSTANT_AGENT_ID = '@instant';
+
 @immutable
 class ModelConfigure {
   final String modelId;
@@ -217,6 +219,71 @@ class AgentData implements Insertable<AgentDbModel> {
     this.isDefault = false,
   });
 
+  AgentData copyWith({
+    int? version,
+    String? id,
+    String? name,
+    String? description,
+    String? systemPrompt,
+    ModelConfigure? modelConfigure,
+    PersonaConfigure? userIdentityConfigure,
+    OpeningConfigure? openingConfigure,
+    DateTime? createdAt,
+    bool? isDefault,
+  }) {
+    return AgentData(
+      version: version ?? this.version,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      systemPrompt: systemPrompt ?? this.systemPrompt,
+      modelConfigure: modelConfigure ?? this.modelConfigure,
+      userIdentityConfigure:
+          userIdentityConfigure ?? this.userIdentityConfigure,
+      openingConfigure: openingConfigure ?? this.openingConfigure,
+      createdAt: createdAt ?? this.createdAt,
+      isDefault: isDefault ?? this.isDefault,
+    );
+  }
+
+  Map<String, dynamic> toConfigureMap() {
+    return {
+      'version': CURRENT_AGENT_DATA_VERSION,
+      'model_configure': modelConfigure.toMap(),
+      'persona_configure': userIdentityConfigure?.toMap(),
+      'opening_configure': openingConfigure?.toMap(),
+      'system_prompt': systemPrompt,
+    };
+  }
+
+  AgentData applyOverride(String overrideJson) {
+    try {
+      final Map<String, dynamic> overrides = jsonDecode(overrideJson);
+
+      PersonaConfigure? uidc;
+      var uidcp = overrides['persona_configure'];
+      if (uidcp != null) {
+        uidc = PersonaConfigure.fromMap(uidcp);
+      }
+
+      OpeningConfigure? opc;
+      var opcp = overrides['opening_configure'];
+      if (opcp != null) {
+        opc = OpeningConfigure.fromMap(opcp);
+      }
+
+      return copyWith(
+        systemPrompt: overrides['system_prompt'] as String?,
+        modelConfigure: ModelConfigure.fromMap(overrides['model_configure']),
+        userIdentityConfigure: uidc,
+        openingConfigure: opc,
+      );
+    } catch (e) {
+      // If parsing fails, return original data
+      return this;
+    }
+  }
+
   Future<File?> getAvatar() async {
     var f = await PathProvider.getPath("chat/avatars/$id");
     var f1 = File("$f.png");
@@ -236,14 +303,7 @@ class AgentData implements Insertable<AgentDbModel> {
   }
 
   String _parameterToJson() {
-    Map<String, dynamic> parameters = {
-      'version': CURRENT_AGENT_DATA_VERSION,
-      'model_configure': modelConfigure.toMap(),
-      'persona_configure': userIdentityConfigure?.toMap(),
-      'opening_configure': openingConfigure?.toMap(),
-      'system_prompt': systemPrompt,
-    };
-    return jsonEncode(parameters);
+    return jsonEncode(toConfigureMap());
   }
 
   factory AgentData.fromAgentDBModel(AgentDbModel adbm) {

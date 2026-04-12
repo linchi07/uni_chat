@@ -126,8 +126,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
         //and it's too inefficient to inject a provider
         //so I just pack them into a obj and pass it to the animation widget
         var functionPT = (
-          (MDEditorController con) {
-            con.setText(message.content);
+          () {
             if (message.attachedFiles != null &&
                 message.attachedFiles!.isNotEmpty) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -144,6 +143,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                     );
               });
             }
+            return widget.message.content;
           },
           () {
             ref.read(chatStateProvider.notifier).addBranch(index);
@@ -781,6 +781,7 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
           ),
           child: (t >= 0.8)
               ? ChatPanelInputBox(
+                  showInfoMessage: false,
                   textInject: widget.registeredFunctions.$1,
                   beforeSubmit: widget.registeredFunctions.$2,
                   afterSubmit: widget.registeredFunctions.$3,
@@ -851,7 +852,8 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
+        // to match the tool bar height of the persistent messages
+        margin: const EdgeInsets.fromLTRB(8, 5 + 30, 8, 5),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
         child: ValueListenableBuilder(

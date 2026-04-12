@@ -67,7 +67,7 @@ dependency_overrides:
   appflowy_editor:
     git:
       url: https://github.com/linchi07/appflowy_md_inputbox.git
-      ref: dev
+      ref: 22c3102
   irondash_engine_context:
     git:
       url: https://github.com/orestesgaolin/irondash.git

@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -586,7 +585,7 @@ class StdSlider extends ConsumerWidget {
             activeColor: theme.primaryColor,
             inactiveColor: theme.thirdGradeColor,
             thumbColor: theme.zeroGradeColor,
-            value: toInt ? value.roundToDouble() : value,
+            value: (toInt ? value.roundToDouble() : value).clamp(0, max),
             onChanged: (val) {
               val = val.clamp(min, max);
               if (toInt) {
@@ -1139,7 +1138,7 @@ class StdAvatar extends StatelessWidget {
       width: length,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: (file == null && assetImage == null) ? null : backgroundColor,
         shape: BoxShape.circle,
         border: showBorder
             ? Border.all(
@@ -1231,112 +1230,298 @@ class StdIconButton extends StatelessWidget {
   }
 }
 
-class MDEditorController {
-  MDEditorController(){
-    editorState = EditorState.blank();
-  }
-  late EditorState editorState;
-  String get text {
-    return editorState.document.root.children.map((e)=>e.delta?.toPlainText()).join("\n");
-  }
-  
-  void clear() {
-    editorState.dispose();
-    editorState = EditorState.blank();
-  }
-  
-  void setText(String text){
-    editorState.dispose();
-    editorState = EditorState.blank(withInitialText: true);
-    editorState.insertText(0, text);
-  }
-}
-
-class MDEditor extends ConsumerStatefulWidget {
-  const MDEditor({
+class InputBoxHint extends ConsumerWidget {
+  const InputBoxHint({
     super.key,
-    required this.controller,
-    this.multiLine = false,
-    this.maxHeight,
-    this.minHeight,
-    this.hintText,
-    this.onSend,
-    this.onDisposeCallback,
-    this.focusNode,
+    required this.message,
+    this.icon,
+    this.backgroundColor,
+    this.foregroundColor,
+    this.actions = const [],
   });
-  final bool multiLine;
-  final MDEditorController controller;
-  final double? maxHeight;
-  final double? minHeight;
-  final String? hintText;
-  final FocusNode? focusNode;
-  final void Function()? onDisposeCallback;
-  final void Function(String)? onSend;
+
+  /// The message to display. Usually a [Text] widget.
+  final Widget message;
+
+  /// The icon to display on the left of the message.
+  final Widget? icon;
+
+  /// The background color of the hint bar.
+  /// Defaults to [theme.primaryColor] with alpha 50.
+  final Color? backgroundColor;
+
+  /// The foreground color for the message and icon.
+  /// Defaults to [theme.primaryColor].
+  final Color? foregroundColor;
+
+  /// A list of widgets (usually [StdButton] or [StdIconButton]) to display on the right.
+  final List<Widget> actions;
+
   @override
-  ConsumerState<MDEditor> createState() => _MDEditorState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    var theme = ref.watch(themeProvider);
+    var bg = backgroundColor ?? theme.primaryColor.withAlpha(50);
+    var fg = foregroundColor ?? theme.primaryColor;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      height: 35,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[icon!, const SizedBox(width: 8)],
+              Flexible(
+                child: DefaultTextStyle(
+                  style: TextStyle(
+                    color: fg,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  child: message,
+                ),
+              ),
+            ],
+          ),
+          if (actions.isNotEmpty)
+            Positioned(
+              right: 2,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: actions
+                    .map(
+                      (a) => Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: (a is StdIconButton)
+                            ? a
+                            : SizedBox(height: 28, child: a),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
-class _MDEditorState extends ConsumerState<MDEditor> {
-  EditorState get editorState => widget.controller.editorState;
+class StdSegmentedControl extends ConsumerStatefulWidget {
+  final List<String> labels;
+  final int currentIndex;
+  final ValueChanged<int> onIndexChanged;
+  final double? width;
+  final EdgeInsets? margin;
+  final bool enableBackground;
+
+  const StdSegmentedControl({
+    super.key,
+    required this.labels,
+    required this.currentIndex,
+    required this.onIndexChanged,
+    this.width,
+    this.margin,
+    this.enableBackground = true,
+  });
+
+  @override
+  ConsumerState<StdSegmentedControl> createState() =>
+      _StdSegmentedControlState();
+}
+
+class _StdSegmentedControlState extends ConsumerState<StdSegmentedControl>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
   @override
   void initState() {
     super.initState();
-  }
-  
-  @override
-  void dispose() {
-    widget.onDisposeCallback?.call();
-    super.dispose();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _updateAnimation();
   }
 
-  void onSend() {
-    var text = editorState.document.root.children.map((e)=>e.delta?.toPlainText()).join("\n");
-    widget.onSend?.call(text);
+  @override
+  void didUpdateWidget(StdSegmentedControl oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentIndex != widget.currentIndex ||
+        oldWidget.labels.length != widget.labels.length) {
+      _updateAnimation();
+    }
+  }
+
+  void _updateAnimation() {
+    double targetValue = widget.labels.length > 1
+        ? widget.currentIndex / (widget.labels.length - 1)
+        : 0.0;
+    _controller.animateTo(targetValue, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
-    Widget e =  AppFlowyEditor(
-      editorState: editorState,
-      shrinkWrap: true,
-      focusNode: widget.focusNode,
-      autoFocus: true,
-      blockComponentBuilders: {
-        ...standardBlockComponentBuilderMap,
-        ParagraphBlockKeys.type: MarkdownBlockComponentBuilder(
-          configuration: BlockComponentConfiguration(
-            placeholderText: (node) => widget.hintText ?? "",
+    final theme = ref.watch(themeProvider);
+    final total = widget.labels.length;
+
+    return Container(
+      width: widget.width,
+      margin: widget.margin ?? const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: (widget.enableBackground) ? theme.secondGradeColor : null,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final sliderWidth = constraints.maxWidth / total;
+          return Stack(
+            children: [
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  // 将 0..1 映射到 Alignment 的 -1..1
+                  double alignX = _controller.value * 2 - 1;
+                  return Align(
+                    alignment: Alignment(alignX, 0),
+                    child: Container(
+                      width: sliderWidth,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: theme.primaryColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              Row(
+                children: List.generate(total, (index) {
+                  final isSelected = widget.currentIndex == index;
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => widget.onIndexChanged(index),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        height: 34,
+                        alignment: Alignment.center,
+                        child: Text(
+                          widget.labels[index],
+                          style: TextStyle(
+                            color: isSelected
+                                ? theme.getTextColor(theme.primaryColor)
+                                : theme.textColor,
+                            fontSize: 14,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class StdSegmentedPageView extends ConsumerStatefulWidget {
+  final List<String> labels;
+  final List<Widget> children;
+  final int initialIndex;
+  final ValueChanged<int>? onPageChanged;
+
+  const StdSegmentedPageView({
+    super.key,
+    required this.labels,
+    required this.children,
+    this.initialIndex = 0,
+    this.onPageChanged,
+  }) : assert(labels.length == children.length);
+
+  @override
+  ConsumerState<StdSegmentedPageView> createState() =>
+      _StdSegmentedPageViewState();
+}
+
+class _StdSegmentedPageViewState extends ConsumerState<StdSegmentedPageView> {
+  late PageController _pageController;
+  late int _currentIndex;
+  bool _ignoreUpdate = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  void _handleIndexChanged(int index) {
+    if (_currentIndex == index) return;
+    setState(() {
+      _currentIndex = index;
+    });
+    _ignoreUpdate = true;
+    _pageController
+        .animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        )
+        .then((_) => _ignoreUpdate = false);
+    widget.onPageChanged?.call(index);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        StdSegmentedControl(
+          labels: widget.labels,
+          currentIndex: _currentIndex,
+          onIndexChanged: _handleIndexChanged,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        ),
+        Expanded(
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              if (_ignoreUpdate) return;
+              setState(() {
+                _currentIndex = index;
+              });
+              widget.onPageChanged?.call(index);
+            },
+            children: widget.children,
           ),
         ),
-      },
-      editorStyle: EditorStyle.desktop(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-        cursorColor: theme.primaryColor,
-        selectionColor: theme.primaryColor.withAlpha(40),
-        
-        
-      ),
-      commandShortcutEvents: [
-        
-        if (widget.onSend != null) ...[
-          sendShortcutEvent(onSend: onSend),
-          newlineMarkdownShortcutEvent,
-          ...standardCommandShortcutEvents.where((element) => element.key != "enter"),
-        ]else ...standardCommandShortcutEvents,
       ],
-    );
-    if(widget.multiLine){
-      e = IntrinsicHeight(
-          child:e
-      );
-    }
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        minHeight: widget.minHeight??40,
-        maxHeight: widget.maxHeight??double.infinity,
-      ),
-      child: e
     );
   }
 }

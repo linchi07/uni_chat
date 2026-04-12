@@ -487,6 +487,7 @@ class _ApiDb extends _$_ApiDb {
             rpm: e.rpm,
             rpd: e.rpd,
             tokenLimit: e.tokenLimit,
+            invokeData: e.invokeData,
           ),
         )
         .toList();
