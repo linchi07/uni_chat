@@ -84,10 +84,21 @@ jobs:
           Get-ChildItem -Path app/Installer/*.exe | Rename-Item -NewName { "UNIChat_${{ github.ref_name }}_windows_setup.exe" }
 
       # macOS Build
+      - name: Disable macOS signing (CI)
+        if: matrix.platform == 'macos'
+        run: |
+          cd macos
+          xcodebuild -project Runner.xcodeproj \
+            -target Runner \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      
       - name: Build macOS App
         if: matrix.platform == 'macos'
         run: |
-          flutter build macos --release
+          flutter build macos --release --no-codesign
           # Simple zip of the .app for basic distribution if no DMG tool is setup
           cd build/macos/Build/Products/Release
           zip -r ../../../../UNIChat_${{ github.ref_name }}_macos.zip UNIChat.app

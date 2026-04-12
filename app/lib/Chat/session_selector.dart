@@ -18,7 +18,7 @@ import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import '../Agent/agentProvider.dart';
 import '../Agent/agent_models.dart';
 import '../database/database_service.dart';
-import '../generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/color.dart' show ColorParser;
 import 'chat_message_bubble.dart';

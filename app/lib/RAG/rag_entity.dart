@@ -10,7 +10,7 @@ import 'dart:math';
 import 'package:flutter/widgets.dart';
 import 'package:objectbox/objectbox.dart';
 
-import '../generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 
 enum RAGIndexMethod { vector, keyword, regex }
 

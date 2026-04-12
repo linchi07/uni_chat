@@ -11,7 +11,7 @@ import 'package:uni_chat/utils/api_database_service.dart';
 import 'package:uni_chat/utils/back_ground_task_manager.dart';
 import 'package:uuid/uuid.dart';
 
-import '../generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/overlays.dart';
 import '../utils/prebuilt_widgets.dart';

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 
-import '../generated/l10n.dart' show S;
+import '../l10n/generated/l10n.dart';
 import '../utils/llm_icons.dart';
 
 class ApiProvider implements Insertable<ApiProvider> {

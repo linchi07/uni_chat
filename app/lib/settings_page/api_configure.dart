@@ -20,7 +20,7 @@ import 'package:uni_chat/utils/paged_scroll/paged_scroll.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
-import '../generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import '../utils/llm_icons.dart';
 
 class ApiSettings extends ConsumerStatefulWidget {

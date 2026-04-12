@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../api_configs/api_models.dart';
-import '../generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 
 /// 映射模型或提供商名称到对应的图片资源路径
 class LLMImageIndexer {

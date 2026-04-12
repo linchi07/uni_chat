@@ -15,7 +15,7 @@ import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
-import '../generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import '../theme_manager.dart';
 import 'chat_models.dart';
 

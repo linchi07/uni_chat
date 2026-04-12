@@ -17,7 +17,7 @@ import 'package:uni_chat/utils/database_service.dart';
 import 'package:uni_chat/utils/document_display.dart';
 import 'package:uuid/uuid.dart';
 
-import '../generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import '../theme_manager.dart';
 import '../utils/llm_icons.dart';
 import '../utils/overlays.dart';

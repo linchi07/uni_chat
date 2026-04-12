@@ -5,7 +5,7 @@ import 'package:uni_chat/settings_page/about.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 
-import '../generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import '../main.dart';
 import '../theme_manager.dart';
 import '../utils/prebuilt_widgets.dart';

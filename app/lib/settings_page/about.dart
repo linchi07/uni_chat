@@ -4,7 +4,7 @@ import 'package:uni_chat/utils/auto_update_service.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import '../theme_manager.dart';
 
 class UNIChatAbout extends ConsumerWidget {

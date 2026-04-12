@@ -7,7 +7,7 @@ import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/back_ground_task_manager.dart';
 
-import 'generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'main.dart';
 
 class MainBanner extends ConsumerWidget {

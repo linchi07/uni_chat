@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 
-import 'generated/l10n.dart';
 
 abstract class AppException implements Exception {
   final AppException? ancestor;

@@ -17,6 +17,7 @@ import 'package:uni_chat/Persona/persona_switcher.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/error_handling.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/platform_specifics/platform_specifics.dart';
 import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/setup_agent.dart';
@@ -27,7 +28,6 @@ import 'package:uni_chat/utils/log_manager.dart';
 import 'package:uni_chat/utils/auto_update_service.dart';
 
 import 'Agent/agent_page.dart';
-import 'generated/l10n.dart';
 
 final Map<String, Locale> languages = const {
   "简体中文": Locale("zh"),

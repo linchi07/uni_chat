@@ -11,7 +11,7 @@ import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:xxh3/xxh3.dart';
 
-import '../generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 
 class AutoUpdateService {
   static const String _updateUrl =

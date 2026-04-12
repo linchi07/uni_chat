@@ -8,7 +8,7 @@ import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Agent/model_select.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/database/database_service.dart';
-import 'package:uni_chat/generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';

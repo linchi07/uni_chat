@@ -14,7 +14,7 @@ import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
-import 'generated/l10n.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'utils/web_view/webview_all.dart';
 
 const BASE_URL = "https://unichat.wejoinnwk.com/";
