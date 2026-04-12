@@ -125,10 +125,18 @@ extension AgentExceptionTypeExt on AgentExceptionType {
 @immutable
 class AgentException extends AppException {
   final AgentExceptionType? error;
+  final String? errorAgentID;
   final String? message;
-  const AgentException(this.error, {this.message, super.ancestor});
-  const AgentException._onlyAncestor(AppException ancestor)
-    : this(null, ancestor: ancestor);
+  const AgentException(
+    this.error, {
+    this.message,
+    super.ancestor,
+    this.errorAgentID,
+  });
+  const AgentException._onlyAncestor(
+    AppException ancestor, {
+    String? errorAgentID,
+  }) : this(null, ancestor: ancestor, errorAgentID: errorAgentID);
   @override
   String unwrapAndGetMessage(BuildContext context) {
     if (ancestor != null) {
@@ -163,9 +171,12 @@ class AgentException extends AppException {
     }
   }
 
-  factory AgentException.fromAncestor(AppException ancestor) {
+  factory AgentException.fromAncestor(
+    AppException ancestor, {
+    String? errorAgentID,
+  }) {
     if (ancestor is AgentException) return ancestor;
-    return AgentException._onlyAncestor(ancestor);
+    return AgentException._onlyAncestor(ancestor, errorAgentID: errorAgentID);
   }
 
   factory AgentException.fromException(Exception e) {
@@ -260,6 +271,7 @@ enum ApiExceptionType {
   request_other,
 
   apikey_noAvailableKeys,
+  apikey_exhausted_detailed,
 }
 
 extension ApiExceptionTypeExt on ApiExceptionType {
@@ -283,6 +295,8 @@ extension ApiExceptionTypeExt on ApiExceptionType {
         return S.of(context).apiEx_request_other;
       case ApiExceptionType.apikey_noAvailableKeys:
         return S.of(context).apiEx_apikey_noAvailableKeys;
+      case ApiExceptionType.apikey_exhausted_detailed:
+        return S.of(context).apiEx_apikey_noAvailableKeys; // Fallback
       case ApiExceptionType.unknownError:
         return S.of(context).apiEx_unknownError;
     }
@@ -333,6 +347,27 @@ class ApiException extends AppException {
   }
   factory ApiException.fromException(Exception e) {
     return ApiException(ApiExceptionType.unknownError, message: e.toString());
+  }
+}
+
+@immutable
+class ApiKeyExhaustedException extends ApiException {
+  final Map<String, ({String keyName, String lastError})> details;
+
+  const ApiKeyExhaustedException(this.details)
+    : super(ApiExceptionType.apikey_exhausted_detailed);
+
+  @override
+  String unwrapAndGetMessage(BuildContext context) {
+    return S.of(context).apiEx_apikey_noAvailableKeys_detailed(details.length);
+  }
+
+  @override
+  List<String> onRecursiveUnwrapAndGetMessage(BuildContext context) {
+    return [
+      S.of(context).apiEx_recursive_call,
+      S.of(context).apiEx_apikey_noAvailableKeys_detailed(details.length),
+    ];
   }
 }
 

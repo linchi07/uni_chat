@@ -68,23 +68,14 @@ class $ModelsTable extends Models with TableInfo<$ModelsTable, Model> {
     requiredDuringInsert: false,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<ModelPricing?, String> pricing =
-      GeneratedColumn<String>(
-        'pricing',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      ).withConverter<ModelPricing?>($ModelsTable.$converterpricingn);
-  @override
-  late final GeneratedColumnWithTypeConverter<List<ModelParameters>?, String>
+  late final GeneratedColumnWithTypeConverter<List<ModelParamName>?, String>
   parameters = GeneratedColumn<String>(
     'parameters',
     aliasedName,
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-  ).withConverter<List<ModelParameters>?>($ModelsTable.$converterparametersn);
+  ).withConverter<List<ModelParamName>?>($ModelsTable.$converterparametersn);
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -93,7 +84,6 @@ class $ModelsTable extends Models with TableInfo<$ModelsTable, Model> {
     abilities,
     contextLength,
     maxCompletionTokens,
-    pricing,
     parameters,
   ];
   @override
@@ -189,12 +179,6 @@ class $ModelsTable extends Models with TableInfo<$ModelsTable, Model> {
         DriftSqlType.int,
         data['${effectivePrefix}max_completion_tokens'],
       ),
-      pricing: $ModelsTable.$converterpricingn.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}pricing'],
-        ),
-      ),
       parameters: $ModelsTable.$converterparametersn.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -211,13 +195,9 @@ class $ModelsTable extends Models with TableInfo<$ModelsTable, Model> {
 
   static TypeConverter<Set<ModelAbility>, String> $converterabilities =
       ModelAbilitySetConverter();
-  static TypeConverter<ModelPricing, String> $converterpricing =
-      ModelPricingConverter();
-  static TypeConverter<ModelPricing?, String?> $converterpricingn =
-      NullAwareTypeConverter.wrap($converterpricing);
-  static TypeConverter<List<ModelParameters>, String> $converterparameters =
-      ModelParametersConverter();
-  static TypeConverter<List<ModelParameters>?, String?> $converterparametersn =
+  static TypeConverter<List<ModelParamName>, String> $converterparameters =
+      ModelParamListConverter();
+  static TypeConverter<List<ModelParamName>?, String?> $converterparametersn =
       NullAwareTypeConverter.wrap($converterparameters);
 }
 
@@ -228,8 +208,7 @@ class ModelsCompanion extends UpdateCompanion<Model> {
   final Value<Set<ModelAbility>> abilities;
   final Value<int?> contextLength;
   final Value<int?> maxCompletionTokens;
-  final Value<ModelPricing?> pricing;
-  final Value<List<ModelParameters>?> parameters;
+  final Value<List<ModelParamName>?> parameters;
   final Value<int> rowid;
   const ModelsCompanion({
     this.id = const Value.absent(),
@@ -238,7 +217,6 @@ class ModelsCompanion extends UpdateCompanion<Model> {
     this.abilities = const Value.absent(),
     this.contextLength = const Value.absent(),
     this.maxCompletionTokens = const Value.absent(),
-    this.pricing = const Value.absent(),
     this.parameters = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -249,7 +227,6 @@ class ModelsCompanion extends UpdateCompanion<Model> {
     required Set<ModelAbility> abilities,
     this.contextLength = const Value.absent(),
     this.maxCompletionTokens = const Value.absent(),
-    this.pricing = const Value.absent(),
     this.parameters = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -263,7 +240,6 @@ class ModelsCompanion extends UpdateCompanion<Model> {
     Expression<String>? abilities,
     Expression<int>? contextLength,
     Expression<int>? maxCompletionTokens,
-    Expression<String>? pricing,
     Expression<String>? parameters,
     Expression<int>? rowid,
   }) {
@@ -275,7 +251,6 @@ class ModelsCompanion extends UpdateCompanion<Model> {
       if (contextLength != null) 'context_length': contextLength,
       if (maxCompletionTokens != null)
         'max_completion_tokens': maxCompletionTokens,
-      if (pricing != null) 'pricing': pricing,
       if (parameters != null) 'parameters': parameters,
       if (rowid != null) 'rowid': rowid,
     });
@@ -288,8 +263,7 @@ class ModelsCompanion extends UpdateCompanion<Model> {
     Value<Set<ModelAbility>>? abilities,
     Value<int?>? contextLength,
     Value<int?>? maxCompletionTokens,
-    Value<ModelPricing?>? pricing,
-    Value<List<ModelParameters>?>? parameters,
+    Value<List<ModelParamName>?>? parameters,
     Value<int>? rowid,
   }) {
     return ModelsCompanion(
@@ -299,7 +273,6 @@ class ModelsCompanion extends UpdateCompanion<Model> {
       abilities: abilities ?? this.abilities,
       contextLength: contextLength ?? this.contextLength,
       maxCompletionTokens: maxCompletionTokens ?? this.maxCompletionTokens,
-      pricing: pricing ?? this.pricing,
       parameters: parameters ?? this.parameters,
       rowid: rowid ?? this.rowid,
     );
@@ -328,11 +301,6 @@ class ModelsCompanion extends UpdateCompanion<Model> {
     if (maxCompletionTokens.present) {
       map['max_completion_tokens'] = Variable<int>(maxCompletionTokens.value);
     }
-    if (pricing.present) {
-      map['pricing'] = Variable<String>(
-        $ModelsTable.$converterpricingn.toSql(pricing.value),
-      );
-    }
     if (parameters.present) {
       map['parameters'] = Variable<String>(
         $ModelsTable.$converterparametersn.toSql(parameters.value),
@@ -353,7 +321,6 @@ class ModelsCompanion extends UpdateCompanion<Model> {
           ..write('abilities: $abilities, ')
           ..write('contextLength: $contextLength, ')
           ..write('maxCompletionTokens: $maxCompletionTokens, ')
-          ..write('pricing: $pricing, ')
           ..write('parameters: $parameters, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -658,19 +625,18 @@ class $ProviderModelConfigsTable extends ProviderModelConfigs
         $ProviderModelConfigsTable.$converterabilitiesOverriden,
       );
   @override
-  late final GeneratedColumnWithTypeConverter<ModelPricing?, String>
-  pricingOverride =
+  late final GeneratedColumnWithTypeConverter<ModelPricing?, String> pricing =
       GeneratedColumn<String>(
-        'pricing_override',
+        'pricing',
         aliasedName,
         true,
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       ).withConverter<ModelPricing?>(
-        $ProviderModelConfigsTable.$converterpricingOverriden,
+        $ProviderModelConfigsTable.$converterpricingn,
       );
   @override
-  late final GeneratedColumnWithTypeConverter<List<ModelParameters>?, String>
+  late final GeneratedColumnWithTypeConverter<List<ModelParamName>?, String>
   parametersOverride =
       GeneratedColumn<String>(
         'parameters_override',
@@ -678,7 +644,7 @@ class $ProviderModelConfigsTable extends ProviderModelConfigs
         true,
         type: DriftSqlType.string,
         requiredDuringInsert: false,
-      ).withConverter<List<ModelParameters>?>(
+      ).withConverter<List<ModelParamName>?>(
         $ProviderModelConfigsTable.$converterparametersOverriden,
       );
   @override
@@ -687,7 +653,7 @@ class $ProviderModelConfigsTable extends ProviderModelConfigs
     modelId,
     callName,
     abilitiesOverride,
-    pricingOverride,
+    pricing,
     parametersOverride,
   ];
   @override
@@ -754,13 +720,12 @@ class $ProviderModelConfigsTable extends ProviderModelConfigs
               data['${effectivePrefix}abilities_override'],
             ),
           ),
-      pricingOverride: $ProviderModelConfigsTable.$converterpricingOverriden
-          .fromSql(
-            attachedDatabase.typeMapping.read(
-              DriftSqlType.string,
-              data['${effectivePrefix}pricing_override'],
-            ),
-          ),
+      pricing: $ProviderModelConfigsTable.$converterpricingn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}pricing'],
+        ),
+      ),
       parametersOverride: $ProviderModelConfigsTable
           .$converterparametersOverriden
           .fromSql(
@@ -783,13 +748,13 @@ class $ProviderModelConfigsTable extends ProviderModelConfigs
   $converterabilitiesOverriden = NullAwareTypeConverter.wrap(
     $converterabilitiesOverride,
   );
-  static TypeConverter<ModelPricing, String> $converterpricingOverride =
+  static TypeConverter<ModelPricing, String> $converterpricing =
       ModelPricingConverter();
-  static TypeConverter<ModelPricing?, String?> $converterpricingOverriden =
-      NullAwareTypeConverter.wrap($converterpricingOverride);
-  static TypeConverter<List<ModelParameters>, String>
-  $converterparametersOverride = ModelParametersConverter();
-  static TypeConverter<List<ModelParameters>?, String?>
+  static TypeConverter<ModelPricing?, String?> $converterpricingn =
+      NullAwareTypeConverter.wrap($converterpricing);
+  static TypeConverter<List<ModelParamName>, String>
+  $converterparametersOverride = ModelParamListConverter();
+  static TypeConverter<List<ModelParamName>?, String?>
   $converterparametersOverriden = NullAwareTypeConverter.wrap(
     $converterparametersOverride,
   );
@@ -801,15 +766,15 @@ class ProviderModelConfigsCompanion
   final Value<String> modelId;
   final Value<String> callName;
   final Value<Set<ModelAbility>?> abilitiesOverride;
-  final Value<ModelPricing?> pricingOverride;
-  final Value<List<ModelParameters>?> parametersOverride;
+  final Value<ModelPricing?> pricing;
+  final Value<List<ModelParamName>?> parametersOverride;
   final Value<int> rowid;
   const ProviderModelConfigsCompanion({
     this.providerId = const Value.absent(),
     this.modelId = const Value.absent(),
     this.callName = const Value.absent(),
     this.abilitiesOverride = const Value.absent(),
-    this.pricingOverride = const Value.absent(),
+    this.pricing = const Value.absent(),
     this.parametersOverride = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -818,7 +783,7 @@ class ProviderModelConfigsCompanion
     required String modelId,
     required String callName,
     this.abilitiesOverride = const Value.absent(),
-    this.pricingOverride = const Value.absent(),
+    this.pricing = const Value.absent(),
     this.parametersOverride = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : providerId = Value(providerId),
@@ -829,7 +794,7 @@ class ProviderModelConfigsCompanion
     Expression<String>? modelId,
     Expression<String>? callName,
     Expression<String>? abilitiesOverride,
-    Expression<String>? pricingOverride,
+    Expression<String>? pricing,
     Expression<String>? parametersOverride,
     Expression<int>? rowid,
   }) {
@@ -838,7 +803,7 @@ class ProviderModelConfigsCompanion
       if (modelId != null) 'model_id': modelId,
       if (callName != null) 'call_name': callName,
       if (abilitiesOverride != null) 'abilities_override': abilitiesOverride,
-      if (pricingOverride != null) 'pricing_override': pricingOverride,
+      if (pricing != null) 'pricing': pricing,
       if (parametersOverride != null) 'parameters_override': parametersOverride,
       if (rowid != null) 'rowid': rowid,
     });
@@ -849,8 +814,8 @@ class ProviderModelConfigsCompanion
     Value<String>? modelId,
     Value<String>? callName,
     Value<Set<ModelAbility>?>? abilitiesOverride,
-    Value<ModelPricing?>? pricingOverride,
-    Value<List<ModelParameters>?>? parametersOverride,
+    Value<ModelPricing?>? pricing,
+    Value<List<ModelParamName>?>? parametersOverride,
     Value<int>? rowid,
   }) {
     return ProviderModelConfigsCompanion(
@@ -858,7 +823,7 @@ class ProviderModelConfigsCompanion
       modelId: modelId ?? this.modelId,
       callName: callName ?? this.callName,
       abilitiesOverride: abilitiesOverride ?? this.abilitiesOverride,
-      pricingOverride: pricingOverride ?? this.pricingOverride,
+      pricing: pricing ?? this.pricing,
       parametersOverride: parametersOverride ?? this.parametersOverride,
       rowid: rowid ?? this.rowid,
     );
@@ -883,11 +848,9 @@ class ProviderModelConfigsCompanion
         ),
       );
     }
-    if (pricingOverride.present) {
-      map['pricing_override'] = Variable<String>(
-        $ProviderModelConfigsTable.$converterpricingOverriden.toSql(
-          pricingOverride.value,
-        ),
+    if (pricing.present) {
+      map['pricing'] = Variable<String>(
+        $ProviderModelConfigsTable.$converterpricingn.toSql(pricing.value),
       );
     }
     if (parametersOverride.present) {
@@ -910,7 +873,7 @@ class ProviderModelConfigsCompanion
           ..write('modelId: $modelId, ')
           ..write('callName: $callName, ')
           ..write('abilitiesOverride: $abilitiesOverride, ')
-          ..write('pricingOverride: $pricingOverride, ')
+          ..write('pricing: $pricing, ')
           ..write('parametersOverride: $parametersOverride, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -929,7 +892,7 @@ class _$ProviderModelConfigInsertable
       modelId: Value(_object.modelId),
       callName: Value(_object.callName),
       abilitiesOverride: Value(_object.abilitiesOverride),
-      pricingOverride: Value(_object.pricingOverride),
+      pricing: Value(_object.pricing),
       parametersOverride: Value(_object.parametersOverride),
     ).toColumns(false);
   }
@@ -2054,6 +2017,74 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
         type: DriftSqlType.string,
         requiredDuringInsert: true,
       ).withConverter<TokenUsage>($ApiKeyUsagesTable.$converterusage);
+  static const VerificationMeta _promptTokensMeta = const VerificationMeta(
+    'promptTokens',
+  );
+  @override
+  late final GeneratedColumn<int> promptTokens = GeneratedColumn<int>(
+    'prompt_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _completionTokensMeta = const VerificationMeta(
+    'completionTokens',
+  );
+  @override
+  late final GeneratedColumn<int> completionTokens = GeneratedColumn<int>(
+    'completion_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _totalTokensMeta = const VerificationMeta(
+    'totalTokens',
+  );
+  @override
+  late final GeneratedColumn<int> totalTokens = GeneratedColumn<int>(
+    'total_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _cachedTokensMeta = const VerificationMeta(
+    'cachedTokens',
+  );
+  @override
+  late final GeneratedColumn<int> cachedTokens = GeneratedColumn<int>(
+    'cached_tokens',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _costMeta = const VerificationMeta('cost');
+  @override
+  late final GeneratedColumn<double> cost = GeneratedColumn<double>(
+    'cost',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     apiKeyId,
@@ -2061,6 +2092,12 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
     agentId,
     time,
     usage,
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    cachedTokens,
+    cost,
+    currency,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2104,6 +2141,54 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
     } else if (isInserting) {
       context.missing(_timeMeta);
     }
+    if (data.containsKey('prompt_tokens')) {
+      context.handle(
+        _promptTokensMeta,
+        promptTokens.isAcceptableOrUnknown(
+          data['prompt_tokens']!,
+          _promptTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('completion_tokens')) {
+      context.handle(
+        _completionTokensMeta,
+        completionTokens.isAcceptableOrUnknown(
+          data['completion_tokens']!,
+          _completionTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_tokens')) {
+      context.handle(
+        _totalTokensMeta,
+        totalTokens.isAcceptableOrUnknown(
+          data['total_tokens']!,
+          _totalTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cached_tokens')) {
+      context.handle(
+        _cachedTokensMeta,
+        cachedTokens.isAcceptableOrUnknown(
+          data['cached_tokens']!,
+          _cachedTokensMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cost')) {
+      context.handle(
+        _costMeta,
+        cost.isAcceptableOrUnknown(data['cost']!, _costMeta),
+      );
+    }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
     return context;
   }
 
@@ -2135,6 +2220,30 @@ class $ApiKeyUsagesTable extends ApiKeyUsages
           data['${effectivePrefix}usage'],
         )!,
       ),
+      promptTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}prompt_tokens'],
+      )!,
+      completionTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}completion_tokens'],
+      )!,
+      totalTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_tokens'],
+      )!,
+      cachedTokens: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cached_tokens'],
+      )!,
+      cost: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}cost'],
+      ),
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      ),
     );
   }
 
@@ -2153,6 +2262,12 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
   final Value<String?> agentId;
   final Value<DateTime> time;
   final Value<TokenUsage> usage;
+  final Value<int> promptTokens;
+  final Value<int> completionTokens;
+  final Value<int> totalTokens;
+  final Value<int> cachedTokens;
+  final Value<double?> cost;
+  final Value<String?> currency;
   final Value<int> rowid;
   const ApiKeyUsagesCompanion({
     this.apiKeyId = const Value.absent(),
@@ -2160,6 +2275,12 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
     this.agentId = const Value.absent(),
     this.time = const Value.absent(),
     this.usage = const Value.absent(),
+    this.promptTokens = const Value.absent(),
+    this.completionTokens = const Value.absent(),
+    this.totalTokens = const Value.absent(),
+    this.cachedTokens = const Value.absent(),
+    this.cost = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ApiKeyUsagesCompanion.insert({
@@ -2168,6 +2289,12 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
     this.agentId = const Value.absent(),
     required DateTime time,
     required TokenUsage usage,
+    this.promptTokens = const Value.absent(),
+    this.completionTokens = const Value.absent(),
+    this.totalTokens = const Value.absent(),
+    this.cachedTokens = const Value.absent(),
+    this.cost = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : apiKeyId = Value(apiKeyId),
        modelId = Value(modelId),
@@ -2179,6 +2306,12 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
     Expression<String>? agentId,
     Expression<DateTime>? time,
     Expression<String>? usage,
+    Expression<int>? promptTokens,
+    Expression<int>? completionTokens,
+    Expression<int>? totalTokens,
+    Expression<int>? cachedTokens,
+    Expression<double>? cost,
+    Expression<String>? currency,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2187,6 +2320,12 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
       if (agentId != null) 'agent_id': agentId,
       if (time != null) 'time': time,
       if (usage != null) 'usage': usage,
+      if (promptTokens != null) 'prompt_tokens': promptTokens,
+      if (completionTokens != null) 'completion_tokens': completionTokens,
+      if (totalTokens != null) 'total_tokens': totalTokens,
+      if (cachedTokens != null) 'cached_tokens': cachedTokens,
+      if (cost != null) 'cost': cost,
+      if (currency != null) 'currency': currency,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2197,6 +2336,12 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
     Value<String?>? agentId,
     Value<DateTime>? time,
     Value<TokenUsage>? usage,
+    Value<int>? promptTokens,
+    Value<int>? completionTokens,
+    Value<int>? totalTokens,
+    Value<int>? cachedTokens,
+    Value<double?>? cost,
+    Value<String?>? currency,
     Value<int>? rowid,
   }) {
     return ApiKeyUsagesCompanion(
@@ -2205,6 +2350,12 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
       agentId: agentId ?? this.agentId,
       time: time ?? this.time,
       usage: usage ?? this.usage,
+      promptTokens: promptTokens ?? this.promptTokens,
+      completionTokens: completionTokens ?? this.completionTokens,
+      totalTokens: totalTokens ?? this.totalTokens,
+      cachedTokens: cachedTokens ?? this.cachedTokens,
+      cost: cost ?? this.cost,
+      currency: currency ?? this.currency,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2229,6 +2380,24 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
         $ApiKeyUsagesTable.$converterusage.toSql(usage.value),
       );
     }
+    if (promptTokens.present) {
+      map['prompt_tokens'] = Variable<int>(promptTokens.value);
+    }
+    if (completionTokens.present) {
+      map['completion_tokens'] = Variable<int>(completionTokens.value);
+    }
+    if (totalTokens.present) {
+      map['total_tokens'] = Variable<int>(totalTokens.value);
+    }
+    if (cachedTokens.present) {
+      map['cached_tokens'] = Variable<int>(cachedTokens.value);
+    }
+    if (cost.present) {
+      map['cost'] = Variable<double>(cost.value);
+    }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2243,6 +2412,12 @@ class ApiKeyUsagesCompanion extends UpdateCompanion<ApiKeyUsage> {
           ..write('agentId: $agentId, ')
           ..write('time: $time, ')
           ..write('usage: $usage, ')
+          ..write('promptTokens: $promptTokens, ')
+          ..write('completionTokens: $completionTokens, ')
+          ..write('totalTokens: $totalTokens, ')
+          ..write('cachedTokens: $cachedTokens, ')
+          ..write('cost: $cost, ')
+          ..write('currency: $currency, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2318,8 +2493,7 @@ typedef $$ModelsTableCreateCompanionBuilder =
       required Set<ModelAbility> abilities,
       Value<int?> contextLength,
       Value<int?> maxCompletionTokens,
-      Value<ModelPricing?> pricing,
-      Value<List<ModelParameters>?> parameters,
+      Value<List<ModelParamName>?> parameters,
       Value<int> rowid,
     });
 typedef $$ModelsTableUpdateCompanionBuilder =
@@ -2330,8 +2504,7 @@ typedef $$ModelsTableUpdateCompanionBuilder =
       Value<Set<ModelAbility>> abilities,
       Value<int?> contextLength,
       Value<int?> maxCompletionTokens,
-      Value<ModelPricing?> pricing,
-      Value<List<ModelParameters>?> parameters,
+      Value<List<ModelParamName>?> parameters,
       Value<int> rowid,
     });
 
@@ -2406,15 +2579,9 @@ class $$ModelsTableFilterComposer extends Composer<_$_ApiDb, $ModelsTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnWithTypeConverterFilters<ModelPricing?, ModelPricing, String>
-  get pricing => $composableBuilder(
-    column: $table.pricing,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
   ColumnWithTypeConverterFilters<
-    List<ModelParameters>?,
-    List<ModelParameters>,
+    List<ModelParamName>?,
+    List<ModelParamName>,
     String
   >
   get parameters => $composableBuilder(
@@ -2486,11 +2653,6 @@ class $$ModelsTableOrderingComposer extends Composer<_$_ApiDb, $ModelsTable> {
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get pricing => $composableBuilder(
-    column: $table.pricing,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get parameters => $composableBuilder(
     column: $table.parameters,
     builder: (column) => ColumnOrderings(column),
@@ -2529,10 +2691,7 @@ class $$ModelsTableAnnotationComposer extends Composer<_$_ApiDb, $ModelsTable> {
     builder: (column) => column,
   );
 
-  GeneratedColumnWithTypeConverter<ModelPricing?, String> get pricing =>
-      $composableBuilder(column: $table.pricing, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<List<ModelParameters>?, String>
+  GeneratedColumnWithTypeConverter<List<ModelParamName>?, String>
   get parameters => $composableBuilder(
     column: $table.parameters,
     builder: (column) => column,
@@ -2599,8 +2758,7 @@ class $$ModelsTableTableManager
                 Value<Set<ModelAbility>> abilities = const Value.absent(),
                 Value<int?> contextLength = const Value.absent(),
                 Value<int?> maxCompletionTokens = const Value.absent(),
-                Value<ModelPricing?> pricing = const Value.absent(),
-                Value<List<ModelParameters>?> parameters = const Value.absent(),
+                Value<List<ModelParamName>?> parameters = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ModelsCompanion(
                 id: id,
@@ -2609,7 +2767,6 @@ class $$ModelsTableTableManager
                 abilities: abilities,
                 contextLength: contextLength,
                 maxCompletionTokens: maxCompletionTokens,
-                pricing: pricing,
                 parameters: parameters,
                 rowid: rowid,
               ),
@@ -2621,8 +2778,7 @@ class $$ModelsTableTableManager
                 required Set<ModelAbility> abilities,
                 Value<int?> contextLength = const Value.absent(),
                 Value<int?> maxCompletionTokens = const Value.absent(),
-                Value<ModelPricing?> pricing = const Value.absent(),
-                Value<List<ModelParameters>?> parameters = const Value.absent(),
+                Value<List<ModelParamName>?> parameters = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ModelsCompanion.insert(
                 id: id,
@@ -2631,7 +2787,6 @@ class $$ModelsTableTableManager
                 abilities: abilities,
                 contextLength: contextLength,
                 maxCompletionTokens: maxCompletionTokens,
-                pricing: pricing,
                 parameters: parameters,
                 rowid: rowid,
               ),
@@ -3112,8 +3267,8 @@ typedef $$ProviderModelConfigsTableCreateCompanionBuilder =
       required String modelId,
       required String callName,
       Value<Set<ModelAbility>?> abilitiesOverride,
-      Value<ModelPricing?> pricingOverride,
-      Value<List<ModelParameters>?> parametersOverride,
+      Value<ModelPricing?> pricing,
+      Value<List<ModelParamName>?> parametersOverride,
       Value<int> rowid,
     });
 typedef $$ProviderModelConfigsTableUpdateCompanionBuilder =
@@ -3122,8 +3277,8 @@ typedef $$ProviderModelConfigsTableUpdateCompanionBuilder =
       Value<String> modelId,
       Value<String> callName,
       Value<Set<ModelAbility>?> abilitiesOverride,
-      Value<ModelPricing?> pricingOverride,
-      Value<List<ModelParameters>?> parametersOverride,
+      Value<ModelPricing?> pricing,
+      Value<List<ModelParamName>?> parametersOverride,
       Value<int> rowid,
     });
 
@@ -3202,14 +3357,14 @@ class $$ProviderModelConfigsTableFilterComposer
   );
 
   ColumnWithTypeConverterFilters<ModelPricing?, ModelPricing, String>
-  get pricingOverride => $composableBuilder(
-    column: $table.pricingOverride,
+  get pricing => $composableBuilder(
+    column: $table.pricing,
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
   ColumnWithTypeConverterFilters<
-    List<ModelParameters>?,
-    List<ModelParameters>,
+    List<ModelParamName>?,
+    List<ModelParamName>,
     String
   >
   get parametersOverride => $composableBuilder(
@@ -3283,8 +3438,8 @@ class $$ProviderModelConfigsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get pricingOverride => $composableBuilder(
-    column: $table.pricingOverride,
+  ColumnOrderings<String> get pricing => $composableBuilder(
+    column: $table.pricing,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3358,13 +3513,10 @@ class $$ProviderModelConfigsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumnWithTypeConverter<ModelPricing?, String> get pricingOverride =>
-      $composableBuilder(
-        column: $table.pricingOverride,
-        builder: (column) => column,
-      );
+  GeneratedColumnWithTypeConverter<ModelPricing?, String> get pricing =>
+      $composableBuilder(column: $table.pricing, builder: (column) => column);
 
-  GeneratedColumnWithTypeConverter<List<ModelParameters>?, String>
+  GeneratedColumnWithTypeConverter<List<ModelParamName>?, String>
   get parametersOverride => $composableBuilder(
     column: $table.parametersOverride,
     builder: (column) => column,
@@ -3458,8 +3610,8 @@ class $$ProviderModelConfigsTableTableManager
                 Value<String> callName = const Value.absent(),
                 Value<Set<ModelAbility>?> abilitiesOverride =
                     const Value.absent(),
-                Value<ModelPricing?> pricingOverride = const Value.absent(),
-                Value<List<ModelParameters>?> parametersOverride =
+                Value<ModelPricing?> pricing = const Value.absent(),
+                Value<List<ModelParamName>?> parametersOverride =
                     const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProviderModelConfigsCompanion(
@@ -3467,7 +3619,7 @@ class $$ProviderModelConfigsTableTableManager
                 modelId: modelId,
                 callName: callName,
                 abilitiesOverride: abilitiesOverride,
-                pricingOverride: pricingOverride,
+                pricing: pricing,
                 parametersOverride: parametersOverride,
                 rowid: rowid,
               ),
@@ -3478,8 +3630,8 @@ class $$ProviderModelConfigsTableTableManager
                 required String callName,
                 Value<Set<ModelAbility>?> abilitiesOverride =
                     const Value.absent(),
-                Value<ModelPricing?> pricingOverride = const Value.absent(),
-                Value<List<ModelParameters>?> parametersOverride =
+                Value<ModelPricing?> pricing = const Value.absent(),
+                Value<List<ModelParamName>?> parametersOverride =
                     const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProviderModelConfigsCompanion.insert(
@@ -3487,7 +3639,7 @@ class $$ProviderModelConfigsTableTableManager
                 modelId: modelId,
                 callName: callName,
                 abilitiesOverride: abilitiesOverride,
-                pricingOverride: pricingOverride,
+                pricing: pricing,
                 parametersOverride: parametersOverride,
                 rowid: rowid,
               ),
@@ -4346,6 +4498,12 @@ typedef $$ApiKeyUsagesTableCreateCompanionBuilder =
       Value<String?> agentId,
       required DateTime time,
       required TokenUsage usage,
+      Value<int> promptTokens,
+      Value<int> completionTokens,
+      Value<int> totalTokens,
+      Value<int> cachedTokens,
+      Value<double?> cost,
+      Value<String?> currency,
       Value<int> rowid,
     });
 typedef $$ApiKeyUsagesTableUpdateCompanionBuilder =
@@ -4355,6 +4513,12 @@ typedef $$ApiKeyUsagesTableUpdateCompanionBuilder =
       Value<String?> agentId,
       Value<DateTime> time,
       Value<TokenUsage> usage,
+      Value<int> promptTokens,
+      Value<int> completionTokens,
+      Value<int> totalTokens,
+      Value<int> cachedTokens,
+      Value<double?> cost,
+      Value<String?> currency,
       Value<int> rowid,
     });
 
@@ -4412,6 +4576,36 @@ class $$ApiKeyUsagesTableFilterComposer
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
 
+  ColumnFilters<int> get promptTokens => $composableBuilder(
+    column: $table.promptTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get completionTokens => $composableBuilder(
+    column: $table.completionTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalTokens => $composableBuilder(
+    column: $table.totalTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cachedTokens => $composableBuilder(
+    column: $table.cachedTokens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get cost => $composableBuilder(
+    column: $table.cost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$ApiKeysTableTableFilterComposer get apiKeyId {
     final $$ApiKeysTableTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -4465,6 +4659,36 @@ class $$ApiKeyUsagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get promptTokens => $composableBuilder(
+    column: $table.promptTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get completionTokens => $composableBuilder(
+    column: $table.completionTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalTokens => $composableBuilder(
+    column: $table.totalTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cachedTokens => $composableBuilder(
+    column: $table.cachedTokens,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get cost => $composableBuilder(
+    column: $table.cost,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ApiKeysTableTableOrderingComposer get apiKeyId {
     final $$ApiKeysTableTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4509,6 +4733,32 @@ class $$ApiKeyUsagesTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<TokenUsage, String> get usage =>
       $composableBuilder(column: $table.usage, builder: (column) => column);
+
+  GeneratedColumn<int> get promptTokens => $composableBuilder(
+    column: $table.promptTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get completionTokens => $composableBuilder(
+    column: $table.completionTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get totalTokens => $composableBuilder(
+    column: $table.totalTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get cachedTokens => $composableBuilder(
+    column: $table.cachedTokens,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get cost =>
+      $composableBuilder(column: $table.cost, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
 
   $$ApiKeysTableTableAnnotationComposer get apiKeyId {
     final $$ApiKeysTableTableAnnotationComposer composer = $composerBuilder(
@@ -4567,6 +4817,12 @@ class $$ApiKeyUsagesTableTableManager
                 Value<String?> agentId = const Value.absent(),
                 Value<DateTime> time = const Value.absent(),
                 Value<TokenUsage> usage = const Value.absent(),
+                Value<int> promptTokens = const Value.absent(),
+                Value<int> completionTokens = const Value.absent(),
+                Value<int> totalTokens = const Value.absent(),
+                Value<int> cachedTokens = const Value.absent(),
+                Value<double?> cost = const Value.absent(),
+                Value<String?> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ApiKeyUsagesCompanion(
                 apiKeyId: apiKeyId,
@@ -4574,6 +4830,12 @@ class $$ApiKeyUsagesTableTableManager
                 agentId: agentId,
                 time: time,
                 usage: usage,
+                promptTokens: promptTokens,
+                completionTokens: completionTokens,
+                totalTokens: totalTokens,
+                cachedTokens: cachedTokens,
+                cost: cost,
+                currency: currency,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4583,6 +4845,12 @@ class $$ApiKeyUsagesTableTableManager
                 Value<String?> agentId = const Value.absent(),
                 required DateTime time,
                 required TokenUsage usage,
+                Value<int> promptTokens = const Value.absent(),
+                Value<int> completionTokens = const Value.absent(),
+                Value<int> totalTokens = const Value.absent(),
+                Value<int> cachedTokens = const Value.absent(),
+                Value<double?> cost = const Value.absent(),
+                Value<String?> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ApiKeyUsagesCompanion.insert(
                 apiKeyId: apiKeyId,
@@ -4590,6 +4858,12 @@ class $$ApiKeyUsagesTableTableManager
                 agentId: agentId,
                 time: time,
                 usage: usage,
+                promptTokens: promptTokens,
+                completionTokens: completionTokens,
+                totalTokens: totalTokens,
+                cachedTokens: cachedTokens,
+                cost: cost,
+                currency: currency,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

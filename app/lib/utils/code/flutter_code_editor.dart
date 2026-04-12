@@ -618,6 +618,6 @@ class LanguageMap {
     'xml': 'xml',
     'xquery': 'xq',
     'yaml': 'yaml',
-    'zephir': 'zep',
+      'zephir': 'zep',
   };
 }

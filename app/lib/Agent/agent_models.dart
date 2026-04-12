@@ -14,6 +14,8 @@ const int CURRENT_PERSONA_CONFIG_VERSION = 1;
 const int CURRENT_OPENING_CONFIG_VERSION = 1;
 const int CURRENT_AGENT_DATA_VERSION = 1;
 
+const String INSTANT_AGENT_ID = '@instant';
+
 @immutable
 class ModelConfigure {
   final String modelId;
@@ -23,7 +25,7 @@ class ModelConfigure {
   final int maxContextTokens;
 
   //parameters (such as temperature)
-  final List<ModelParameters> parameters;
+  final Map<ModelParamName, dynamic> customParameters;
 
   // basic info pass
   final bool enableTimeTelling;
@@ -34,8 +36,8 @@ class ModelConfigure {
     required this.modelId,
     required this.providerId,
     this.maxGenerationTokens = 2560,
-    this.maxContextTokens = 4096,
-    this.parameters = const [],
+    this.maxContextTokens = 1000000000,
+    this.customParameters = const {},
     this.enableTimeTelling = true,
     this.enableUsrLanguage = true,
     this.enableUsrSystemInformation = true,
@@ -46,7 +48,7 @@ class ModelConfigure {
     String? providerId,
     int? maxGenerationTokens,
     int? maxContextTokens,
-    List<ModelParameters>? parameters,
+    Map<ModelParamName, dynamic>? customParameters,
     bool? enableTimeTelling,
     bool? enableUsrLanguage,
     bool? enableUsrSystemInformation,
@@ -56,7 +58,7 @@ class ModelConfigure {
       providerId: providerId ?? this.providerId,
       maxGenerationTokens: maxGenerationTokens ?? this.maxGenerationTokens,
       maxContextTokens: maxContextTokens ?? this.maxContextTokens,
-      parameters: parameters ?? this.parameters,
+      customParameters: customParameters ?? this.customParameters,
       enableTimeTelling: enableTimeTelling ?? this.enableTimeTelling,
       enableUsrLanguage: enableUsrLanguage ?? this.enableUsrLanguage,
       enableUsrSystemInformation:
@@ -71,7 +73,9 @@ class ModelConfigure {
       'provider_id': providerId,
       'max_generation_tokens': maxGenerationTokens,
       'max_context_tokens': maxContextTokens,
-      'parameters': parameters.map((e) => e.toMap()).toList(),
+      'custom_parameters': customParameters.map(
+        (key, value) => MapEntry(key.name, value),
+      ),
       'enable_time_telling': enableTimeTelling,
       'enable_usr_language': enableUsrLanguage,
       'enable_usr_system_information': enableUsrSystemInformation,
@@ -86,12 +90,24 @@ class ModelConfigure {
         message: "Model config version mismatch: $version",
       );
     }
+    Map<ModelParamName, dynamic> params = {};
+    if (map.containsKey('custom_parameters')) {
+      var cp = map['custom_parameters'] as Map<String, dynamic>;
+      cp.forEach((key, value) {
+        try {
+          params[ModelParamName.values.byName(key)] = value;
+        } catch (e) {
+          // Ignore unknown parameters
+        }
+      });
+    }
+
     return ModelConfigure(
       modelId: map['model_id'] as String,
       providerId: map['provider_id'] as String,
       maxGenerationTokens: map['max_generation_tokens'] as int,
       maxContextTokens: map['max_context_tokens'] as int,
-      parameters: ModelParameters.fromMap((map['parameters'] as List)),
+      customParameters: params,
       enableTimeTelling: map['enable_time_telling'] as bool,
     );
   }
@@ -203,6 +219,71 @@ class AgentData implements Insertable<AgentDbModel> {
     this.isDefault = false,
   });
 
+  AgentData copyWith({
+    int? version,
+    String? id,
+    String? name,
+    String? description,
+    String? systemPrompt,
+    ModelConfigure? modelConfigure,
+    PersonaConfigure? userIdentityConfigure,
+    OpeningConfigure? openingConfigure,
+    DateTime? createdAt,
+    bool? isDefault,
+  }) {
+    return AgentData(
+      version: version ?? this.version,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      systemPrompt: systemPrompt ?? this.systemPrompt,
+      modelConfigure: modelConfigure ?? this.modelConfigure,
+      userIdentityConfigure:
+          userIdentityConfigure ?? this.userIdentityConfigure,
+      openingConfigure: openingConfigure ?? this.openingConfigure,
+      createdAt: createdAt ?? this.createdAt,
+      isDefault: isDefault ?? this.isDefault,
+    );
+  }
+
+  Map<String, dynamic> toConfigureMap() {
+    return {
+      'version': CURRENT_AGENT_DATA_VERSION,
+      'model_configure': modelConfigure.toMap(),
+      'persona_configure': userIdentityConfigure?.toMap(),
+      'opening_configure': openingConfigure?.toMap(),
+      'system_prompt': systemPrompt,
+    };
+  }
+
+  AgentData applyOverride(String overrideJson) {
+    try {
+      final Map<String, dynamic> overrides = jsonDecode(overrideJson);
+
+      PersonaConfigure? uidc;
+      var uidcp = overrides['persona_configure'];
+      if (uidcp != null) {
+        uidc = PersonaConfigure.fromMap(uidcp);
+      }
+
+      OpeningConfigure? opc;
+      var opcp = overrides['opening_configure'];
+      if (opcp != null) {
+        opc = OpeningConfigure.fromMap(opcp);
+      }
+
+      return copyWith(
+        systemPrompt: overrides['system_prompt'] as String?,
+        modelConfigure: ModelConfigure.fromMap(overrides['model_configure']),
+        userIdentityConfigure: uidc,
+        openingConfigure: opc,
+      );
+    } catch (e) {
+      // If parsing fails, return original data
+      return this;
+    }
+  }
+
   Future<File?> getAvatar() async {
     var f = await PathProvider.getPath("chat/avatars/$id");
     var f1 = File("$f.png");
@@ -222,14 +303,7 @@ class AgentData implements Insertable<AgentDbModel> {
   }
 
   String _parameterToJson() {
-    Map<String, dynamic> parameters = {
-      'version': CURRENT_AGENT_DATA_VERSION,
-      'model_configure': modelConfigure.toMap(),
-      'persona_configure': userIdentityConfigure?.toMap(),
-      'opening_configure': openingConfigure?.toMap(),
-      'system_prompt': systemPrompt,
-    };
-    return jsonEncode(parameters);
+    return jsonEncode(toConfigureMap());
   }
 
   factory AgentData.fromAgentDBModel(AgentDbModel adbm) {

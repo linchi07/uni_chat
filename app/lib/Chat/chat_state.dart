@@ -32,7 +32,10 @@ class ChatState {
   // 临时存储上传的文件，当用户点击发送按钮的时候会被合并到messages里面
   final bool isLoading;
   final bool isResponding;
+  final bool isStreamingStarted;
+  final bool isGeneratingTitle;
   final StopSignal? stopSignal;
+  final StopSignal? titleStopSignal;
   late final ValueNotifier<List<ChatResponse>?> responses;
 
   ChatState({
@@ -45,7 +48,10 @@ class ChatState {
     ValueNotifier<List<ChatResponse>?>? responses,
     this.isLoading = false,
     this.isResponding = false,
+    this.isStreamingStarted = false,
+    this.isGeneratingTitle = false,
     this.stopSignal,
+    this.titleStopSignal,
     this.error,
   }) {
     this.responses = responses ?? ValueNotifier(null);
@@ -64,7 +70,10 @@ class ChatState {
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     bool? isLoading,
     bool? isResponding,
+    bool? isStreamingStarted,
+    bool? isGeneratingTitle,
     StopSignal? stopSignal,
+    StopSignal? titleStopSignal,
     AppException? error,
     ValueNotifier<List<ChatResponse>?>? responses,
   }) {
@@ -78,7 +87,10 @@ class ChatState {
       uploadedFilesStash: uploadedFilesStash ?? this.uploadedFilesStash,
       isLoading: isLoading ?? this.isLoading,
       isResponding: isResponding ?? this.isResponding,
+      isStreamingStarted: isStreamingStarted ?? this.isStreamingStarted,
+      isGeneratingTitle: isGeneratingTitle ?? this.isGeneratingTitle,
       stopSignal: stopSignal ?? this.stopSignal,
+      titleStopSignal: titleStopSignal ?? this.titleStopSignal,
       error: error ?? this.error,
     );
   }
@@ -92,6 +104,7 @@ class ChatState {
       branchNames: {},
       uploadedFilesStash: {},
       isLoading: false,
+      isGeneratingTitle: false,
       error: null,
       responses: ValueNotifier(null),
     );
@@ -127,7 +140,10 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
     bool? isLoading,
     bool? isResponding,
+    bool? isStreamingStarted,
+    bool? isGeneratingTitle,
     StopSignal? stopSignal,
+    StopSignal? titleStopSignal,
     AppException? error,
   }) {
     state = state.copyWith(
@@ -138,7 +154,10 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       messagesList: messagesList,
       isLoading: isLoading,
       isResponding: isResponding,
+      isStreamingStarted: isStreamingStarted,
+      isGeneratingTitle: isGeneratingTitle,
       stopSignal: stopSignal,
+      titleStopSignal: titleStopSignal,
       error: error,
     );
   }
@@ -154,7 +173,10 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       responses: state.responses,
       isLoading: state.isLoading,
       isResponding: state.isResponding,
+      isStreamingStarted: state.isStreamingStarted,
+      isGeneratingTitle: state.isGeneratingTitle,
       stopSignal: state.stopSignal,
+      titleStopSignal: state.titleStopSignal,
       error: null,
     );
   }
@@ -177,7 +199,10 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       responses: state.responses,
       isLoading: false,
       isResponding: false,
+      isStreamingStarted: false,
+      isGeneratingTitle: false,
       stopSignal: null,
+      titleStopSignal: null,
       error: state.error,
     );
   }
@@ -320,7 +345,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           throw ChatException(ChatExceptionType.sessionNotFound);
         }
         //TODO: 最好让这里的逻辑都放到agent_provider里面
-        await _ref.read(agentProvider.notifier).loadAgentById(session.agentId);
+        await _ref
+            .read(agentProvider.notifier)
+            .loadAgentById(session.agentId, overrideJson: session.agentOverride);
         final msg = await _dbService.getMessagesForSession(sessionId);
         if (msg.root == null || msg.messages.isEmpty) {
           throw ChatException(ChatExceptionType.messageNotFound);
@@ -659,6 +686,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       try {
         await for (final chunk in stream) {
           if (stopSignal.isStopped) break;
+          if (!state.isStreamingStarted) {
+            stateCopyWith(isStreamingStarted: true);
+          }
           List<ChatResponse>? newBlock;
           if (chunk.content.isNotEmpty) {
             if (chunk.type == MessageChunkType.text) {
@@ -735,13 +765,18 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     }
     // title generation has to be done after the finally
     // or the wrong stop signal will be disposed and causes crashes (generateTitle it self will add a new stop signal)
-    if (state.session!.name == "New Chat") {
+    if (state.session!.name == "New Chat" && !state.isGeneratingTitle) {
       generateTitle();
     }
   }
 
   void stopGeneration() {
     state.stopSignal?.stop();
+  }
+
+  void stopTitleGeneration() {
+    state.titleStopSignal?.stop();
+    state = state.copyWith(isGeneratingTitle: false, titleStopSignal: null);
   }
 
   Future<void> generateTitle() async {
@@ -751,9 +786,8 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
     try {
       final stopSignal = StopSignal();
       state = state.copyWith(
-        isLoading: true,
-        isResponding: false,
-        stopSignal: stopSignal,
+        isGeneratingTitle: true,
+        titleStopSignal: stopSignal,
       );
       StringBuffer sb = StringBuffer();
       // use the to string method in the chat message class to generate simple text
@@ -805,7 +839,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       state.session!.name = title;
       await _dbService.updateSessionTitle(state.session!.id, title);
     } on Exception catch (e) {
-      if (state.stopSignal?.isStopped == true) {
+      if (state.titleStopSignal?.isStopped == true) {
         return;
       }
       state = state.copyWith(

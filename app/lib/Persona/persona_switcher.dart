@@ -111,7 +111,11 @@ class _PersonaIndicatorState extends State<PersonaIndicator> {
                       child: (asyncSnapshot.data == null)
                           ? Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: Icon(Icons.person),
+                              child: Icon(
+                                (persona.id.isEmpty)
+                                    ? Icons.person_off_rounded
+                                    : Icons.person,
+                              ),
                             )
                           : SizedBox(
                               width: 38,
@@ -602,9 +606,16 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
                 leading: SizedBox(
                   height: 40,
                   width: 40,
-                  child: StdAvatar(length: 40, file: asyncSnapshot.data!.$3),
+                  child: (persona.id.isEmpty)
+                      ? Icon(Icons.person_off_rounded, color: theme.errorColor)
+                      : StdAvatar(length: 40, file: asyncSnapshot.data!.$3),
                 ),
-                title: (persona.isDefault)
+                title: (persona.id.isEmpty)
+                    ? Text(
+                        S.of(context).persona_system_disabled,
+                        style: const TextStyle(fontSize: 18),
+                      )
+                    : (persona.isDefault)
                     ? Row(
                         children: [
                           Text(persona.name, style: TextStyle(fontSize: 18)),
@@ -631,32 +642,33 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
                         ],
                       )
                     : Text(persona.name, style: TextStyle(fontSize: 18)),
-                subtitle: Text(
-                  persona.content,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                subtitle: (persona.id.isEmpty)
+                    ? null
+                    : Text(persona.content, overflow: TextOverflow.ellipsis),
                 onTap: () {},
-                trailing: Builder(
-                  builder: (context) {
-                    return IconButton(
-                      icon: Icon(Icons.more_vert_outlined),
-                      onPressed: () {
-                        var rb = context.findRenderObject() as RenderBox;
-                        OverlayPortalService.show(
-                          context,
-                          barrierVisible: false,
-                          offset: rb
-                              .localToGlobal(Offset.zero)
-                              .translate(
-                                (widget.isFloatingAction) ? -150 : 40,
-                                0,
-                              ),
-                          child: _popupMenu(persona, context),
-                        );
-                      },
-                    );
-                  },
-                ),
+                trailing: (persona.id.isEmpty)
+                    ? null
+                    : Builder(
+                        builder: (context) {
+                          return IconButton(
+                            icon: Icon(Icons.more_vert_outlined),
+                            onPressed: () {
+                              var rb = context.findRenderObject() as RenderBox;
+                              OverlayPortalService.show(
+                                context,
+                                barrierVisible: false,
+                                offset: rb
+                                    .localToGlobal(Offset.zero)
+                                    .translate(
+                                      (widget.isFloatingAction) ? -150 : 40,
+                                      0,
+                                    ),
+                                child: _popupMenu(persona, context),
+                              );
+                            },
+                          );
+                        },
+                      ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -677,16 +689,37 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
               Row(
                 children: [
                   Expanded(
-                    child: SizedBox(
-                      child: StdButton(
-                        text: S.of(context).add_persona,
-                        onPressed: () {
-                          widget.onClose();
-                          _showEditor();
-                        },
-                      ),
+                    child: StdButton(
+                      text: S.of(context).add_persona,
+                      onPressed: () {
+                        widget.onClose();
+                        _showEditor();
+                      },
                     ),
                   ),
+                  if (persona.id.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    StdButton(
+                      color: theme.errorColor.withAlpha(50),
+                      onPressed: () {
+                        ref
+                            .read(personaProvider.notifier)
+                            .setPersona(
+                              Persona(
+                                id: '',
+                                name: S.of(context).disable_persona,
+                                content: '',
+                                data: {},
+                              ),
+                            );
+                        widget.onClose();
+                      },
+                      child: Text(
+                        S.of(context).disable_persona,
+                        style: TextStyle(color: theme.errorColor),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],

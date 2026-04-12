@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:uni_chat/api_configs/api_service.dart';
+import 'package:uni_chat/error_handling.dart';
 
 import 'api_database.dart';
 import 'api_models.dart';
@@ -29,7 +30,12 @@ abstract class BaseApiKeyResolver {
   Future<ApiKey> resolveKey(Model model);
 
   /// This method will be called when an invoke is finished.Which should then write the invoke data to db.Such as 429s or 200s.
-  Future<void> updateData(InvokeResult invokeResult);
+  Future<void> updateData(
+    InvokeResult invokeResult, {
+    required String modelId,
+    String? agentId,
+    TokenUsage? fallbackUsage,
+  });
 
   /// On invoke a new call , this method will be called to select the most suitable resolver for the provider.
   /// Note that a db future containing  the keys and their invoke data (in json strings) are provided , which you can use in constructors.
@@ -62,22 +68,26 @@ class GeneralApiKeyInvokeData {
   factory GeneralApiKeyInvokeData.fromMap(Map<String, dynamic> map) {
     return GeneralApiKeyInvokeData(
       retryCount: map['retryCount'],
-      nextAvailableTime: map['nextAvailableTime'],
+      nextAvailableTime: (map['nextAvailableTime'] == null)
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(map['nextAvailableTime']),
       lastStatusCode: map['lastStatusCode'],
       todayUsedTokens: map['todayUsedTokens'],
       requestToday: map['requestToday'],
-      resetTime: map['resetTime'],
+      resetTime: (map['resetTime'] == null)
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(map['resetTime']),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'retryCount': retryCount,
-      'nextAvailableTime': nextAvailableTime,
+      'nextAvailableTime': nextAvailableTime?.millisecondsSinceEpoch,
       'lastStatusCode': lastStatusCode,
       'todayUsedTokens': todayUsedTokens,
       'requestToday': requestToday,
-      'resetTime': resetTime,
+      'resetTime': resetTime?.millisecondsSinceEpoch,
     };
   }
 
@@ -108,8 +118,17 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
   KeyInfo? selectedKey;
   @override
   Future<ApiKey> resolveKey(Model model) async {
-    if (newKeys != null) {
-      return newKeys!.first;
+    if (newKeys != null && newKeys!.isNotEmpty) {
+      final key = newKeys!.first;
+      selectedKey = (
+        key: key,
+        invokeData: GeneralApiKeyInvokeData(
+          retryCount: 0,
+          todayUsedTokens: 0,
+          requestToday: 0,
+        ),
+      );
+      return key;
     }
     final now = DateTime.timestamp();
 
@@ -136,24 +155,38 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
           .toList();
 
       for (var k in candidates) {
-        if (await _checkRpm(k)) return k.key; // 检查通过则返回
+        if (await _checkRpm(k)) {
+          selectedKey = k;
+          return k.key; // 检查通过则返回
+        }
       }
     }
 
     // 3. 最后保底：如果全都在冷却，选一个最快能用的
-    keys.sort(
-      (a, b) => a.invokeData.nextAvailableTime!.compareTo(
+    // 注意：这里的选出虽然会无视当前的冷却时间，但外层 ApiClient 需要控制当前这轮的尝试次数，
+    // 避免一秒内重试过多次数导致刷爆 API
+    if (keys.isEmpty) {
+      throw const ApiException(ApiExceptionType.apikey_noAvailableKeys);
+    }
+    keys.sort((a, b) {
+      if (a.invokeData.nextAvailableTime == null &&
+          b.invokeData.nextAvailableTime == null) {
+        return 0;
+      }
+      if (a.invokeData.nextAvailableTime == null) return -1;
+      if (b.invokeData.nextAvailableTime == null) return 1;
+      return a.invokeData.nextAvailableTime!.compareTo(
         b.invokeData.nextAvailableTime!,
-      ),
+      );
+    });
+    selectedKey = keys.firstWhere(
+      (k) =>
+          ![401, 403].contains(k.invokeData.lastStatusCode) &&
+          k.invokeData.retryCount <= overLimitRetryCountsMinutes.length,
+      orElse: () =>
+          throw const ApiException(ApiExceptionType.apikey_noAvailableKeys),
     );
-    return keys
-        .firstWhere(
-          (k) =>
-              ![401, 403].contains(k.invokeData.lastStatusCode) &&
-              k.invokeData.retryCount <= overLimitRetryCountsMinutes.length,
-          orElse: () => throw "No available key",
-        )
-        .key;
+    return selectedKey!.key;
   }
 
   // 基础限额判定
@@ -206,12 +239,61 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
   }
 
   @override
-  Future<void> updateData(InvokeResult invokeResult) async {
+  Future<void> updateData(
+    InvokeResult invokeResult, {
+    required String modelId,
+    String? agentId,
+    TokenUsage? fallbackUsage,
+  }) async {
     if (selectedKey == null) return;
+
+    // Log the usage to database
+    final usage = invokeResult.usage ?? fallbackUsage;
+    if (usage != null && invokeResult.statusCode == 200) {
+      double? cost;
+      String? currency;
+
+      // Calculate cost if pricing is available
+      final config = await ApiDatabase.instance.getProviderModelConfig(
+        selectedKey!.key.providerId,
+        modelId,
+      );
+
+      if (config != null && config.pricing != null) {
+        final pricing = config.pricing!;
+        final nonCachedPromptTokens = usage.promptTokens - usage.cachedTokens;
+        final promptCost = (nonCachedPromptTokens * pricing.prompt) / 1000000;
+        final cachedCost =
+            (usage.cachedTokens * (pricing.cached ?? pricing.prompt)) / 1000000;
+        final outputCost =
+            (usage.completionTokens * pricing.completion) / 1000000;
+        cost = promptCost + cachedCost + outputCost;
+        currency = pricing.currency;
+      }
+
+      await ApiDatabase.instance.insertApikeyUsage(
+        ApiKeyUsage(
+          apiKeyId: selectedKey!.key.id,
+          modelId: modelId,
+          agentId: agentId,
+          time: DateTime.now(),
+          usage: usage,
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.total,
+          cachedTokens: usage.cachedTokens,
+          cost: cost,
+          currency: currency,
+        ),
+      );
+    }
+
     if (invokeResult.statusCode == 200) {
       await ApiDatabase.instance.updateApiKeyInvokeData(
         selectedKey!.key,
-        jsonEncode(handleOk(invokeResult).toMap()),
+        jsonEncode(
+          handleOk(invokeResult, fallbackUsage: fallbackUsage).toMap(),
+        ),
       );
     } else if (invokeResult.statusCode == 429) {
       await ApiDatabase.instance.updateApiKeyInvokeData(
@@ -245,7 +327,7 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
       lastStatusCode: invokeData.statusCode,
       retryCount: keyI.retryCount + 1,
       nextAvailableTime: nextAvailableTime,
-      requestToday: keyI.requestToday++,
+      requestToday: keyI.requestToday + 1,
     );
     return id;
   }
@@ -265,12 +347,15 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
       lastStatusCode: invokeData.statusCode,
       retryCount: keyI.retryCount + 1,
       nextAvailableTime: nextAvailableTime,
-      requestToday: keyI.requestToday++,
+      requestToday: keyI.requestToday + 1,
     );
     return id;
   }
 
-  GeneralApiKeyInvokeData handleOk(InvokeResult invokeData) {
+  GeneralApiKeyInvokeData handleOk(
+    InvokeResult invokeData, {
+    TokenUsage? fallbackUsage,
+  }) {
     var keyI = selectedKey!.invokeData;
     var dt = DateTime.timestamp();
     DateTime? rt;
@@ -283,8 +368,10 @@ class GeneralApiKeyResolver implements BaseApiKeyResolver {
     } else {
       tut =
           keyI.todayUsedTokens +
-          ((invokeData.usage != null) ? invokeData.usage!.total : 0);
-      rtd = keyI.requestToday++;
+          ((invokeData.usage != null)
+              ? invokeData.usage!.total
+              : (fallbackUsage?.total ?? 0));
+      rtd = keyI.requestToday + 1;
     }
     var id = GeneralApiKeyInvokeData(
       retryCount: 0,

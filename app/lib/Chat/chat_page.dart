@@ -1,34 +1,34 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:appflowy_editor/appflowy_editor.dart'
+    show MDEditorController, MDEditor;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:path/path.dart' as p;
 import 'package:scrollview_observer/scrollview_observer.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
-import 'package:uni_chat/Agent/agent_set_page.dart';
+import 'package:uni_chat/Agent/agent_models.dart';
+import 'package:uni_chat/Agent/model_missing_dialog.dart';
+import 'package:uni_chat/Agent/model_select.dart';
+import 'package:uni_chat/Chat/chat_message_bubble.dart';
+import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/Chat/chat_sidebar.dart';
+import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
 import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/error_handling.dart';
-import 'package:uni_chat/main.dart' as m;
+import 'package:uni_chat/generated/l10n.dart';
 import 'package:uni_chat/main.dart';
+import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/file_utils.dart';
+import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
-
-import '../Agent/agent_models.dart';
-import '../generated/l10n.dart';
-import '../theme_manager.dart';
-import '../utils/overlays.dart';
-import 'chat_message_bubble.dart';
-import 'chat_models.dart';
-import 'chat_state.dart';
 
 class _AgentDropDown extends ConsumerStatefulWidget {
   const _AgentDropDown();
@@ -75,7 +75,10 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
 
   Future<(List<AgentData>, List<File?>, File?)> getAgentAndAvatars() async {
     try {
-      var agents = await DatabaseService.instance.getAllAgents();
+      var allAgents = await DatabaseService.instance.getAllAgents();
+      var agents = allAgents
+          .where((agent) => agent.id != INSTANT_AGENT_ID)
+          .toList();
       var avatars = <File?>[];
       File? selectedAvatar;
       for (var agent in agents) {
@@ -84,6 +87,13 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
           selectedAvatar = avatar;
         }
         avatars.add(avatar);
+      }
+      // If the selected agent was filtered out (it's the instant agent), we still need its avatar for the preview
+      if (selectedAvatar == null && selectedIndex?.$1 == INSTANT_AGENT_ID) {
+        var instantAgent = await DatabaseService.instance.getAgent(
+          INSTANT_AGENT_ID,
+        );
+        selectedAvatar = await instantAgent?.getAvatar();
       }
       return (agents, avatars, selectedAvatar);
     } catch (e) {
@@ -196,6 +206,17 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
                                           leading: StdAvatar(
                                             file: asyncSnapshot.data!.$2[index],
                                             length: 25,
+                                            whenNull:
+                                                asyncSnapshot
+                                                        .data!
+                                                        .$1[index]
+                                                        .id ==
+                                                    INSTANT_AGENT_ID
+                                                ? Icon(
+                                                    Icons.bolt_outlined,
+                                                    size: 20,
+                                                  )
+                                                : null,
                                           ),
                                         );
                                       },
@@ -449,16 +470,22 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(width: 16),
-                    FutureBuilder(
-                      future: persona.getAvatar(),
-                      builder: (context, asyncSnapshot) {
-                        return StdAvatar(length: 24, file: asyncSnapshot.data);
-                      },
-                    ),
+                    if (selectedIndex!.$1.isNotEmpty)
+                      FutureBuilder(
+                        future: persona.getAvatar(),
+                        builder: (context, asyncSnapshot) {
+                          return StdAvatar(
+                            length: 24,
+                            file: asyncSnapshot.data,
+                          );
+                        },
+                      ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        selectedIndex!.$2,
+                        (selectedIndex!.$1.isEmpty)
+                            ? S.of(context).persona_system_disabled
+                            : selectedIndex!.$2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 16, color: theme.textColor),
                       ),
@@ -505,40 +532,43 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
-            Text(
-              S.of(context).choose_agent_and_chat_hint,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: theme.thirdGradeColor),
-            ),
             const SizedBox(height: 8),
-            Wrap(
-              alignment: WrapAlignment.center,
-              runAlignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              runSpacing: 10,
-              children: [
-                Text(
-                  S.of(context).front_page_hintLine_char1,
-                  style: TextStyle(fontSize: 18),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: _PersonaDropDown(),
-                ),
-                Text(
-                  S.of(context).front_page_hintLine_char2,
-                  style: TextStyle(fontSize: 18),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: _AgentDropDown(),
-                ),
-                Text(
-                  S.of(context).front_page_hintLine_char3,
-                  style: TextStyle(fontSize: 18),
-                ),
-              ],
-            ),
+            if (agent?.id != INSTANT_AGENT_ID) ...[
+              Text(
+                S.of(context).choose_agent_and_chat_hint,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: theme.thirdGradeColor),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                alignment: WrapAlignment.center,
+                runAlignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                runSpacing: 10,
+                children: [
+                  Text(
+                    S.of(context).front_page_hintLine_char1,
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _PersonaDropDown(),
+                  ),
+                  Text(
+                    S.of(context).front_page_hintLine_char2,
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _AgentDropDown(),
+                  ),
+                  Text(
+                    S.of(context).front_page_hintLine_char3,
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ],
+              ),
+            ],
             if (firstMessage != null && firstMessage.isNotEmpty)
               Container(
                 margin: const EdgeInsets.fromLTRB(30, 16, 30, 0),
@@ -825,7 +855,7 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                   }
                                   if (index == 0) {
                                     // 第0个消息是root消息，不应该被展示或者使用
-                                    return const SizedBox.shrink();
+                                    return const SizedBox(height: 30);
                                   }
                                   if (chatState.isResponding &&
                                       index == itemCount - 1) {
@@ -954,8 +984,10 @@ class ChatPanelInputBox extends ConsumerStatefulWidget {
     this.beforeSubmit,
     this.afterSubmit,
     this.cancelCallback,
+    this.showInfoMessage = true,
   });
-  final void Function(TextEditingController)? textInject;
+  final bool showInfoMessage;
+  final String Function()? textInject;
   final void Function()? beforeSubmit;
   final void Function()? afterSubmit;
   final void Function()? cancelCallback;
@@ -967,14 +999,15 @@ class ChatPanelInputBox extends ConsumerStatefulWidget {
 enum UploadStatus { notUploaded, uploading, uploaded, failed }
 
 class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
-  final _textController = TextEditingController();
   bool isDroppingFiles = false;
   late ThemeConfig theme;
   @override
   initState() {
     super.initState();
     chatState = ref.read(chatStateProvider);
-    widget.textInject?.call(_textController);
+    if (widget.textInject != null) {
+      _mdEditorController.text = widget.textInject!.call();
+    }
   }
 
   late ChatState chatState;
@@ -1021,15 +1054,122 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   }
 
   void _sendMessage() {
-    final text = _textController.text.trim();
+    var text = _mdEditorController.text.trim();
     if (text.isEmpty) return;
+    _mdEditorController.clear();
     widget.beforeSubmit?.call();
     ref.read(chatStateProvider.notifier).sendMessage(text);
-    _textController.clear();
     // wait for the state to update
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.afterSubmit?.call();
     });
+  }
+
+  void _showErrorDetails(
+    BuildContext context,
+    ApiKeyExhaustedException exception,
+  ) {
+    OverlayPortalService.showDialog(
+      context,
+      height: 480,
+      width: 450,
+      backGroundColor: theme.zeroGradeColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Icon(Icons.report_problem_outlined, color: theme.errorColor),
+                const SizedBox(width: 8),
+                Text(
+                  S.of(context).api_key_exhausted_title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Text(
+              S.of(context).api_key_exhausted_subtitle,
+              style: TextStyle(
+                color: theme.textColor.withAlpha(180),
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              itemCount: exception.details.length,
+              separatorBuilder: (context, index) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                var entry = exception.details.entries.elementAt(index);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.thirdGradeColor,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              entry.value.keyName,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            S.of(context).status_code,
+                            style: TextStyle(
+                              color: theme.textColor.withAlpha(120),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        entry.value.lastError,
+                        style: TextStyle(
+                          color: theme.errorColor,
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: StdButton(
+              text: S.of(context).confirm,
+              onPressed: () => OverlayPortalService.hide(context),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _readAndAttachFile(NativeData f) async {
@@ -1105,7 +1245,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
       onPerformDrop: (NativeDataReader reader) async {
         for (var f in reader.items) {
           if (f is NativeText) {
-            _textController.text += await f.getText();
+            _mdEditorController.editorState.append(await f.getText());
           } else {
             await _readAndAttachFile(f);
           }
@@ -1130,180 +1270,176 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
     const FileFormat(extension: "pdf"),
   };
 
-  Future<void> readClipboard() async {
+  Future<bool> readClipboard() async {
     var data = await NativeClipboard.read(supportedFormats: supportedFormats);
-    if (data == null) return;
+    if (data == null) return false;
     for (var f in data.items) {
       if (f is NativeText) {
-        _textController.text += await f.getText();
+        return false;
       } else {
         await _readAndAttachFile(f);
+        return true;
       }
     }
+    return false;
   }
 
-  late final _focusNode = FocusNode(
-    onKeyEvent: (FocusNode node, KeyEvent evt) {
-      if (m.PlatForm().isWindows) {
-        if (HardwareKeyboard.instance.isControlPressed &&
-            HardwareKeyboard.instance.isLogicalKeyPressed(
-              LogicalKeyboardKey.keyV,
-            )) {
-          if (evt is KeyDownEvent) {
-            readClipboard();
-            // this is a synchronous operation, no await future
-            return KeyEventResult.handled;
-          }
-        }
-      } else {
-        if (HardwareKeyboard.instance.isMetaPressed && evt.character == 'v') {
-          if (evt is KeyDownEvent) {
-            readClipboard();
-            // this is a synchronous operation, no await future
-            return KeyEventResult.handled;
-          }
-        }
-      }
-      if (HardwareKeyboard.instance.isShiftPressed &&
-          evt.logicalKey == LogicalKeyboardKey.enter) {
-        if (evt is KeyDownEvent) {
-          final value = _textController.value;
-          final selection = value.selection;
-          // 2. 在光标位置插入换行符
-          final newText = value.text.replaceRange(
-            selection.start,
-            selection.end,
-            '\n',
-          );
-          var ns = TextSelection.collapsed(offset: selection.start + 1);
-          // 3. 更新 Controller 并将光标移至换行符后
-          _textController.value = TextEditingValue(
-            text: newText,
-            selection: ns,
-            composing: TextRange.collapsed(selection.start + 1),
-          );
-
-          var boxSize =
-              ((context.findRenderObject() as RenderBox).size -
-                      Offset(4, 47)) // minus the padding
-                  as Size;
-          if (chatState.error != null) {
-            boxSize = Size(boxSize.width, boxSize.height - 35);
-          }
-          // we have to control the scroll by ourselves
-          // damn flutter wont expose the base of editable text (///▽///)
-          // 我tm花了整整6个小时尝试去调用editable text的内置方法，最后发现还是得自己算最方便
-          // 搞到凌晨1点，然后老子后天要春考了！我ctmd。
-          // 主要是给我调红温了
-          var tp = TextPainter(
-            text: TextSpan(
-              text: _textController.text.substring(0, selection.end + 1),
-              style: Theme.of(context).primaryTextTheme.bodyLarge,
-            ),
-            textDirection: TextDirection.ltr,
-            maxLines: null,
-          );
-          tp.layout(maxWidth: boxSize.width);
-          var current = _inputScrollController.offset;
-          var delta = (tp.size.height - current);
-          if (delta < 0) {
-            // this height is calculated according to the top of the cursor
-            // 20 is the height of the cursor
-            // so we need to add a fix height
-            _inputScrollController.jumpTo(current + delta - 20);
-          } else if (delta - boxSize.height + 40 > 0) {
-            // the same (40 is 2x height of cursor)
-            _inputScrollController.jumpTo(
-              min(
-                    current + delta - boxSize.height + 40 + 6,
-                    _inputScrollController.position.maxScrollExtent,
-                  ) +
-                  25,
-            ); //6 is a magic number……
-          }
-          return KeyEventResult.handled;
-        }
-      }
-      return KeyEventResult.ignored;
-    },
-  );
-  final ScrollController _inputScrollController = ScrollController();
+  final MDEditorController _mdEditorController = MDEditorController();
   Widget _buildChatPanel() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (chatState.error != null)
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            height: 35,
-            decoration: BoxDecoration(
-              color: theme.errorColor.withAlpha(80),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 30),
-                  child: Text(
-                    chatState.error!.unwrapAndGetMessage(context),
+        if (widget.showInfoMessage) ...[
+          if (chatState.error != null)
+            Builder(
+              builder: (context) {
+                final error = chatState.error!;
+                bool isModelMissing = false;
+                String? errorAgent;
+                if (error is AgentException) {
+                  if (error.error == AgentExceptionType.agentNotFound) {
+                    isModelMissing = true;
+                  } else if (error.ancestor is ApiException) {
+                    final apiErr = (error.ancestor as ApiException).error;
+                    if (apiErr == ApiExceptionType.modelNotFound ||
+                        apiErr == ApiExceptionType.providerNotFound ||
+                        apiErr ==
+                            ApiExceptionType.modelNotAvailableForProvider) {
+                      isModelMissing = true;
+                      errorAgent = error.errorAgentID;
+                    }
+                  }
+                } else if (error is ApiException) {
+                  if (error.error == ApiExceptionType.modelNotFound ||
+                      error.error == ApiExceptionType.providerNotFound ||
+                      error.error ==
+                          ApiExceptionType.modelNotAvailableForProvider) {
+                    isModelMissing = true;
+                  }
+                }
+
+                return InputBoxHint(
+                  backgroundColor: theme.errorColor.withAlpha(80),
+                  foregroundColor: theme.errorColor,
+                  message: Text(
+                    error.unwrapAndGetMessage(context),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                  ),
+                  actions: [
+                    if (error is ApiKeyExhaustedException)
+                      StdButton(
+                        color: theme.errorColor,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        onPressed: () => _showErrorDetails(context, error),
+                        child: Text(
+                          S.of(context).error_details,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    if (isModelMissing &&
+                        (errorAgent != null ||
+                            chatState.session?.agentId != null))
+                      StdButton(
+                        color: theme.errorColor,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 5,
+                        ),
+                        onPressed: () async {
+                          final agentData = await DatabaseService.instance
+                              .getAgent(
+                                chatState.session?.agentId ?? errorAgent!,
+                              );
+                          if (agentData != null && context.mounted) {
+                            OverlayPortalService.showDialog(
+                              context,
+                              width: 450,
+                              backGroundColor: theme.zeroGradeColor,
+                              child: ModelMissingDialog(
+                                agentData: agentData,
+                                theme: theme,
+                                onConfirm:
+                                    (provider, model, saveToSettings) async {
+                                      await OverlayPortalService.hide(context);
+                                      await ref
+                                          .read(agentProvider.notifier)
+                                          .updateAgentModel(
+                                            agentData.id,
+                                            provider,
+                                            model,
+                                            saveToSettings,
+                                          );
+                                    },
+                              ),
+                            );
+                          }
+                        },
+                        child: Text(
+                          S.of(context).select_model,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    StdIconButton(
                       color: theme.errorColor,
-                      fontWeight: FontWeight.bold,
+                      icon: Icons.cancel_outlined,
+                      onPressed: () {
+                        ref.read(chatStateProvider.notifier).clearError();
+                      },
                     ),
-                  ),
+                  ],
+                );
+              },
+            ),
+          if (chatState.isGeneratingTitle)
+            InputBoxHint(
+              icon: SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.primaryColor,
                 ),
-                Positioned(
-                  right: 2,
-                  child: StdIconButton(
-                    color: theme.errorColor,
-                    icon: Icons.cancel_outlined,
-                    onPressed: () {
-                      ref.read(chatStateProvider.notifier).clearError();
-                    },
+              ),
+              message: Text(S.of(context).generating_title),
+              actions: [
+                StdButton(
+                  color: theme.primaryColor,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
+                  child: Text(
+                    textAlign: TextAlign.center,
+                    S.of(context).cancel,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  onPressed: () {
+                    ref.read(chatStateProvider.notifier).stopTitleGeneration();
+                  },
                 ),
               ],
             ),
-          ),
+        ],
         if (chatState.uploadedFilesStash.isNotEmpty) _buildAttachmentPreview(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 2),
-          child: TextField(
-            onTapOutside: (event) {
-              _focusNode.unfocus();
-            },
-            autofocus: !m.PlatForm().isMobilePlatform,
-            focusNode: _focusNode,
-            onTap: () {
-              if (!chatState.isReady) {
-                ref.read(chatStateProvider.notifier).checkIfReady();
-              }
-            },
-            textInputAction:
-                (m.PlatForm().platform == m.RunningPlatform.android ||
-                    m.PlatForm().platform == m.RunningPlatform.ios)
-                ? TextInputAction.newline
-                : TextInputAction.send,
-            maxLines: 8,
-            minLines: 2,
-            onSubmitted: (text) {
+          child: MDEditor(
+            controller: _mdEditorController,
+            minHeight: 40,
+            onPaste: () async => await readClipboard(),
+            hintText: S.of(context).send_a_message_hint,
+            multiLine: true,
+            maxHeight: 400,
+            frontGroundColor: theme.primaryColor,
+            backgroundColor: theme.zeroGradeColor,
+            onSend: (text) {
               if (text.isEmpty || chatState.isLoading || !chatState.isReady) {
                 return;
               }
               _sendMessage();
             },
-            scrollController: _inputScrollController,
-            controller: _textController,
-            decoration: InputDecoration.collapsed(
-              hintText: S.of(context).send_a_message_hint,
-            ),
-            textCapitalization: TextCapitalization.sentences,
           ),
         ),
         const SizedBox(height: 6),
@@ -1364,7 +1500,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                     alignment: Alignment.centerRight,
                     child: ModelSelect.buildPreview(
                       context,
-                      26,
+                      35,
                       EdgeInsets.symmetric(horizontal: 6, vertical: 5),
                       agent!.client.provider,
                       agent!.client.model,
@@ -1383,7 +1519,15 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                                 ref
                                     .read(agentProvider.notifier)
                                     .setAgent(
-                                      localAgent.copyWith(client: newClient),
+                                      localAgent.copyWith(
+                                        client: newClient,
+                                        modelConfigure: localAgent
+                                            .modelConfigure
+                                            .copyWith(
+                                              providerId: p.id,
+                                              modelId: m.id,
+                                            ),
+                                      ),
                                     );
                               }
                               await OverlayPortalService.hide(context);
@@ -1425,55 +1569,30 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 child: SizedBox(
                   height: 35,
                   width: 35,
-                  child: Material(
-                    clipBehavior: Clip.hardEdge,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    color: chatState.isResponding
-                        ? theme.primaryColor
-                        : (chatState.isLoading || !chatState.isReady)
-                        ? Colors.grey[600]
-                        : theme.primaryColor,
-                    child: InkWell(
-                      splashColor: Colors.grey,
-                      onTap: chatState.isResponding
-                          ? () => ref
-                                .read(chatStateProvider.notifier)
-                                .stopGeneration()
-                          : (!chatState.isReady)
-                          ? null
-                          : _sendMessage,
-                      child: chatState.isResponding
-                          ? const Icon(
-                              Icons.stop,
-                              color: Colors.white,
-                              size: 20,
-                            )
-                          : chatState.isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: Padding(
-                                padding: EdgeInsets.all(7.0),
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 3,
-                                ),
-                              ),
-                            )
-                          : (chatState.isReady)
-                          ? const Icon(
-                              Icons.arrow_forward_sharp,
-                              color: Colors.white,
-                              size: 20,
-                            )
-                          : const Icon(
-                              Icons.do_not_disturb_alt_sharp,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                    ),
+                  child: Builder(
+                    builder: (context) {
+                      var visual = _sendButtonState();
+                      return Material(
+                        clipBehavior: Clip.hardEdge,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        color: visual.color,
+                        child: InkWell(
+                          splashColor: Colors.grey,
+                          onTap: chatState.isResponding
+                              ? () => ref
+                                    .read(chatStateProvider.notifier)
+                                    .stopGeneration()
+                              : (!chatState.isReady ||
+                                    chatState.isGeneratingTitle ||
+                                    chatState.isLoading)
+                              ? null
+                              : _sendMessage,
+                          child: visual.icon,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -1481,6 +1600,49 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
           ),
         ),
       ],
+    );
+  }
+
+  ({Widget icon, Color color}) _sendButtonState() {
+    if (!chatState.isReady) {
+      return (
+        icon: const Icon(
+          Icons.do_not_disturb_alt_sharp,
+          size: 20,
+          color: Colors.white,
+        ),
+        color: Colors.grey[600]!,
+      );
+    }
+    if (chatState.isResponding) {
+      if (chatState.isStreamingStarted) {
+        return (
+          icon: const Icon(Icons.stop, size: 20, color: Colors.white),
+          color: theme.primaryColor,
+        );
+      } else {
+        return (
+          icon: const Icon(Icons.close, size: 20, color: Colors.white),
+          color: theme.errorColor,
+        );
+      }
+    }
+    if (chatState.isLoading || chatState.isGeneratingTitle) {
+      return (
+        icon: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+        ),
+        color: theme.primaryColor,
+      );
+    }
+    return (
+      icon: const Icon(
+        Icons.arrow_forward_sharp,
+        size: 20,
+        color: Colors.white,
+      ),
+      color: theme.primaryColor,
     );
   }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' as io show Platform;
 
+import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,11 +23,11 @@ import 'package:uni_chat/setup_agent.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/top_banner.dart';
 import 'package:uni_chat/utils/overlays.dart';
+import 'package:uni_chat/utils/log_manager.dart';
+import 'package:uni_chat/utils/auto_update_service.dart';
 
 import 'Agent/agent_page.dart';
 import 'generated/l10n.dart';
-import 'utils/auto_update_service.dart';
-import 'utils/log_manager.dart';
 
 final Map<String, Locale> languages = const {
   "简体中文": Locale("zh"),
@@ -39,8 +40,7 @@ Future<void> main() async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      await LogManager.instance.init();
-      if (io.Platform.isAndroid) {
+            if (io.Platform.isAndroid) {
         PlatForm().platform = RunningPlatform.android;
         var di = await DeviceInfoPlugin().androidInfo;
         PlatForm().platformInfo = "${di.model} running on ${di.version}";
@@ -77,6 +77,7 @@ Future<void> main() async {
         sqfliteFfiInit();
         databaseFactory = databaseFactoryFfi;
       }
+      await LogManager.instance.init();
 
       final prefs = await SharedPreferences.getInstance();
       var l = prefs.getString("language");
@@ -257,6 +258,7 @@ class _UNIChatState extends State<UNIChat> {
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
+          AppFlowyEditorLocalizations.delegate,
         ],
         supportedLocales: S.delegate.supportedLocales,
         navigatorKey: navigatorKey,
@@ -267,7 +269,17 @@ class _UNIChatState extends State<UNIChat> {
             ? const ScrollBehavior().copyWith(physics: const IOSScrollPhysics())
             : null,
         theme: ThemeData(
-          fontFamilyFallback: (PlatForm().isWindows) ? ["DengXian"] : null,
+          fontFamily: (PlatForm().isWindows) ? "Segoe UI" : null,
+          fontFamilyFallback: (PlatForm().isWindows)
+              ? [
+                  "Microsoft YaHei",
+                  "Yu Gothic UI",
+                  "Malgun Gothic",
+                  "Segoe UI Emoji",
+                  "Segoe UI Symbol",
+                  "NotoSymbols",
+                ]
+              : null,
           // fix the font glitches in windows when displaying SC
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
@@ -321,19 +333,21 @@ class _UNIChatState extends State<UNIChat> {
                   isSetUp =
                       true; // or the setup menu will re-popout when you resize the window
                 }
+                mainContent = AppBarTheme(
+                  scrolledUnderElevation: 0,
+                  child: mainContent,
+                );
                 if (PlatForm().isWindows) {
                   // windows will force the window to get too small when showing desktop even when window size is set
                   // so we need to avoid the negative constrained error
                   var mdof = MediaQuery.of(context);
                   var s = mdof.size;
-                  if (s.height < 480 || s.width < 640) {
-                    return const SizedBox.shrink();
-                  }
+                  mainContent = ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: 480, minWidth: 640),
+                    child: mainContent,
+                  );
                 }
-                return AppBarTheme(
-                  scrolledUnderElevation: 0,
-                  child: mainContent,
-                );
+                return mainContent;
               },
             ),
           ),
@@ -476,6 +490,17 @@ enum Pages { chat, agent, Rag }
 
 class MainContState extends ConsumerState<MainCont> {
   Pages page = Pages.chat;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   Widget? _bannerWidget() {
     switch (page) {
       case Pages.chat:

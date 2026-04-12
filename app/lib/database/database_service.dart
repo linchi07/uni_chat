@@ -67,11 +67,32 @@ class DatabaseService {
 
   Future<void> init() async {
     await _db.customSelect('SELECT 1').get();
+    // Ensure instant agent exists
+    final instantAgent = await getAgent(INSTANT_AGENT_ID);
+    if (instantAgent == null) {
+      // Create a dummy instant agent
+      // We don't need real model info here as it will be overridden by the provider from SharedPreferences
+      final dummyModel = ModelConfigure(
+        modelId: '@for_instant',
+        providerId: '@for_instant',
+      );
+      final now = DateTime.now();
+      await createOrUpdateAgent(
+        AgentData(
+          version: CURRENT_AGENT_DATA_VERSION,
+          id: INSTANT_AGENT_ID,
+          name: '快速聊天',
+          modelConfigure: dummyModel,
+          userIdentityConfigure: null,
+          createdAt: now,
+        ),
+      );
+    }
   }
 
   // --- Agent CRUD ---
   Future<void> createOrUpdateAgent(AgentData agent) async {
-    await _db.into(_db.agents).insert(agent, mode: InsertMode.insertOrReplace);
+    await _db.into(_db.agents).insertOnConflictUpdate(agent);
   }
 
   Future<AgentData?> getAgent(String agentId) async {
@@ -207,6 +228,12 @@ class DatabaseService {
     final query = _db.select(_db.sessions)..where((t) => t.id.isIn(sessionIds));
     final results = await query.get();
     return [for (var row in results) (id: row.id, title: row.title)];
+  }
+
+  Future<void> updateSessionOverride(String sessionId, String? overrideJson) async {
+    await (_db.update(_db.sessions)..where((t) => t.id.equals(sessionId))).write(
+      SessionsCompanion(agentOverride: Value(overrideJson)),
+    );
   }
 
   Future<void> updateSessionTitle(String sessionId, String newTitle) async {
@@ -541,7 +568,7 @@ ORDER BY t.depth DESC;
       }
       await _db
           .into(_db.personas)
-          .insert(
+          .insertOnConflictUpdate(
             PersonaDbModel(
               id: persona.id,
               name: persona.name,
@@ -549,7 +576,6 @@ ORDER BY t.depth DESC;
               data: persona.data,
               isDefault: persona.isDefault,
             ),
-            mode: InsertMode.insertOrReplace,
           );
     });
   }

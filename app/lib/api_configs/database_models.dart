@@ -19,9 +19,8 @@ class Models extends Table {
   TextColumn get abilities => text().map(ModelAbilitySetConverter())();
   IntColumn get contextLength => integer().nullable()();
   IntColumn get maxCompletionTokens => integer().nullable()();
-  TextColumn get pricing => text().nullable().map(ModelPricingConverter())();
   TextColumn get parameters =>
-      text().nullable().map(ModelParametersConverter())();
+      text().nullable().map(ModelParamListConverter())();
 }
 
 @UseRowClass(ProviderModelConfig, generateInsertable: true)
@@ -37,10 +36,10 @@ class ProviderModelConfigs extends Table {
   TextColumn get callName => text()();
   TextColumn get abilitiesOverride =>
       text().nullable().map(ModelAbilitySetConverter())();
-  TextColumn get pricingOverride =>
+  TextColumn get pricing =>
       text().nullable().map(ModelPricingConverter())();
   TextColumn get parametersOverride =>
-      text().nullable().map(ModelParametersConverter())();
+      text().nullable().map(ModelParamListConverter())();
 }
 
 class ProviderPresetsTable extends Table {
@@ -81,6 +80,12 @@ class ApiKeyUsages extends Table {
   TextColumn get agentId => text().nullable()();
   DateTimeColumn get time => dateTime()();
   TextColumn get usage => text().map(TokenUsageConverter())();
+  IntColumn get promptTokens => integer().withDefault(const Constant(0))();
+  IntColumn get completionTokens => integer().withDefault(const Constant(0))();
+  IntColumn get totalTokens => integer().withDefault(const Constant(0))();
+  IntColumn get cachedTokens => integer().withDefault(const Constant(0))();
+  RealColumn get cost => real().nullable()();
+  TextColumn get currency => text().nullable()();
 }
 
 class ApiKeysTable extends Table {

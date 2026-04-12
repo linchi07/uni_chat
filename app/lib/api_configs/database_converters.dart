@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 
+import '../utils/llm_icons.dart';
+
 class ModelAbilitySetConverter
     extends TypeConverter<Set<ModelAbility>, String> {
   @override
@@ -22,17 +24,36 @@ class ModelPricingConverter extends TypeConverter<ModelPricing, String> {
   String toSql(ModelPricing value) => jsonEncode(value.toMap());
 }
 
-class ModelParametersConverter
-    extends TypeConverter<List<ModelParameters>, String> {
+class ModelParamListConverter
+    extends TypeConverter<List<ModelParamName>, String> {
   @override
-  List<ModelParameters> fromSql(String fromDb) {
-    var s = jsonDecode(fromDb);
-    return s.map((e) => ModelParameters.fromMap(e)).toList();
+  List<ModelParamName> fromSql(String fromDb) {
+    if (fromDb.isEmpty) return [];
+    return fromDb
+        .split(',')
+        .map((e) => ModelParamName.values.byName(e))
+        .toList();
   }
 
   @override
-  String toSql(List<ModelParameters> value) {
-    return jsonEncode(value.map((e) => e.toMap()).toList());
+  String toSql(List<ModelParamName> value) {
+    return value.map((e) => e.name).join(',');
+  }
+}
+
+class ModelParamValueMapConverter
+    extends TypeConverter<Map<ModelParamName, dynamic>, String> {
+  @override
+  Map<ModelParamName, dynamic> fromSql(String fromDb) {
+    final Map<String, dynamic> decoded = jsonDecode(fromDb);
+    return decoded.map(
+      (key, value) => MapEntry(ModelParamName.values.byName(key), value),
+    );
+  }
+
+  @override
+  String toSql(Map<ModelParamName, dynamic> value) {
+    return jsonEncode(value.map((key, value) => MapEntry(key.name, value)));
   }
 }
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
@@ -12,38 +13,30 @@ import 'package:uni_chat/main.dart';
 import '../Chat/chat_models.dart';
 import '../api_configs/api_models.dart';
 import '../utils/file_utils.dart';
+import '../utils/time_utils.dart';
 import 'agent_models.dart';
 
 class ModelSpecifics {
   String? modelName;
-  double temperature = 0.8;
-  double topP = 0.5;
-  double frequencyPenalty = 0.5;
-  double presencePenalty = 0.5;
-  int maxGenerationTokens = 2560;
-  int maxContextTokens = 4096;
+  Map<ModelParamName, dynamic> customParameters = {};
+  int maxGenerationTokens = 1000000000;
+  int maxContextTokens = 1000000000;
   bool enableTimeTelling = true;
   bool enableUsrLanguage = true;
   bool enableUsrSystemInformation = true;
   ModelSpecifics({
     this.modelName,
-    this.temperature = 0.8,
-    this.topP = 0.5,
-    this.frequencyPenalty = 0.5,
-    this.presencePenalty = 0.5,
-    this.maxGenerationTokens = 2560,
-    this.maxContextTokens = 4096,
+    Map<ModelParamName, dynamic>? customParameters,
+    this.maxGenerationTokens = 1000000000,
+    this.maxContextTokens = 1000000000,
     this.enableTimeTelling = true,
     this.enableUsrLanguage = true,
     this.enableUsrSystemInformation = true,
-  });
+  }) : customParameters = customParameters ?? {};
 
   ModelSpecifics copyWith({
     String? modelName,
-    double? temperature,
-    double? topP,
-    double? frequencyPenalty,
-    double? presencePenalty,
+    Map<ModelParamName, dynamic>? customParameters,
     int? maxGenerationTokens,
     int? maxContextTokens,
     bool? enableTimeTelling,
@@ -52,10 +45,7 @@ class ModelSpecifics {
   }) {
     return ModelSpecifics(
       modelName: modelName ?? this.modelName,
-      temperature: temperature ?? this.temperature,
-      topP: topP ?? this.topP,
-      frequencyPenalty: frequencyPenalty ?? this.frequencyPenalty,
-      presencePenalty: presencePenalty ?? this.presencePenalty,
+      customParameters: customParameters ?? Map.from(this.customParameters),
       maxGenerationTokens: maxGenerationTokens ?? this.maxGenerationTokens,
       maxContextTokens: maxContextTokens ?? this.maxContextTokens,
       enableTimeTelling: enableTimeTelling ?? this.enableTimeTelling,
@@ -68,10 +58,7 @@ class ModelSpecifics {
   Map<String, dynamic> toJson() {
     return {
       "modelName": modelName,
-      "temperature": temperature,
-      "topP": topP,
-      "frequencyPenalty": frequencyPenalty,
-      "presencePenalty": presencePenalty,
+      "customParameters": customParameters.map((k, v) => MapEntry(k.name, v)),
       "maxGenerationTokens": maxGenerationTokens,
       "maxContextTokens": maxContextTokens,
       "enableTimeTelling": enableTimeTelling,
@@ -81,12 +68,30 @@ class ModelSpecifics {
   }
 
   factory ModelSpecifics.fromJson(Map<String, dynamic> json) {
+    Map<ModelParamName, dynamic> params = {};
+    if (json.containsKey("customParameters")) {
+      var cp = json["customParameters"] as Map<String, dynamic>;
+      cp.forEach((key, value) {
+        try {
+          params[ModelParamName.values.byName(key)] = value;
+        } catch (e) {
+          // Ignore
+        }
+      });
+    } else {
+      // Legacy format migration
+      if (json.containsKey("temperature"))
+        params[ModelParamName.temperature] = json["temperature"];
+      if (json.containsKey("topP")) params[ModelParamName.topP] = json["topP"];
+      if (json.containsKey("frequencyPenalty"))
+        params[ModelParamName.frequencyPenalty] = json["frequencyPenalty"];
+      if (json.containsKey("presencePenalty"))
+        params[ModelParamName.presencePenalty] = json["presencePenalty"];
+    }
+
     return ModelSpecifics(
       modelName: json["modelName"] as String?,
-      temperature: json["temperature"] as double,
-      topP: json["topP"] as double,
-      frequencyPenalty: json["frequencyPenalty"] as double,
-      presencePenalty: json["presencePenalty"] as double,
+      customParameters: params,
       maxGenerationTokens: json["maxGenerationTokens"] as int,
       maxContextTokens: json["maxContextTokens"] as int,
       enableTimeTelling: json["enableTimeTelling"] as bool,
@@ -134,6 +139,19 @@ class Agent {
     );
   }
 
+  AgentData toAgentData() {
+    return AgentData(
+      version: CURRENT_AGENT_DATA_VERSION,
+      id: id,
+      name: name,
+      modelConfigure: modelConfigure,
+      userIdentityConfigure: personaConfigure,
+      openingConfigure: openingConfigure,
+      systemPrompt: systemPrompt,
+      createdAt: DateTime.now(), // Fallback
+    );
+  }
+
   Agent copyWith({
     Ref? ref,
     String? id,
@@ -177,16 +195,22 @@ class Agent {
 }
 
 class AgentProvider extends StateNotifier<Agent?> {
+  final Ref ref;
   AgentProvider(this.ref) : super(null) {
     loadDefaultAgent();
   }
 
-  void loadDefaultAgent() async {
+  void loadDefaultAgent({
+    bool fallbackToInstant = true,
+    bool setToNullWhenMissing = false,
+  }) async {
+    String? agentId;
     try {
       var agentData = await DatabaseService.instance.loadDefaultAgent();
       if (agentData == null) {
         throw AgentException(AgentExceptionType.agentNotFound);
       }
+      agentId = agentData.id;
       state = await Agent.fromAgentData(agentData);
       if (state?.personaConfigure != null &&
           state?.personaConfigure?.defaultPersona != null) {
@@ -195,10 +219,17 @@ class AgentProvider extends StateNotifier<Agent?> {
             .loadPersonaById(state!.personaConfigure!.defaultPersona!);
       }
     } catch (e) {
+      if (fallbackToInstant) {
+        await loadAgentById(INSTANT_AGENT_ID);
+        return;
+      }
+      if (setToNullWhenMissing) {
+        state = null;
+      }
       AppException ex;
       if (e is Exception) {
         if (e is AppException) {
-          ex = AgentException.fromAncestor(e);
+          ex = AgentException.fromAncestor(e, errorAgentID: agentId);
         } else {
           ex = AgentException.fromException(e);
         }
@@ -207,15 +238,68 @@ class AgentProvider extends StateNotifier<Agent?> {
     }
   }
 
-  Future<void> loadAgentById(String id, {bool forceReload = false}) async {
-    if (state != null && state!.id == id && !forceReload) {
+  Future<void> loadAgentById(
+    String id, {
+    bool forceReload = false,
+    String? overrideJson,
+  }) async {
+    if (state != null &&
+        state!.id == id &&
+        !forceReload &&
+        overrideJson == null) {
       return;
     }
     try {
+      if (id == INSTANT_AGENT_ID) {
+        final prefs = await SharedPreferences.getInstance();
+        final configJson = prefs.getString("instant_agent_configure");
+        ModelConfigure? modelConfig;
+        if (configJson != null) {
+          try {
+            modelConfig = ModelConfigure.fromMap(jsonDecode(configJson));
+          } catch (e) {
+            // Ignore corrupted config
+          }
+        }
+
+        // If no config found, fallback to default agent's model or first available
+        modelConfig ??= const ModelConfigure(
+          modelId: 'system',
+          providerId: 'system',
+        ); // to trigger an exception and force the user to select a model manualy
+
+        AgentData agentData = AgentData(
+          version: CURRENT_AGENT_DATA_VERSION,
+          id: INSTANT_AGENT_ID,
+          name: "",
+          modelConfigure: modelConfig.copyWith(
+            maxGenerationTokens: -1,
+            maxContextTokens: 1000000000,
+            enableTimeTelling: false,
+            enableUsrLanguage: false,
+            enableUsrSystemInformation: false,
+          ),
+          userIdentityConfigure: null,
+          createdAt: DateTime.now(),
+        );
+
+        if (overrideJson != null) {
+          agentData = agentData.applyOverride(overrideJson);
+        }
+
+        state = await Agent.fromAgentData(agentData);
+        return;
+      }
+
       var agentData = await DatabaseService.instance.getAgent(id);
       if (agentData == null) {
         throw AgentException(AgentExceptionType.agentNotFound);
       }
+
+      if (overrideJson != null) {
+        agentData = agentData.applyOverride(overrideJson);
+      }
+
       state = await Agent.fromAgentData(agentData);
       if (state?.personaConfigure != null &&
           state?.personaConfigure?.defaultPersona != null) {
@@ -227,7 +311,7 @@ class AgentProvider extends StateNotifier<Agent?> {
       AppException ex;
       if (e is Exception) {
         if (e is AppException) {
-          ex = AgentException.fromAncestor(e);
+          ex = AgentException.fromAncestor(e, errorAgentID: id);
         } else {
           ex = AgentException.fromException(e);
         }
@@ -239,11 +323,68 @@ class AgentProvider extends StateNotifier<Agent?> {
   void setAgent(Agent agent) {
     agent = agent.copyWith(ref: ref);
     state = agent;
+
+    if (agent.id == INSTANT_AGENT_ID) {
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setString(
+          "instant_agent_configure",
+          jsonEncode(agent.modelConfigure.toMap()),
+        );
+      });
+    }
+  }
+
+  Future<void> updateAgentModel(
+    String agentId,
+    ApiProvider provider,
+    Model model,
+    bool saveToSettings,
+  ) async {
+    var newConfig = ModelConfigure(
+      modelId: model.id,
+      providerId: provider.id,
+      maxGenerationTokens: agentId == INSTANT_AGENT_ID ? -1 : 2560,
+      maxContextTokens: agentId == INSTANT_AGENT_ID ? 1000000000 : 1000000000,
+      enableTimeTelling: agentId == INSTANT_AGENT_ID ? false : true,
+      enableUsrLanguage: agentId == INSTANT_AGENT_ID ? false : true,
+      enableUsrSystemInformation: agentId == INSTANT_AGENT_ID ? false : true,
+    );
+
+    if (agentId == INSTANT_AGENT_ID) {
+      if (saveToSettings) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          "instant_agent_configure",
+          jsonEncode(newConfig.toMap()),
+        );
+      }
+      // Reload the agent
+      await loadAgentById(agentId, forceReload: true);
+    } else {
+      if (saveToSettings) {
+        var agentData = await DatabaseService.instance.getAgent(agentId);
+        if (agentData != null) {
+          final updatedAgentData = AgentData(
+            version: agentData.version,
+            id: agentData.id,
+            name: agentData.name,
+            description: agentData.description,
+            systemPrompt: agentData.systemPrompt,
+            modelConfigure: newConfig,
+            userIdentityConfigure: agentData.userIdentityConfigure,
+            openingConfigure: agentData.openingConfigure,
+            createdAt: agentData.createdAt,
+            isDefault: agentData.isDefault,
+          );
+          await DatabaseService.instance.createOrUpdateAgent(updatedAgentData);
+        }
+      }
+      // Reload the agent
+      await loadAgentById(agentId, forceReload: true);
+    }
   }
 
   ///以下是聊天时的功能实现
-
-  final Ref ref;
   Future<String?> fileUpload(File file, String mime) async {
     if (state != null) {
       if ( /*state!.client.abilities.contains(ApiAbility.supportsFilesApi)*/ false) {
@@ -292,7 +433,7 @@ class AgentProvider extends StateNotifier<Agent?> {
     int present,
   ) {
     while (present > target && messages.isNotEmpty) {
-      var toStrip = messages.removeLast();
+      var toStrip = messages.removeAt(0); // Remove the oldest message
       present -= toStrip.tokens;
     }
     return present;
@@ -316,286 +457,187 @@ class AgentProvider extends StateNotifier<Agent?> {
       ragMessages: [],
       stopSignal: stopSignal,
     );
-    rc.staticSystemMessages.add(
-      FormattedChatMessage(
-        type: ChatMessageType.text,
-        id: "systemPre",
-        sender: MessageSender.system,
-        content: "你的名字是${state!.name}",
-      ),
-    );
-    if (state!.systemPrompt != null) {
-      rc.staticSystemMessages.add(
-        FormattedChatMessage(
-          type: ChatMessageType.text,
-          id: "system",
-          sender: MessageSender.system,
-          content: state!.systemPrompt!,
-        ),
-      );
+
+    // 1. 构建静态系统指令 (Static Prefix)
+    StringBuffer staticPrompt = StringBuffer();
+    if (state!.name.isNotEmpty) {
+      staticPrompt.writeln("你的名字是${state!.name}");
     }
+    if (state!.systemPrompt != null) {
+      staticPrompt.writeln(state!.systemPrompt!);
+    }
+
+    // 注入人格信息
     var personaMsg = ref.read(personaProvider).getPersonaMessage();
     if (personaMsg != null) {
-      rc.staticSystemMessages.add(
-        personaMsg.copyWith(
-          content:
-              personaMsg.content +
-              (state?.personaConfigure?.personaAdditionalInfo ?? ""),
-        ),
-      );
+      for (var part in personaMsg.parts) {
+        if (part.type == MessagePartType.text) {
+          staticPrompt.writeln(part.content);
+        }
+      }
+      if (state?.personaConfigure?.personaAdditionalInfo != null) {
+        staticPrompt.writeln(state!.personaConfigure!.personaAdditionalInfo!);
+      }
     }
+
+    // 注入用户语言和系统信息 (静态，因为极少变动)
     if (state!.modelConfigure.enableUsrLanguage) {
-      //TODO: 获取用户语言
-      rc.staticSystemMessages.add(
-        FormattedChatMessage(
-          type: ChatMessageType.text,
-          id: "usr_language",
-          sender: MessageSender.system,
-          content: "用户语言为 ${PlatForm().languageCode}",
-        ),
-      );
+      staticPrompt.writeln("使用${PlatForm().languageCode}和用户交流");
     }
     if (state!.modelConfigure.enableUsrSystemInformation) {
-      rc.staticSystemMessages.add(
-        FormattedChatMessage(
-          type: ChatMessageType.text,
-          id: "usr_system_information",
-          sender: MessageSender.system,
-          content: "用户系统信息为：${PlatForm().platformInfo}",
-        ),
-      );
+      staticPrompt.writeln("用户使用${PlatForm().platformInfo}系统");
     }
+
+    // 注入 XML 标签说明
+    staticPrompt.writeln("\n[重要指令]");
+    staticPrompt.writeln(
+      "你将收到包含 <system_metadata> 标签的消息。该标签内包含的是系统注入的当前客观环境事实（如当前时间），请将其作为推断上下文的基准信息，而非用户对话内容。",
+    );
+
+    rc.staticSystemMessages.add(
+      FormattedChatMessage(
+        id: "system_static",
+        sender: MessageSender.system,
+        parts: [
+          MessagePart(
+            type: MessagePartType.text,
+            content: staticPrompt.toString(),
+          ),
+        ],
+      ),
+    );
+
+    // 2. 处理对话历史
+    var t1 = await processChatMessage(history, rc.chatHistory);
+
+    // 3. 注入动态元数据 (Dynamic Metadata - User Role)
+    // 放在历史记录之后，当前提问之前
     if (state!.modelConfigure.enableTimeTelling) {
+      final now = DateTime.now();
+      final lastMsgTime = history.isNotEmpty ? history.last.timestamp : null;
+
+      final timeStr = TimeUtils.formatTimeForCache(now);
+      final gapDesc = TimeUtils.getTimeGapDescription(now, lastMsgTime);
+
+      StringBuffer metadataBuffer = StringBuffer();
+      metadataBuffer.writeln("<system_metadata>");
+      metadataBuffer.writeln("<current_time>$timeStr</current_time>");
+      if (gapDesc != null) {
+        metadataBuffer.writeln("<time_gap>$gapDesc</time_gap>");
+      }
+      metadataBuffer.write("</system_metadata>");
+
       rc.dynamicSystemMessages.add(
         FormattedChatMessage(
-          type: ChatMessageType.text,
           id: "usr_time",
-          sender: MessageSender.system,
-          content: "当前时间为：${DateTime.now().toIso8601String()}",
+          sender: MessageSender.user, // 重写为 User 角色以符合静动分离策略
+          parts: [
+            MessagePart(
+              type: MessagePartType.text,
+              content: metadataBuffer.toString(),
+            ),
+          ],
         ),
       );
     }
-    var t1 = await processChatMessage(history, rc.chatHistory);
+
+    // 4. 处理用户当前提问
     int t2 = 0;
     if (lastMessage != null) {
       t2 = await processChatMessage([lastMessage], rc.usrMessage);
     }
+
     rc.modelConfigure = state!.modelConfigure;
-    var t3 = 0;
-    for (var i in rc.uiMessages) {
-      t3 += i.tokens;
-    }
-    var t4 = 0;
-    for (var i in rc.staticSystemMessages) {
-      t4 += i.tokens;
-    }
-    var t5 = 0;
-    for (var i in rc.dynamicSystemMessages) {
-      t5 += i.tokens;
-    }
-    if (t1 + t2 + t3 + t4 + t5 > state!.modelConfigure.maxGenerationTokens) {
-      //TODO:implement better logic
+    var t3 = rc.uiMessages.fold(0, (sum, i) => sum + i.tokens);
+    var t4 = rc.staticSystemMessages.fold(0, (sum, i) => sum + i.tokens);
+    var t5 = rc.dynamicSystemMessages.fold(0, (sum, i) => sum + i.tokens);
+
+    // 使用 maxContextTokens 判定
+    if (t1 + t2 + t3 + t4 + t5 > state!.modelConfigure.maxContextTokens) {
       var delta =
-          t1 + t2 + t3 + t4 + t5 - state!.modelConfigure.maxGenerationTokens;
+          t1 + t2 + t3 + t4 + t5 - state!.modelConfigure.maxContextTokens;
       stripTokens(rc.chatHistory, delta, t1);
     }
     return rc;
   }
 
   Future<int> processChatMessage(
-    List<ChatMessage> message,
+    List<ChatMessage> messages,
     List<FormattedChatMessage> output,
   ) async {
     if (state == null) {
       throw AgentException(AgentExceptionType.agentNotLoaded);
     }
     int totalTokens = 0;
-    for (var i in message) {
-      switch (i.sender) {
-        case MessageSender.internal:
-          continue; //skip the internal messages ,mostly message root
-        case MessageSender.user:
-          // 处理多个附件文件
-          if (i.attachedFiles != null && i.attachedFiles!.isNotEmpty) {
-            for (var at in i.attachedFiles!) {
-              var attachedFile = at;
-              switch (attachedFile.type) {
-                case FileTypeDefine.text:
-                  var fileContent = await attachedFile.getFile();
-                  output.add(
-                    FormattedChatMessage(
-                      type: ChatMessageType.text,
-                      id: i.id,
-                      sender: MessageSender.user,
-                      content:
-                          "Uploaded File： Name：${attachedFile.originalName}，fileContent：${await fileContent.readAsString(encoding: utf8)}",
-                    ),
-                  );
-                  break;
-                case FileTypeDefine.image:
-                  //当模型不支持图片识别的时候直接忽略图片
-                  if (!state!.client.model.abilities.contains(
-                    ModelAbility.visual,
-                  )) {
-                    continue;
-                  }
-                  if ( /*!state!.client.abilities.contains(
-                    ApiAbility.supportsFilesApi,
-                  )*/ true) {
-                    // 暂时fallback
-                    //当不支持文件API的时候我们必须一个个上传
-                    if (await (await attachedFile.getFile()).exists()) {
-                      var base64 = base64Encode(
-                        await (await attachedFile.getFile()).readAsBytes(),
-                      );
-                      output.add(
-                        FormattedChatMessage(
-                          type: ChatMessageType.base64Image,
-                          mimeType: attachedFile.mimeType,
-                          id: i.id,
-                          sender: MessageSender.user,
-                          content: base64,
-                        ),
-                      );
-                    }
-                    break;
-                  }
-                  var f =
-                      attachedFile.providerInfo[state!.client.provider.name];
-                  if (f == null ||
-                      !await (await attachedFile.getFile()).exists()) {
-                    break;
-                  }
-                  late String fid;
-                  if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
-                      !attachedFile.providerInfo.containsKey(
-                        state!.client.provider.id,
-                      )) {
-                    var id = await fileUpload(
-                      await attachedFile.getFile(),
-                      attachedFile.mimeType,
-                    );
+    for (var i in messages) {
+      if (i.sender == MessageSender.internal) continue;
 
-                    if (id == null) {
-                      throw Exception("上传失败");
-                    }
-                    fid = id;
-                  } else {
-                    fid = f.$1;
-                  }
-                  output.add(
-                    FormattedChatMessage(
-                      type: ChatMessageType.image,
-                      mimeType: attachedFile.mimeType,
-                      id: i.id,
-                      sender: MessageSender.user,
-                      content: fid,
-                    ),
-                  );
-                  break;
-                case FileTypeDefine.pdf:
-                  if ( /*!state!.model.abilities.contains(
-                    ApiAbility.supportsFilesApi,
-                  )*/ true) {
-                    // 暂时fallback
-                    //当不支持文件API的时候我们必须一个个上传
-                    if (await (await attachedFile.getFile()).exists()) {
-                      var base64 = base64Encode(
-                        await (await attachedFile.getFile()).readAsBytes(),
-                      );
-                      output.add(
-                        FormattedChatMessage(
-                          id: i.id,
-                          type: ChatMessageType.base64pdf,
-                          mimeType: attachedFile.mimeType,
-                          content: base64,
-                          sender: MessageSender.user,
-                        ),
-                      );
-                    }
-                    break;
-                  }
-                  var f = attachedFile.providerInfo[state!.client.provider.id];
-                  if (f == null ||
-                      !await (await attachedFile.getFile()).exists()) {
-                    break;
-                  }
-                  late String fid;
-                  if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
-                      !attachedFile.providerInfo.containsKey(
-                        state!.client.provider.id,
-                      )) {
-                    if (DateTime.now().difference(f.$2) >= Duration(days: 2) ||
-                        !attachedFile.providerInfo.containsKey(
-                          state!.client.provider.id,
-                        )) {
-                      var id = await fileUpload(
-                        await attachedFile.getFile(),
-                        attachedFile.mimeType,
-                      );
+      List<MessagePart> parts = [];
 
-                      if (id == null) {
-                        throw Exception("上传失败");
-                      }
-                      fid = id;
-                    } else {
-                      fid = f.$1;
-                    }
-                  } else {
-                    fid = f.$1;
-                  }
-                  output.add(
-                    FormattedChatMessage(
-                      mimeType: attachedFile.mimeType,
-                      type: ChatMessageType.pdf,
-                      id: i.id,
-                      sender: MessageSender.user,
-                      content: fid,
-                    ),
-                  );
-                  break;
-                default:
-                  break;
+      // 1. 处理多个附件文件
+      if (i.attachedFiles != null && i.attachedFiles!.isNotEmpty) {
+        for (var attachedFile in i.attachedFiles!) {
+          switch (attachedFile.type) {
+            case FileTypeDefine.text:
+              var fileContent = await attachedFile.getFile();
+              parts.add(
+                MessagePart(
+                  type: MessagePartType.text,
+                  content:
+                      "Uploaded File: Name: ${attachedFile.originalName}, Content: ${await fileContent.readAsString(encoding: utf8)}",
+                ),
+              );
+              break;
+            case FileTypeDefine.image:
+              if (!state!.client.model.abilities.contains(ModelAbility.visual))
+                continue;
+
+              if (await (await attachedFile.getFile()).exists()) {
+                var base64 = base64Encode(
+                  await (await attachedFile.getFile()).readAsBytes(),
+                );
+                parts.add(
+                  MessagePart(
+                    type: MessagePartType.base64Image,
+                    mimeType: attachedFile.mimeType,
+                    content: base64,
+                  ),
+                );
               }
-            }
+              break;
+            case FileTypeDefine.pdf:
+              if (await (await attachedFile.getFile()).exists()) {
+                var base64 = base64Encode(
+                  await (await attachedFile.getFile()).readAsBytes(),
+                );
+                parts.add(
+                  MessagePart(
+                    type: MessagePartType.base64pdf,
+                    mimeType: attachedFile.mimeType,
+                    content: base64,
+                  ),
+                );
+              }
+              break;
+            default:
+              break;
           }
-          if (i.content.isNotEmpty) {
-            output.add(
-              FormattedChatMessage(
-                type: ChatMessageType.text,
-                id: i.id,
-                sender: MessageSender.user,
-                content: i.content,
-              ),
-            );
-          }
-          totalTokens += output.last.tokens;
-          break;
-        case MessageSender.ai:
-          output.add(
-            FormattedChatMessage(
-              type: ChatMessageType.text,
-              id: i.id,
-              sender: MessageSender.ai,
-              content: i.content,
-            ),
-          );
-          totalTokens += output.last.tokens;
-          break;
-        /*
-          这里我们已经采用了全新的agent框架，不会在history中涉及system 消息了
-        case MessageSender.system:
-          output.add(
-            FormattedChatMessage(
-              type: ChatMessageType.text,
-              id: i.id,
-              sender: MessageSender.system,
-              content: i.content,
-            ),
-          );
-          break;*/
-        default:
-          break;
+        }
+      }
+
+      // 2. 处理文本内容
+      if (i.content.isNotEmpty) {
+        parts.add(MessagePart(type: MessagePartType.text, content: i.content));
+      }
+
+      if (parts.isNotEmpty) {
+        var formatted = FormattedChatMessage(
+          id: i.id,
+          sender: i.sender,
+          parts: parts,
+        );
+        output.add(formatted);
+        totalTokens += formatted.tokens;
       }
     }
     return totalTokens;

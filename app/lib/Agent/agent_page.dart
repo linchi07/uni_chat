@@ -86,7 +86,9 @@ class AgentSelector extends ConsumerWidget {
   final dynamic onEdit;
 
   Future<(List<AgentData>, List<File?>)> getAgentAndAvatars() async {
-    var agents = await DatabaseService.instance.getAllAgents();
+    var allAgents = await DatabaseService.instance.getAllAgents();
+    var agents =
+        allAgents.where((agent) => agent.id != INSTANT_AGENT_ID).toList();
     var avatars = <File?>[];
     for (var agent in agents) {
       avatars.add(await agent.getAvatar());

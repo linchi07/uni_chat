@@ -1,11 +1,18 @@
+import 'dart:async';
+
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
+import 'package:uni_chat/api_configs/api_service.dart';
 import 'package:uni_chat/main.dart';
+import 'package:uni_chat/settings_page/model_discovery_widget.dart';
 import 'package:uni_chat/settings_page/settings.dart' show settingsMenuKey;
+import 'package:uni_chat/settings_page/token_usage_dashboard.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
@@ -14,7 +21,7 @@ import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
-import '../utils/llm_image_indexer.dart';
+import '../utils/llm_icons.dart';
 
 class ApiSettings extends ConsumerStatefulWidget {
   const ApiSettings({super.key});
@@ -101,12 +108,30 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
         ),
         Expanded(
           child: FutureBuilder(
-            future: ApiDatabase.instance.getAllProviders(),
+            future: Future.wait([
+              ApiDatabase.instance.getAllProviders(),
+              ApiDatabase.instance.getAllProvidersUsageSummaries(
+                DateTime.now().subtract(const Duration(days: 7)),
+              ),
+            ]),
             builder: (context, f) {
               if (!f.hasData) {
                 return const SizedBox();
               }
-              var providers = f.data!;
+              final providers = f.data![0] as List<ApiProvider>;
+              final summaries =
+                  f.data![1]
+                      as Map<
+                        String,
+                        ({
+                          int totalTokens,
+                          int callCount,
+                          Map<String, double> costs,
+                        })
+                      >;
+
+              final numberFormat = NumberFormat.compact();
+
               return ListView.builder(
                 padding: const EdgeInsets.all(16.0),
                 itemCount: providers.length,
@@ -119,12 +144,48 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8.0),
                       ),
-                      onTap: () {},
+                      onTap: () {
+                        settingsMenuKey.currentState?.insertPage(
+                          TokenUsageDashboard(providerId: provider.id),
+                        );
+                      },
                       tileColor: theme.zeroGradeColor,
                       leading: (img != null)
                           ? StdAvatar(length: 40, assetImage: AssetImage(img))
                           : null,
                       title: Text(provider.name),
+                      subtitle: Builder(
+                        builder: (context) {
+                          final stats = summaries[provider.id];
+                          if (stats == null || stats.callCount == 0) {
+                            return Text(
+                              "暂无近期使用记录",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.textColor.withAlpha(100),
+                              ),
+                            );
+                          }
+
+                          // Format costs string
+                          String costStr = "";
+                          if (stats.costs.isNotEmpty) {
+                            costStr =
+                                " | 支出: ${stats.costs.entries.map((e) {
+                                  final fmt = NumberFormat.simpleCurrency(name: e.key, decimalDigits: 2);
+                                  return fmt.format(e.value);
+                                }).join(", ")}";
+                          }
+
+                          return Text(
+                            "7天消耗: ${numberFormat.format(stats.totalTokens)} tokens | 调用: ${stats.callCount} 次$costStr",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.textColor.withAlpha(150),
+                            ),
+                          );
+                        },
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -278,6 +339,7 @@ class ApiConfigure {
   late final String id;
   ProviderPresetType? type;
   bool showVerFlags;
+  bool noKeyNeeded;
   String? name;
   String? endpoint;
   ApiType? apiType;
@@ -296,6 +358,7 @@ class ApiConfigure {
     this.name,
     this.endpoint,
     this.showVerFlags = true,
+    this.noKeyNeeded = false,
     this.apiType,
     List<ApiKey>? keys,
     List<({Model model, ProviderModelConfig config})>? models,
@@ -368,6 +431,7 @@ class ApiConfigure {
         name: apip.name,
         endpoint: apip.endpoint,
         keys: keys,
+        noKeyNeeded: keys.any((k) => k.id.startsWith("@nokey+")),
         models: m,
       );
     }
@@ -382,6 +446,7 @@ class ApiConfigure {
     String? endpoint,
     ApiType? apiType,
     bool? showVerFlags,
+    bool? noKeyNeeded,
     List<ApiKey>? keys,
     List<({Model model, ProviderModelConfig config})>? models,
   }) {
@@ -392,6 +457,7 @@ class ApiConfigure {
       name: name ?? this.name,
       endpoint: endpoint ?? this.endpoint,
       showVerFlags: showVerFlags ?? this.showVerFlags,
+      noKeyNeeded: noKeyNeeded ?? this.noKeyNeeded,
       apiType: apiType ?? this.apiType,
       keys: keys ?? this.keys,
       models: models ?? this.models,
@@ -402,7 +468,7 @@ class ApiConfigure {
     return name != null &&
         endpoint != null &&
         apiType != null &&
-        keys.isNotEmpty &&
+        (noKeyNeeded || keys.isNotEmpty) &&
         models.isNotEmpty;
   }
 
@@ -421,7 +487,22 @@ class ApiConfigure {
     );
   }
 
-  Future<void> save() => ApiDatabase.instance.saveApiConfigure(this);
+  Future<void> save() async {
+    if (noKeyNeeded) {
+      final oldKey = keys.firstWhereOrNull((k) => k.id.startsWith("@nokey"));
+      keys = [
+        ApiKey(
+          id,
+          oldKey?.id ?? "@nokey+${Uuid().v7()}",
+          "request from unichat",
+          remark: "@nokey",
+          // Preserve invoke data if it exists
+          invokeData: oldKey?.invokeData,
+        ),
+      ];
+    }
+    await ApiDatabase.instance.saveApiConfigure(this);
+  }
 }
 
 final StateProvider<ApiConfigure> apiConfigureProvider =
@@ -451,17 +532,39 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
     } else {
       indexShift = -1;
     }
+    spc = SplitViewController(
+      onPop: () {
+        _currentPage.value = -1;
+      },
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     children = [
       if (showBasic) SingleChildScrollView(child: _BaseInfo(theme: theme)),
-      ListView.builder(
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: ApiKeyInfo(theme: theme, apiKey: ac.keys[index]),
-          );
-        },
-        itemCount: ac.keys.length,
-      ),
+      if (ac.noKeyNeeded)
+        Center(
+          child: Text(
+            S.of(context).no_key_needed,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: theme.darkTextColor.withAlpha(150),
+            ),
+          ),
+        )
+      else
+        ListView.builder(
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: ApiKeyInfo(theme: theme, apiKey: ac.keys[index]),
+            );
+          },
+          itemCount: ac.keys.length,
+        ),
       ListView.builder(
         itemBuilder: (context, index) {
           return Padding(
@@ -476,11 +579,6 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
         itemCount: ac.models.length,
       ),
     ];
-    spc = SplitViewController(
-      onPop: () {
-        _currentPage.value = -1;
-      },
-    );
   }
 
   final ValueNotifier<int> _currentPage = ValueNotifier(0);
@@ -644,9 +742,13 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                             title: Text(S.of(context).api_keys_configure),
                             isSelected: page == 1 + indexShift,
                             subtitle: _indicator(
-                              ac.keys.isNotEmpty,
+                              ac.noKeyNeeded || ac.keys.isNotEmpty,
                               ValueKey("api key set"),
-                              S.of(context).api_keys_configured(ac.keys.length),
+                              ac.noKeyNeeded
+                                  ? S.of(context).no_key_needed
+                                  : S
+                                        .of(context)
+                                        .api_keys_configured(ac.keys.length),
                               S.of(context).api_keys_not_set,
                             ),
                             onTap: () {
@@ -900,16 +1002,33 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
     main = _buildMain();
     ref.listen(apiConfigureProvider, (previous, next) {
       ac = next;
-      if (ac.keys != previous?.keys) {
-        children[1 + indexShift] = ListView.builder(
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-              child: ApiKeyInfo(theme: theme, apiKey: ac.keys[index]),
-            );
-          },
-          itemCount: ac.keys.length,
-        );
+      if (ac.keys != previous?.keys ||
+          ac.noKeyNeeded != previous?.noKeyNeeded) {
+        if (ac.noKeyNeeded) {
+          children[1 + indexShift] = Center(
+            child: Text(
+              S.of(context).no_key_needed,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: theme.darkTextColor.withAlpha(150),
+              ),
+            ),
+          );
+        } else {
+          children[1 + indexShift] = ListView.builder(
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 3,
+                ),
+                child: ApiKeyInfo(theme: theme, apiKey: ac.keys[index]),
+              );
+            },
+            itemCount: ac.keys.length,
+          );
+        }
         mainSetState?.call(() {});
       }
       if (ac.models != previous?.models) {
@@ -1212,15 +1331,15 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
   }
 }
 
-class ApiKeyHeader extends StatefulWidget {
+class ApiKeyHeader extends ConsumerStatefulWidget {
   const ApiKeyHeader({super.key, required this.theme});
   final ThemeConfig theme;
 
   @override
-  State<ApiKeyHeader> createState() => _ApiKeyState();
+  ConsumerState<ApiKeyHeader> createState() => _ApiKeyState();
 }
 
-class _ApiKeyState extends State<ApiKeyHeader> {
+class _ApiKeyState extends ConsumerState<ApiKeyHeader> {
   @override
   initState() {
     super.initState();
@@ -1228,6 +1347,7 @@ class _ApiKeyState extends State<ApiKeyHeader> {
 
   @override
   Widget build(BuildContext context) {
+    var ac = ref.watch(apiConfigureProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -1243,47 +1363,98 @@ class _ApiKeyState extends State<ApiKeyHeader> {
                   color: widget.theme.darkTextColor,
                 ),
               ),
-              Expanded(child: const SizedBox(width: 10)),
-              StdButton(
-                text: S.of(context).add_api_key,
-                onPressed: () {
-                  OverlayPortalService.showDialog(
-                    context,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 20,
-                    ),
-                    width: 450,
-                    child: Consumer(
-                      builder: (context, ref, c) {
-                        return ApiKeyEditMenu(
-                          theme: widget.theme,
-                          apiKey: ApiKey(
-                            ref.read(apiConfigureProvider).id,
-                            Uuid().v7(),
-                            "",
-                          ),
-                          onSave: (k) {
-                            var n = ref.read(apiConfigureProvider.notifier);
-                            n.state = n.state.copyWith(
-                              keys: [...n.state.keys, k],
-                            );
+              const SizedBox(width: 20),
+              StdCheckbox(
+                text: S.of(context).my_api_no_key,
+                value: ac.noKeyNeeded,
+                onChanged: (v) {
+                  if (v == true && ac.keys.isNotEmpty) {
+                    OverlayPortalService.showDialog(
+                      context,
+                      width: 400,
+                      backGroundColor: widget.theme.zeroGradeColor,
+                      child: Text(
+                        S.of(context).delete_keys_warning,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: widget.theme.darkTextColor,
+                        ),
+                      ),
+                      actions: [
+                        StdButton(
+                          text: S.of(context).cancel,
+                          onPressed: () => OverlayPortalService.hide(context),
+                        ),
+                        const SizedBox(width: 8),
+                        StdButton(
+                          text: S.of(context).confirm,
+                          color: widget.theme.errorColor,
+                          onPressed: () {
+                            ref.read(apiConfigureProvider.notifier).state = ac
+                                .copyWith(noKeyNeeded: true);
                             OverlayPortalService.hide(context);
                           },
-                          onCancel: () {
-                            OverlayPortalService.hide(context);
-                          },
-                        );
-                      },
-                    ),
-                    backGroundColor: widget.theme.zeroGradeColor,
-                  );
+                        ),
+                      ],
+                    );
+                  } else {
+                    bool clearAll = false;
+                    clearAll =
+                        (ac.noKeyNeeded &&
+                        !(v ?? true) &&
+                        ac.keys.isNotEmpty &&
+                        ac.keys.any((k) => k.id.startsWith("@nokey")));
+                    ref.read(apiConfigureProvider.notifier).state = ac.copyWith(
+                      noKeyNeeded: v,
+                      keys: clearAll ? [] : null,
+                    );
+                  }
                 },
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 12,
-                ),
               ),
+              Expanded(child: const SizedBox(width: 10)),
+              if (!ac.noKeyNeeded)
+                StdButton(
+                  text: S.of(context).add_api_key,
+                  onPressed: () {
+                    OverlayPortalService.showDialog(
+                      context,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 20,
+                      ),
+                      width: 450,
+                      child: Consumer(
+                        builder: (context, ref, c) {
+                          return ApiKeyEditMenu(
+                            theme: widget.theme,
+                            apiKey: ApiKey(
+                              ref.read(apiConfigureProvider).id,
+                              Uuid().v7(),
+                              "",
+                            ),
+                            onSave: (k) {
+                              var n = ref.read(apiConfigureProvider.notifier);
+                              n.state = n.state.copyWith(
+                                keys: [...n.state.keys, k],
+                              );
+                              OverlayPortalService.hide(context);
+                            },
+                            onCancel: () {
+                              OverlayPortalService.hide(context);
+                            },
+                          );
+                        },
+                      ),
+                      backGroundColor: widget.theme.zeroGradeColor,
+                    );
+                  },
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
+                ),
               const SizedBox(width: 20),
             ],
           ),
@@ -1761,14 +1932,15 @@ class _ApiKeyEditMenuState extends State<ApiKeyEditMenu> {
   }
 }
 
-class ModelAddPageHeader extends StatefulWidget {
+class ModelAddPageHeader extends ConsumerStatefulWidget {
   const ModelAddPageHeader({super.key, required this.theme});
   final ThemeConfig theme;
   @override
-  State<ModelAddPageHeader> createState() => _ModelAddPageHeaderState();
+  ConsumerState<ModelAddPageHeader> createState() => _ModelAddPageHeaderState();
 }
 
-class _ModelAddPageHeaderState extends State<ModelAddPageHeader> {
+class _ModelAddPageHeaderState extends ConsumerState<ModelAddPageHeader> {
+  bool isLoading = false;
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -1791,35 +1963,140 @@ class _ModelAddPageHeaderState extends State<ModelAddPageHeader> {
               Consumer(
                 builder: (context, ref, child) {
                   var theme = ref.watch(themeProvider);
-                  var ac = ref.read(apiConfigureProvider);
-                  return StdButton(
-                    text: S.of(context).add_model,
-                    onPressed: () {
-                      OverlayPortalService.showDialog(
-                        context,
-                        child: ModelAddWidget(
-                          theme: theme,
-                          modelConfig: ProviderModelConfig(
-                            providerId: ac.id,
-                            modelId: "",
-                            callName: "",
-                          ),
-                          onSave: (m, p) {
-                            ref.read(apiConfigureProvider.notifier).state = ac
-                                .copyWith(
+                  var ac = ref.watch(apiConfigureProvider);
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      StdButton(
+                        text: S.of(context).auto_fetch_models,
+                        onPressed: () async {
+                          if (!ac.noKeyNeeded &&
+                              !ac.keys.any((k) => k.enabled)) {
+                            OverlayPortalService.showDialog(
+                              context,
+                              child: Text(
+                                S.of(context).no_api_key_added_warning,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: widget.theme.darkTextColor,
+                                ),
+                              ),
+                              backGroundColor: theme.zeroGradeColor,
+                            );
+                            return;
+                          }
+
+                          try {
+                            final protocolService = BaseApiService.fromType(
+                              ac.apiType!,
+                            );
+
+                            OverlayWrapper.showOverlay(
+                              context,
+                              overlayContent: ModelDiscoveryWidget(
+                                theme: theme,
+                                service: protocolService,
+                                endpoint: ac.endpoint!,
+                                apiKey: ac.noKeyNeeded
+                                    ? ac.keys.first
+                                    : ac.keys.firstWhere((k) => k.enabled),
+                                onSave: (confirmedResults) {
+                                  final currentModels =
+                                      List<
+                                        ({
+                                          Model model,
+                                          ProviderModelConfig config,
+                                        })
+                                      >.from(ac.models);
+
+                                  for (var res in confirmedResults) {
+                                    if (res.config != null &&
+                                        res.localModel != null) {
+                                      final existingIndex = currentModels
+                                          .indexWhere(
+                                            (m) =>
+                                                m.model.id ==
+                                                res.localModel!.id,
+                                          );
+
+                                      res.config!.providerId = ac.id;
+
+                                      if (existingIndex != -1) {
+                                        currentModels[existingIndex] = (
+                                          model: res.localModel!,
+                                          config: res.config!,
+                                        );
+                                      } else {
+                                        currentModels.add((
+                                          model: res.localModel!,
+                                          config: res.config!,
+                                        ));
+                                      }
+                                    }
+                                  }
+
+                                  ref
+                                      .read(apiConfigureProvider.notifier)
+                                      .state = ac.copyWith(
+                                    models: currentModels,
+                                  );
+                                },
+                              ),
+                            );
+                          } catch (e) {
+                            OverlayPortalService.showDialog(
+                              context,
+                              child: Text(
+                                e.toString(),
+                                style: TextStyle(
+                                  color: widget.theme.errorColor,
+                                ),
+                              ),
+                              backGroundColor: theme.zeroGradeColor,
+                            );
+                          } finally {
+                            if (mounted) setState(() => isLoading = false);
+                          }
+                        },
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      StdButton(
+                        text: S.of(context).add_model,
+                        onPressed: () {
+                          OverlayPortalService.showDialog(
+                            context,
+                            child: ModelAddWidget(
+                              theme: theme,
+                              modelConfig: ProviderModelConfig(
+                                providerId: ac.id,
+                                modelId: "",
+                                callName: "",
+                              ),
+                              onSave: (m, p) {
+                                ref
+                                    .read(apiConfigureProvider.notifier)
+                                    .state = ac.copyWith(
                                   models: [...ac.models, (model: m, config: p)],
                                 );
-                            OverlayPortalService.hide(context);
-                          },
+                                OverlayPortalService.hide(context);
+                              },
+                            ),
+                            backGroundColor: theme.zeroGradeColor,
+                            width: 450,
+                          );
+                        },
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 12,
                         ),
-                        backGroundColor: theme.zeroGradeColor,
-                        width: 450,
-                      );
-                    },
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12,
-                    ),
+                      ),
+                    ],
                   );
                 },
               ),
@@ -1864,6 +2141,7 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
   late TextStyle tStyle;
   @override
   Widget build(BuildContext context) {
+    var imgP = LLMImageIndexer.tryGetImagePath(model.family);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
       decoration: BoxDecoration(
@@ -1872,140 +2150,236 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
       ),
       child: Row(
         children: [
-          StdAvatar(
-            length: 50,
-            assetImage: AssetImage(LLMImageIndexer.getImagePath(model.family)),
-          ),
+          if (imgP != null) StdAvatar(length: 50, assetImage: AssetImage(imgP)),
           const SizedBox(width: 15),
           Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SelectionArea(
-                  child: Row(
-                    children: [
-                      Flexible(
+            child: SelectionArea(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      model.friendlyName,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 25,
+                        color: widget.theme.darkTextColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  _buildPricingWidget(context, ref, model),
+                  StdIconButton(
+                    icon: Icons.edit_outlined,
+                    onPressed: () {
+                      OverlayPortalService.showDialog(
+                        context,
+                        width: 450,
+                        backGroundColor: widget.theme.zeroGradeColor,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 20,
+                        ),
+                        child: ModelConfigureWidget(
+                          providerConfig: widget.modelConfig,
+                          model: model,
+                          theme: widget.theme,
+                          onSave: (c) {
+                            var n = ref.read(apiConfigureProvider.notifier);
+                            var ac = n.state;
+                            for (int i = 0; i < ac.models.length; i++) {
+                              if (ac.models[i].model.id == model.id) {
+                                ac.models[i] = (model: model, config: c);
+                              }
+                            }
+                            n.state = ac.copyWith(models: [...ac.models]);
+                            OverlayPortalService.hide(context);
+                          },
+                          onCancel: () {
+                            OverlayPortalService.hide(context);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  StdIconButton(
+                    icon: Icons.delete_outline,
+                    onPressed: () {
+                      OverlayPortalService.showDialog(
+                        context,
                         child: Text(
-                          model.friendlyName,
-                          overflow: TextOverflow.ellipsis,
+                          S.of(context).delete_confirm,
                           style: TextStyle(
                             fontSize: 25,
-                            color: widget.theme.darkTextColor,
                             fontWeight: FontWeight.bold,
+                            color: widget.theme.darkTextColor,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 5),
-                      Expanded(
-                        child: Text(
-                          model.family,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: widget.theme.darkTextColor.withAlpha(150),
+                        actions: [
+                          StdButton(
+                            text: S.of(context).cancel,
+                            onPressed: () {
+                              OverlayPortalService.hide(context);
+                            },
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      StdIconButton(
-                        icon: Icons.edit_outlined,
-                        onPressed: () {
-                          OverlayPortalService.showDialog(
-                            context,
-                            width: 450,
-                            backGroundColor: widget.theme.zeroGradeColor,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 20,
-                            ),
-                            child: ModelConfigureWidget(
-                              providerConfig: widget.modelConfig,
-                              model: model,
-                              theme: widget.theme,
-                              onSave: (c) {
-                                var n = ref.read(apiConfigureProvider.notifier);
-                                var ac = n.state;
-                                for (int i = 0; i < ac.models.length; i++) {
-                                  if (ac.models[i].model.id == model.id) {
-                                    ac.models[i] = (model: model, config: c);
-                                  }
-                                }
-                                n.state = ac.copyWith(models: [...ac.models]);
-                                OverlayPortalService.hide(context);
-                              },
-                              onCancel: () {
-                                OverlayPortalService.hide(context);
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                      StdIconButton(
-                        icon: Icons.delete_outline,
-                        onPressed: () {
-                          OverlayPortalService.showDialog(
-                            context,
-                            child: Text(
-                              S.of(context).delete_confirm,
-                              style: TextStyle(
-                                fontSize: 25,
-                                fontWeight: FontWeight.bold,
-                                color: widget.theme.darkTextColor,
-                              ),
-                            ),
-                            actions: [
-                              StdButton(
-                                text: S.of(context).cancel,
-                                onPressed: () {
-                                  OverlayPortalService.hide(context);
-                                },
-                              ),
-                              const SizedBox(width: 10),
-                              StdButton(
-                                text: S.of(context).confirm_long_press,
-                                onLongPress: () {
-                                  var n = ref.read(
-                                    apiConfigureProvider.notifier,
-                                  );
-                                  n.state = n.state.copyWith(
-                                    models: [
-                                      ...n.state.models.where(
-                                        (element) =>
-                                            element.model.id != model.id,
-                                      ),
-                                    ],
-                                  );
-                                  OverlayPortalService.hide(context);
-                                },
-                                color: widget.theme.errorColor,
-                              ),
-                            ],
-                            backGroundColor: widget.theme.zeroGradeColor,
-                          );
-                        },
-                      ),
-                    ],
+                          const SizedBox(width: 10),
+                          StdButton(
+                            text: S.of(context).confirm_long_press,
+                            onLongPress: () {
+                              var n = ref.read(apiConfigureProvider.notifier);
+                              n.state = n.state.copyWith(
+                                models: [
+                                  ...n.state.models.where(
+                                    (element) => element.model.id != model.id,
+                                  ),
+                                ],
+                              );
+                              OverlayPortalService.hide(context);
+                            },
+                            color: widget.theme.errorColor,
+                          ),
+                        ],
+                        backGroundColor: widget.theme.zeroGradeColor,
+                      );
+                    },
                   ),
-                ),
-                const SizedBox(height: 5),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children:
-                        (widget.modelConfig.abilitiesOverride ??
-                                model.abilities)
-                            .map((e) => getInfoTags(e))
-                            .toList(),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildPricingWidget(BuildContext context, WidgetRef ref, Model model) {
+    void showPricingEditor() {
+      OverlayPortalService.showDialog(
+        context,
+        width: 450,
+        backGroundColor: widget.theme.zeroGradeColor,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        child: ModelPricingWidget(
+          theme: widget.theme,
+          pricing: widget.modelConfig.pricing,
+          onSave: (p) {
+            updatePricing(ref, model, p);
+            OverlayPortalService.hide(context);
+          },
+          onCancel: () => OverlayPortalService.hide(context),
+        ),
+      );
+    }
+
+    final pricing = widget.modelConfig.pricing;
+    if (pricing == null) {
+      return StdIconButton(
+        icon: Icons.payments_outlined,
+        onPressed: showPricingEditor,
+      );
+    }
+
+    // Pricing Capsule
+    return GestureDetector(
+      onTap: showPricingEditor,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 300),
+        padding: const EdgeInsets.only(left: 10, right: 2, top: 2, bottom: 2),
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        decoration: BoxDecoration(
+          color: widget.theme.primaryColor.withAlpha(30),
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: widget.theme.primaryColor.withAlpha(50)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.arrow_upward_rounded,
+              size: 14,
+              color: widget.theme.primaryColor,
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                pricing.prompt.toString(),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: widget.theme.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 1,
+              height: 12,
+              color: widget.theme.primaryColor.withAlpha(80),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.arrow_downward_rounded,
+              size: 14,
+              color: widget.theme.primaryColor,
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                pricing.completion.toString(),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: widget.theme.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            StdIconButton(
+              icon: Icons.close_rounded,
+              onPressed: () => updatePricing(ref, model, null, isDelete: true),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void updatePricing(
+    WidgetRef ref,
+    Model model,
+    ModelPricing? p, {
+    bool isDelete = false,
+  }) {
+    var n = ref.read(apiConfigureProvider.notifier);
+    var ac = n.state;
+    var models = List<({Model model, ProviderModelConfig config})>.from(
+      ac.models,
+    );
+    for (int i = 0; i < models.length; i++) {
+      if (models[i].model.id == model.id) {
+        if (isDelete) {
+          var old = models[i].config;
+          var nC = ProviderModelConfig(
+            providerId: old.providerId,
+            modelId: old.modelId,
+            callName: old.callName,
+            parametersOverride: old.parametersOverride,
+            abilitiesOverride: old.abilitiesOverride,
+          );
+          models[i] = (model: model, config: nC);
+        }
+        models[i] = (
+          model: model,
+          config: models[i].config.copyWith(pricing: p),
+        );
+        break;
+      }
+    }
+    n.state = ac.copyWith(models: models);
   }
 
   Widget getInfoTags(ModelAbility ability) {
@@ -2023,15 +2397,20 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
 }
 
 class ModelAddWidget extends StatefulWidget {
+  final ThemeConfig theme;
+  final ProviderModelConfig modelConfig;
+  final Model? initialModel;
+  final bool startWithAdding;
+  final void Function(Model, ProviderModelConfig) onSave;
+
   const ModelAddWidget({
     super.key,
     required this.theme,
     required this.onSave,
     required this.modelConfig,
+    this.initialModel,
+    this.startWithAdding = false,
   });
-  final ThemeConfig theme;
-  final ProviderModelConfig modelConfig;
-  final void Function(Model, ProviderModelConfig) onSave;
 
   @override
   State<ModelAddWidget> createState() => _ModelAddWidgetState();
@@ -2039,7 +2418,14 @@ class ModelAddWidget extends StatefulWidget {
 
 class _ModelAddWidgetState extends State<ModelAddWidget> {
   Model? currentSelected;
-  bool adding = false;
+  late bool adding;
+
+  @override
+  void initState() {
+    super.initState();
+    adding = widget.startWithAdding;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (adding) {
@@ -2050,6 +2436,7 @@ class _ModelAddWidgetState extends State<ModelAddWidget> {
         child: AddNewModel(
           theme: widget.theme,
           modelConfig: widget.modelConfig,
+          initialModel: widget.initialModel,
           onCancel: () {
             setState(() {
               adding = false;
@@ -2196,8 +2583,10 @@ class AddNewModel extends StatefulWidget {
     required this.onSave,
     required this.onCancel,
     required this.modelConfig,
+    this.initialModel,
   });
   final ProviderModelConfig modelConfig;
+  final Model? initialModel;
   final ThemeConfig theme;
   final void Function(({Model model, ProviderModelConfig config})) onSave;
   final void Function() onCancel;
@@ -2207,9 +2596,35 @@ class AddNewModel extends StatefulWidget {
 }
 
 class _AddNewModelState extends State<AddNewModel> {
+  List<String> _existingFriendlyNames = [];
+
   @override
   Widget build(BuildContext context) {
     return addNew();
+  }
+
+  Future<void> _loadExistingModels() async {
+    final models = await ApiDatabase.instance.getAllModels();
+    if (mounted) {
+      setState(() {
+        _existingFriendlyNames = models
+            .map((m) => m.friendlyName.toLowerCase())
+            .toList();
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingModels();
+    modelNameController.text = widget.modelConfig.callName;
+    if (widget.initialModel != null) {
+      modelFriendlyNameController.text =
+          "${widget.initialModel!.friendlyName} (Variant)";
+      modelFamilyController.text = widget.initialModel!.family;
+      selectedAbilities = Set.from(widget.initialModel!.abilities);
+    }
   }
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -2255,6 +2670,15 @@ class _AddNewModelState extends State<AddNewModel> {
                 "${S.of(context).plz_enter}${S.of(context).model_friendly_name}",
             controller: modelFriendlyNameController,
             hintText: S.of(context).model_friendly_name_hint,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return "${S.of(context).plz_enter}${S.of(context).model_friendly_name}";
+              }
+              if (_existingFriendlyNames.contains(value.trim().toLowerCase())) {
+                return S.of(context).model_friendly_name_exists;
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 10),
           Text(
@@ -2285,15 +2709,15 @@ class _AddNewModelState extends State<AddNewModel> {
                     var id = Uuid().v7();
                     widget.onSave((
                       model: Model(
-                        friendlyName: modelFriendlyNameController.text,
-                        family: modelFamilyController.text,
+                        friendlyName: modelFriendlyNameController.text.trim(),
+                        family: modelFamilyController.text.trim(),
                         abilities: selectedAbilities.toSet(),
                         id: id,
                       ),
                       config: ProviderModelConfig(
                         providerId: widget.modelConfig.providerId,
                         modelId: id,
-                        callName: modelNameController.text,
+                        callName: modelNameController.text.trim(),
                       ),
                     ));
                   }
@@ -2500,6 +2924,165 @@ class _ModelConfigureWidgetState extends State<ModelConfigureWidget> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class ModelPricingWidget extends StatefulWidget {
+  const ModelPricingWidget({
+    super.key,
+    required this.theme,
+    this.pricing,
+    required this.onSave,
+    required this.onCancel,
+  });
+  final ThemeConfig theme;
+  final ModelPricing? pricing;
+  final void Function(ModelPricing?) onSave;
+  final void Function() onCancel;
+
+  @override
+  State<ModelPricingWidget> createState() => _ModelPricingWidgetState();
+}
+
+class _ModelPricingWidgetState extends State<ModelPricingWidget> {
+  final _formKey = GlobalKey<FormState>();
+  final promptController = TextEditingController();
+  final completionController = TextEditingController();
+  final cacheController = TextEditingController();
+  String currency = 'USD';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.pricing != null) {
+      promptController.text = widget.pricing!.prompt.toString();
+      completionController.text = widget.pricing!.completion.toString();
+      cacheController.text = (widget.pricing!.cached ?? "").toString();
+      currency = widget.pricing!.currency;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ts = TextStyle(fontSize: 15, color: widget.theme.darkTextColor);
+    final currencies = ['USD', 'CNY'];
+
+    return OverlayPortalScope(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              S.of(context).model_pricing_settings,
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+                color: widget.theme.darkTextColor,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(S.of(context).prompt_price_per_1k, style: ts),
+            const SizedBox(height: 8),
+            StdTextFormFieldOutlined(
+              controller: promptController,
+              hintText: S.of(context).enter_prompt_price,
+              inputFormat: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
+              validator: (v) {
+                if (v == null || v.isEmpty) {
+                  return S.of(context).price_not_empty;
+                }
+                if (double.tryParse(v) == null) {
+                  return S.of(context).invalid_number;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(S.of(context).completion_price_per_1k, style: ts),
+            const SizedBox(height: 8),
+            StdTextFormFieldOutlined(
+              controller: completionController,
+              hintText: S.of(context).enter_completion_price,
+              inputFormat: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
+              validator: (v) {
+                if (v == null || v.isEmpty) {
+                  return S.of(context).price_not_empty;
+                }
+                if (double.tryParse(v) == null) {
+                  return S.of(context).invalid_number;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(S.of(context).cache_price_per_1k, style: ts),
+            const SizedBox(height: 8),
+            StdTextFormFieldOutlined(
+              controller: cacheController,
+              hintText: S.of(context).enter_cache_price,
+              inputFormat: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
+              validator: (v) {
+                if (v != null && v.isNotEmpty && double.tryParse(v) == null) {
+                  return S.of(context).invalid_number;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(S.of(context).currency, style: ts),
+            const SizedBox(height: 8),
+            StdSegmentedControl(
+              labels: currencies,
+              currentIndex: currencies.indexWhere((e) => e == currency),
+              onIndexChanged: (index) {
+                setState(() {
+                  currency = currencies[index];
+                });
+              },
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                StdButton(
+                  text: S.of(context).cancel,
+                  onPressed: widget.onCancel,
+                ),
+                const SizedBox(width: 12),
+                StdButton(
+                  text: S.of(context).save,
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      final prompt =
+                          double.tryParse(promptController.text) ?? 0.0;
+                      final completion =
+                          double.tryParse(completionController.text) ?? 0.0;
+                      final cached = double.tryParse(cacheController.text);
+                      widget.onSave(
+                        ModelPricing(
+                          prompt: prompt,
+                          completion: completion,
+                          cached: cached,
+                          currency: currency,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

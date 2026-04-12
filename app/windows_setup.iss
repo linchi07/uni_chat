@@ -6,7 +6,7 @@
 ; 唯一标识符，你可以用 Inno Setup 自带的工具 (Tools -> Generate GUID) 重新生成一个替换掉这里的
 AppId={{29E00414-E007-490E-B089-714A8741DA86}}
 AppName=UNIChat
-AppVersion=1.0.0
+AppVersion=1.0.1
 AppPublisher=Wejoinnwk
 AppPublisherURL=https://unichat.wejoinnwk.com
 ; 默认安装到 Program Files 下的 UNIChat 文件夹

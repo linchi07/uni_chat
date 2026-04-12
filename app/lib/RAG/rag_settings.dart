@@ -19,7 +19,7 @@ import 'package:uuid/uuid.dart';
 
 import '../generated/l10n.dart';
 import '../theme_manager.dart';
-import '../utils/llm_image_indexer.dart';
+import '../utils/llm_icons.dart';
 import '../utils/overlays.dart';
 import '../utils/prebuilt_widgets.dart';
 

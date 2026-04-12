@@ -126,8 +126,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
         //and it's too inefficient to inject a provider
         //so I just pack them into a obj and pass it to the animation widget
         var functionPT = (
-          (con) {
-            con.text = message.content;
+          () {
             if (message.attachedFiles != null &&
                 message.attachedFiles!.isNotEmpty) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -144,6 +143,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                     );
               });
             }
+            return widget.message.content;
           },
           () {
             ref.read(chatStateProvider.notifier).addBranch(index);
@@ -781,6 +781,7 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
           ),
           child: (t >= 0.8)
               ? ChatPanelInputBox(
+                  showInfoMessage: false,
                   textInject: widget.registeredFunctions.$1,
                   beforeSubmit: widget.registeredFunctions.$2,
                   afterSubmit: widget.registeredFunctions.$3,
@@ -851,7 +852,8 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
+        // to match the tool bar height of the persistent messages
+        margin: const EdgeInsets.fromLTRB(8, 5 + 30, 8, 5),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
         child: ValueListenableBuilder(
@@ -1061,143 +1063,190 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
   bool animatedDirection = true;
   late AnimationController _animationController;
   late Animation<double> _opacity;
-  dynamic listener;
+  final ScrollController _scrollController = ScrollController();
+  void Function(AnimationStatus)? listener;
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    listener = (status) {
-      if (widget.isComplete && !isDisposed && animatedDirection) {
-        _animationController.removeStatusListener(listener);
-      }
-      if (status == AnimationStatus.completed ||
-          status == AnimationStatus.dismissed) {
-        Future.delayed(const Duration(milliseconds: 400), () {
-          if (!isDisposed) {
-            if (animatedDirection) {
-              _animationController.reverse();
-            } else {
-              _animationController.forward();
+    if (!widget.isComplete) {
+      _animationController = AnimationController(
+        duration: const Duration(milliseconds: 500),
+        vsync: this,
+      );
+      _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+      );
+      listener = (status) {
+        if (widget.isComplete && !isDisposed && animatedDirection) {
+          _animationController.removeStatusListener(listener!);
+        }
+        if (status == AnimationStatus.completed ||
+            status == AnimationStatus.dismissed) {
+          Future.delayed(const Duration(milliseconds: 400), () {
+            if (!isDisposed) {
+              if (animatedDirection) {
+                _animationController.reverse();
+              } else {
+                _animationController.forward();
+              }
+              animatedDirection = !animatedDirection;
             }
-            animatedDirection = !animatedDirection;
-          }
-        });
-      }
-    };
-    _animationController.addStatusListener(listener);
-    _animationController.forward();
+          });
+        }
+      };
+      _animationController.addStatusListener(listener!);
+      _animationController.forward();
+    }
   }
 
   @override
   void dispose() {
     isDisposed = true;
-    _animationController.removeStatusListener(listener);
-    _animationController.dispose();
+    if (listener != null) {
+      _animationController.removeStatusListener(listener!);
+      _animationController.dispose();
+    }
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_ReasonBlock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isComplete &&
+        widget.content != null &&
+        widget.content != oldWidget.content) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     var theme = ref.watch(themeProvider);
-    final card = Container(
-      margin: const EdgeInsets.only(top: 10, bottom: 20),
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(60),
-            spreadRadius: 2,
-            offset: const Offset(0, 2),
-            blurRadius: 4,
-          ),
-        ],
-        color: theme.zeroGradeColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Shimmer(
-        enabled: !widget.isComplete,
-        duration: const Duration(seconds: 3),
-        interval: const Duration(seconds: 0),
-        colorOpacity: 0.8,
-        child: Container(
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedBuilder(
-                animation: _opacity,
-                builder: (context, child) {
-                  return Opacity(opacity: _opacity.value, child: child!);
-                },
-                child: Icon(
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          isShowing = !isShowing;
+        });
+      },
+      //吓哭了，Gemini3 flash写的效果太强了，感觉我可以辞职了。说白了，连pro都不用上
+      child: Container(
+        margin: const EdgeInsets.only(top: 10, bottom: 20),
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(60),
+              spreadRadius: 2,
+              offset: const Offset(0, 2),
+              blurRadius: 4,
+            ),
+          ],
+          color: theme.zeroGradeColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (!widget.isComplete)
+                  AnimatedBuilder(
+                    animation: _opacity,
+                    builder: (context, child) {
+                      return Opacity(opacity: _opacity.value, child: child!);
+                    },
+                    child: Icon(
+                      Icons.lightbulb_outline,
+                      color: widget.isComplete
+                          ? theme.okColor
+                          : theme.primaryColor,
+                    ),
+                  )
+                else
+                  Icon(Icons.lightbulb_outline, color: theme.okColor),
+                if (!widget.isComplete) ...[
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      color: theme.primaryColor,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 12),
+                Text(
                   widget.isComplete
-                      ? Icons.check_circle
-                      : Icons.lightbulb_outline,
-                  color: widget.isComplete ? Colors.green : theme.darkTextColor,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                widget.isComplete
-                    ? S.of(context).reasoned
-                    : S.of(context).reasoning,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: theme.darkTextColor,
-                ),
-              ),
-              const SizedBox(width: 10),
-              if (widget.isComplete)
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      isShowing = !isShowing;
-                    });
-                  },
-                  child: Text(
-                    isShowing ? S.of(context).hide_cot : S.of(context).show_cot,
+                      ? S.of(context).reasoned
+                      : S.of(context).reasoning,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: theme.darkTextColor,
                   ),
                 ),
-              if (!widget.isComplete) const SizedBox(width: 12),
-              if (!widget.isComplete)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator.adaptive(strokeWidth: 2),
-                ),
-            ],
-          ),
+                const Spacer(),
+                if (widget.isComplete)
+                  AnimatedRotation(
+                    turns: isShowing ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 300),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 20,
+                      color: theme.darkTextColor.withAlpha(150),
+                    ),
+                  ),
+              ],
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.fastOutSlowIn,
+              alignment: Alignment.topCenter,
+              child:
+                  ((!widget.isComplete || isShowing) &&
+                      widget.content != null &&
+                      widget.content!.isNotEmpty)
+                  ? Container(
+                      constraints: BoxConstraints(
+                        maxHeight: isShowing
+                            ? 250
+                            : (!widget.isComplete)
+                            ? 100
+                            : 40,
+                      ),
+                      padding: const EdgeInsets.only(top: 10),
+                      width: double.infinity,
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        physics: isShowing
+                            ? const ClampingScrollPhysics()
+                            : const NeverScrollableScrollPhysics(),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: GptMarkdown(
+                            widget.content!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: theme.darkTextColor.withAlpha(150),
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
         ),
-      ),
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        card,
-        if (isShowing && widget.isComplete) ...[
-          const SizedBox(height: 8),
-          _buildSourceCodeView(widget.content),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildSourceCodeView(String? source) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      child: GptMarkdown(
-        source ?? '',
-        style: const TextStyle(color: Colors.black, fontSize: 14),
       ),
     );
   }

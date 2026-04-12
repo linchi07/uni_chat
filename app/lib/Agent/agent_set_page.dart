@@ -1,28 +1,41 @@
+import 'dart:convert';
+
+import 'package:appflowy_editor/appflowy_editor.dart'
+    show MDEditor, MDEditorController;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
+import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/database/database_service.dart';
+import 'package:uni_chat/generated/l10n.dart';
 import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
+import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
 
-import '../generated/l10n.dart';
-import '../utils/file_utils.dart';
-import '../utils/llm_image_indexer.dart' show LLMImageIndexer;
-import '../utils/overlays.dart';
 import 'agentProvider.dart';
 import 'agent_models.dart';
+import 'model_select.dart';
 
 /// @param onSaveReturn 这个是在保存的时候调用的
 /// @param onBack 这个在取消的时候调用，如果保留空的话就不会有取消按钮（也就是给初始页面用的）
 class AgentSetPage extends ConsumerStatefulWidget {
-  const AgentSetPage({super.key, required this.onSaveReturn, this.onBack});
+  const AgentSetPage({
+    super.key,
+    required this.onSaveReturn,
+    this.onBack,
+    this.session,
+    this.baseAgentData,
+  });
   final dynamic onSaveReturn;
   final void Function()? onBack;
+  final ChatSession? session;
+  final AgentData? baseAgentData;
 
   @override
   ConsumerState<AgentSetPage> createState() => _AgentSetPageState();
@@ -218,87 +231,115 @@ class _AgentSetPageState extends ConsumerState<AgentSetPage> {
                 padding: const EdgeInsets.symmetric(vertical: 12.0),
                 child: SizedBox(
                   height: 90,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: theme.zeroGradeColor,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(60),
-                              offset: Offset(0, 1),
-                              blurRadius: 3,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: StdAvatarPicker(
-                          initialWidget: Center(
-                            child: Text(
-                              S.of(context).select_image_hint,
-                              textAlign: TextAlign.center,
-                            ),
+                  child: (widget.session != null)
+                      ? Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withAlpha(50),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          onImageChanged: (s, setImage) async {
-                            var f = await s.copyTo(
-                              await PathProvider.getPath("chat/avatars"),
-                              rename: agentState.id,
-                              replaceIfExist: true,
-                              createDirIfNotExist: true,
-                            );
-                            setImage(f.path);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: theme.primaryColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  S.of(context).agent_override_editing_hint,
+                                  style: TextStyle(color: theme.primaryColor),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Row(
                           children: [
-                            TextField(
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: theme.zeroGradeColor,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withAlpha(60),
+                                    offset: Offset(0, 1),
+                                    blurRadius: 3,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
                               ),
-                              controller: nameController,
-                              decoration: InputDecoration(
-                                isDense: true,
-                                hintText: S.of(context).agent_name_hint,
-                                border: InputBorder.none,
-                                hintStyle:
-                                    (agentState.name == null &&
-                                        agentState.isValidateMode)
-                                    ? TextStyle(fontSize: 20, color: Colors.red)
-                                    : null,
+                              child: StdAvatarPicker(
+                                initialWidget: Center(
+                                  child: Text(
+                                    S.of(context).select_image_hint,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                onImageChanged: (s, setImage) async {
+                                  var f = await s.copyTo(
+                                    await PathProvider.getPath("chat/avatars"),
+                                    rename: agentState.id,
+                                    replaceIfExist: true,
+                                    createDirIfNotExist: true,
+                                  );
+                                  setImage(f.path);
+                                },
                               ),
-                              onChanged: (value) {
-                                var n = ref.read(agentEditState.notifier);
-                                n.state = n.state.copyWith(name: value);
-                              },
                             ),
-                            TextField(
-                              style: const TextStyle(fontSize: 15),
-                              controller: descriptionController,
-                              minLines: 2,
-                              maxLines: 2,
-                              decoration: InputDecoration(
-                                isDense: true,
-                                hintText: S.of(context).agent_desc_hint,
-                                border: InputBorder.none,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  TextField(
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    controller: nameController,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      hintText: S.of(context).agent_name_hint,
+                                      border: InputBorder.none,
+                                      hintStyle:
+                                          (agentState.name == null &&
+                                              agentState.isValidateMode)
+                                          ? TextStyle(
+                                              fontSize: 20,
+                                              color: Colors.red,
+                                            )
+                                          : null,
+                                    ),
+                                    onChanged: (value) {
+                                      var n = ref.read(agentEditState.notifier);
+                                      n.state = n.state.copyWith(name: value);
+                                    },
+                                  ),
+                                  TextField(
+                                    style: const TextStyle(fontSize: 15),
+                                    controller: descriptionController,
+                                    minLines: 2,
+                                    maxLines: 2,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      hintText: S.of(context).agent_desc_hint,
+                                      border: InputBorder.none,
+                                    ),
+                                    onChanged: (value) {
+                                      var n = ref.read(agentEditState.notifier);
+                                      n.state = n.state.copyWith(
+                                        description: value,
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
-                              onChanged: (value) {
-                                var n = ref.read(agentEditState.notifier);
-                                n.state = n.state.copyWith(description: value);
-                              },
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
               TokenStats(),
@@ -413,7 +454,11 @@ class _AgentSetPageState extends ConsumerState<AgentSetPage> {
                     ),
                   if (widget.onBack != null) const SizedBox(width: 10),
                   Expanded(
-                    child: _ActionButtons(onSaveReturn: widget.onSaveReturn),
+                    child: _ActionButtons(
+                      onSaveReturn: widget.onSaveReturn,
+                      session: widget.session,
+                      baseAgentData: widget.baseAgentData,
+                    ),
                   ),
                 ],
               ),
@@ -427,8 +472,14 @@ class _AgentSetPageState extends ConsumerState<AgentSetPage> {
 }
 
 class _ActionButtons extends ConsumerStatefulWidget {
-  const _ActionButtons({required this.onSaveReturn});
+  const _ActionButtons({
+    required this.onSaveReturn,
+    this.session,
+    this.baseAgentData,
+  });
   final dynamic onSaveReturn;
+  final ChatSession? session;
+  final AgentData? baseAgentData;
   @override
   ConsumerState<_ActionButtons> createState() => __ActionButtonsState();
 }
@@ -484,14 +535,36 @@ class __ActionButtonsState extends ConsumerState<_ActionButtons>
             isValidateMode: true,
           );
           if (agentState.valid()) {
-            await DatabaseService.instance.createOrUpdateAgent(
-              await agentState.toAgentData(),
-            );
+            if (widget.session != null && widget.baseAgentData != null) {
+              // Override mode
+              final config = agentState.toAgentData().toConfigureMap();
+              final overrideJson = jsonEncode(config);
+
+              await DatabaseService.instance.updateSessionOverride(
+                widget.session!.id,
+                overrideJson,
+              );
+
+              // Reload agent with override
+              await ref
+                  .read(agentProvider.notifier)
+                  .loadAgentById(
+                    widget.session!.agentId,
+                    overrideJson: overrideJson,
+                    forceReload: true,
+                  );
+            } else {
+              // Standard mode
+              await DatabaseService.instance.createOrUpdateAgent(
+                agentState.toAgentData(),
+              );
+              //此处强制刷新
+              await ref
+                  .read(agentProvider.notifier)
+                  .loadAgentById(agentState.id, forceReload: true);
+            }
+
             ref.read(agentEditState.notifier).state = AgentEditState();
-            //此处强制刷新
-            await ref
-                .read(agentProvider.notifier)
-                .loadAgentById(agentState.id, forceReload: true);
             widget.onSaveReturn();
           } else {
             _controller.forward(from: 0);
@@ -595,6 +668,7 @@ class AgentEditState {
       providerId: provider!.id,
       maxContextTokens: modelSettings.maxContextTokens,
       maxGenerationTokens: modelSettings.maxGenerationTokens,
+      customParameters: modelSettings.customParameters,
       enableTimeTelling: modelSettings.enableTimeTelling,
       enableUsrLanguage: modelSettings.enableUsrLanguage,
       enableUsrSystemInformation: modelSettings.enableUsrSystemInformation,
@@ -631,6 +705,7 @@ class AgentEditState {
       modelSettings: ModelSpecifics(
         maxContextTokens: agentData.modelConfigure.maxContextTokens,
         maxGenerationTokens: agentData.modelConfigure.maxGenerationTokens,
+        customParameters: agentData.modelConfigure.customParameters,
         enableTimeTelling: agentData.modelConfigure.enableTimeTelling,
         enableUsrLanguage: agentData.modelConfigure.enableUsrLanguage,
         enableUsrSystemInformation:
@@ -857,7 +932,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                           onSelect: (p, m) async {
                             var n = ref.read(agentEditState.notifier);
                             var ms = n.state.modelSettings;
-                            ms.maxContextTokens = m.contextLength ?? 4096;
+                            ms.maxContextTokens = m.contextLength ?? 1000000000;
                             ms.maxGenerationTokens =
                                 m.maxCompletionTokens ?? 1024;
                             n.state = n.state.copyWith(provider: p, model: m);
@@ -893,7 +968,8 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                               onSelect: (p, m) async {
                                 var n = ref.read(agentEditState.notifier);
                                 var ms = n.state.modelSettings;
-                                ms.maxContextTokens = m.contextLength ?? 4096;
+                                ms.maxContextTokens =
+                                    m.contextLength ?? 1000000000;
                                 ms.maxGenerationTokens =
                                     m.maxCompletionTokens ?? 1024;
                                 n.state = n.state.copyWith(
@@ -929,20 +1005,37 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 min: 100,
                 max: (edit.model?.contextLength ?? 1145141919).toDouble(),
               ),
-              StdSlider(
-                label: S.of(context).model_maximum_generate_length,
-                value: modelConf.maxGenerationTokens.toDouble(),
-                toInt: true,
-                onChanged: (value) {
-                  if (modelConf.maxContextTokens < value.toInt()) {
-                    modelConf.maxContextTokens = value.toInt();
+              StdCheckbox(
+                text: S.of(context).limit_model_generate_length,
+                value: modelConf.maxGenerationTokens != -1,
+                onChanged: (val) {
+                  if (val == null) return;
+                  if (val) {
+                    modelConf.maxGenerationTokens =
+                        edit.model?.maxCompletionTokens ?? 1024;
+                  } else {
+                    modelConf.maxGenerationTokens = -1;
                   }
-                  modelConf.maxGenerationTokens = value.toInt();
                   _notifyListeners();
                 },
-                min: 100,
-                max: (edit.model?.maxCompletionTokens ?? 1145141919).toDouble(),
               ),
+              if (modelConf.maxGenerationTokens != -1)
+                StdSlider(
+                  label: S.of(context).model_maximum_generate_length,
+                  value: modelConf.maxGenerationTokens.toDouble(),
+                  toInt: true,
+                  onChanged: (value) {
+                    if (modelConf.maxContextTokens < value.toInt()) {
+                      modelConf.maxContextTokens = value.toInt();
+                    }
+                    modelConf.maxGenerationTokens = value.toInt();
+                    _notifyListeners();
+                  },
+                  min: 100,
+                  max:
+                      (edit.model?.maxCompletionTokens ?? 1145141919)
+                          .toDouble(),
+                ),
               Text(
                 S.of(context).model_basic_info_pass_through_setting,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -976,277 +1069,142 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                 },
               ),
               const SizedBox(height: 8),
-              Text(
-                S.of(context).model_advance_properties,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              StdSlider(
-                label: S.of(context).temperature,
-                value: modelConf.temperature,
-                onChanged: (value) {
-                  modelConf.temperature = value;
-                  _notifyListeners();
-                },
-                min: 0,
-                max: 2,
-              ),
-              StdSlider(
-                label: S.of(context).freq_penalty,
-                value: modelConf.frequencyPenalty,
-                min: -2,
-                max: 2,
-                onChanged: (value) {
-                  modelConf.frequencyPenalty = value;
-                  _notifyListeners();
-                },
-              ),
-              StdSlider(
-                label: S.of(context).pres_penalty,
-                value: modelConf.presencePenalty,
-                min: -2,
-                max: 2,
-                onChanged: (value) {
-                  modelConf.presencePenalty = value;
-                  _notifyListeners();
-                },
-              ),
-              StdSlider(
-                label: S.of(context).top_p,
-                value: modelConf.topP,
-                min: 0,
-                max: 1,
-                onChanged: (value) {
-                  modelConf.topP = value;
-                  _notifyListeners();
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class ModelSelect extends StatefulWidget {
-  const ModelSelect({super.key, required this.theme, required this.onSelect});
-  final ThemeConfig theme;
-  final void Function(ApiProvider provider, Model model) onSelect;
-
-  static Widget buildPreview(
-    BuildContext context,
-    double height,
-    EdgeInsets padding,
-    ApiProvider provider,
-    Model model,
-    VoidCallback? onTap,
-    ThemeConfig theme,
-  ) {
-    var imgP = LLMImageIndexer.tryGetImagePath(model.family);
-    return LayoutBuilder(
-      builder: (context, c) {
-        return ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: 330),
-          child: StdButton(
-            onPressed: onTap,
-            padding: padding,
-            child: (c.maxWidth >= 300)
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (imgP != null)
-                        StdAvatar(length: height, assetImage: AssetImage(imgP)),
-                      const SizedBox(width: 10),
-                      Flexible(
-                        child: Text(
-                          "${model.friendlyName} | ${provider.name}",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                    ],
-                  )
-                : (imgP != null)
-                ? StdAvatar(length: height, assetImage: AssetImage(imgP))
-                : const Icon(Icons.auto_awesome),
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  State<ModelSelect> createState() => _ModelSelectState();
-}
-
-class _ModelSelectState extends State<ModelSelect> {
-  Widget buildSearchResult(Model model) {
-    var imgP = LLMImageIndexer.tryGetImagePath(model.family);
-    return StdListTile(
-      onTap: () {
-        if (_selectedModel != model) {
-          setState(() {
-            _selectedModel = model;
-          });
-        }
-      },
-      leading: (imgP != null)
-          ? StdAvatar(length: 50, assetImage: AssetImage(imgP))
-          : null,
-      title: Text.rich(
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        TextSpan(
-          text: model.friendlyName,
-          children: [
-            TextSpan(
-              text: "  ${model.family}",
-              style: TextStyle(
-                color: widget.theme.darkTextColor.withAlpha(150),
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-      subtitle: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: model.abilities.map((e) => getInfoTags(e)).toList(),
-        ),
-      ),
-    );
-  }
-
-  Widget getInfoTags(ModelAbility ability) {
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      height: 25,
-      decoration: BoxDecoration(
-        color: widget.theme.primaryColor,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Center(
-        child: Text(
-          ability.name(context),
-          style: TextStyle(color: widget.theme.brightTextColor, fontSize: 12),
-        ),
-      ),
-    );
-  }
-
-  Model? _selectedModel;
-  List<ApiProvider> _providers = [];
-  Widget selectProvider() {
-    return Column(
-      children: [
-        buildSearchResult(_selectedModel!),
-        const SizedBox(height: 8),
-        Text(
-          S.of(context).select_provider,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: FutureBuilder(
-            future: ApiDatabase.instance.getApiProviderByModelId(
-              _selectedModel!.id,
-            ),
-            builder: (context, pv) {
-              if (pv.hasData) {
-                _providers = pv.data!;
-                return ListView.builder(
-                  itemBuilder: (context, e) => buildProvider(_providers[e]),
-                  itemCount: _providers.length,
-                );
-              } else {
-                return SizedBox.shrink();
-              }
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget buildProvider(ApiProvider provider) {
-    var imgP = LLMImageIndexer.tryGetImagePath(provider.preset);
-    return StdListTile(
-      onTap: () {
-        if (_selectedModel != null) {
-          widget.onSelect(provider, _selectedModel!);
-        }
-      },
-      leading: (imgP != null)
-          ? StdAvatar(length: 40, assetImage: AssetImage(imgP))
-          : null,
-      title: Text(
-        provider.name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: widget.theme.bodyTextStyle,
-      ),
-    );
-  }
-
-  Widget search() {
-    return FutureBuilder(
-      future: (_showAll)
-          ? ApiDatabase.instance.getAllModels()
-          : ApiDatabase.instance.getAvailableModels(),
-      builder: (context, model) {
-        if (model.hasData) {
-          _models = model.data!;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: StdSearch(
-                  key: ValueKey(_models.length),
-                  hintText: S.of(context).search_for_models,
-                  isOutlined: true,
-                  searchItems: _models.map((e) => e.friendlyName).toList(),
-                  itemBuilder: (context, e) => buildSearchResult(_models[e]),
-                  noResultPage: Center(
-                    child: Text(
-                      S.of(context).model_not_found,
+              const SizedBox(height: 8),
+              if (edit.model != null && edit.model!.parameters != null) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      S.of(context).model_advance_properties,
                       style: TextStyle(
-                        color: widget.theme.darkTextColor,
                         fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ),
-              ),
-              StdButton(
-                text: (_showAll)
-                    ? S.of(context).show_available_models
-                    : S.of(context).show_all_models,
-                onPressed: () {
-                  setState(() {
-                    _showAll = !_showAll;
-                  });
-                },
-              ),
-            ],
-          );
-        } else {
-          return SizedBox.shrink();
-        }
-      },
-    );
-  }
+                    const Spacer(),
+                    StdButton(
+                      text: S.of(context).select_parameter,
+                      onPressed: () {
+                        final availableParams = edit.model!.parameters!
+                            .where(
+                              (p) => !modelConf.customParameters.containsKey(p),
+                            )
+                            .toList();
 
-  List<Model> _models = [];
-  bool _showAll = false;
-  @override
-  Widget build(BuildContext context) {
-    if (_selectedModel != null) {
-      return selectProvider();
-    }
-    return search();
+                        if (availableParams.isEmpty) return;
+
+                        OverlayPortalService.showDialog(
+                          width: 400,
+                          height: 600,
+                          context,
+                          backGroundColor: theme.zeroGradeColor,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                S.of(context).select_parameter,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Expanded(
+                                child: ListView.builder(
+                                  itemBuilder: (context, index) {
+                                    var param = availableParams[index];
+                                    return ListTile(
+                                      title: Text(param.friendlyName(context)),
+                                      subtitle: Text(param.apiName),
+                                      onTap: () {
+                                        modelConf.customParameters[param] =
+                                            param.initialValue;
+                                        OverlayPortalService.hide(context);
+                                        _notifyListeners();
+                                      },
+                                    );
+                                  },
+                                  itemCount: availableParams.length,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
+                ...modelConf.customParameters.entries.map((entry) {
+                  final param = entry.key;
+                  final value = entry.value;
+
+                  Widget input;
+                  if (param.uiType == ParamUIType.doubleSlider ||
+                      param.uiType == ParamUIType.intSlider) {
+                    input = Expanded(
+                      child: StdSlider(
+                        label: param.friendlyName(context),
+                        value: (value as num).toDouble(),
+                        toInt: param.uiType == ParamUIType.intSlider,
+                        min: param.min,
+                        max: param.max,
+                        onChanged: (val) {
+                          modelConf.customParameters[param] =
+                              param.uiType == ParamUIType.intSlider
+                              ? val.toInt()
+                              : val;
+                          _notifyListeners();
+                        },
+                      ),
+                    );
+                  } else if (param.uiType == ParamUIType.boolean) {
+                    input = Expanded(
+                      child: StdCheckbox(
+                        text: param.friendlyName(context),
+                        value: value as bool,
+                        onChanged: (val) {
+                          if (val != null) {
+                            modelConf.customParameters[param] = val;
+                            _notifyListeners();
+                          }
+                        },
+                      ),
+                    );
+                  } else {
+                    input = Expanded(
+                      child: Text(
+                        "${param.friendlyName(context)}: ${value.toString()}",
+                      ),
+                    );
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        input,
+                        const SizedBox(width: 8),
+                        StdIconButton(
+                          icon: Icons.delete_outline,
+                          color: Colors.redAccent,
+                          onPressed: () {
+                            modelConf.customParameters.remove(param);
+                            _notifyListeners();
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -1258,34 +1216,27 @@ class _SysPromptEdit extends ConsumerStatefulWidget {
 }
 
 class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
-  late TextEditingController controller;
-  int charCount = 0;
+  late MDEditorController mdController;
+  ValueNotifier<int> charCount = ValueNotifier(0);
 
   @override
   void initState() {
     super.initState();
-    controller = TextEditingController();
     // 初始化时设置当前字符数
     final currentState = ref.read(agentEditState);
-    if (currentState.systemPrompt != null) {
-      controller.text = currentState.systemPrompt!;
-      charCount = currentState.systemPrompt!.length;
-    }
-  }
-
-  void onSubmit(AgentEditState s) {
-    //这里卡了一个bug，on Submitted似乎无法正常触发
-    var value = controller.text;
-    if (charCount > s.modelSettings.maxContextTokens) {
-      value = value.substring(0, s.modelSettings.maxContextTokens);
-    }
-    var n = ref.read(agentEditState.notifier);
-    n.state = n.state.copyWith(systemPrompt: value);
+    mdController = MDEditorController(
+      initialText: currentState.systemPrompt,
+      onInput: (text) {
+        ref.read(agentEditState.notifier).update((state) => state.copyWith(systemPrompt: text));
+        charCount.value = LLMTokenEstimator.estimateTokens(text);
+      },
+    );
+    // 初始化字数
+    charCount.value = LLMTokenEstimator.estimateTokens(currentState.systemPrompt ?? "");
   }
 
   @override
   Widget build(BuildContext context) {
-    var s = ref.watch(agentEditState);
     var theme = ref.watch(themeProvider);
     return Padding(
       padding: const EdgeInsets.only(right: 10),
@@ -1299,60 +1250,28 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: TextField(
-              controller: controller,
-              onTapOutside: (e) {
-                onSubmit(s);
-                FocusScope.of(context).unfocus();
-              },
-              decoration: InputDecoration(
-                fillColor: theme.primaryColor,
-                focusColor: theme.primaryColor,
-                hintText: S.of(context).enter_sys_prompt_here,
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: (charCount <= s.modelSettings.maxContextTokens)
-                        ? theme.primaryColor
-                        : Colors.red,
-                    width: 1.0,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: (charCount <= s.modelSettings.maxContextTokens)
-                        ? theme.primaryColor
-                        : Colors.red,
-                    width: 2.5,
-                  ),
-                ),
-                border: const OutlineInputBorder(),
-                // 添加计数器显示
-                counterStyle: TextStyle(
-                  color: (charCount <= s.modelSettings.maxContextTokens)
-                      ? theme.primaryColor
-                      : Colors.red,
-                  fontSize: 15.0,
-                ),
-                counterText: (charCount <= s.modelSettings.maxContextTokens)
-                    ? '$charCount/${s.modelSettings.maxContextTokens}'
-                    : S
-                          .of(context)
-                          .over_maximum_context_length_hint(
-                            charCount,
-                            s.modelSettings.maxContextTokens,
-                          ),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.primaryColor, width: 1.5),
+                borderRadius: BorderRadius.circular(8),
               ),
-              // 监听文本变化更新计数
-              onChanged: (value) {
-                setState(() {
-                  charCount = LLMTokenEstimator.estimateTokens(value);
-                });
-                onSubmit(s);
-              },
-              expands: true,
-              maxLines: null,
-              textAlignVertical: TextAlignVertical.top,
+              padding: const EdgeInsets.all(8),
+              child: MDEditor(
+                backgroundColor: theme.zeroGradeColor,
+                frontGroundColor: theme.primaryColor,
+                controller: mdController,
+                hintText: S.of(context).enter_sys_prompt_here,
+              ),
             ),
+          ),
+          ValueListenableBuilder(
+            valueListenable: charCount,
+            builder: (context, value, child) {
+              return Text(
+                "$value Tokens",
+                style: TextStyle(color: theme.darkTextColor, fontSize: 16),
+              );
+            },
           ),
           const SizedBox(height: 16),
         ],
@@ -1526,22 +1445,27 @@ class Opening extends ConsumerStatefulWidget {
 
 class _OpeningState extends ConsumerState<Opening> {
   late TextEditingController sloganController;
-  late TextEditingController firstMessageController;
+  late MDEditorController firstMessageController;
 
   @override
   void initState() {
     super.initState();
     final currentState = ref.read(agentEditState);
     sloganController = TextEditingController(text: currentState.opening.slogan);
-    firstMessageController = TextEditingController(
-      text: currentState.opening.firstMessage,
+    firstMessageController = MDEditorController(
+      initialText: currentState.opening.firstMessage,
+      onInput: (value) {
+        var n = ref.read(agentEditState.notifier);
+        n.state = n.state.copyWith(
+          opening: n.state.opening.copyWith(firstMessage: value),
+        );
+      },
     );
   }
 
   @override
   void dispose() {
     sloganController.dispose();
-    firstMessageController.dispose();
     super.dispose();
   }
 
@@ -1605,17 +1529,22 @@ class _OpeningState extends ConsumerState<Opening> {
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: StdTextFieldOutlined(
-              hintText:
-                  S.of(context).plz_enter + S.of(context).opening_message_label,
-              controller: firstMessageController,
-              isExpanded: true,
-              onSubmitted: (value) {
-                var n = ref.read(agentEditState.notifier);
-                n.state = n.state.copyWith(
-                  opening: n.state.opening.copyWith(firstMessage: value),
-                );
-              },
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: ref.read(themeProvider).primaryColor,
+                  width: 1.5,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: MDEditor(
+                backgroundColor: ref.read(themeProvider).zeroGradeColor,
+                frontGroundColor: ref.read(themeProvider).primaryColor,
+                controller: firstMessageController,
+                hintText:
+                    S.of(context).plz_enter + S.of(context).opening_message_label,
+              ),
             ),
           ),
         ],
@@ -1624,11 +1553,40 @@ class _OpeningState extends ConsumerState<Opening> {
   }
 }
 
-class UserIdentity extends ConsumerWidget {
+class UserIdentity extends ConsumerStatefulWidget {
   const UserIdentity({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UserIdentity> createState() => _UserIdentityState();
+}
+
+class _UserIdentityState extends ConsumerState<UserIdentity> {
+  late MDEditorController additionalInfoController;
+
+  @override
+  void initState() {
+    super.initState();
+    final currentState = ref.read(agentEditState);
+    additionalInfoController = MDEditorController(
+      initialText: currentState.userIdentity.personaAdditionalInfo,
+      onInput: (value) {
+        var n = ref.read(agentEditState.notifier);
+        n.state = n.state.copyWith(
+          userIdentity: n.state.userIdentity.copyWith(
+            personaAdditionalInfo: value,
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     var uiden = ref.watch(agentEditState.select((s) => s.userIdentity));
     var theme = ref.watch(themeProvider);
     return Padding(
@@ -1659,7 +1617,7 @@ class UserIdentity extends ConsumerWidget {
                 context,
                 height: 600,
                 width: 400,
-                child: personaSelector(context, ref),
+                child: personaSelector(context),
                 backGroundColor: theme.zeroGradeColor,
               );
             },
@@ -1703,22 +1661,19 @@ class UserIdentity extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: StdTextFieldOutlined(
-              hintText:
-                  S.of(context).plz_enter +
-                  S.of(context).persona_additonal_information.toLowerCase(),
-              controller: TextEditingController(
-                text: uiden.personaAdditionalInfo,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.primaryColor, width: 1.5),
+                borderRadius: BorderRadius.circular(8),
               ),
-              isExpanded: true,
-              onSubmitted: (value) {
-                var n = ref.read(agentEditState.notifier);
-                n.state = n.state.copyWith(
-                  userIdentity: n.state.userIdentity.copyWith(
-                    personaAdditionalInfo: value,
-                  ),
-                );
-              },
+              padding: const EdgeInsets.all(8),
+              child: MDEditor(
+                backgroundColor: theme.zeroGradeColor,
+                frontGroundColor: theme.primaryColor,
+                controller: additionalInfoController,
+                hintText: S.of(context).plz_enter +
+                    S.of(context).persona_additonal_information.toLowerCase(),
+              ),
             ),
           ),
         ],
@@ -1726,7 +1681,7 @@ class UserIdentity extends ConsumerWidget {
     );
   }
 
-  Widget personaSelector(BuildContext context, WidgetRef ref) {
+  Widget personaSelector(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
