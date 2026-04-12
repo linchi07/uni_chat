@@ -125,10 +125,18 @@ extension AgentExceptionTypeExt on AgentExceptionType {
 @immutable
 class AgentException extends AppException {
   final AgentExceptionType? error;
+  final String? errorAgentID;
   final String? message;
-  const AgentException(this.error, {this.message, super.ancestor});
-  const AgentException._onlyAncestor(AppException ancestor)
-    : this(null, ancestor: ancestor);
+  const AgentException(
+    this.error, {
+    this.message,
+    super.ancestor,
+    this.errorAgentID,
+  });
+  const AgentException._onlyAncestor(
+    AppException ancestor, {
+    String? errorAgentID,
+  }) : this(null, ancestor: ancestor, errorAgentID: errorAgentID);
   @override
   String unwrapAndGetMessage(BuildContext context) {
     if (ancestor != null) {
@@ -163,9 +171,12 @@ class AgentException extends AppException {
     }
   }
 
-  factory AgentException.fromAncestor(AppException ancestor) {
+  factory AgentException.fromAncestor(
+    AppException ancestor, {
+    String? errorAgentID,
+  }) {
     if (ancestor is AgentException) return ancestor;
-    return AgentException._onlyAncestor(ancestor);
+    return AgentException._onlyAncestor(ancestor, errorAgentID: errorAgentID);
   }
 
   factory AgentException.fromException(Exception e) {
@@ -344,7 +355,7 @@ class ApiKeyExhaustedException extends ApiException {
   final Map<String, ({String keyName, String lastError})> details;
 
   const ApiKeyExhaustedException(this.details)
-      : super(ApiExceptionType.apikey_exhausted_detailed);
+    : super(ApiExceptionType.apikey_exhausted_detailed);
 
   @override
   String unwrapAndGetMessage(BuildContext context) {

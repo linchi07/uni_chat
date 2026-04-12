@@ -74,6 +74,7 @@ class ChatSession {
   DateTime lastMessageTime;
   final DateTime creationTime;
   BranchInfo? branchInfo;
+  final String? agentOverride;
 
   ChatSession({
     required this.id,
@@ -83,6 +84,7 @@ class ChatSession {
     required this.lastMessageTime,
     required this.creationTime,
     this.branchInfo,
+    this.agentOverride,
   });
 
   factory ChatSession.fromSessionDbModel(SessionDbModel dbModel) {
@@ -96,6 +98,7 @@ class ChatSession {
       branchInfo: dbModel.branchInfo != null
           ? BranchInfo.fromJsonString(dbModel.branchInfo!)
           : null,
+      agentOverride: dbModel.agentOverride,
     );
   }
 }

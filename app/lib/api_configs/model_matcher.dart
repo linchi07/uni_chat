@@ -9,6 +9,7 @@ class ModelMatchResult {
   ProviderModelConfig? config;
   MatchCategory category;
   final double similarity;
+  bool isConflictLoss;
 
   ModelMatchResult({
     required this.remoteName,
@@ -16,6 +17,7 @@ class ModelMatchResult {
     this.config,
     required this.category,
     this.similarity = 0.0,
+    this.isConflictLoss = false,
   });
 }
 
@@ -222,6 +224,37 @@ class ModelMatcher {
             similarity: maxSimilarity,
           ),
         );
+      }
+    }
+
+    // 3. Conflict resolution: Only one remote model per local model
+    final Map<String, List<ModelMatchResult>> localMatches = {};
+    for (var res in results) {
+      if (res.localModel != null) {
+        localMatches.putIfAbsent(res.localModel!.id, () => []).add(res);
+      }
+    }
+
+    for (var entry in localMatches.entries) {
+      var matches = entry.value;
+      if (matches.length > 1) {
+        // Sort by category index (confirmed < suggested), then similarity desc
+        matches.sort((a, b) {
+          if (a.category != b.category) {
+            return a.category.index.compareTo(b.category.index);
+          }
+          return b.similarity.compareTo(a.similarity);
+        });
+
+        // The first one is the winner, others are conflict losers
+        for (int i = 1; i < matches.length; i++) {
+          // Keep localModel for UI display even in conflict
+          // matches[i].localModel = null;
+          // matches[i].config = null;
+          // When losing a conflict, it becomes 'unknown' but we keep similarity for the UI
+          matches[i].category = MatchCategory.unknown;
+          matches[i].isConflictLoss = true;
+        }
       }
     }
 

@@ -64,6 +64,7 @@ class ApiKey implements Insertable<ApiKeysTableData> {
   int? rpm;
   int? rpd;
   int? tokenLimit;
+  String? invokeData;
   bool enabled;
 
   ApiKey(
@@ -74,6 +75,7 @@ class ApiKey implements Insertable<ApiKeysTableData> {
     this.rpm,
     this.rpd,
     this.tokenLimit,
+    this.invokeData,
     this.enabled = true,
   });
 
@@ -90,6 +92,7 @@ class ApiKey implements Insertable<ApiKeysTableData> {
     int? rpm,
     int? rpd,
     int? tokenLimit,
+    String? invokeData,
     bool? isEnabled,
   }) {
     return ApiKey(
@@ -100,6 +103,7 @@ class ApiKey implements Insertable<ApiKeysTableData> {
       rpm: rpm ?? this.rpm,
       rpd: rpd ?? this.rpd,
       tokenLimit: tokenLimit ?? this.tokenLimit,
+      invokeData: invokeData ?? this.invokeData,
       enabled: isEnabled ?? this.enabled,
     );
   }
@@ -113,6 +117,7 @@ class ApiKey implements Insertable<ApiKeysTableData> {
       'rpm': rpm,
       'rpd': rpd,
       'token_limit': tokenLimit,
+      'invoke_data': invokeData,
       'is_enabled': enabled ? 1 : 0,
     };
   }
@@ -126,6 +131,7 @@ class ApiKey implements Insertable<ApiKeysTableData> {
       rpm: map['rpm'],
       rpd: map['rpd'],
       tokenLimit: map['token_limit'],
+      invokeData: map['invoke_data'],
       enabled: map['is_enabled'] == 1,
     );
   }
@@ -141,6 +147,7 @@ class ApiKey implements Insertable<ApiKeysTableData> {
         other.rpm == rpm &&
         other.rpd == rpd &&
         other.tokenLimit == tokenLimit &&
+        other.invokeData == invokeData &&
         other.enabled == enabled;
   }
 
@@ -154,6 +161,7 @@ class ApiKey implements Insertable<ApiKeysTableData> {
       rpm,
       rpd,
       tokenLimit,
+      invokeData,
       enabled,
     );
   }
@@ -169,6 +177,7 @@ class ApiKey implements Insertable<ApiKeysTableData> {
       rpd: Value(rpd),
       tokenLimit: Value(tokenLimit),
       enabled: Value(enabled),
+      invokeData: Value(invokeData),
     ).toColumns(nullToAbsent);
   }
 }

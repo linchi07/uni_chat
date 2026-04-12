@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipe_action_cell/core/cell.dart';
 import 'package:intl/intl.dart';
 import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
+import 'package:uni_chat/Agent/agent_override_dialog.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
@@ -83,23 +84,35 @@ class ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            StdButton(
-              onPressed: () {
-                if (overlayEntry == null) {
-                  showSessionSelector();
-                } else {
-                  hide();
-                }
-              },
-              padding: const EdgeInsets.all(6),
-              color: theme.secondGradeColor,
-              child: Icon(Icons.search, size: 20),
-            ),
-            const SizedBox(width: 8),
+            if (state.session != null) ...[
+              StdButton(
+                onPressed: () async {
+                  if (state.session != null) {
+                    final baseAgentData = await DatabaseService.instance
+                        .getAgent(state.session!.agentId);
+                    if (baseAgentData != null && context.mounted) {
+                      OverlayPortalService.showDialog(
+                        context,
+                        width: 450,
+                        backGroundColor: theme.zeroGradeColor,
+                        child: AgentOverrideDialog(
+                          session: state.session!,
+                          baseAgentData: baseAgentData,
+                        ),
+                      );
+                    }
+                  }
+                },
+                padding: const EdgeInsets.all(6),
+                color: theme.secondGradeColor,
+                child: const Icon(Icons.tune, size: 20),
+              ),
+              const SizedBox(width: 8),
+            ],
             SizedBox(
               width: min(
-                500,
-                constraints.maxWidth - 80,
+                (state.session == null) ? 600 : 500,
+                constraints.maxWidth - ((state.session == null) ? 0 : 80),
               ), //这里的80是两个按钮各32 + 16的spacing
               child: Material(
                 color: theme.secondGradeColor,
@@ -125,54 +138,157 @@ class ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
                         FutureBuilder(
                           future: agent?.getAvatar(),
                           builder: (context, snapshot) {
-                            return StdAvatar(file: snapshot.data, length: 23);
+                            return StdAvatar(
+                              file: snapshot.data,
+                              length: 23,
+                              whenNull: agent?.id == INSTANT_AGENT_ID
+                                  ? Icon(
+                                      Icons.bolt_outlined,
+                                      size: 20,
+                                      color: theme.primaryColor,
+                                    )
+                                  : null,
+                            );
                           },
                         ),
                         const SizedBox(width: 8),
-                        Expanded(
-                          flex: 1,
-                          child: Text(
-                            overflow: TextOverflow.ellipsis,
-                            agent?.name ?? "Agent",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                        if (agent?.id == INSTANT_AGENT_ID) ...[
+                          Expanded(
+                            child: Text(
+                              state.session?.name ??
+                                  S.of(context).quick_chat_enabled,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: theme.primaryColor,
+                              ),
                             ),
                           ),
-                        ),
-                        Container(
-                          width: 1.5,
-                          color: theme.thirdGradeColor,
-                          height: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            overflow: TextOverflow.ellipsis,
-                            state.session?.name ?? "UNIChat",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 1.5,
+                            color: theme.thirdGradeColor,
+                            height: 20,
+                          ),
+                          const SizedBox(width: 4),
+                          StdButton(
+                            color: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            onPressed: () {
+                              ref
+                                  .read(agentProvider.notifier)
+                                  .loadDefaultAgent(
+                                    fallbackToInstant: false,
+                                    setToNullWhenMissing: true,
+                                  );
+                              ref
+                                  .read(chatStateProvider.notifier)
+                                  .clearSession();
+                            },
+                            child: Text(
+                              S.of(context).disable,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: theme.primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                        ),
-                        Icon(Icons.expand_more),
+                        ] else ...[
+                          Expanded(
+                            flex: 1,
+                            child: Text(
+                              overflow: TextOverflow.ellipsis,
+                              agent?.name ?? "Agent",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 1.5,
+                            color: theme.thirdGradeColor,
+                            height: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              overflow: TextOverflow.ellipsis,
+                              state.session?.name ?? "UNIChat",
+                              textAlign: (state.session == null)
+                                  ? TextAlign.center
+                                  : TextAlign.start,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          if (state.session == null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 1.5,
+                              color: theme.thirdGradeColor,
+                              height: 20,
+                            ),
+                            const SizedBox(width: 4),
+                            StdButton(
+                              color: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              onPressed: () async {
+                                await ref
+                                    .read(agentProvider.notifier)
+                                    .loadAgentById(INSTANT_AGENT_ID);
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.bolt_outlined,
+                                    color: theme.primaryColor,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    S.of(context).quick_chat,
+                                    style: TextStyle(
+                                      color: theme.primaryColor,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          Icon(Icons.expand_more),
+                        ],
                       ],
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            StdButton(
-              onPressed: () {
-                ref.read(chatStateProvider.notifier).clearSession();
-              },
-              padding: const EdgeInsets.all(6),
-              color: theme.secondGradeColor,
-              child: Icon(Icons.add_comment_outlined, size: 20),
-            ),
+            if (state.session != null) ...[
+              const SizedBox(width: 8),
+              StdButton(
+                onPressed: () {
+                  ref.read(chatStateProvider.notifier).clearSession();
+                },
+                padding: const EdgeInsets.all(6),
+                color: theme.secondGradeColor,
+                child: Icon(Icons.add_comment_outlined, size: 20),
+              ),
+            ],
           ],
         );
         if (PlatForm().platform == RunningPlatform.macos) {
@@ -523,6 +639,14 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
     // wait after the anim is done
     await Future.delayed(const Duration(milliseconds: 50));
     var agents = await DatabaseService.instance.getAllAgents();
+
+    // Sort agents: INSTANT_AGENT_ID should be first
+    agents.sort((a, b) {
+      if (a.id == INSTANT_AGENT_ID) return -1;
+      if (b.id == INSTANT_AGENT_ID) return 1;
+      return 0;
+    });
+
     var avatars = <File?>[];
     for (int i = 0; i < agents.length; i++) {
       var agent = agents[i];
@@ -761,6 +885,11 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                       backgroundColor: isSelected
                                           ? theme.zeroGradeColor
                                           : null,
+                                      whenNull:
+                                          asyncSnapshot.data!.$1[index].id ==
+                                              INSTANT_AGENT_ID
+                                          ? Icon(Icons.bolt_outlined, size: 25)
+                                          : null,
                                     ),
                                     isSelected: isSelected,
                                     onTap: () {
@@ -789,6 +918,17 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
                                                       .data!
                                                       .$2[index],
                                                   length: 25,
+                                                  whenNull:
+                                                      asyncSnapshot
+                                                              .data!
+                                                              .$1[index]
+                                                              .id ==
+                                                          INSTANT_AGENT_ID
+                                                      ? Icon(
+                                                          Icons.bolt_outlined,
+                                                          size: 20,
+                                                        )
+                                                      : null,
                                                 ),
                                                 const SizedBox(width: 5),
                                                 Text(

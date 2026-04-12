@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
@@ -18,7 +19,7 @@ import 'agent_models.dart';
 class ModelSpecifics {
   String? modelName;
   Map<ModelParamName, dynamic> customParameters = {};
-  int maxGenerationTokens = 2560;
+  int maxGenerationTokens = 1000000000;
   int maxContextTokens = 1000000000;
   bool enableTimeTelling = true;
   bool enableUsrLanguage = true;
@@ -26,7 +27,7 @@ class ModelSpecifics {
   ModelSpecifics({
     this.modelName,
     Map<ModelParamName, dynamic>? customParameters,
-    this.maxGenerationTokens = 2560,
+    this.maxGenerationTokens = 1000000000,
     this.maxContextTokens = 1000000000,
     this.enableTimeTelling = true,
     this.enableUsrLanguage = true,
@@ -138,6 +139,19 @@ class Agent {
     );
   }
 
+  AgentData toAgentData() {
+    return AgentData(
+      version: CURRENT_AGENT_DATA_VERSION,
+      id: id,
+      name: name,
+      modelConfigure: modelConfigure,
+      userIdentityConfigure: personaConfigure,
+      openingConfigure: openingConfigure,
+      systemPrompt: systemPrompt,
+      createdAt: DateTime.now(), // Fallback
+    );
+  }
+
   Agent copyWith({
     Ref? ref,
     String? id,
@@ -181,16 +195,22 @@ class Agent {
 }
 
 class AgentProvider extends StateNotifier<Agent?> {
+  final Ref ref;
   AgentProvider(this.ref) : super(null) {
     loadDefaultAgent();
   }
 
-  void loadDefaultAgent() async {
+  void loadDefaultAgent({
+    bool fallbackToInstant = true,
+    bool setToNullWhenMissing = false,
+  }) async {
+    String? agentId;
     try {
       var agentData = await DatabaseService.instance.loadDefaultAgent();
       if (agentData == null) {
         throw AgentException(AgentExceptionType.agentNotFound);
       }
+      agentId = agentData.id;
       state = await Agent.fromAgentData(agentData);
       if (state?.personaConfigure != null &&
           state?.personaConfigure?.defaultPersona != null) {
@@ -199,10 +219,17 @@ class AgentProvider extends StateNotifier<Agent?> {
             .loadPersonaById(state!.personaConfigure!.defaultPersona!);
       }
     } catch (e) {
+      if (fallbackToInstant) {
+        await loadAgentById(INSTANT_AGENT_ID);
+        return;
+      }
+      if (setToNullWhenMissing) {
+        state = null;
+      }
       AppException ex;
       if (e is Exception) {
         if (e is AppException) {
-          ex = AgentException.fromAncestor(e);
+          ex = AgentException.fromAncestor(e, errorAgentID: agentId);
         } else {
           ex = AgentException.fromException(e);
         }
@@ -211,15 +238,68 @@ class AgentProvider extends StateNotifier<Agent?> {
     }
   }
 
-  Future<void> loadAgentById(String id, {bool forceReload = false}) async {
-    if (state != null && state!.id == id && !forceReload) {
+  Future<void> loadAgentById(
+    String id, {
+    bool forceReload = false,
+    String? overrideJson,
+  }) async {
+    if (state != null &&
+        state!.id == id &&
+        !forceReload &&
+        overrideJson == null) {
       return;
     }
     try {
+      if (id == INSTANT_AGENT_ID) {
+        final prefs = await SharedPreferences.getInstance();
+        final configJson = prefs.getString("instant_agent_configure");
+        ModelConfigure? modelConfig;
+        if (configJson != null) {
+          try {
+            modelConfig = ModelConfigure.fromMap(jsonDecode(configJson));
+          } catch (e) {
+            // Ignore corrupted config
+          }
+        }
+
+        // If no config found, fallback to default agent's model or first available
+        modelConfig ??= const ModelConfigure(
+          modelId: 'system',
+          providerId: 'system',
+        ); // to trigger an exception and force the user to select a model manualy
+
+        AgentData agentData = AgentData(
+          version: CURRENT_AGENT_DATA_VERSION,
+          id: INSTANT_AGENT_ID,
+          name: "",
+          modelConfigure: modelConfig.copyWith(
+            maxGenerationTokens: -1,
+            maxContextTokens: 1000000000,
+            enableTimeTelling: false,
+            enableUsrLanguage: false,
+            enableUsrSystemInformation: false,
+          ),
+          userIdentityConfigure: null,
+          createdAt: DateTime.now(),
+        );
+
+        if (overrideJson != null) {
+          agentData = agentData.applyOverride(overrideJson);
+        }
+
+        state = await Agent.fromAgentData(agentData);
+        return;
+      }
+
       var agentData = await DatabaseService.instance.getAgent(id);
       if (agentData == null) {
         throw AgentException(AgentExceptionType.agentNotFound);
       }
+
+      if (overrideJson != null) {
+        agentData = agentData.applyOverride(overrideJson);
+      }
+
       state = await Agent.fromAgentData(agentData);
       if (state?.personaConfigure != null &&
           state?.personaConfigure?.defaultPersona != null) {
@@ -231,7 +311,7 @@ class AgentProvider extends StateNotifier<Agent?> {
       AppException ex;
       if (e is Exception) {
         if (e is AppException) {
-          ex = AgentException.fromAncestor(e);
+          ex = AgentException.fromAncestor(e, errorAgentID: id);
         } else {
           ex = AgentException.fromException(e);
         }
@@ -243,11 +323,68 @@ class AgentProvider extends StateNotifier<Agent?> {
   void setAgent(Agent agent) {
     agent = agent.copyWith(ref: ref);
     state = agent;
+
+    if (agent.id == INSTANT_AGENT_ID) {
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setString(
+          "instant_agent_configure",
+          jsonEncode(agent.modelConfigure.toMap()),
+        );
+      });
+    }
+  }
+
+  Future<void> updateAgentModel(
+    String agentId,
+    ApiProvider provider,
+    Model model,
+    bool saveToSettings,
+  ) async {
+    var newConfig = ModelConfigure(
+      modelId: model.id,
+      providerId: provider.id,
+      maxGenerationTokens: agentId == INSTANT_AGENT_ID ? -1 : 2560,
+      maxContextTokens: agentId == INSTANT_AGENT_ID ? 1000000000 : 1000000000,
+      enableTimeTelling: agentId == INSTANT_AGENT_ID ? false : true,
+      enableUsrLanguage: agentId == INSTANT_AGENT_ID ? false : true,
+      enableUsrSystemInformation: agentId == INSTANT_AGENT_ID ? false : true,
+    );
+
+    if (agentId == INSTANT_AGENT_ID) {
+      if (saveToSettings) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          "instant_agent_configure",
+          jsonEncode(newConfig.toMap()),
+        );
+      }
+      // Reload the agent
+      await loadAgentById(agentId, forceReload: true);
+    } else {
+      if (saveToSettings) {
+        var agentData = await DatabaseService.instance.getAgent(agentId);
+        if (agentData != null) {
+          final updatedAgentData = AgentData(
+            version: agentData.version,
+            id: agentData.id,
+            name: agentData.name,
+            description: agentData.description,
+            systemPrompt: agentData.systemPrompt,
+            modelConfigure: newConfig,
+            userIdentityConfigure: agentData.userIdentityConfigure,
+            openingConfigure: agentData.openingConfigure,
+            createdAt: agentData.createdAt,
+            isDefault: agentData.isDefault,
+          );
+          await DatabaseService.instance.createOrUpdateAgent(updatedAgentData);
+        }
+      }
+      // Reload the agent
+      await loadAgentById(agentId, forceReload: true);
+    }
   }
 
   ///以下是聊天时的功能实现
-
-  final Ref ref;
   Future<String?> fileUpload(File file, String mime) async {
     if (state != null) {
       if ( /*state!.client.abilities.contains(ApiAbility.supportsFilesApi)*/ false) {
@@ -323,7 +460,9 @@ class AgentProvider extends StateNotifier<Agent?> {
 
     // 1. 构建静态系统指令 (Static Prefix)
     StringBuffer staticPrompt = StringBuffer();
-    staticPrompt.writeln("你的名字是${state!.name}");
+    if (state!.name.isNotEmpty) {
+      staticPrompt.writeln("你的名字是${state!.name}");
+    }
     if (state!.systemPrompt != null) {
       staticPrompt.writeln(state!.systemPrompt!);
     }

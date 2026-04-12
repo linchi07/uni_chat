@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io' as io show Platform;
-import 'dart:math';
 
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -24,11 +23,11 @@ import 'package:uni_chat/setup_agent.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/top_banner.dart';
 import 'package:uni_chat/utils/overlays.dart';
+import 'package:uni_chat/utils/log_manager.dart';
+import 'package:uni_chat/utils/auto_update_service.dart';
 
 import 'Agent/agent_page.dart';
 import 'generated/l10n.dart';
-import 'utils/auto_update_service.dart';
-import 'utils/log_manager.dart';
 
 final Map<String, Locale> languages = const {
   "简体中文": Locale("zh"),
@@ -491,6 +490,17 @@ enum Pages { chat, agent, Rag }
 
 class MainContState extends ConsumerState<MainCont> {
   Pages page = Pages.chat;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   Widget? _bannerWidget() {
     switch (page) {
       case Pages.chat:

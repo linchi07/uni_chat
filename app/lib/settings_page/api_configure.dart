@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -486,12 +489,15 @@ class ApiConfigure {
 
   Future<void> save() async {
     if (noKeyNeeded) {
+      final oldKey = keys.firstWhereOrNull((k) => k.id.startsWith("@nokey"));
       keys = [
         ApiKey(
           id,
-          "@nokey+${Uuid().v7()}",
+          oldKey?.id ?? "@nokey+${Uuid().v7()}",
           "request from unichat",
           remark: "@nokey",
+          // Preserve invoke data if it exists
+          invokeData: oldKey?.invokeData,
         ),
       ];
     }
@@ -2391,15 +2397,20 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
 }
 
 class ModelAddWidget extends StatefulWidget {
+  final ThemeConfig theme;
+  final ProviderModelConfig modelConfig;
+  final Model? initialModel;
+  final bool startWithAdding;
+  final void Function(Model, ProviderModelConfig) onSave;
+
   const ModelAddWidget({
     super.key,
     required this.theme,
     required this.onSave,
     required this.modelConfig,
+    this.initialModel,
+    this.startWithAdding = false,
   });
-  final ThemeConfig theme;
-  final ProviderModelConfig modelConfig;
-  final void Function(Model, ProviderModelConfig) onSave;
 
   @override
   State<ModelAddWidget> createState() => _ModelAddWidgetState();
@@ -2407,7 +2418,14 @@ class ModelAddWidget extends StatefulWidget {
 
 class _ModelAddWidgetState extends State<ModelAddWidget> {
   Model? currentSelected;
-  bool adding = false;
+  late bool adding;
+
+  @override
+  void initState() {
+    super.initState();
+    adding = widget.startWithAdding;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (adding) {
@@ -2418,6 +2436,7 @@ class _ModelAddWidgetState extends State<ModelAddWidget> {
         child: AddNewModel(
           theme: widget.theme,
           modelConfig: widget.modelConfig,
+          initialModel: widget.initialModel,
           onCancel: () {
             setState(() {
               adding = false;
@@ -2564,8 +2583,10 @@ class AddNewModel extends StatefulWidget {
     required this.onSave,
     required this.onCancel,
     required this.modelConfig,
+    this.initialModel,
   });
   final ProviderModelConfig modelConfig;
+  final Model? initialModel;
   final ThemeConfig theme;
   final void Function(({Model model, ProviderModelConfig config})) onSave;
   final void Function() onCancel;
@@ -2575,15 +2596,35 @@ class AddNewModel extends StatefulWidget {
 }
 
 class _AddNewModelState extends State<AddNewModel> {
+  List<String> _existingFriendlyNames = [];
+
   @override
   Widget build(BuildContext context) {
     return addNew();
   }
 
+  Future<void> _loadExistingModels() async {
+    final models = await ApiDatabase.instance.getAllModels();
+    if (mounted) {
+      setState(() {
+        _existingFriendlyNames = models
+            .map((m) => m.friendlyName.toLowerCase())
+            .toList();
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _loadExistingModels();
     modelNameController.text = widget.modelConfig.callName;
+    if (widget.initialModel != null) {
+      modelFriendlyNameController.text =
+          "${widget.initialModel!.friendlyName} (Variant)";
+      modelFamilyController.text = widget.initialModel!.family;
+      selectedAbilities = Set.from(widget.initialModel!.abilities);
+    }
   }
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -2629,6 +2670,15 @@ class _AddNewModelState extends State<AddNewModel> {
                 "${S.of(context).plz_enter}${S.of(context).model_friendly_name}",
             controller: modelFriendlyNameController,
             hintText: S.of(context).model_friendly_name_hint,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return "${S.of(context).plz_enter}${S.of(context).model_friendly_name}";
+              }
+              if (_existingFriendlyNames.contains(value.trim().toLowerCase())) {
+                return S.of(context).model_friendly_name_exists;
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 10),
           Text(
@@ -2659,15 +2709,15 @@ class _AddNewModelState extends State<AddNewModel> {
                     var id = Uuid().v7();
                     widget.onSave((
                       model: Model(
-                        friendlyName: modelFriendlyNameController.text,
-                        family: modelFamilyController.text,
+                        friendlyName: modelFriendlyNameController.text.trim(),
+                        family: modelFamilyController.text.trim(),
                         abilities: selectedAbilities.toSet(),
                         id: id,
                       ),
                       config: ProviderModelConfig(
                         providerId: widget.modelConfig.providerId,
                         modelId: id,
-                        callName: modelNameController.text,
+                        callName: modelNameController.text.trim(),
                       ),
                     ));
                   }
@@ -2918,8 +2968,6 @@ class _ModelPricingWidgetState extends State<ModelPricingWidget> {
   Widget build(BuildContext context) {
     final ts = TextStyle(fontSize: 15, color: widget.theme.darkTextColor);
     final currencies = ['USD', 'CNY'];
-    int currencyIndex = currencies.indexOf(currency);
-    if (currencyIndex == -1) currencyIndex = 0;
 
     return OverlayPortalScope(
       child: Form(
@@ -2946,8 +2994,12 @@ class _ModelPricingWidgetState extends State<ModelPricingWidget> {
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
               ],
               validator: (v) {
-                if (v == null || v.isEmpty) return S.of(context).price_not_empty;
-                if (double.tryParse(v) == null) return S.of(context).invalid_number;
+                if (v == null || v.isEmpty) {
+                  return S.of(context).price_not_empty;
+                }
+                if (double.tryParse(v) == null) {
+                  return S.of(context).invalid_number;
+                }
                 return null;
               },
             ),
@@ -2961,8 +3013,12 @@ class _ModelPricingWidgetState extends State<ModelPricingWidget> {
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
               ],
               validator: (v) {
-                if (v == null || v.isEmpty) return S.of(context).price_not_empty;
-                if (double.tryParse(v) == null) return S.of(context).invalid_number;
+                if (v == null || v.isEmpty) {
+                  return S.of(context).price_not_empty;
+                }
+                if (double.tryParse(v) == null) {
+                  return S.of(context).invalid_number;
+                }
                 return null;
               },
             ),
@@ -2985,27 +3041,10 @@ class _ModelPricingWidgetState extends State<ModelPricingWidget> {
             const SizedBox(height: 16),
             Text(S.of(context).currency, style: ts),
             const SizedBox(height: 8),
-            StdDropDown(
-              width: double.infinity,
-              height: 48,
-              initialIndex: currencyIndex,
-              itemCount: currencies.length,
-              itemBuilder: (context, index, onTap) {
-                return InkWell(
-                  onTap: () => onTap(index),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    alignment: Alignment.centerLeft,
-                    child: StdListTile(
-                      title: Text(
-                        currencies[index],
-                        style: TextStyle(color: widget.theme.darkTextColor),
-                      ),
-                    ),
-                  ),
-                );
-              },
-              onChanged: (index) {
+            StdSegmentedControl(
+              labels: currencies,
+              currentIndex: currencies.indexWhere((e) => e == currency),
+              onIndexChanged: (index) {
                 setState(() {
                   currency = currencies[index];
                 });

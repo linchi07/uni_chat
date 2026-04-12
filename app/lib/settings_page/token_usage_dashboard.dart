@@ -27,8 +27,8 @@ class _TokenUsageDashboardState extends ConsumerState<TokenUsageDashboard> {
   _summary = (prompt: 0, completion: 0, cached: 0, costs: {});
   List<({DateTime time, int total, double cost, String? currency})>
   _trendBuckets = [];
-  List<({Model? model, String modelId, int total, double cost})>
-  _modelBuckets = [];
+  List<({Model? model, String modelId, int total, double cost})> _modelBuckets =
+      [];
   List<({ApiKey key, int total, double cost})> _keyBuckets = [];
   List<({ApiKeyUsage usage, Model? model})> _detailedLogs = [];
 
@@ -172,20 +172,22 @@ class _TokenUsageDashboardState extends ConsumerState<TokenUsageDashboard> {
   }
 
   Widget _buildTimeRangeSelector() {
-    return SegmentedButton<String>(
-      segments: const [
-        ButtonSegment(value: '24h', label: Text('24小时')),
-        ButtonSegment(value: '7d', label: Text('7天')),
-        ButtonSegment(value: '30d', label: Text('30天')),
-      ],
-      selected: {_timeRange},
-      onSelectionChanged: (Set<String> newSelection) {
-        setState(() {
-          _timeRange = newSelection.first;
-          _loadData();
-        });
-      },
-      style: const ButtonStyle(visualDensity: VisualDensity.compact),
+    final ranges = ['24h', '7d', '30d'];
+    final labels = ['24h', '7d', '30d'];
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: StdSegmentedControl(
+        labels: labels,
+        currentIndex: ranges.indexOf(_timeRange),
+        onIndexChanged: (index) {
+          setState(() {
+            _timeRange = ranges[index];
+            _loadData();
+          });
+        },
+        width: 280,
+        margin: EdgeInsets.zero,
+      ),
     );
   }
 
@@ -227,18 +229,17 @@ class _TokenUsageDashboardState extends ConsumerState<TokenUsageDashboard> {
         if (_summary.costs.isNotEmpty) ...[
           const SizedBox(height: 12),
           Row(
-            children:
-                _summary.costs.entries.map((e) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12.0),
-                    child: _SummaryCard(
-                      title: '预估费用 (${e.key})',
-                      value: e.value.toStringAsFixed(4),
-                      icon: Icons.account_balance_wallet,
-                      color: Colors.redAccent,
-                    ),
-                  );
-                }).toList(),
+            children: _summary.costs.entries.map((e) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 12.0),
+                child: _SummaryCard(
+                  title: '预估费用 (${e.key})',
+                  value: e.value.toStringAsFixed(4),
+                  icon: Icons.account_balance_wallet,
+                  color: Colors.redAccent,
+                ),
+              );
+            }).toList(),
           ),
         ],
       ],
