@@ -48,11 +48,15 @@ jobs:
         run: flutter pub get
         working-directory: app
 
-      # Skip build_runner by default since generated files are in repo.
-      # Uncomment if needed for future builds:
-      # - name: Run build_runner
-      #   run: dart run build_runner build --delete-conflicting-outputs
-      #   working-directory: app
+      - name: Extract version from pubspec.yaml
+        id: extract_version
+        run: |
+          VERSION=$(grep '^version:' app/pubspec.yaml | sed 's/version: //')
+          VERSION_RAW=$(echo $VERSION | cut -d'+' -f1)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION_RAW=$VERSION_RAW" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_raw=$VERSION_RAW" >> $GITHUB_OUTPUT
 
       # --- Platform Specific Build Steps ---
 
@@ -71,7 +75,7 @@ jobs:
         if: matrix.platform == 'android'
         run: |
           flutter build apk --release
-          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/UNIChat_${{ github.ref_name }}_android.apk
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/UNIChat_v${{ env.VERSION_RAW }}_android.apk
         working-directory: app
 
       # Windows Build
@@ -96,8 +100,11 @@ jobs:
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
+          (Get-Content app/windows_setup.iss) -replace '\{\{APP_VERSION_RAW\}\}', "$env:VERSION_RAW" | Set-Content app/windows_setup.iss
           & "C:\Program Files (x86)\Inno Setup 6\iscc.exe" app/windows_setup.iss
-          Get-ChildItem -Path app/Installer/*.exe | Rename-Item -NewName { "UNIChat_${{ github.ref_name }}_windows_setup.exe" }
+          # Use wildcards to rename the generated setup file if needed
+          # But since OutputBaseFilename is now correct, we just confirm it exists
+          Get-ChildItem -Path app/Installer/*.exe
 
       # macOS Build
       - name: Disable macOS signing (CI)
@@ -117,7 +124,7 @@ jobs:
           flutter build macos --release --no-codesign
           # Simple zip of the .app for basic distribution if no DMG tool is setup
           cd build/macos/Build/Products/Release
-          zip -r ../../../../UNIChat_${{ github.ref_name }}_macos.zip UNIChat.app
+          zip -r ../../../../UNIChat_v${{ env.VERSION_RAW }}_macos.zip UNIChat.app
         working-directory: app
 
       # --- Upload Artifacts ---
@@ -127,7 +134,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: app/build/app/outputs/flutter-apk/UNIChat_${{ github.ref_name }}_android.apk
+          path: app/build/app/outputs/flutter-apk/UNIChat_v${{ env.VERSION_RAW }}_android.apk
 
       - name: Upload Windows Artifact
         if: matrix.platform == 'windows'
@@ -141,7 +148,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: app/UNIChat_${{ github.ref_name }}_macos.zip
+          path: app/UNIChat_v${{ env.VERSION_RAW }}_macos.zip
 
   release:
     name: Create GitHub Release
@@ -178,6 +185,8 @@ jobs:
             artifacts/android-apk/*.apk
             artifacts/windows-setup/*.exe
             artifacts/macos-app/*.zip
+          name: "UNIChat V${{ env.VERSION_RAW }} Stable"
+          tag_name: "v${{ env.VERSION_RAW }}"
           prerelease: true
           generate_release_notes: true
           token: ${{ secrets.GITHUB_TOKEN }}

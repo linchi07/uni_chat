@@ -10,50 +10,141 @@ class LLMImageIndexer {
     // OpenAI / ChatGPT models
     'openai': 'resources/provider_model_icons/chatgpt.jpeg',
     'gpt': 'resources/provider_model_icons/chatgpt.jpeg',
+    'chatgpt': 'resources/provider_model_icons/chatgpt.jpeg',
 
     'google': 'resources/provider_model_icons/google.png',
     'gemini': 'resources/provider_model_icons/gemini.png',
+    'vertexai': 'resources/provider_model_icons/vertexai.png',
 
     // Meta / Llama models
     'meta': 'resources/provider_model_icons/llama.png',
     'llama': 'resources/provider_model_icons/llama.png',
     'meta-llama': 'resources/provider_model_icons/llama.png',
 
-    // Qwen (通义千问)
+    // Qwen / Alibaba
     'qwen': 'resources/provider_model_icons/qwen.png',
     '通义千问': 'resources/provider_model_icons/qwen.png',
-
-    "model_scope": 'resources/provider_model_icons/modelscope.png',
+    'dashscope': 'resources/provider_model_icons/dashscope.png',
+    'bailian': 'resources/provider_model_icons/bailian.png',
 
     // DeepSeek
     'deepseek': 'resources/provider_model_icons/deepseek.png',
 
-    // LMStudio
-    'lmstudio': 'resources/provider_model_icons/lmstudio.png',
+    // Claude / Anthropic
+    'claude': 'resources/provider_model_icons/claude.png',
+    'anthropic': 'resources/provider_model_icons/claude.png',
 
-    'z-ai': 'resources/provider_model_icons/chatglm.png',
-
-    'x-ai': 'resources/provider_model_icons/grok.png',
-
+    // Mistral / Mixtral
+    'mistral': 'resources/provider_model_icons/mistral.png',
+    'mixtral': 'resources/provider_model_icons/mixtral.png',
     'mistralai': 'resources/provider_model_icons/mixtral.png',
 
+    // Grok / xAI
+    'grok': 'resources/provider_model_icons/grok.png',
+    'x-ai': 'resources/provider_model_icons/grok.png',
+    'xai': 'resources/provider_model_icons/grok.png',
+    'gitee-ai': 'resources/provider_model_icons/gitee-ai.png',
+    'giteeai': 'resources/provider_model_icons/gitee-ai.png',
+
+    // Moonshot AI
+    'moonshot': 'resources/provider_model_icons/moonshot.png',
     'moonshotai': 'resources/provider_model_icons/moonshot.png',
+    'kimi': 'resources/provider_model_icons/moonshot.png',
 
-    "baidu": 'resources/provider_model_icons/wenxin.png',
+    // Zhipu / ChatGLM
+    'zhipu': 'resources/provider_model_icons/zhipu.png',
+    'chatglm': 'resources/provider_model_icons/chatglm.png',
+    '智谱': 'resources/provider_model_icons/zhipu.png',
+    'z-ai': 'resources/provider_model_icons/zhipu.png',
 
-    "nvidia": 'resources/provider_model_icons/nvidia.png',
+    // Baidu / Wenxin
+    'baidu': 'resources/provider_model_icons/wenxin.png',
+    'wenxin': 'resources/provider_model_icons/wenxin.png',
+    'qianfan': 'resources/provider_model_icons/wenxin.png',
+    'baidu-cloud': 'resources/provider_model_icons/baidu-cloud.png',
 
-    "perplexity": 'resources/provider_model_icons/perplexity.png',
+    // Tencent / Hunyuan
+    'hunyuan': 'resources/provider_model_icons/tencent-cloud-ti.png',
+    'tencent': 'resources/provider_model_icons/tencent-cloud-ti.png',
+    'tencent-cloud-ti': 'resources/provider_model_icons/tencent-cloud-ti.png',
 
-    "microsoft": 'resources/provider_model_icons/microsoft.png',
+    // Bytedance / Doubao / Volcengine
+    'doubao': 'resources/provider_model_icons/doubao.png',
+    'bytedance': 'resources/provider_model_icons/bytedance.png',
+    'volcengine': 'resources/provider_model_icons/volcengine.png',
 
+    // Other Chinese Providers
+    'baichuan': 'resources/provider_model_icons/baichuan.png',
+    'zero-one': 'resources/provider_model_icons/zero-one.png',
+    ' LingYiWanWu': 'resources/provider_model_icons/zero-one.png',
+    'step': 'resources/provider_model_icons/step.png',
+    'stepfun': 'resources/provider_model_icons/step.png',
     'minimax': 'resources/provider_model_icons/minimax.png',
+    'infini': 'resources/provider_model_icons/infini.png',
+    'xirang': 'resources/provider_model_icons/xirang.png',
+    'lanyun': 'resources/provider_model_icons/lanyun.png',
+    'qiniu': 'resources/provider_model_icons/qiniu.webp',
 
-    "openrouter": 'resources/provider_model_icons/openrouter.png',
+    // Middleman / Aggregators
+    'openrouter': 'resources/provider_model_icons/openrouter.png',
+    'silicon': 'resources/provider_model_icons/silicon.png',
+    'siliconflow': 'resources/provider_model_icons/silicon.png',
+    'aihubmix': 'resources/provider_model_icons/aihubmix.png',
+    'aionly': 'resources/provider_model_icons/aiOnly.webp',
+    'perplexity': 'resources/provider_model_icons/perplexity.png',
+    'groq': 'resources/provider_model_icons/groq.png',
+    'fireworks': 'resources/provider_model_icons/fireworks.png',
+    'together': 'resources/provider_model_icons/together.png',
+    'tokenflux': 'resources/provider_model_icons/tokenflux.png',
+    'ppio': 'resources/provider_model_icons/ppio.png',
+    'burncloud': 'resources/provider_model_icons/burncloud.png',
 
-    "ollama": 'resources/provider_model_icons/ollama.png',
+    // Technical / Infrastructure
+    'github': 'resources/provider_model_icons/github.png',
+    'microsoft': 'resources/provider_model_icons/microsoft.png',
+    'azure': 'resources/provider_model_icons/microsoft.png',
+    'aws': 'resources/provider_model_icons/aws-bedrock.webp',
+    'aws-bedrock': 'resources/provider_model_icons/aws-bedrock.webp',
+    'nvidia': 'resources/provider_model_icons/nvidia.png',
+    'intel': 'resources/provider_model_icons/intel.png',
+    'ovms': 'resources/provider_model_icons/intel.png',
+    'huggingface': 'resources/provider_model_icons/huggingface.webp',
+    'model-scope': 'resources/provider_model_icons/modelscope.png',
+    'model_scope': 'resources/provider_model_icons/modelscope.png',
+    'modelscope': 'resources/provider_model_icons/modelscope.png',
 
-    "silicon": 'resources/provider_model_icons/silicon.png',
+    // Local / Self-hosted
+    'ollama': 'resources/provider_model_icons/ollama.png',
+    'lmstudio': 'resources/provider_model_icons/lmstudio.png',
+    'gpustack': 'resources/provider_model_icons/gpustack.png',
+
+    // Specialized / Utilities
+    'cohere': 'resources/provider_model_icons/cohere.png',
+    'jina': 'resources/provider_model_icons/jina.png',
+    'voyage': 'resources/provider_model_icons/voyageai.png',
+    'voyageai': 'resources/provider_model_icons/voyageai.png',
+    'mixedbread': 'resources/provider_model_icons/mixedbread.png',
+    'nomic': 'resources/provider_model_icons/nomic.png',
+    'tesseract': 'resources/provider_model_icons/Tesseract.js.png',
+    'mcprouter': 'resources/provider_model_icons/mcprouter.webp',
+    'vercel': 'resources/provider_model_icons/vercel.png',
+    'gateway': 'resources/provider_model_icons/vercel.png',
+
+    // Misc
+    'cephalon': 'resources/provider_model_icons/cephalon.jpeg',
+    'cerebras': 'resources/provider_model_icons/cerebras.webp',
+    'hyperbolic': 'resources/provider_model_icons/hyperbolic.png',
+    'lepton': 'resources/provider_model_icons/lepton.png',
+    'longcat': 'resources/provider_model_icons/longcat.png',
+    'mimo': 'resources/provider_model_icons/mimo.png',
+    'newapi': 'resources/provider_model_icons/newapi.png',
+    'new-api': 'resources/provider_model_icons/newapi.png',
+    'o': 'resources/provider_model_icons/o3.png', // o3 -> o
+    'ocoolai': 'resources/provider_model_icons/ocoolai.png',
+    'ph': 'resources/provider_model_icons/ph8.png', // ph8 -> ph
+    'sophnet': 'resources/provider_model_icons/sophnet.png',
+    'zai': 'resources/provider_model_icons/zai.png',
+    'graph-rag': 'resources/provider_model_icons/graph-rag.png',
   };
 
   static String? tryGetImagePath(String? identifier) {

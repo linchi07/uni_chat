@@ -135,7 +135,12 @@
   "quick_chat": "快速聊天",
   "quick_chat_enabled": "已启用快速聊天",
   "model_unavailable": "当前模型不可用，请重新选择模型",
-  "save_to_agent_settings": "将Agent设为所选模型？",
+  "save_to_agent_settings" : "将所选模型设置为\"{agent}\"的默认模型？",
+  "@save_to_agent_settings":{
+      "placeholders":{
+          "agent":{}
+      }
+  },
   "agent": "助手",
   "choose_agent_and_chat_hint": "选择一个Agent并开始聊天吧!",
   "front_page_hintLine_char1": "以 ",
@@ -586,5 +591,11 @@
   "save_and_exit": "保存并退出",
   "discard_changes": "丢弃更改",
   "limit_model_generate_length": "限制模型最大生成长度",
-  "no_limit": "不限制"
+  "no_limit": "不限制",
+  "get_help": "获取帮助",
+  "help_links": "帮助链接",
+  "official_website": "官方网站",
+  "get_api_key": "获取 API Key",
+  "related_docs": "相关文档",
+  "model_list": "支持模型列表"
 }

@@ -136,7 +136,12 @@
   },
   "quick_chat_enabled": "Quick Chat Enabled",
   "model_unavailable": "Current model is unavailable, please select a new one.",
-  "save_to_agent_settings": "Save this selection to agent settings?",
+  "save_to_agent_settings" : "Set the selected model as the default model of '{agent}' ?",
+  "@save_to_agent_settings":{
+    "placeholders":{
+      "agent":{}
+    }
+  },
   "agent": "Agent",
   "choose_agent_and_chat_hint":"Select an agent and start chatting",
   "front_page_titleSlogan": "How can I help you?",
@@ -587,5 +592,11 @@
   "save_and_exit": "Save and Exit",
   "discard_changes": "Discard Changes",
   "limit_model_generate_length": "Limit model maximum generate length",
-  "no_limit": "No limit"
+  "no_limit": "No limit",
+  "get_help": "Get Help",
+  "help_links": "Help Links",
+  "official_website": "Official Website",
+  "get_api_key": "Get API Key",
+  "related_docs": "Documentation",
+  "model_list": "Model List"
 }

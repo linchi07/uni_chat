@@ -66,19 +66,22 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m20(provider) =>
       " Are you sure to delete ${provider}?\\n All the records and key will be deleted as well.";
 
-  static String m21(num) => "${num} selected";
+  static String m21(agent) =>
+      "Set the selected model as the default model of \'${agent}\' ?";
 
-  static String m22(token) => "System internal prompt(${token}Tokens)";
+  static String m22(num) => "${num} selected";
 
-  static String m23(token) => "System prompt(${token}Tokens)";
+  static String m23(token) => "System internal prompt(${token}Tokens)";
 
-  static String m24(token) => "${token} Tokens available for chat";
+  static String m24(token) => "System prompt(${token}Tokens)";
 
-  static String m25(lim) => "${lim} Tokens available for total context";
+  static String m25(token) => "${token} Tokens available for chat";
 
-  static String m26(type) => "Type : ${type}";
+  static String m26(lim) => "${lim} Tokens available for total context";
 
-  static String m27(token) => "UI interactions(${token}Tokens)";
+  static String m27(type) => "Type : ${type}";
+
+  static String m28(token) => "UI interactions(${token}Tokens)";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -457,6 +460,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "generating_title": MessageLookupByLibrary.simpleMessage(
       "Generating conversation title...",
     ),
+    "get_api_key": MessageLookupByLibrary.simpleMessage("Get API Key"),
+    "get_help": MessageLookupByLibrary.simpleMessage("Get Help"),
     "github_repo": MessageLookupByLibrary.simpleMessage("GitHub Repository"),
     "give_up_edit_confirm": MessageLookupByLibrary.simpleMessage(
       "Give up edit?",
@@ -468,6 +473,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "got_it": MessageLookupByLibrary.simpleMessage("Got it"),
     "help": MessageLookupByLibrary.simpleMessage("Help"),
     "help_guides": MessageLookupByLibrary.simpleMessage("Help & Guides"),
+    "help_links": MessageLookupByLibrary.simpleMessage("Help Links"),
     "hide_cot": MessageLookupByLibrary.simpleMessage("Hide  thoughts"),
     "hide_document": MessageLookupByLibrary.simpleMessage("Hide Docs"),
     "hide_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
@@ -598,6 +604,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "model_friendly_name_hint": MessageLookupByLibrary.simpleMessage(
       "Enter the model\'s friendly name (eg: Qwen 7B)",
     ),
+    "model_list": MessageLookupByLibrary.simpleMessage("Model List"),
     "model_local_telling": MessageLookupByLibrary.simpleMessage(
       "Pass the local info",
     ),
@@ -728,6 +735,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "no_provider": MessageLookupByLibrary.simpleMessage("No providers "),
     "no_results": MessageLookupByLibrary.simpleMessage("No results"),
     "no_rules": MessageLookupByLibrary.simpleMessage("No rules"),
+    "official_website": MessageLookupByLibrary.simpleMessage(
+      "Official Website",
+    ),
     "openai_compatible_api": MessageLookupByLibrary.simpleMessage(
       "OpenAI compatible API",
     ),
@@ -832,6 +842,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "When message matches any regex, the whole content will be sent",
     ),
     "regex_match": MessageLookupByLibrary.simpleMessage("Regex match"),
+    "related_docs": MessageLookupByLibrary.simpleMessage("Documentation"),
     "remark": MessageLookupByLibrary.simpleMessage("Remark"),
     "rename": MessageLookupByLibrary.simpleMessage("Rename"),
     "request_daily_limit": MessageLookupByLibrary.simpleMessage(
@@ -844,9 +855,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "retry": MessageLookupByLibrary.simpleMessage("Retry"),
     "save": MessageLookupByLibrary.simpleMessage("Save"),
     "save_and_exit": MessageLookupByLibrary.simpleMessage("Save and Exit"),
-    "save_to_agent_settings": MessageLookupByLibrary.simpleMessage(
-      "Save this selection to agent settings?",
-    ),
+    "save_to_agent_settings": m21,
     "search_any_chat_message": MessageLookupByLibrary.simpleMessage(
       "Search any chat message...",
     ),
@@ -879,7 +888,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Select parameter to add",
     ),
     "select_provider": MessageLookupByLibrary.simpleMessage("Select provider"),
-    "selected_agent": m21,
+    "selected_agent": m22,
     "send_a_message_hint": MessageLookupByLibrary.simpleMessage(
       "Send a message (MD  supported), enter \"/\" for more options",
     ),
@@ -958,28 +967,28 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "switch_persona": MessageLookupByLibrary.simpleMessage("Switch persona"),
     "sys_prompt": MessageLookupByLibrary.simpleMessage("System prompt"),
-    "system_internal_prompt": m22,
-    "system_prompt_tokens": m23,
+    "system_internal_prompt": m23,
+    "system_prompt_tokens": m24,
     "textGenerate": MessageLookupByLibrary.simpleMessage("Text Generation"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat"),
     "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
       "Toggle session selector",
     ),
-    "token_available_for_chat": m24,
+    "token_available_for_chat": m25,
     "token_daily_limit": MessageLookupByLibrary.simpleMessage(
       "Token limit per day",
     ),
     "token_usage": MessageLookupByLibrary.simpleMessage("Token Usage"),
-    "total_context_lim": m25,
+    "total_context_lim": m26,
     "total_tokens": MessageLookupByLibrary.simpleMessage("Total Tokens"),
-    "type_with_holder": m26,
+    "type_with_holder": m27,
     "ui_edited": MessageLookupByLibrary.simpleMessage("Edited UI"),
     "ui_editing": MessageLookupByLibrary.simpleMessage("Editing UI"),
     "ui_interaction_set": MessageLookupByLibrary.simpleMessage(
       "UI interaction (BETA) settings",
     ),
     "ui_interactions": MessageLookupByLibrary.simpleMessage("UI interactions"),
-    "ui_interactions_tokens": m27,
+    "ui_interactions_tokens": m28,
     "unknown": MessageLookupByLibrary.simpleMessage("unknown"),
     "unsaved_changes_message": MessageLookupByLibrary.simpleMessage(
       "Detected unsaved changes. Do you want to save before exiting?",

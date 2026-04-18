@@ -64,19 +64,21 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m20(provider) => " 确定删除提供商${provider}吗？\\n 一切记录和Key都会被一同删除";
 
-  static String m21(num) => "选择了${num}个Agent";
+  static String m21(agent) => "将所选模型设置为\"${agent}\"的默认模型？";
 
-  static String m22(token) => "内建提示词（${token}Tokens）";
+  static String m22(num) => "选择了${num}个Agent";
 
-  static String m23(token) => "系统提示词（${token}Tokens）";
+  static String m23(token) => "内建提示词（${token}Tokens）";
 
-  static String m24(token) => "可用于对话的Token：${token}";
+  static String m24(token) => "系统提示词（${token}Tokens）";
 
-  static String m25(lim) => "总上下文上限：${lim}";
+  static String m25(token) => "可用于对话的Token：${token}";
 
-  static String m26(type) => "类型:${type}";
+  static String m26(lim) => "总上下文上限：${lim}";
 
-  static String m27(token) => "UI交互提示词（${token}Tokens）";
+  static String m27(type) => "类型:${type}";
+
+  static String m28(token) => "UI交互提示词（${token}Tokens）";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -336,6 +338,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "generate_title": MessageLookupByLibrary.simpleMessage("生成标题"),
     "generate_title_hint": MessageLookupByLibrary.simpleMessage("重新生成会覆盖旧标题"),
     "generating_title": MessageLookupByLibrary.simpleMessage("正在生成对话标题……"),
+    "get_api_key": MessageLookupByLibrary.simpleMessage("获取 API Key"),
+    "get_help": MessageLookupByLibrary.simpleMessage("获取帮助"),
     "github_repo": MessageLookupByLibrary.simpleMessage("GitHub 仓库"),
     "give_up_edit_confirm": MessageLookupByLibrary.simpleMessage("确定放弃编辑吗？"),
     "go_back": MessageLookupByLibrary.simpleMessage("返回"),
@@ -343,6 +347,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "got_it": MessageLookupByLibrary.simpleMessage("了解"),
     "help": MessageLookupByLibrary.simpleMessage("帮助"),
     "help_guides": MessageLookupByLibrary.simpleMessage("帮助与指南"),
+    "help_links": MessageLookupByLibrary.simpleMessage("帮助链接"),
     "hide_cot": MessageLookupByLibrary.simpleMessage("隐藏思维链"),
     "hide_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
       "隐藏检索结果",
@@ -440,6 +445,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "model_friendly_name_hint": MessageLookupByLibrary.simpleMessage(
       "请输入模型友好名称（例如：Qwen 7B）",
     ),
+    "model_list": MessageLookupByLibrary.simpleMessage("支持模型列表"),
     "model_local_telling": MessageLookupByLibrary.simpleMessage(
       "告知模型当前用户地区和语言",
     ),
@@ -534,6 +540,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "no_provider": MessageLookupByLibrary.simpleMessage("暂无提供商"),
     "no_results": MessageLookupByLibrary.simpleMessage("无结果"),
     "no_rules": MessageLookupByLibrary.simpleMessage("没有规则"),
+    "official_website": MessageLookupByLibrary.simpleMessage("官方网站"),
     "openai_compatible_api": MessageLookupByLibrary.simpleMessage("OpenAI兼容"),
     "openai_completion_compatible_api": MessageLookupByLibrary.simpleMessage(
       "OpenAi Completion (Legacy) 兼容",
@@ -600,6 +607,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "当对话中的内容匹配正则表达式时，整个内容被发送给模型",
     ),
     "regex_match": MessageLookupByLibrary.simpleMessage("正则匹配"),
+    "related_docs": MessageLookupByLibrary.simpleMessage("相关文档"),
     "remark": MessageLookupByLibrary.simpleMessage("备注"),
     "rename": MessageLookupByLibrary.simpleMessage("重命名"),
     "request_daily_limit": MessageLookupByLibrary.simpleMessage("每日请求上限"),
@@ -608,9 +616,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "retry": MessageLookupByLibrary.simpleMessage("重试"),
     "save": MessageLookupByLibrary.simpleMessage("保存"),
     "save_and_exit": MessageLookupByLibrary.simpleMessage("保存并退出"),
-    "save_to_agent_settings": MessageLookupByLibrary.simpleMessage(
-      "将Agent设为所选模型？",
-    ),
+    "save_to_agent_settings": m21,
     "search_any_chat_message": MessageLookupByLibrary.simpleMessage("搜索任何聊天内容"),
     "search_for_models": MessageLookupByLibrary.simpleMessage("搜索模型"),
     "search_provider": MessageLookupByLibrary.simpleMessage("搜索提供商"),
@@ -629,7 +635,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "select_or_add_memory": MessageLookupByLibrary.simpleMessage("选择或添加记忆"),
     "select_parameter": MessageLookupByLibrary.simpleMessage("选择要添加的参数"),
     "select_provider": MessageLookupByLibrary.simpleMessage("选择提供商"),
-    "selected_agent": m21,
+    "selected_agent": m22,
     "send_a_message_hint": MessageLookupByLibrary.simpleMessage(
       "发送一条消息（支持MD）,键入\"/\"以查看更多选项",
     ),
@@ -686,24 +692,24 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "switch_persona": MessageLookupByLibrary.simpleMessage("切换人格"),
     "sys_prompt": MessageLookupByLibrary.simpleMessage("系统提示词"),
-    "system_internal_prompt": m22,
-    "system_prompt_tokens": m23,
+    "system_internal_prompt": m23,
+    "system_prompt_tokens": m24,
     "textGenerate": MessageLookupByLibrary.simpleMessage("文本"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat 通聊"),
     "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
       "打开会话选择器菜单",
     ),
-    "token_available_for_chat": m24,
+    "token_available_for_chat": m25,
     "token_daily_limit": MessageLookupByLibrary.simpleMessage("每日Token上限"),
     "token_usage": MessageLookupByLibrary.simpleMessage("Token 统计"),
-    "total_context_lim": m25,
+    "total_context_lim": m26,
     "total_tokens": MessageLookupByLibrary.simpleMessage("总 Token"),
-    "type_with_holder": m26,
+    "type_with_holder": m27,
     "ui_edited": MessageLookupByLibrary.simpleMessage("编辑了UI"),
     "ui_editing": MessageLookupByLibrary.simpleMessage("正在编辑UI..."),
     "ui_interaction_set": MessageLookupByLibrary.simpleMessage("UI交互(BETA)设置"),
     "ui_interactions": MessageLookupByLibrary.simpleMessage("UI操作"),
-    "ui_interactions_tokens": m27,
+    "ui_interactions_tokens": m28,
     "unknown": MessageLookupByLibrary.simpleMessage("未知"),
     "unsaved_changes_message": MessageLookupByLibrary.simpleMessage(
       "检测到未保存的更改，是否在退出前保存？",

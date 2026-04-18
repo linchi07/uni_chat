@@ -984,13 +984,13 @@ class S {
     );
   }
 
-  /// `Save this selection to agent settings?`
-  String get save_to_agent_settings {
+  /// `Set the selected model as the default model of '{agent}' ?`
+  String save_to_agent_settings(Object agent) {
     return Intl.message(
-      'Save this selection to agent settings?',
+      'Set the selected model as the default model of \'$agent\' ?',
       name: 'save_to_agent_settings',
       desc: '',
-      args: [],
+      args: [agent],
     );
   }
 
@@ -4093,6 +4093,46 @@ class S {
   /// `No limit`
   String get no_limit {
     return Intl.message('No limit', name: 'no_limit', desc: '', args: []);
+  }
+
+  /// `Get Help`
+  String get get_help {
+    return Intl.message('Get Help', name: 'get_help', desc: '', args: []);
+  }
+
+  /// `Help Links`
+  String get help_links {
+    return Intl.message('Help Links', name: 'help_links', desc: '', args: []);
+  }
+
+  /// `Official Website`
+  String get official_website {
+    return Intl.message(
+      'Official Website',
+      name: 'official_website',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Get API Key`
+  String get get_api_key {
+    return Intl.message('Get API Key', name: 'get_api_key', desc: '', args: []);
+  }
+
+  /// `Documentation`
+  String get related_docs {
+    return Intl.message(
+      'Documentation',
+      name: 'related_docs',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Model List`
+  String get model_list {
+    return Intl.message('Model List', name: 'model_list', desc: '', args: []);
   }
 }
 

@@ -1383,7 +1383,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                       ),
                     StdIconButton(
                       color: theme.errorColor,
-                      icon: Icons.cancel_outlined,
+                      icon: Icons.close,
                       onPressed: () {
                         ref.read(chatStateProvider.notifier).clearError();
                       },

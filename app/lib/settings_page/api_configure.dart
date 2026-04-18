@@ -18,6 +18,7 @@ import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paged_scroll/paged_scroll.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:uni_chat/l10n/generated/l10n.dart';
@@ -712,6 +713,37 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                                   : theme.errorColor,
                             ),
                           ),
+                          if (ac.providerPreset?.helperUrl != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Center(
+                                child: StdButton(
+                                  onPressed:
+                                      () => _showHelpDialog(
+                                        context,
+                                        ac.providerPreset!.helperUrl!,
+                                      ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.help_outline,
+                                        size: 18,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        S.of(context).get_help,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           const SizedBox(height: 16),
                           if (showBasic)
                             StdListTile(
@@ -820,6 +852,73 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
           },
         );
       },
+    );
+  }
+
+  void _showHelpDialog(BuildContext context, Map<String, String> helperUrl) {
+    OverlayPortalService.showDialog(
+      context,
+      backGroundColor: theme.secondGradeColor,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            S.of(context).help_links,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: theme.darkTextColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...helperUrl.entries.map((e) {
+            String label;
+            IconData icon;
+            switch (e.key) {
+              case 'official':
+                label = S.of(context).official_website;
+                icon = Icons.language;
+                break;
+              case 'apiKey':
+                label = S.of(context).get_api_key;
+                icon = Icons.key;
+                break;
+              case 'docs':
+                label = S.of(context).related_docs;
+                icon = Icons.description;
+                break;
+              case 'models':
+                label = S.of(context).model_list;
+                icon = Icons.list;
+                break;
+              default:
+                label = e.key;
+                icon = Icons.link;
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: StdListTile(
+                onTap: () async {
+                  final url = Uri.parse(e.value);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url);
+                  }
+                },
+                leading: Icon(icon, color: theme.primaryColor),
+                title: Text(label),
+                trailing: const Icon(Icons.open_in_new, size: 16),
+              ),
+            );
+          }),
+        ],
+      ),
+      actions: [
+        StdButton(
+          text: S.of(context).confirm,
+          onPressed: () => OverlayPortalService.hide(context),
+        ),
+      ],
     );
   }
 

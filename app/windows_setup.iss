@@ -6,7 +6,7 @@
 ; 唯一标识符，你可以用 Inno Setup 自带的工具 (Tools -> Generate GUID) 重新生成一个替换掉这里的
 AppId={{29E00414-E007-490E-B089-714A8741DA86}}
 AppName=UNIChat
-AppVersion=1.0.1
+AppVersion={{APP_VERSION_RAW}}
 AppPublisher=Wejoinnwk
 AppPublisherURL=https://unichat.wejoinnwk.com
 ; 默认安装到 Program Files 下的 UNIChat 文件夹
@@ -15,7 +15,7 @@ DisableProgramGroupPage=yes
 ; 安装包的输出目录（会生成在项目根目录的 Installer 文件夹下）
 OutputDir=.\Installer
 ; 最终生成的 exe 安装包文件名
-OutputBaseFilename=UNIChatV1.0_Setup
+OutputBaseFilename=UNIChat_v{{APP_VERSION_RAW}}_Setup
 ; 安装器的图标（复用 Flutter 的桌面图标）
 SetupIconFile=windows\runner\resources\app_icon.ico
 Compression=lzma

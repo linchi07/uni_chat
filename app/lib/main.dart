@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
@@ -23,9 +24,9 @@ import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/setup_agent.dart';
 import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/top_banner.dart';
-import 'package:uni_chat/utils/overlays.dart';
-import 'package:uni_chat/utils/log_manager.dart';
 import 'package:uni_chat/utils/auto_update_service.dart';
+import 'package:uni_chat/utils/log_manager.dart';
+import 'package:uni_chat/utils/overlays.dart';
 
 import 'Agent/agent_page.dart';
 
@@ -34,13 +35,13 @@ final Map<String, Locale> languages = const {
   "English": Locale("en"),
 };
 
-const String websiteURL = "http://localhost:3000/zh-Hans";
-
 Future<void> main() async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-            if (io.Platform.isAndroid) {
+      final packageInfo = await PackageInfo.fromPlatform();
+      PlatForm().version = "V${packageInfo.version}";
+      if (io.Platform.isAndroid) {
         PlatForm().platform = RunningPlatform.android;
         var di = await DeviceInfoPlugin().androidInfo;
         PlatForm().platformInfo = "${di.model} running on ${di.version}";
@@ -183,6 +184,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 enum RunningPlatform { web, android, ios, ipadOS, macos, windows }
 
 class PlatForm {
+  String version = '';
   static final PlatForm _instance = PlatForm._internal();
   bool get isWindows => platform == RunningPlatform.windows;
   String? languageCode;
@@ -272,8 +274,8 @@ class _UNIChatState extends State<UNIChat> {
         theme: ThemeData(
           fontFamily: (PlatForm().isWindows)
               ? (WindowsSpecificsSetting.customFontLoaded
-                  ? WindowsSpecificsSetting.CUSTOM_FONT_FAMILY
-                  : "Segoe UI")
+                    ? WindowsSpecificsSetting.CUSTOM_FONT_FAMILY
+                    : "Segoe UI")
               : null,
           fontFamilyFallback: (PlatForm().isWindows)
               ? [
