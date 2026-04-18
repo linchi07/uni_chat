@@ -150,16 +150,6 @@
     "helper_url": "{\"official\": \"https://openrouter.ai/\", \"apiKey\": \"https://openrouter.ai/settings/keys\", \"docs\": \"https://openrouter.ai/docs/quick-start\", \"models\": \"https://openrouter.ai/models\"}"
   },
   {
-    "id": "perplexity",
-    "i18n_name": "{\"zh\": \"Perplexity\", \"en\": \"Perplexity\"}",
-    "type": "singleInstance",
-    "endpoint": "https://api.perplexity.ai/",
-    "api_type": "openai_chat_completions",
-    "models": "[]",
-    "order": 21,
-    "helper_url": "{\"official\": \"https://perplexity.ai/\", \"apiKey\": \"https://www.perplexity.ai/settings/api\", \"docs\": \"https://docs.perplexity.ai/home\", \"models\": \"https://docs.perplexity.ai/guides/model-cards\"}"
-  },
-  {
     "id": "mistral",
     "i18n_name": "{\"zh\": \"Mistral AI\", \"en\": \"Mistral AI\"}",
     "type": "singleInstance",

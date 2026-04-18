@@ -1371,6 +1371,9 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                                             model,
                                             saveToSettings,
                                           );
+                                      ref
+                                          .read(chatStateProvider.notifier)
+                                          .stateCopyWith(error: null);
                                     },
                               ),
                             );

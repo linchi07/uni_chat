@@ -277,17 +277,6 @@ class _UNIChatState extends State<UNIChat> {
                     ? WindowsSpecificsSetting.CUSTOM_FONT_FAMILY
                     : "Segoe UI")
               : null,
-          fontFamilyFallback: (PlatForm().isWindows)
-              ? [
-                  if (!WindowsSpecificsSetting.customFontLoaded)
-                    "Microsoft YaHei",
-                  "Yu Gothic UI",
-                  "Malgun Gothic",
-                  "Segoe UI Emoji",
-                  "Segoe UI Symbol",
-                  "NotoSymbols",
-                ]
-              : null,
           // fix the font glitches in windows when displaying SC
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),

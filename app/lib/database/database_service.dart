@@ -124,23 +124,24 @@ class DatabaseService {
             .getSingleOrNull();
     if (a != null) return AgentData.fromAgentDBModel(a);
 
-    var any = await (_db.select(_db.agents)..limit(1)).getSingleOrNull();
-    if (any != null) {
-      await setDefaultAgent(any.id);
-      return AgentData.fromAgentDBModel(any);
-    }
     return null;
   }
 
   Future<void> setDefaultAgent(String agentId) async {
     await _db.transaction(() async {
       await (_db.update(_db.agents)..where((t) => t.isDefault)).write(
-        const AgentsCompanion(isDefault: Value(true)),
+        const AgentsCompanion(isDefault: Value(false)),
       );
       await (_db.update(_db.agents)..where((t) => t.id.equals(agentId))).write(
         const AgentsCompanion(isDefault: Value(true)),
       );
     });
+  }
+
+  Future<void> clearDefaultAgent() async {
+    await (_db.update(_db.agents)..where((t) => t.isDefault)).write(
+      const AgentsCompanion(isDefault: Value(false)),
+    );
   }
 
   // --- Session CRUD ---

@@ -208,7 +208,14 @@ class AgentProvider extends StateNotifier<Agent?> {
     try {
       var agentData = await DatabaseService.instance.loadDefaultAgent();
       if (agentData == null) {
-        throw AgentException(AgentExceptionType.agentNotFound);
+        if (fallbackToInstant) {
+          await loadAgentById(INSTANT_AGENT_ID);
+          return;
+        }
+        if (setToNullWhenMissing) {
+          state = null;
+        }
+        return;
       }
       agentId = agentData.id;
       state = await Agent.fromAgentData(agentData);
