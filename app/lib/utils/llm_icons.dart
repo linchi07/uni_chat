@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 
 import '../api_configs/api_models.dart';
-import 'package:uni_chat/l10n/generated/l10n.dart';
 
 /// 映射模型或提供商名称到对应的图片资源路径
 class LLMImageIndexer {
@@ -89,8 +89,6 @@ class LLMImageIndexer {
     'openrouter': 'resources/provider_model_icons/openrouter.png',
     'silicon': 'resources/provider_model_icons/silicon.png',
     'siliconflow': 'resources/provider_model_icons/silicon.png',
-    'aihubmix': 'resources/provider_model_icons/aihubmix.png',
-    'aionly': 'resources/provider_model_icons/aiOnly.webp',
     'perplexity': 'resources/provider_model_icons/perplexity.png',
     'groq': 'resources/provider_model_icons/groq.png',
     'fireworks': 'resources/provider_model_icons/fireworks.png',
