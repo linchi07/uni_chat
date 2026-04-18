@@ -15,6 +15,7 @@ class ApiProvider implements Insertable<ApiProvider> {
   final ApiType type;
   final String endpoint;
   final String? preset;
+  final int? order;
 
   ApiProvider({
     required this.id,
@@ -22,6 +23,7 @@ class ApiProvider implements Insertable<ApiProvider> {
     required this.type,
     required this.endpoint,
     this.preset,
+    this.order,
   });
 
   factory ApiProvider.fromMap(Map<String, dynamic> map) {
@@ -31,6 +33,7 @@ class ApiProvider implements Insertable<ApiProvider> {
       type: XApiType.fromName(map['type']),
       endpoint: map['endpoint'],
       preset: map['preset'],
+      order: map['order'],
     );
   }
 
@@ -41,6 +44,7 @@ class ApiProvider implements Insertable<ApiProvider> {
       'type': type.name,
       'endpoint': endpoint,
       'preset': preset,
+      'order': order,
     };
   }
 
@@ -52,6 +56,7 @@ class ApiProvider implements Insertable<ApiProvider> {
       type: Value(type),
       endpoint: Value(endpoint),
       preset: Value(preset),
+      order: Value(order),
     ).toColumns(nullToAbsent);
   }
 }
@@ -346,6 +351,7 @@ class Model implements Insertable<Model> {
   final int? contextLength;
   final int? maxCompletionTokens;
   final List<ModelParamName>? parameters;
+  final int? order;
 
   Model({
     required this.id,
@@ -355,6 +361,7 @@ class Model implements Insertable<Model> {
     this.contextLength,
     this.maxCompletionTokens,
     this.parameters,
+    this.order,
   });
 
   Map<String, dynamic> toMap() {
@@ -368,6 +375,7 @@ class Model implements Insertable<Model> {
       'context_length': contextLength,
       'max_completion_tokens': maxCompletionTokens,
       'parameters': parameters?.map((e) => e.name).toList(),
+      'order': order,
     };
   }
 
@@ -393,6 +401,7 @@ class Model implements Insertable<Model> {
       contextLength: map['context_length'],
       maxCompletionTokens: map['max_completion_tokens'],
       parameters: parameters,
+      order: map['order'],
     );
   }
 
@@ -406,6 +415,7 @@ class Model implements Insertable<Model> {
       contextLength: Value(contextLength),
       maxCompletionTokens: Value(maxCompletionTokens),
       parameters: Value(parameters),
+      order: Value(order),
     ).toColumns(nullToAbsent);
   }
 }
@@ -855,7 +865,7 @@ extension XApiType on ApiType {
       case ApiType.openaiResponses:
         return 'OpenAI Response';
       case ApiType.openaiChatCompletions:
-        return 'OpenAI Completion (Legacy)';
+        return 'OpenAI Completion';
       case ApiType.google:
         return 'Google';
     }
@@ -925,93 +935,10 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
   String? endpoint;
   ApiType apiType;
   List<ProviderModelConfig>? models;
+  int? order;
+  Map<String, String>? helperUrl;
 
-  static List<ProviderPreset> presets = [
-    ProviderPreset(
-      id: "lmstudio",
-      i18nName: {'en': "LM Studio"},
-      endpoint: "http://localhost:1234",
-      type: ProviderPresetType.typeSetMultiInstanceWithoutKey,
-      apiType: ApiType.openaiChatCompletions,
-    ),
-    ProviderPreset(
-      id: 'deepseek',
-      i18nName: {'en': "DeepSeek", 'zh': "深度求索"},
-      endpoint: "https://api.deepseek.com",
-      type: ProviderPresetType.singleInstance,
-      apiType: ApiType.openaiChatCompletions,
-      models: [
-        ProviderModelConfig(
-          providerId: 'deepseek',
-          modelId: '@official-464a9745-faf7-5e9c-813d-dc230998fed4',
-          callName: 'deepseek-reasoner',
-        ),
-        ProviderModelConfig(
-          providerId: 'deepseek',
-          modelId: '@official-a8c6da93-45af-5030-bbbd-b415bfa11e66',
-          callName: 'deepseek-chat',
-        ),
-      ],
-    ),
-    ProviderPreset(
-      id: 'model_scope',
-      i18nName: {'en': "Model Scope", 'zh': "魔搭"},
-      endpoint: "https://api-inference.modelscope.cn/v1",
-      type: ProviderPresetType.singleInstance,
-      apiType: ApiType.openaiChatCompletions,
-      models: [
-        ProviderModelConfig(
-          providerId: 'model_scope',
-          modelId: '@official-464a9745-faf7-5e9c-813d-dc230998fed4',
-          callName: 'deepseek-ai/DeepSeek-R1',
-        ),
-        ProviderModelConfig(
-          providerId: 'model_scope',
-          modelId: '@official-a8c6da93-45af-5030-bbbd-b415bfa11e66',
-          callName: 'deepseek-ai/DeepSeek-V3.2',
-        ),
-        ProviderModelConfig(
-          providerId: 'model_scope',
-          modelId: '@official-0183feea-f111-5cf9-92e3-54cd841fc327',
-          callName: 'Qwen/Qwen3-235B-A22B',
-        ),
-        ProviderModelConfig(
-          providerId: 'model_scope',
-          modelId: '@official-2072efd3-d486-55de-ba05-b9679d3ef907',
-          callName: 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
-        ),
-        ProviderModelConfig(
-          providerId: 'model_scope',
-          modelId: '@official-e9e2fac4-7690-5a57-b663-7fa104870b06',
-          callName: 'Qwen/QwQ-32B',
-        ),
-        ProviderModelConfig(
-          providerId: 'model_scope',
-          modelId: '@official-c5c0d0c5-b0a7-5c0c-b0a7-c5c0d0c5b0a7',
-          callName: 'Qwen/Qwen3-Coder-7B-A35B',
-        ),
-      ],
-    ),
-    ProviderPreset(
-      id: 'google',
-      endpoint: "https://generativelanguage.googleapis.com/v1beta",
-      i18nName: {'en': "Google", 'zh': "谷歌"},
-      type: ProviderPresetType.singleInstance,
-      apiType: ApiType.google,
-      models: [
-        ProviderModelConfig(
-          providerId: 'google',
-          modelId: '@official-823a8f64-0788-52d9-bf53-2f502472b5c5',
-          callName: 'gemini-3-flash-preview',
-        ),
-        ProviderModelConfig(
-          providerId: 'google',
-          modelId: '@official-86eda6c0-ff35-5820-a46c-c73e2d037ded',
-          callName: 'gemini-3-pro-preview',
-        ),
-      ],
-    ),
-  ];
+  static List<ProviderPreset> presets = [];
 
   Map<String, String> get i18nName => _i18nName;
 
@@ -1022,6 +949,8 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
     this.endpoint,
     required this.apiType,
     this.models,
+    this.order,
+    this.helperUrl,
   }) {
     _i18nName = i18nName;
   }
@@ -1034,34 +963,31 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
     return {
       'id': id,
       'i18n_name': jsonEncode(_i18nName),
-      'type': type.toString(),
+      'type': type.name,
       'endpoint': endpoint,
-      'api_type': apiType.toString(),
+      'api_type': apiType.name,
       'models': (models != null) ? jsonEncode(models) : null,
+      'order': order,
+      'helper_url': (helperUrl != null) ? jsonEncode(helperUrl) : null,
     };
   }
 
   factory ProviderPreset.fromMap(Map<String, dynamic> map) {
-    var m = map['models'];
-    List<ProviderModelConfig>? models;
-    if (m != null) {
-      var mp = jsonDecode(m);
-      models = [];
-      for (var i in mp) {
-        models.add(ProviderModelConfig.fromMap(i.value));
-      }
-    }
     return ProviderPreset(
       id: map['id'],
-      i18nName: jsonDecode(map['i18n_name']).cast<String, String>(),
-      type: ProviderPresetType.values.firstWhere(
-        (element) => element.toString() == map['type'],
-      ),
+      i18nName: (jsonDecode(map['i18n_name'] as String) as Map).cast<String, String>(),
+      type: ProviderPresetType.values.firstWhere((e) => e.name == map['type']),
       endpoint: map['endpoint'],
-      apiType: ApiType.values.firstWhere(
-        (element) => element.toString() == map['api_type'],
-      ),
-      models: models,
+      apiType: XApiType.fromName(map['api_type'] as String),
+      models: map['models'] != null
+          ? (jsonDecode(map['models'] as String) as List)
+              .map((e) => ProviderModelConfig.fromMap(e))
+              .toList()
+          : null,
+      order: map['order'],
+      helperUrl: map['helper_url'] != null
+          ? (jsonDecode(map['helper_url'] as String) as Map).cast<String, String>()
+          : null,
     );
   }
 
@@ -1072,6 +998,8 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
     endpoint: Value(endpoint),
     apiType: Value(apiType),
     models: Value(models),
+    order: Value(order),
+    helperUrl: Value(helperUrl),
   );
 
   @override
@@ -1083,6 +1011,8 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
       endpoint: Value(endpoint),
       apiType: Value(apiType),
       models: Value(models),
+      order: Value(order),
+      helperUrl: Value(helperUrl),
     ).toColumns(nullToAbsent);
   }
 }

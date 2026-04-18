@@ -28,7 +28,7 @@ class _ApiDb extends _$_ApiDb {
   _ApiDb.connect(DatabaseConnection super.connection);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   static QueryExecutor _onOpen() {
     return driftDatabase(
@@ -82,6 +82,18 @@ class _ApiDb extends _$_ApiDb {
           // For simplicity and safety in SQLite:
           await customStatement(
             'ALTER TABLE provider_model_configs RENAME COLUMN pricing_override TO pricing',
+          );
+        }
+        if (from < 4) {
+          // Models: add order
+          await mig.addColumn(models, models.order);
+          // ApiProviders: add order
+          await mig.addColumn(apiProviders, apiProviders.order);
+          // ProviderPresetsTable: add order and helperUrl
+          await mig.addColumn(providerPresetsTable, providerPresetsTable.order);
+          await mig.addColumn(
+            providerPresetsTable,
+            providerPresetsTable.helperUrl,
           );
         }
       },
@@ -333,7 +345,8 @@ class _ApiDb extends _$_ApiDb {
     return into(models).insert(model);
   }
 
-  Future<List<Model>> getAllModels() => select(models).get();
+  Future<List<Model>> getAllModels() =>
+      (select(models)..orderBy([(t) => OrderingTerm(expression: t.order, nulls: NullsOrder.last)])).get();
 
   Future<Model?> getModelById(String id) =>
       (select(models)..where((t) => t.id.equals(id))).getSingleOrNull();
@@ -353,6 +366,7 @@ class _ApiDb extends _$_ApiDb {
           contextLength: Value(model.contextLength),
           maxCompletionTokens: Value(model.maxCompletionTokens),
           parameters: Value(model.parameters),
+          order: Value(model.order),
         ),
       ),
     );
@@ -364,7 +378,8 @@ class _ApiDb extends _$_ApiDb {
     ).insert(preset.companion, onConflict: DoUpdate((old) => preset.companion));
   }
 
-  Future<List<ApiProvider>> getAllApiProviders() => select(apiProviders).get();
+  Future<List<ApiProvider>> getAllApiProviders() =>
+      (select(apiProviders)..orderBy([(t) => OrderingTerm(expression: t.order, nulls: NullsOrder.last)])).get();
 
   Future<ApiProvider?> getApiProviderById(String id) =>
       (select(apiProviders)..where((t) => t.id.equals(id))).getSingleOrNull();
@@ -589,36 +604,29 @@ class _ApiDb extends _$_ApiDb {
   Future<List<ProviderPreset>> getAllProviderPresets({
     bool onlyAvailable = false,
   }) async {
+    final query = select(providerPresetsTable);
     if (onlyAvailable) {
-      var data = await (select(
-        providerPresetsTable,
-      )..where((e) => e.available.equals(true))).get();
-      return data
-          .map(
-            (e) => ProviderPreset(
-              id: e.id,
-              i18nName: e.i18nName,
-              type: e.type,
-              apiType: e.apiType,
-              endpoint: e.endpoint,
-              models: e.models,
-            ),
-          )
-          .toList();
-    } else {
-      return (select(providerPresetsTable)
-          .map(
-            (e) => ProviderPreset(
-              id: e.id,
-              i18nName: e.i18nName,
-              type: e.type,
-              apiType: e.apiType,
-              endpoint: e.endpoint,
-              models: e.models,
-            ),
-          )
-          .get());
+      query.where((e) => e.available.equals(true));
     }
+    query.orderBy([
+      (t) => OrderingTerm(expression: t.order, nulls: NullsOrder.last),
+    ]);
+
+    final data = await query.get();
+    return data
+        .map(
+          (e) => ProviderPreset(
+            id: e.id,
+            i18nName: e.i18nName,
+            type: e.type,
+            apiType: e.apiType,
+            endpoint: e.endpoint,
+            models: e.models,
+            order: e.order,
+            helperUrl: e.helperUrl,
+          ),
+        )
+        .toList();
   }
 
   Future<ProviderModelConfig?> getProviderModelConfig(
@@ -641,6 +649,8 @@ class _ApiDb extends _$_ApiDb {
               apiType: e.apiType,
               endpoint: e.endpoint,
               models: e.models,
+              order: e.order,
+              helperUrl: e.helperUrl,
             ),
           )
           .getSingleOrNull();
@@ -680,11 +690,17 @@ class _ApiDb extends _$_ApiDb {
           contextLength: map['context_length'],
           maxCompletionTokens: map['max_completion_tokens'],
           parameters: parameters,
+          order: map['order'],
         );
         await into(models).insert(m);
       }
-      for (var p in ProviderPreset.presets) {
-        await into(providerPresetsTable).insert(p);
+      final String presetResponse = await rootBundle.loadString(
+        'resources/data/provider_presets.json',
+      );
+      final presetData = jsonDecode(presetResponse) as List<dynamic>;
+      for (var map in presetData) {
+        var p = ProviderPreset.fromMap(map);
+        await into(providerPresetsTable).insert(p.companion);
       }
     } catch (e) {
       print(e);
@@ -729,6 +745,7 @@ class _ApiDb extends _$_ApiDb {
                         contextLength: Value(m.contextLength),
                         maxCompletionTokens: Value(m.maxCompletionTokens),
                         parameters: Value(m.parameters),
+                        order: Value(m.order),
                       ),
                     ),
                   );

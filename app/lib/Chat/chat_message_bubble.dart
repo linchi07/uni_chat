@@ -11,11 +11,11 @@ import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/error_handling.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
-import 'package:uni_chat/l10n/generated/l10n.dart';
 import '../theme_manager.dart';
 import 'chat_models.dart';
 
@@ -676,7 +676,6 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
     super.dispose();
   }
 
-  static const double INPUT_BOX_EXPANDED_HEIGHT = 283;
   static const double INPUT_BOX_COLLAPSED_HEIGHT = 120;
   (double?, double?) lerpSize(double t) {
     if (_startSize != null) {
@@ -709,12 +708,8 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
         tp.layout(
           maxWidth: renderBox.size.width - 18,
         ); // minus left and right padding
-        targetH = (tp.height + 70).clamp(
-          //36 is the toolbar height
-          INPUT_BOX_COLLAPSED_HEIGHT,
-          INPUT_BOX_EXPANDED_HEIGHT - 18,
-        );
-        // 70 and 18 are just magic numbers that makes the animation smooth
+        targetH = max((tp.height + 70), INPUT_BOX_COLLAPSED_HEIGHT);
+        // 70 are just magic numbers that makes the animation smooth
         // I have no idea why it works
         _startSize = renderBox.size;
         _controller.forward();
@@ -766,7 +761,9 @@ class _InputExpandAnimationState extends State<_InputExpandAnimation>
                   paddingBottom,
                 ),
           constraints: (t >= 0.8)
-              ? BoxConstraints.loose(Size(targetW, INPUT_BOX_EXPANDED_HEIGHT))
+              ? BoxConstraints.loose(
+                  Size(targetW, targetH + 18),
+                ) // 18 is the bottom toolbar
               : (t == 0)
               ? BoxConstraints(maxWidth: min(w, 1000 * 0.9))
               : null,

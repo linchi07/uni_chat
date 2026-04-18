@@ -64,19 +64,21 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m20(provider) => " 确定删除提供商${provider}吗？\\n 一切记录和Key都会被一同删除";
 
-  static String m21(num) => "选择了${num}个Agent";
+  static String m21(agent) => "将所选模型设置为\"${agent}\"的默认模型？";
 
-  static String m22(token) => "内建提示词（${token}Tokens）";
+  static String m22(num) => "选择了${num}个Agent";
 
-  static String m23(token) => "系统提示词（${token}Tokens）";
+  static String m23(token) => "内建提示词（${token}Tokens）";
 
-  static String m24(token) => "可用于对话的Token：${token}";
+  static String m24(token) => "系统提示词（${token}Tokens）";
 
-  static String m25(lim) => "总上下文上限：${lim}";
+  static String m25(token) => "可用于对话的Token：${token}";
 
-  static String m26(type) => "类型:${type}";
+  static String m26(lim) => "总上下文上限：${lim}";
 
-  static String m27(token) => "UI交互提示词（${token}Tokens）";
+  static String m27(type) => "类型:${type}";
+
+  static String m28(token) => "UI交互提示词（${token}Tokens）";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -336,6 +338,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "generate_title": MessageLookupByLibrary.simpleMessage("生成标题"),
     "generate_title_hint": MessageLookupByLibrary.simpleMessage("重新生成会覆盖旧标题"),
     "generating_title": MessageLookupByLibrary.simpleMessage("正在生成对话标题……"),
+    "get_api_key": MessageLookupByLibrary.simpleMessage("获取 API Key"),
+    "get_help": MessageLookupByLibrary.simpleMessage("获取帮助"),
     "github_repo": MessageLookupByLibrary.simpleMessage("GitHub 仓库"),
     "give_up_edit_confirm": MessageLookupByLibrary.simpleMessage("确定放弃编辑吗？"),
     "go_back": MessageLookupByLibrary.simpleMessage("返回"),
@@ -343,6 +347,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "got_it": MessageLookupByLibrary.simpleMessage("了解"),
     "help": MessageLookupByLibrary.simpleMessage("帮助"),
     "help_guides": MessageLookupByLibrary.simpleMessage("帮助与指南"),
+    "help_links": MessageLookupByLibrary.simpleMessage("帮助链接"),
     "hide_cot": MessageLookupByLibrary.simpleMessage("隐藏思维链"),
     "hide_knowledge_base_results": MessageLookupByLibrary.simpleMessage(
       "隐藏检索结果",
@@ -440,6 +445,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "model_friendly_name_hint": MessageLookupByLibrary.simpleMessage(
       "请输入模型友好名称（例如：Qwen 7B）",
     ),
+    "model_list": MessageLookupByLibrary.simpleMessage("支持模型列表"),
     "model_local_telling": MessageLookupByLibrary.simpleMessage(
       "告知模型当前用户地区和语言",
     ),
@@ -534,6 +540,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "no_provider": MessageLookupByLibrary.simpleMessage("暂无提供商"),
     "no_results": MessageLookupByLibrary.simpleMessage("无结果"),
     "no_rules": MessageLookupByLibrary.simpleMessage("没有规则"),
+    "official_website": MessageLookupByLibrary.simpleMessage("官方网站"),
     "openai_compatible_api": MessageLookupByLibrary.simpleMessage("OpenAI兼容"),
     "openai_completion_compatible_api": MessageLookupByLibrary.simpleMessage(
       "OpenAi Completion (Legacy) 兼容",
@@ -600,6 +607,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "当对话中的内容匹配正则表达式时，整个内容被发送给模型",
     ),
     "regex_match": MessageLookupByLibrary.simpleMessage("正则匹配"),
+    "related_docs": MessageLookupByLibrary.simpleMessage("相关文档"),
     "remark": MessageLookupByLibrary.simpleMessage("备注"),
     "rename": MessageLookupByLibrary.simpleMessage("重命名"),
     "request_daily_limit": MessageLookupByLibrary.simpleMessage("每日请求上限"),
@@ -608,9 +616,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "retry": MessageLookupByLibrary.simpleMessage("重试"),
     "save": MessageLookupByLibrary.simpleMessage("保存"),
     "save_and_exit": MessageLookupByLibrary.simpleMessage("保存并退出"),
-    "save_to_agent_settings": MessageLookupByLibrary.simpleMessage(
-      "将Agent设为所选模型？",
-    ),
+    "save_to_agent_settings": m21,
     "search_any_chat_message": MessageLookupByLibrary.simpleMessage("搜索任何聊天内容"),
     "search_for_models": MessageLookupByLibrary.simpleMessage("搜索模型"),
     "search_provider": MessageLookupByLibrary.simpleMessage("搜索提供商"),
@@ -629,7 +635,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "select_or_add_memory": MessageLookupByLibrary.simpleMessage("选择或添加记忆"),
     "select_parameter": MessageLookupByLibrary.simpleMessage("选择要添加的参数"),
     "select_provider": MessageLookupByLibrary.simpleMessage("选择提供商"),
-    "selected_agent": m21,
+    "selected_agent": m22,
     "send_a_message_hint": MessageLookupByLibrary.simpleMessage(
       "发送一条消息（支持MD）,键入\"/\"以查看更多选项",
     ),
@@ -654,7 +660,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "setup_persona": MessageLookupByLibrary.simpleMessage("创建一个人格"),
     "setup_pre_warn_content": MessageLookupByLibrary.simpleMessage(
-      "# UNIChat 软件开发告示\n\n**致 UNIChat 的所有用户：**\n\n感谢您对 UNIChat 的关注和试用！\n\nUNIChat 目前正处于**早期 Alpha 版本**阶段，这意味着软件尚未完全开发完成，仍有大量功能在规划和实现中。请您在使用过程中注意以下几点：\n\n---\n\n### 1. ⚠️ 版本状态与数据风险\n\n1.  **功能未完善：** 许多核心功能可能尚未实现，或者存在不完整、不稳定、体验不佳的情况。\n2.  **数据结构变动风险：** 由于软件处于快速迭代期，我们**不保证**未来数据结构不会发生重大变化。因此，**当前版本中的用户数据（例如聊天记录、设置等）可能在后续更新中无法继承或兼容。** 请您知悉并谨慎对待重要数据的存储。\n\n### 2. 🐛 问题反馈与支持\n\n如果您在使用中遇到任何 Bug 或问题，我们非常欢迎您通过以下方式向我们反馈：\n\n* 在我们的 **GitHub 仓库**上提交 **Issue**。\n* 发送电子邮件至 **[请在此处插入您的 Email 地址]**。\n\n### 3. 📖 查阅文档与提问的艺术\n\n我们致力于提供清晰的文档，并鼓励高质量的交流：\n\n* **先查文档：** 在提问或反馈之前，请优先查阅项目的**官方文档**： [请在此处插入文档链接]，许多基础问题可能已有解答。\n* **提问的艺术：** 如果您决定提问或提交 Issue，为了能让我们更高效地解决问题，请遵循以下原则：\n    1.  **描述清晰：** 明确说明您遇到的问题、期望的行为、以及实际发生的情况。\n    2.  **提供步骤：** 给出重现问题的**详细步骤**（“如何操作会导致这个错误”）。\n    3.  **附带环境信息：** 提供您的操作系统、软件版本号等相关环境信息。\n\n### 4. 🌐 开源与贡献\n\nUNIChat 是一个**遵守 Apache License 2.0 开源协议**的项目。\n\n我们热烈欢迎所有开发者查看、学习和使用我们的代码。如果您有兴趣为 UNIChat 做出贡献，无论是代码改进、文档翻译还是功能实现，我们都欢迎您提交 **Pull Request**！\n\n---\n\n**致谢：** 您的早期使用和反馈对我们至关重要。感谢您的耐心和支持，期待 UNIChat 正式发布！",
+      "# UNIChat 软件开发告示\n\n**致 UNIChat 的所有用户：**\n\n感谢您对 UNIChat 的关注和试用！\n\n目前 UNIChat 正在进入 **Stable (稳定版)** 迭代阶段。这标志着软件的核心功能已趋于完善，但在正式版全面发布前，我们仍需提醒您注意以下几点：\n\n---\n\n### 1. ⚠ 风险提示与稳定性\n\n虽然我们已进入稳定版阶段，但在软件迭代过程中，仍可能存在极少数极端情况下的兼容性问题。\n\n### 2. 🐞 缺陷反馈与技术支持\n\n如果您在使用中遇到任何 Bug 或异常，请务必通过以下途径告诉我们：\n\n*   在我们的 **GitHub 仓库**上提交 **Issue**。\n*   说明您的具体操作系统版本、应用版本（见设置页）以及复现步骤。\n\n### 3. 📖 提问的艺术与文档\n\n为了我们能更高效地协作，我们强烈建议您在反馈问题前：\n\n*   **查阅文档：** 优先查看项目官方文档 [https://unichat.wejoinnwk.com](https://unichat.wejoinnwk.com)，获取常见问题的解决方案。\n*   **遵循《提问的艺术》：** 高质量的反馈是解决问题的捷径。请确保您的描述清晰、无歧义。有关如何高质量提问，建议查阅[《提问的艺术》](https://github.com/ryanhanwu/How-To-Ask-Questions-The-Smart-Way/blob/main/README-zh_CN.md)。\n\n### 4. 🌐 开源共建\n\nUNIChat是一个开源项目。我们欢迎任何形式的贡献，包括代码修补、文档完善以及功能建议。\n\n---\n\n**致谢：** 您的每一份反馈都在帮助 UNIChat 变得更好。感谢您的支持！",
     ),
     "setup_pre_warning": MessageLookupByLibrary.simpleMessage("在开始之前，请先注意："),
     "setup_provider_add": MessageLookupByLibrary.simpleMessage("让我们先添加提供商"),
@@ -686,24 +692,24 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "switch_persona": MessageLookupByLibrary.simpleMessage("切换人格"),
     "sys_prompt": MessageLookupByLibrary.simpleMessage("系统提示词"),
-    "system_internal_prompt": m22,
-    "system_prompt_tokens": m23,
+    "system_internal_prompt": m23,
+    "system_prompt_tokens": m24,
     "textGenerate": MessageLookupByLibrary.simpleMessage("文本"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat 通聊"),
     "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
       "打开会话选择器菜单",
     ),
-    "token_available_for_chat": m24,
+    "token_available_for_chat": m25,
     "token_daily_limit": MessageLookupByLibrary.simpleMessage("每日Token上限"),
     "token_usage": MessageLookupByLibrary.simpleMessage("Token 统计"),
-    "total_context_lim": m25,
+    "total_context_lim": m26,
     "total_tokens": MessageLookupByLibrary.simpleMessage("总 Token"),
-    "type_with_holder": m26,
+    "type_with_holder": m27,
     "ui_edited": MessageLookupByLibrary.simpleMessage("编辑了UI"),
     "ui_editing": MessageLookupByLibrary.simpleMessage("正在编辑UI..."),
     "ui_interaction_set": MessageLookupByLibrary.simpleMessage("UI交互(BETA)设置"),
     "ui_interactions": MessageLookupByLibrary.simpleMessage("UI操作"),
-    "ui_interactions_tokens": m27,
+    "ui_interactions_tokens": m28,
     "unknown": MessageLookupByLibrary.simpleMessage("未知"),
     "unsaved_changes_message": MessageLookupByLibrary.simpleMessage(
       "检测到未保存的更改，是否在退出前保存？",

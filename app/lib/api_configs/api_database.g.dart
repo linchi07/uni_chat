@@ -76,6 +76,15 @@ class $ModelsTable extends Models with TableInfo<$ModelsTable, Model> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   ).withConverter<List<ModelParamName>?>($ModelsTable.$converterparametersn);
+  static const VerificationMeta _orderMeta = const VerificationMeta('order');
+  @override
+  late final GeneratedColumn<int> order = GeneratedColumn<int>(
+    'order',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -85,6 +94,7 @@ class $ModelsTable extends Models with TableInfo<$ModelsTable, Model> {
     contextLength,
     maxCompletionTokens,
     parameters,
+    order,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -140,6 +150,12 @@ class $ModelsTable extends Models with TableInfo<$ModelsTable, Model> {
         ),
       );
     }
+    if (data.containsKey('order')) {
+      context.handle(
+        _orderMeta,
+        order.isAcceptableOrUnknown(data['order']!, _orderMeta),
+      );
+    }
     return context;
   }
 
@@ -185,6 +201,10 @@ class $ModelsTable extends Models with TableInfo<$ModelsTable, Model> {
           data['${effectivePrefix}parameters'],
         ),
       ),
+      order: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}order'],
+      ),
     );
   }
 
@@ -209,6 +229,7 @@ class ModelsCompanion extends UpdateCompanion<Model> {
   final Value<int?> contextLength;
   final Value<int?> maxCompletionTokens;
   final Value<List<ModelParamName>?> parameters;
+  final Value<int?> order;
   final Value<int> rowid;
   const ModelsCompanion({
     this.id = const Value.absent(),
@@ -218,6 +239,7 @@ class ModelsCompanion extends UpdateCompanion<Model> {
     this.contextLength = const Value.absent(),
     this.maxCompletionTokens = const Value.absent(),
     this.parameters = const Value.absent(),
+    this.order = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ModelsCompanion.insert({
@@ -228,6 +250,7 @@ class ModelsCompanion extends UpdateCompanion<Model> {
     this.contextLength = const Value.absent(),
     this.maxCompletionTokens = const Value.absent(),
     this.parameters = const Value.absent(),
+    this.order = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        friendlyName = Value(friendlyName),
@@ -241,6 +264,7 @@ class ModelsCompanion extends UpdateCompanion<Model> {
     Expression<int>? contextLength,
     Expression<int>? maxCompletionTokens,
     Expression<String>? parameters,
+    Expression<int>? order,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -252,6 +276,7 @@ class ModelsCompanion extends UpdateCompanion<Model> {
       if (maxCompletionTokens != null)
         'max_completion_tokens': maxCompletionTokens,
       if (parameters != null) 'parameters': parameters,
+      if (order != null) 'order': order,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -264,6 +289,7 @@ class ModelsCompanion extends UpdateCompanion<Model> {
     Value<int?>? contextLength,
     Value<int?>? maxCompletionTokens,
     Value<List<ModelParamName>?>? parameters,
+    Value<int?>? order,
     Value<int>? rowid,
   }) {
     return ModelsCompanion(
@@ -274,6 +300,7 @@ class ModelsCompanion extends UpdateCompanion<Model> {
       contextLength: contextLength ?? this.contextLength,
       maxCompletionTokens: maxCompletionTokens ?? this.maxCompletionTokens,
       parameters: parameters ?? this.parameters,
+      order: order ?? this.order,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -306,6 +333,9 @@ class ModelsCompanion extends UpdateCompanion<Model> {
         $ModelsTable.$converterparametersn.toSql(parameters.value),
       );
     }
+    if (order.present) {
+      map['order'] = Variable<int>(order.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -322,6 +352,7 @@ class ModelsCompanion extends UpdateCompanion<Model> {
           ..write('contextLength: $contextLength, ')
           ..write('maxCompletionTokens: $maxCompletionTokens, ')
           ..write('parameters: $parameters, ')
+          ..write('order: $order, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -381,8 +412,24 @@ class $ApiProvidersTable extends ApiProviders
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _orderMeta = const VerificationMeta('order');
   @override
-  List<GeneratedColumn> get $columns => [id, name, type, endpoint, preset];
+  late final GeneratedColumn<int> order = GeneratedColumn<int>(
+    'order',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    type,
+    endpoint,
+    preset,
+    order,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -422,6 +469,12 @@ class $ApiProvidersTable extends ApiProviders
         preset.isAcceptableOrUnknown(data['preset']!, _presetMeta),
       );
     }
+    if (data.containsKey('order')) {
+      context.handle(
+        _orderMeta,
+        order.isAcceptableOrUnknown(data['order']!, _orderMeta),
+      );
+    }
     return context;
   }
 
@@ -453,6 +506,10 @@ class $ApiProvidersTable extends ApiProviders
         DriftSqlType.string,
         data['${effectivePrefix}preset'],
       ),
+      order: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}order'],
+      ),
     );
   }
 
@@ -471,6 +528,7 @@ class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
   final Value<ApiType> type;
   final Value<String> endpoint;
   final Value<String?> preset;
+  final Value<int?> order;
   final Value<int> rowid;
   const ApiProvidersCompanion({
     this.id = const Value.absent(),
@@ -478,6 +536,7 @@ class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
     this.type = const Value.absent(),
     this.endpoint = const Value.absent(),
     this.preset = const Value.absent(),
+    this.order = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ApiProvidersCompanion.insert({
@@ -486,6 +545,7 @@ class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
     required ApiType type,
     required String endpoint,
     this.preset = const Value.absent(),
+    this.order = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -497,6 +557,7 @@ class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
     Expression<String>? type,
     Expression<String>? endpoint,
     Expression<String>? preset,
+    Expression<int>? order,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -505,6 +566,7 @@ class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
       if (type != null) 'type': type,
       if (endpoint != null) 'endpoint': endpoint,
       if (preset != null) 'preset': preset,
+      if (order != null) 'order': order,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -515,6 +577,7 @@ class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
     Value<ApiType>? type,
     Value<String>? endpoint,
     Value<String?>? preset,
+    Value<int?>? order,
     Value<int>? rowid,
   }) {
     return ApiProvidersCompanion(
@@ -523,6 +586,7 @@ class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
       type: type ?? this.type,
       endpoint: endpoint ?? this.endpoint,
       preset: preset ?? this.preset,
+      order: order ?? this.order,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -547,6 +611,9 @@ class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
     if (preset.present) {
       map['preset'] = Variable<String>(preset.value);
     }
+    if (order.present) {
+      map['order'] = Variable<int>(order.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -561,6 +628,7 @@ class ApiProvidersCompanion extends UpdateCompanion<ApiProvider> {
           ..write('type: $type, ')
           ..write('endpoint: $endpoint, ')
           ..write('preset: $preset, ')
+          ..write('order: $order, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -992,6 +1060,27 @@ class $ProviderPresetsTableTable extends ProviderPresetsTable
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _orderMeta = const VerificationMeta('order');
+  @override
+  late final GeneratedColumn<int> order = GeneratedColumn<int>(
+    'order',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+  helperUrl =
+      GeneratedColumn<String>(
+        'helper_url',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      ).withConverter<Map<String, String>?>(
+        $ProviderPresetsTableTable.$converterhelperUrln,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1001,6 +1090,8 @@ class $ProviderPresetsTableTable extends ProviderPresetsTable
     apiType,
     models,
     available,
+    order,
+    helperUrl,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1029,6 +1120,12 @@ class $ProviderPresetsTableTable extends ProviderPresetsTable
       context.handle(
         _availableMeta,
         available.isAcceptableOrUnknown(data['available']!, _availableMeta),
+      );
+    }
+    if (data.containsKey('order')) {
+      context.handle(
+        _orderMeta,
+        order.isAcceptableOrUnknown(data['order']!, _orderMeta),
       );
     }
     return context;
@@ -1079,6 +1176,16 @@ class $ProviderPresetsTableTable extends ProviderPresetsTable
         DriftSqlType.bool,
         data['${effectivePrefix}available'],
       )!,
+      order: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}order'],
+      ),
+      helperUrl: $ProviderPresetsTableTable.$converterhelperUrln.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}helper_url'],
+        ),
+      ),
     );
   }
 
@@ -1097,6 +1204,10 @@ class $ProviderPresetsTableTable extends ProviderPresetsTable
       ProviderModelConfigListConverter();
   static TypeConverter<List<ProviderModelConfig>?, String?> $convertermodelsn =
       NullAwareTypeConverter.wrap($convertermodels);
+  static TypeConverter<Map<String, String>, String> $converterhelperUrl =
+      StringMapConverter();
+  static TypeConverter<Map<String, String>?, String?> $converterhelperUrln =
+      NullAwareTypeConverter.wrap($converterhelperUrl);
 }
 
 class ProviderPresetsTableData extends DataClass
@@ -1108,6 +1219,8 @@ class ProviderPresetsTableData extends DataClass
   final ApiType apiType;
   final List<ProviderModelConfig>? models;
   final bool available;
+  final int? order;
+  final Map<String, String>? helperUrl;
   const ProviderPresetsTableData({
     required this.id,
     required this.i18nName,
@@ -1116,6 +1229,8 @@ class ProviderPresetsTableData extends DataClass
     required this.apiType,
     this.models,
     required this.available,
+    this.order,
+    this.helperUrl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1145,6 +1260,14 @@ class ProviderPresetsTableData extends DataClass
       );
     }
     map['available'] = Variable<bool>(available);
+    if (!nullToAbsent || order != null) {
+      map['order'] = Variable<int>(order);
+    }
+    if (!nullToAbsent || helperUrl != null) {
+      map['helper_url'] = Variable<String>(
+        $ProviderPresetsTableTable.$converterhelperUrln.toSql(helperUrl),
+      );
+    }
     return map;
   }
 
@@ -1161,6 +1284,12 @@ class ProviderPresetsTableData extends DataClass
           ? const Value.absent()
           : Value(models),
       available: Value(available),
+      order: order == null && nullToAbsent
+          ? const Value.absent()
+          : Value(order),
+      helperUrl: helperUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(helperUrl),
     );
   }
 
@@ -1181,6 +1310,8 @@ class ProviderPresetsTableData extends DataClass
       ),
       models: serializer.fromJson<List<ProviderModelConfig>?>(json['models']),
       available: serializer.fromJson<bool>(json['available']),
+      order: serializer.fromJson<int?>(json['order']),
+      helperUrl: serializer.fromJson<Map<String, String>?>(json['helperUrl']),
     );
   }
   @override
@@ -1198,6 +1329,8 @@ class ProviderPresetsTableData extends DataClass
       ),
       'models': serializer.toJson<List<ProviderModelConfig>?>(models),
       'available': serializer.toJson<bool>(available),
+      'order': serializer.toJson<int?>(order),
+      'helperUrl': serializer.toJson<Map<String, String>?>(helperUrl),
     };
   }
 
@@ -1209,6 +1342,8 @@ class ProviderPresetsTableData extends DataClass
     ApiType? apiType,
     Value<List<ProviderModelConfig>?> models = const Value.absent(),
     bool? available,
+    Value<int?> order = const Value.absent(),
+    Value<Map<String, String>?> helperUrl = const Value.absent(),
   }) => ProviderPresetsTableData(
     id: id ?? this.id,
     i18nName: i18nName ?? this.i18nName,
@@ -1217,6 +1352,8 @@ class ProviderPresetsTableData extends DataClass
     apiType: apiType ?? this.apiType,
     models: models.present ? models.value : this.models,
     available: available ?? this.available,
+    order: order.present ? order.value : this.order,
+    helperUrl: helperUrl.present ? helperUrl.value : this.helperUrl,
   );
   ProviderPresetsTableData copyWithCompanion(
     ProviderPresetsTableCompanion data,
@@ -1229,6 +1366,8 @@ class ProviderPresetsTableData extends DataClass
       apiType: data.apiType.present ? data.apiType.value : this.apiType,
       models: data.models.present ? data.models.value : this.models,
       available: data.available.present ? data.available.value : this.available,
+      order: data.order.present ? data.order.value : this.order,
+      helperUrl: data.helperUrl.present ? data.helperUrl.value : this.helperUrl,
     );
   }
 
@@ -1241,14 +1380,25 @@ class ProviderPresetsTableData extends DataClass
           ..write('endpoint: $endpoint, ')
           ..write('apiType: $apiType, ')
           ..write('models: $models, ')
-          ..write('available: $available')
+          ..write('available: $available, ')
+          ..write('order: $order, ')
+          ..write('helperUrl: $helperUrl')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, i18nName, type, endpoint, apiType, models, available);
+  int get hashCode => Object.hash(
+    id,
+    i18nName,
+    type,
+    endpoint,
+    apiType,
+    models,
+    available,
+    order,
+    helperUrl,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1259,7 +1409,9 @@ class ProviderPresetsTableData extends DataClass
           other.endpoint == this.endpoint &&
           other.apiType == this.apiType &&
           other.models == this.models &&
-          other.available == this.available);
+          other.available == this.available &&
+          other.order == this.order &&
+          other.helperUrl == this.helperUrl);
 }
 
 class ProviderPresetsTableCompanion
@@ -1271,6 +1423,8 @@ class ProviderPresetsTableCompanion
   final Value<ApiType> apiType;
   final Value<List<ProviderModelConfig>?> models;
   final Value<bool> available;
+  final Value<int?> order;
+  final Value<Map<String, String>?> helperUrl;
   final Value<int> rowid;
   const ProviderPresetsTableCompanion({
     this.id = const Value.absent(),
@@ -1280,6 +1434,8 @@ class ProviderPresetsTableCompanion
     this.apiType = const Value.absent(),
     this.models = const Value.absent(),
     this.available = const Value.absent(),
+    this.order = const Value.absent(),
+    this.helperUrl = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ProviderPresetsTableCompanion.insert({
@@ -1290,6 +1446,8 @@ class ProviderPresetsTableCompanion
     required ApiType apiType,
     this.models = const Value.absent(),
     this.available = const Value.absent(),
+    this.order = const Value.absent(),
+    this.helperUrl = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        i18nName = Value(i18nName),
@@ -1303,6 +1461,8 @@ class ProviderPresetsTableCompanion
     Expression<String>? apiType,
     Expression<String>? models,
     Expression<bool>? available,
+    Expression<int>? order,
+    Expression<String>? helperUrl,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1313,6 +1473,8 @@ class ProviderPresetsTableCompanion
       if (apiType != null) 'api_type': apiType,
       if (models != null) 'models': models,
       if (available != null) 'available': available,
+      if (order != null) 'order': order,
+      if (helperUrl != null) 'helper_url': helperUrl,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1325,6 +1487,8 @@ class ProviderPresetsTableCompanion
     Value<ApiType>? apiType,
     Value<List<ProviderModelConfig>?>? models,
     Value<bool>? available,
+    Value<int?>? order,
+    Value<Map<String, String>?>? helperUrl,
     Value<int>? rowid,
   }) {
     return ProviderPresetsTableCompanion(
@@ -1335,6 +1499,8 @@ class ProviderPresetsTableCompanion
       apiType: apiType ?? this.apiType,
       models: models ?? this.models,
       available: available ?? this.available,
+      order: order ?? this.order,
+      helperUrl: helperUrl ?? this.helperUrl,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1371,6 +1537,14 @@ class ProviderPresetsTableCompanion
     if (available.present) {
       map['available'] = Variable<bool>(available.value);
     }
+    if (order.present) {
+      map['order'] = Variable<int>(order.value);
+    }
+    if (helperUrl.present) {
+      map['helper_url'] = Variable<String>(
+        $ProviderPresetsTableTable.$converterhelperUrln.toSql(helperUrl.value),
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1387,6 +1561,8 @@ class ProviderPresetsTableCompanion
           ..write('apiType: $apiType, ')
           ..write('models: $models, ')
           ..write('available: $available, ')
+          ..write('order: $order, ')
+          ..write('helperUrl: $helperUrl, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2494,6 +2670,7 @@ typedef $$ModelsTableCreateCompanionBuilder =
       Value<int?> contextLength,
       Value<int?> maxCompletionTokens,
       Value<List<ModelParamName>?> parameters,
+      Value<int?> order,
       Value<int> rowid,
     });
 typedef $$ModelsTableUpdateCompanionBuilder =
@@ -2505,6 +2682,7 @@ typedef $$ModelsTableUpdateCompanionBuilder =
       Value<int?> contextLength,
       Value<int?> maxCompletionTokens,
       Value<List<ModelParamName>?> parameters,
+      Value<int?> order,
       Value<int> rowid,
     });
 
@@ -2589,6 +2767,11 @@ class $$ModelsTableFilterComposer extends Composer<_$_ApiDb, $ModelsTable> {
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
+  ColumnFilters<int> get order => $composableBuilder(
+    column: $table.order,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> providerModelConfigsRefs(
     Expression<bool> Function($$ProviderModelConfigsTableFilterComposer f) f,
   ) {
@@ -2657,6 +2840,11 @@ class $$ModelsTableOrderingComposer extends Composer<_$_ApiDb, $ModelsTable> {
     column: $table.parameters,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get order => $composableBuilder(
+    column: $table.order,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ModelsTableAnnotationComposer extends Composer<_$_ApiDb, $ModelsTable> {
@@ -2696,6 +2884,9 @@ class $$ModelsTableAnnotationComposer extends Composer<_$_ApiDb, $ModelsTable> {
     column: $table.parameters,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get order =>
+      $composableBuilder(column: $table.order, builder: (column) => column);
 
   Expression<T> providerModelConfigsRefs<T extends Object>(
     Expression<T> Function($$ProviderModelConfigsTableAnnotationComposer a) f,
@@ -2759,6 +2950,7 @@ class $$ModelsTableTableManager
                 Value<int?> contextLength = const Value.absent(),
                 Value<int?> maxCompletionTokens = const Value.absent(),
                 Value<List<ModelParamName>?> parameters = const Value.absent(),
+                Value<int?> order = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ModelsCompanion(
                 id: id,
@@ -2768,6 +2960,7 @@ class $$ModelsTableTableManager
                 contextLength: contextLength,
                 maxCompletionTokens: maxCompletionTokens,
                 parameters: parameters,
+                order: order,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2779,6 +2972,7 @@ class $$ModelsTableTableManager
                 Value<int?> contextLength = const Value.absent(),
                 Value<int?> maxCompletionTokens = const Value.absent(),
                 Value<List<ModelParamName>?> parameters = const Value.absent(),
+                Value<int?> order = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ModelsCompanion.insert(
                 id: id,
@@ -2788,6 +2982,7 @@ class $$ModelsTableTableManager
                 contextLength: contextLength,
                 maxCompletionTokens: maxCompletionTokens,
                 parameters: parameters,
+                order: order,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2852,6 +3047,7 @@ typedef $$ApiProvidersTableCreateCompanionBuilder =
       required ApiType type,
       required String endpoint,
       Value<String?> preset,
+      Value<int?> order,
       Value<int> rowid,
     });
 typedef $$ApiProvidersTableUpdateCompanionBuilder =
@@ -2861,6 +3057,7 @@ typedef $$ApiProvidersTableUpdateCompanionBuilder =
       Value<ApiType> type,
       Value<String> endpoint,
       Value<String?> preset,
+      Value<int?> order,
       Value<int> rowid,
     });
 
@@ -2952,6 +3149,11 @@ class $$ApiProvidersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get order => $composableBuilder(
+    column: $table.order,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> providerModelConfigsRefs(
     Expression<bool> Function($$ProviderModelConfigsTableFilterComposer f) f,
   ) {
@@ -3036,6 +3238,11 @@ class $$ApiProvidersTableOrderingComposer
     column: $table.preset,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get order => $composableBuilder(
+    column: $table.order,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ApiProvidersTableAnnotationComposer
@@ -3061,6 +3268,9 @@ class $$ApiProvidersTableAnnotationComposer
 
   GeneratedColumn<String> get preset =>
       $composableBuilder(column: $table.preset, builder: (column) => column);
+
+  GeneratedColumn<int> get order =>
+      $composableBuilder(column: $table.order, builder: (column) => column);
 
   Expression<T> providerModelConfigsRefs<T extends Object>(
     Expression<T> Function($$ProviderModelConfigsTableAnnotationComposer a) f,
@@ -3150,6 +3360,7 @@ class $$ApiProvidersTableTableManager
                 Value<ApiType> type = const Value.absent(),
                 Value<String> endpoint = const Value.absent(),
                 Value<String?> preset = const Value.absent(),
+                Value<int?> order = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ApiProvidersCompanion(
                 id: id,
@@ -3157,6 +3368,7 @@ class $$ApiProvidersTableTableManager
                 type: type,
                 endpoint: endpoint,
                 preset: preset,
+                order: order,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3166,6 +3378,7 @@ class $$ApiProvidersTableTableManager
                 required ApiType type,
                 required String endpoint,
                 Value<String?> preset = const Value.absent(),
+                Value<int?> order = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ApiProvidersCompanion.insert(
                 id: id,
@@ -3173,6 +3386,7 @@ class $$ApiProvidersTableTableManager
                 type: type,
                 endpoint: endpoint,
                 preset: preset,
+                order: order,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3736,6 +3950,8 @@ typedef $$ProviderPresetsTableTableCreateCompanionBuilder =
       required ApiType apiType,
       Value<List<ProviderModelConfig>?> models,
       Value<bool> available,
+      Value<int?> order,
+      Value<Map<String, String>?> helperUrl,
       Value<int> rowid,
     });
 typedef $$ProviderPresetsTableTableUpdateCompanionBuilder =
@@ -3747,6 +3963,8 @@ typedef $$ProviderPresetsTableTableUpdateCompanionBuilder =
       Value<ApiType> apiType,
       Value<List<ProviderModelConfig>?> models,
       Value<bool> available,
+      Value<int?> order,
+      Value<Map<String, String>?> helperUrl,
       Value<int> rowid,
     });
 
@@ -3805,6 +4023,21 @@ class $$ProviderPresetsTableTableFilterComposer
     column: $table.available,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<int> get order => $composableBuilder(
+    column: $table.order,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<
+    Map<String, String>?,
+    Map<String, String>,
+    String
+  >
+  get helperUrl => $composableBuilder(
+    column: $table.helperUrl,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
 }
 
 class $$ProviderPresetsTableTableOrderingComposer
@@ -3850,6 +4083,16 @@ class $$ProviderPresetsTableTableOrderingComposer
     column: $table.available,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get order => $composableBuilder(
+    column: $table.order,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get helperUrl => $composableBuilder(
+    column: $table.helperUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ProviderPresetsTableTableAnnotationComposer
@@ -3882,6 +4125,13 @@ class $$ProviderPresetsTableTableAnnotationComposer
 
   GeneratedColumn<bool> get available =>
       $composableBuilder(column: $table.available, builder: (column) => column);
+
+  GeneratedColumn<int> get order =>
+      $composableBuilder(column: $table.order, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<String, String>?, String>
+  get helperUrl =>
+      $composableBuilder(column: $table.helperUrl, builder: (column) => column);
 }
 
 class $$ProviderPresetsTableTableTableManager
@@ -3934,6 +4184,8 @@ class $$ProviderPresetsTableTableTableManager
                 Value<ApiType> apiType = const Value.absent(),
                 Value<List<ProviderModelConfig>?> models = const Value.absent(),
                 Value<bool> available = const Value.absent(),
+                Value<int?> order = const Value.absent(),
+                Value<Map<String, String>?> helperUrl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProviderPresetsTableCompanion(
                 id: id,
@@ -3943,6 +4195,8 @@ class $$ProviderPresetsTableTableTableManager
                 apiType: apiType,
                 models: models,
                 available: available,
+                order: order,
+                helperUrl: helperUrl,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3954,6 +4208,8 @@ class $$ProviderPresetsTableTableTableManager
                 required ApiType apiType,
                 Value<List<ProviderModelConfig>?> models = const Value.absent(),
                 Value<bool> available = const Value.absent(),
+                Value<int?> order = const Value.absent(),
+                Value<Map<String, String>?> helperUrl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProviderPresetsTableCompanion.insert(
                 id: id,
@@ -3963,6 +4219,8 @@ class $$ProviderPresetsTableTableTableManager
                 apiType: apiType,
                 models: models,
                 available: available,
+                order: order,
+                helperUrl: helperUrl,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

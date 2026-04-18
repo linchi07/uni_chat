@@ -18,6 +18,7 @@ import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paged_scroll/paged_scroll.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:uni_chat/l10n/generated/l10n.dart';
@@ -612,20 +613,33 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                       constraints: BoxConstraints.loose(const Size(250, 250)),
                       child: AspectRatio(
                         aspectRatio: 1,
-                        child: Container(
-                          clipBehavior: Clip.hardEdge,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(60),
-                                blurRadius: 2,
-                                spreadRadius: 1,
-                                offset: const Offset(1, 2),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              clipBehavior: Clip.hardEdge,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withAlpha(60),
+                                    blurRadius: 2,
+                                    spreadRadius: 1,
+                                    offset: const Offset(1, 2),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: Image.asset(fit: BoxFit.fitWidth, img),
+                              child: Image.asset(fit: BoxFit.fitWidth, img),
+                            ),
+                            if(ac.providerPreset != null && ac.providerPreset!.helperUrl != null)Positioned(bottom: 5,right: 5,child: StdButton(
+                              onPressed:() => _showHelpDialog(
+                                context,
+                                ac.providerPreset!.helperUrl!,
+                              ) ,
+                              text:S.of(context).get_help,
+                            ))
+                          ],
                         ),
                       ),
                     ),
@@ -648,31 +662,6 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                       color: Colors.transparent,
                       child: ListView(
                         children: [
-                          if (ac.type ==
-                                  ProviderPresetType.typeSetMultiInstance &&
-                              ac.providerPreset != null)
-                            Center(
-                              child: Container(
-                                margin: const EdgeInsets.only(top: 8),
-                                decoration: BoxDecoration(
-                                  color: theme.primaryColor,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                child: Text(
-                                  ac.providerPreset!.getName(lanC),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: theme.brightTextColor,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 2),
                           Text(
                             (acName) ? ac.name! : S.of(context).name_not_set,
                             textAlign: TextAlign.center,
@@ -820,6 +809,73 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
           },
         );
       },
+    );
+  }
+
+  void _showHelpDialog(BuildContext context, Map<String, String> helperUrl) {
+    OverlayPortalService.showDialog(
+      context,
+      backGroundColor: theme.secondGradeColor,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            S.of(context).help_links,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: theme.darkTextColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...helperUrl.entries.map((e) {
+            String label;
+            IconData icon;
+            switch (e.key) {
+              case 'official':
+                label = S.of(context).official_website;
+                icon = Icons.language;
+                break;
+              case 'apiKey':
+                label = S.of(context).get_api_key;
+                icon = Icons.key;
+                break;
+              case 'docs':
+                label = S.of(context).related_docs;
+                icon = Icons.description;
+                break;
+              case 'models':
+                label = S.of(context).model_list;
+                icon = Icons.list;
+                break;
+              default:
+                label = e.key;
+                icon = Icons.link;
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: StdListTile(
+                onTap: () async {
+                  final url = Uri.parse(e.value);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url);
+                  }
+                },
+                leading: Icon(icon, color: theme.primaryColor),
+                title: Text(label),
+                trailing: const Icon(Icons.open_in_new, size: 16),
+              ),
+            );
+          }),
+        ],
+      ),
+      actions: [
+        StdButton(
+          text: S.of(context).confirm,
+          onPressed: () => OverlayPortalService.hide(context),
+        ),
+      ],
     );
   }
 
@@ -1971,7 +2027,7 @@ class _ModelAddPageHeaderState extends ConsumerState<ModelAddPageHeader> {
                         text: S.of(context).auto_fetch_models,
                         onPressed: () async {
                           if (!ac.noKeyNeeded &&
-                              !ac.keys.any((k) => k.enabled)) {
+                              !ac.keys.any((k) => k.enabled)||ac.apiType == null||(ac.endpoint?.isEmpty ?? false)) {
                             OverlayPortalService.showDialog(
                               context,
                               child: Text(
@@ -1998,9 +2054,9 @@ class _ModelAddPageHeaderState extends ConsumerState<ModelAddPageHeader> {
                               overlayContent: ModelDiscoveryWidget(
                                 theme: theme,
                                 service: protocolService,
-                                endpoint: ac.endpoint!,
+                                endpoint: ac.endpoint! + ((ac.showVerFlags)?ac.apiType!.vFlag: ""),
                                 apiKey: ac.noKeyNeeded
-                                    ? ac.keys.first
+                                    ? ApiKey("1", "test", "Greetings from UNIChat")
                                     : ac.keys.firstWhere((k) => k.enabled),
                                 onSave: (confirmedResults) {
                                   final currentModels =
@@ -2046,6 +2102,7 @@ class _ModelAddPageHeaderState extends ConsumerState<ModelAddPageHeader> {
                               ),
                             );
                           } catch (e) {
+                            //其实，我也不知道为啥Ai要加一个catch在这里
                             OverlayPortalService.showDialog(
                               context,
                               child: Text(

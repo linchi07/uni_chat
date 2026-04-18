@@ -1,0 +1,362 @@
+[
+  {
+    "id": "openai",
+    "i18n_name": "{\"zh\": \"OpenAI\", \"en\": \"OpenAI\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.openai.com",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 1,
+    "helper_url": "{\"official\": \"https://openai.com/\", \"apiKey\": \"https://platform.openai.com/api-keys\", \"docs\": \"https://platform.openai.com/docs\", \"models\": \"https://platform.openai.com/docs/models\"}"
+  },
+  {
+    "id": "deepseek",
+    "i18n_name": "{\"zh\": \"深度求索\", \"en\": \"DeepSeek\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.deepseek.com",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 2,
+    "helper_url": "{\"official\": \"https://deepseek.com/\", \"apiKey\": \"https://platform.deepseek.com/api_keys\", \"docs\": \"https://platform.deepseek.com/api-docs/\", \"models\": \"https://platform.deepseek.com/api-docs/\"}"
+  },
+  {
+    "id": "gemini",
+    "i18n_name": "{\"zh\": \"Gemini\", \"en\": \"Gemini\"}",
+    "type": "singleInstance",
+    "endpoint": "https://generativelanguage.googleapis.com",
+    "api_type": "google",
+    "models": "[]",
+    "order": 4,
+    "helper_url": "{\"official\": \"https://gemini.google.com/\", \"apiKey\": \"https://aistudio.google.com/app/apikey\", \"docs\": \"https://ai.google.dev/gemini-api/docs\", \"models\": \"https://ai.google.dev/gemini-api/docs/models/gemini\"}"
+  },
+  {
+    "id": "silicon",
+    "i18n_name": "{\"zh\": \"SiliconFlow\", \"en\": \"SiliconFlow\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.siliconflow.cn",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 5,
+    "helper_url": "{\"official\": \"https://www.siliconflow.cn\", \"apiKey\": \"https://cloud.siliconflow.cn/i/d1nTBKXU\", \"docs\": \"https://docs.siliconflow.cn/\", \"models\": \"https://cloud.siliconflow.cn/models\"}"
+  },
+  {
+    "id": "zhipu",
+    "i18n_name": "{\"zh\": \"智谱 AI\", \"en\": \"Zhipu AI\"}",
+    "type": "singleInstance",
+    "endpoint": "https://open.bigmodel.cn/api/paas/v4/",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 6,
+    "helper_url": "{\"official\": \"https://open.bigmodel.cn/\", \"apiKey\": \"https://open.bigmodel.cn/usercenter/apikeys\", \"docs\": \"https://docs.bigmodel.cn/\", \"models\": \"https://open.bigmodel.cn/modelcenter/square\"}"
+  },
+  {
+    "id": "dashscope",
+    "i18n_name": "{\"zh\": \"通义千问 (百炼)\", \"en\": \"DashScope (Bailian)\"}",
+    "type": "singleInstance",
+    "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1/",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 7,
+    "helper_url": "{\"official\": \"https://www.aliyun.com/product/bailian\", \"apiKey\": \"https://bailian.console.aliyun.com/?tab=model#/api-key\", \"docs\": \"https://help.aliyun.com/zh/model-studio/getting-started/\", \"models\": \"https://bailian.console.aliyun.com/?tab=model#/model-market\"}"
+  },
+  {
+    "id": "groq",
+    "i18n_name": "{\"zh\": \"Groq\", \"en\": \"Groq\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.groq.com/openai",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 20,
+    "helper_url": "{\"official\": \"https://groq.com/\", \"apiKey\": \"https://console.groq.com/keys\", \"docs\": \"https://console.groq.com/docs/quickstart\", \"models\": \"https://console.groq.com/docs/models\"}"
+  },
+  {
+    "id": "ollama",
+    "i18n_name": "{\"zh\": \"Ollama\", \"en\": \"Ollama\"}",
+    "type": "typeSetMultiInstance",
+    "endpoint": "http://localhost:11434",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 9,
+    "helper_url": "{\"official\": \"https://ollama.com/\", \"docs\": \"https://github.com/ollama/ollama/tree/main/docs\", \"models\": \"https://ollama.com/library\"}"
+  },
+  {
+    "id": "moonshot",
+    "i18n_name": "{\"zh\": \"月之暗面 (Moonshot AI)\", \"en\": \"Moonshot AI\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.moonshot.cn",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 10,
+    "helper_url": "{\"official\": \"https://www.moonshot.cn/\", \"apiKey\": \"https://platform.moonshot.cn/console/api-keys\", \"docs\": \"https://platform.moonshot.cn/docs/\", \"models\": \"https://platform.moonshot.cn/docs/intro#%E6%A8%A1%E5%9E%8B%E5%88%97%E8%A1%A8\"}"
+  },
+  {
+    "id": "stepfun",
+    "i18n_name": "{\"zh\": \"阶跃星辰 (StepFun)\", \"en\": \"StepFun\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.stepfun.com",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 30,
+    "helper_url": "{\"official\": \"https://platform.stepfun.com/\", \"apiKey\": \"https://platform.stepfun.com/interface-key\", \"docs\": \"https://platform.stepfun.com/docs/overview/concept\", \"models\": \"https://platform.stepfun.com/docs/llm/text\"}"
+  },
+  {
+    "id": "doubao",
+    "i18n_name": "{\"zh\": \"豆包 (Doubao)\", \"en\": \"Doubao\"}",
+    "type": "singleInstance",
+    "endpoint": "https://ark.cn-beijing.volces.com/api/v3/",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 14,
+    "helper_url": "{\"official\": \"https://console.volcengine.com/ark/\", \"apiKey\": \"https://www.volcengine.com/experience/ark?utm_term=202502dsinvite&ac=DSASUQY5&rc=DB4II4FC\", \"docs\": \"https://www.volcengine.com/docs/82379/1182403\", \"models\": \"https://console.volcengine.com/ark/region:ark+cn-beijing/endpoint\"}"
+  },
+  {
+    "id": "minimax",
+    "i18n_name": "{\"zh\": \"MiniMax\", \"en\": \"MiniMax\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.minimaxi.com/v1/",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 15,
+    "helper_url": "{\"official\": \"https://platform.minimaxi.com/\", \"apiKey\": \"https://platform.minimaxi.com/user-center/basic-information/interface-key\", \"docs\": \"https://platform.minimaxi.com/docs/api-reference/text-openai-api\", \"models\": \"https://platform.minimaxi.com/document/Models\"}"
+  },
+  {
+    "id": "baichuan",
+    "i18n_name": "{\"zh\": \"百川 (BAICHUAN)\", \"en\": \"BAICHUAN\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.baichuan-ai.com",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 18,
+    "helper_url": "{\"official\": \"https://www.baichuan-ai.com/\", \"apiKey\": \"https://platform.baichuan-ai.com/console/apikey\", \"docs\": \"https://platform.baichuan-ai.com/docs\", \"models\": \"https://platform.baichuan-ai.com/prices\"}"
+  },
+  {
+    "id": "yi",
+    "i18n_name": "{\"zh\": \"零一万物 (Yi)\", \"en\": \"Yi\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.lingyiwanwu.com",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 19,
+    "helper_url": "{\"official\": \"https://platform.lingyiwanwu.com/\", \"apiKey\": \"https://platform.lingyiwanwu.com/apikeys\", \"docs\": \"https://platform.lingyiwanwu.com/docs\", \"models\": \"https://platform.lingyiwanwu.com/docs#%E6%A8%A1%E5%9E%8B\"}"
+  },
+  {
+    "id": "openrouter",
+    "i18n_name": "{\"zh\": \"OpenRouter\", \"en\": \"OpenRouter\"}",
+    "type": "singleInstance",
+    "endpoint": "https://openrouter.ai/api/v1/",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 20,
+    "helper_url": "{\"official\": \"https://openrouter.ai/\", \"apiKey\": \"https://openrouter.ai/settings/keys\", \"docs\": \"https://openrouter.ai/docs/quick-start\", \"models\": \"https://openrouter.ai/models\"}"
+  },
+  {
+    "id": "mistral",
+    "i18n_name": "{\"zh\": \"Mistral AI\", \"en\": \"Mistral AI\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.mistral.ai",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 22,
+    "helper_url": "{\"official\": \"https://mistral.ai\", \"apiKey\": \"https://console.mistral.ai/api-keys/\", \"docs\": \"https://docs.mistral.ai\", \"models\": \"https://docs.mistral.ai/getting-started/models/models_overview\"}"
+  },
+  {
+    "id": "nvidia",
+    "i18n_name": "{\"zh\": \"NVIDIA\", \"en\": \"NVIDIA\"}",
+    "type": "singleInstance",
+    "endpoint": "https://integrate.api.nvidia.com",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 25,
+    "helper_url": "{\"official\": \"https://build.nvidia.com/explore/discover\", \"apiKey\": \"https://build.nvidia.com/meta/llama-3_1-405b-instruct\", \"docs\": \"https://docs.api.nvidia.com/nim/reference/llm-apis\", \"models\": \"https://build.nvidia.com/nim\"}"
+  },
+  {
+    "id": "grok",
+    "i18n_name": "{\"zh\": \"xAI (Grok)\", \"en\": \"xAI (Grok)\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.x.ai",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 10,
+    "helper_url": "{\"official\": \"https://x.ai/\", \"docs\": \"https://docs.x.ai/\", \"models\": \"https://docs.x.ai/docs/models\"}"
+  },
+  {
+    "id": "SophNet",
+    "i18n_name": "{\"zh\": \"SophNet\", \"en\": \"SophNet\"}",
+    "type": "singleInstance",
+    "endpoint": "https://www.sophnet.com/api/open-apis/v1",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 30,
+    "helper_url": "{\"official\": \"https://sophnet.com\", \"apiKey\": \"https://sophnet.com/#/project/key\", \"docs\": \"https://sophnet.com/docs/component/introduce.html\", \"models\": \"https://sophnet.com/#/model/list\"}"
+  },
+  {
+    "id": "infini",
+    "i18n_name": "{\"zh\": \"无问芯穹 (Infini)\", \"en\": \"Infini\"}",
+    "type": "singleInstance",
+    "endpoint": "https://cloud.infini-ai.com/maas",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 33,
+    "helper_url": "{\"official\": \"https://cloud.infini-ai.com/\", \"apiKey\": \"https://cloud.infini-ai.com/iam/secret/key\", \"docs\": \"https://docs.infini-ai.com/gen-studio/api/maas.html#/operations/chatCompletions\", \"models\": \"https://cloud.infini-ai.com/genstudio/model\"}"
+  },
+  {
+    "id": "github",
+    "i18n_name": "{\"zh\": \"GitHub Models\", \"en\": \"GitHub Models\"}",
+    "type": "singleInstance",
+    "endpoint": "https://models.github.ai/inference",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 16,
+    "helper_url": "{\"official\": \"https://github.com/marketplace/models\", \"apiKey\": \"https://github.com/settings/tokens\", \"docs\": \"https://docs.github.com/en/github-models\", \"models\": \"https://github.com/marketplace/models\"}"
+  },
+  {
+    "id": "modelscope",
+    "i18n_name": "{\"zh\": \"魔搭 (ModelScope)\", \"en\": \"ModelScope\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api-inference.modelscope.cn/v1/",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 10,
+    "helper_url": "{\"official\": \"https://modelscope.cn\", \"apiKey\": \"https://modelscope.cn/my/myaccesstoken\", \"docs\": \"https://modelscope.cn/docs/model-service/API-Inference/intro\", \"models\": \"https://modelscope.cn/models\"}"
+  },
+  {
+    "id": "xirang",
+    "i18n_name": "{\"zh\": \"息壤 (Xirang)\", \"en\": \"Xirang\"}",
+    "type": "singleInstance",
+    "endpoint": "https://wishub-x1.ctyun.cn",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 19,
+    "helper_url": "{\"official\": \"https://www.ctyun.cn\", \"apiKey\": \"https://huiju.ctyun.cn/service/serviceGroup\", \"docs\": \"https://www.ctyun.cn/products/ctxirang\", \"models\": \"https://huiju.ctyun.cn/modelSquare/\"}"
+  },
+  {
+    "id": "hunyuan",
+    "i18n_name": "{\"zh\": \"腾讯混元 (Hunyuan)\", \"en\": \"Hunyuan AI\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.hunyuan.cloud.tencent.com",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 20,
+    "helper_url": "{\"official\": \"https://cloud.tencent.com/product/hunyuan\", \"apiKey\": \"https://console.cloud.tencent.com/hunyuan/api-key\", \"docs\": \"https://cloud.tencent.com/document/product/1729/111007\", \"models\": \"https://cloud.tencent.com/document/product/1729/104753\"}"
+  },
+  {
+    "id": "tencent-cloud-ti",
+    "i18n_name": "{\"zh\": \"腾讯云 TI\", \"en\": \"Tencent Cloud TI\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.lkeap.cloud.tencent.com",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 20,
+    "helper_url": "{\"official\": \"https://cloud.tencent.com/product/ti\", \"apiKey\": \"https://console.cloud.tencent.com/lkeap/api\", \"docs\": \"https://cloud.tencent.com/document/product/1772\", \"models\": \"https://console.cloud.tencent.com/tione/v2/aimarket\"}"
+  },
+  {
+    "id": "baidu-cloud",
+    "i18n_name": "{\"zh\": \"百度智能云 (文心千帆)\", \"en\": \"Baidu Cloud (Qianfan)\"}",
+    "type": "singleInstance",
+    "endpoint": "https://qianfan.baidubce.com/v2/",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 30,
+    "helper_url": "{\"official\": \"https://cloud.baidu.com/\", \"apiKey\": \"https://console.bce.baidu.com/iam/#/iam/apikey/list\", \"docs\": \"https://cloud.baidu.com/doc/index.html\", \"models\": \"https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Fm2vrveyu\"}"
+  },
+  {
+    "id": "cephalon",
+    "i18n_name": "{\"zh\": \"Cephalon\", \"en\": \"Cephalon\"}",
+    "type": "singleInstance",
+    "endpoint": "https://cephalon.cloud/user-center/v1/model",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 43,
+    "helper_url": "{\"official\": \"https://cephalon.cloud/share/register-landing?invite_id=jSdOYA\", \"apiKey\": \"https://cephalon.cloud/api\", \"docs\": \"https://cephalon.cloud/apitoken/1864244127731589124\", \"models\": \"https://cephalon.cloud/model\"}"
+  },
+  {
+    "id": "mimo",
+    "i18n_name": "{\"zh\": \"小米 MiMo\", \"en\": \"Xiaomi MiMo\"}",
+    "type": "singleInstance",
+    "endpoint": "https://api.xiaomimimo.com",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 26,
+    "helper_url": "{\"official\": \"https://platform.xiaomimimo.com/\", \"apiKey\": \"https://platform.xiaomimimo.com/#/console/usage\", \"docs\": \"https://platform.xiaomimimo.com/#/docs/welcome\", \"models\": \"https://platform.xiaomimimo.com/\"}"
+  },
+  {
+    "id": "lmstudio",
+    "i18n_name": "{\"zh\": \"LM Studio\", \"en\": \"LM Studio\"}",
+    "type": "typeSetMultiInstance",
+    "endpoint": "http://localhost:1234",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 4,
+    "helper_url": "{\"official\": \"https://lmstudio.ai/\", \"docs\": \"https://lmstudio.ai/docs\", \"models\": \"https://lmstudio.ai/models\"}"
+  },
+  {
+    "id": "gpustack",
+    "i18n_name": "{\"zh\": \"GPUStack\", \"en\": \"GPUStack\"}",
+    "type": "singleInstance",
+    "endpoint": "http://localhost:8080/v1",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 51,
+    "helper_url": "{\"official\": \"https://gpustack.ai/\", \"docs\": \"https://docs.gpustack.ai/latest/\", \"models\": \"https://docs.gpustack.ai/latest/overview/#supported-models\"}"
+  },
+  {
+    "id": "huggingface",
+    "i18n_name": "{\"zh\": \"Hugging Face\", \"en\": \"Hugging Face\"}",
+    "type": "singleInstance",
+    "endpoint": "https://router.huggingface.co/v1/",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 20,
+    "helper_url": "{\"official\": \"https://huggingface.co/\", \"apiKey\": \"https://huggingface.co/settings/tokens\", \"docs\": \"https://huggingface.co/docs\", \"models\": \"https://huggingface.co/models\"}"
+  },
+  {
+    "id": "new-api",
+    "i18n_name": "{\"zh\": \"New API\", \"en\": \"New API\"}",
+    "type": "typeSetMultiInstance",
+    "endpoint": "http://localhost:3000",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 54,
+    "helper_url": "{\"official\": \"https://docs.newapi.pro/\", \"docs\": \"https://docs.newapi.pro\"}"
+  },
+  {
+    "id": "gateway",
+    "i18n_name": "{\"zh\": \"Vercel AI Gateway\", \"en\": \"Vercel AI Gateway\"}",
+    "type": "singleInstance",
+    "endpoint": "https://ai-gateway.vercel.sh/v1/ai",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 55,
+    "helper_url": "{\"official\": \"https://vercel.com/ai-gateway\", \"apiKey\": \"https://vercel.com/\", \"docs\": \"https://vercel.com/docs/ai-gateway\", \"models\": \"https://vercel.com/ai-gateway/models\"}"
+  },
+  {
+    "id": "azure-openai",
+    "i18n_name": "{\"zh\": \"Azure OpenAI\", \"en\": \"Azure OpenAI\"}",
+    "type": "singleInstance",
+    "endpoint": "",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 18,
+    "helper_url": "{\"official\": \"https://azure.microsoft.com/en/products/ai-services/openai-service\", \"apiKey\": \"https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI\", \"docs\": \"https://learn.microsoft.com/en/azure/ai-services/openai/\", \"models\": \"https://learn.microsoft.com/en/azure/ai-services/openai/concepts/models\"}"
+  },
+  {
+    "id": "aws-bedrock",
+    "i18n_name": "{\"zh\": \"AWS Bedrock\", \"en\": \"AWS Bedrock\"}",
+    "type": "singleInstance",
+    "endpoint": "",
+    "api_type": "openai_chat_completions",
+    "models": "[]",
+    "order": 19,
+    "helper_url": "{\"official\": \"https://aws.amazon.com/bedrock/\", \"apiKey\": \"https://docs.aws.amazon.com/bedrock/latest/userguide/security-iam.html\", \"docs\": \"https://docs.aws.amazon.com/bedrock/\", \"models\": \"https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html\"}"
+  },
+  {
+    "id": "vertexai",
+    "i18n_name": "{\"zh\": \"Google Cloud Vertex AI\", \"en\": \"Google Cloud Vertex AI\"}",
+    "type": "singleInstance",
+    "endpoint": "",
+    "api_type": "google",
+    "models": "[]",
+    "order": 10,
+    "helper_url": "{\"official\": \"https://cloud.google.com/vertex-ai\", \"apiKey\": \"https://console.cloud.google.com/apis/credentials\", \"docs\": \"https://cloud.google.com/vertex-ai/generative-ai/docs\", \"models\": \"https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models\"}"
+  }
+]

@@ -21,6 +21,7 @@ class Models extends Table {
   IntColumn get maxCompletionTokens => integer().nullable()();
   TextColumn get parameters =>
       text().nullable().map(ModelParamListConverter())();
+  IntColumn get order => integer().nullable()();
 }
 
 @UseRowClass(ProviderModelConfig, generateInsertable: true)
@@ -56,6 +57,9 @@ class ProviderPresetsTable extends Table {
   TextColumn get models =>
       text().nullable().map(ProviderModelConfigListConverter())();
   BoolColumn get available => boolean().withDefault(const Constant(true))();
+  IntColumn get order => integer().nullable()();
+  TextColumn get helperUrl =>
+      text().nullable().map(StringMapConverter())();
 }
 
 @UseRowClass(ApiProvider)
@@ -69,6 +73,8 @@ class ApiProviders extends Table {
   TextColumn get endpoint => text()();
 
   TextColumn get preset => text().nullable()();
+
+  IntColumn get order => integer().nullable()();
 }
 
 @UseRowClass(ApiKeyUsage)

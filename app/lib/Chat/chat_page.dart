@@ -1371,6 +1371,9 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                                             model,
                                             saveToSettings,
                                           );
+                                      ref
+                                          .read(chatStateProvider.notifier)
+                                          .stateCopyWith(error: null);
                                     },
                               ),
                             );
@@ -1383,7 +1386,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                       ),
                     StdIconButton(
                       color: theme.errorColor,
-                      icon: Icons.cancel_outlined,
+                      icon: Icons.close,
                       onPressed: () {
                         ref.read(chatStateProvider.notifier).clearError();
                       },

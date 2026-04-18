@@ -317,9 +317,14 @@ class OpenAiApiService extends BaseApiService {
       );
 
       if (response.statusCode == 200) {
+        try{
         final jsonResponse = jsonDecode(response.body);
         final List<dynamic> data = jsonResponse['data'] as List<dynamic>;
-        return data.map((e) => e['id'] as String).toList();
+        return data.map((e) => e['id'] as String).toList();}catch(e){
+          throw Exception(
+          'Failed to fetch models: ${response.statusCode} - ${response.body}',
+        );
+        }
       } else {
         throw Exception(
           'Failed to fetch models: ${response.statusCode} - ${response.body}',

@@ -120,7 +120,7 @@ class _ModelMissingDialogState extends State<ModelMissingDialog> {
         Row(
           children: [
             StdCheckbox(
-              text: S.of(context).save_to_agent_settings,
+              text: S.of(context).save_to_agent_settings(widget.agentData.name),
               value: _saveToSettings,
               onChanged: (val) {
                 setState(() {

@@ -6,6 +6,8 @@ import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
+import 'package:uni_chat/database/database_service.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/settings_page/api_configure.dart';
 import 'package:uni_chat/theme_manager.dart';
@@ -14,7 +16,6 @@ import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'utils/web_view/webview_all.dart';
 
 const BASE_URL = "https://unichat.wejoinnwk.com/";
@@ -70,6 +71,14 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
   void prevPage() {
     _pageController.previousPage(
       duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _skipToQuickChat() {
+    _pageController.animateToPage(
+      7,
+      duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOut,
     );
   }
@@ -155,6 +164,12 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                               child: SingleChildScrollView(
                                 child: GptMarkdown(
                                   S.of(context).setup_pre_warn_content,
+                                  onLinkTap: (url, title) async {
+                                    var u = Uri.parse(url);
+                                    if (await canLaunchUrl(u)) {
+                                      await launchUrl(u);
+                                    }
+                                  },
                                   style: TextStyle(fontSize: 16),
                                 ),
                               ),
@@ -355,11 +370,20 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            onPressed: () {
-              prevPage();
-            },
-            icon: Icon(Icons.arrow_back_ios_sharp),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  prevPage();
+                },
+                icon: Icon(Icons.arrow_back_ios_sharp),
+              ),
+              const Spacer(),
+              StdButton(
+                text: S.of(context).skip_to_quick_chat,
+                onPressed: _skipToQuickChat,
+              ),
+            ],
           ),
           Expanded(
             child: (PlatForm().isMobile)
@@ -386,7 +410,9 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
           Row(
             children: [
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  prevPage();
+                },
                 icon: Icon(Icons.arrow_back_ios_sharp),
               ),
               const SizedBox(width: 5),
@@ -394,12 +420,25 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                 S.of(context).setup_agent_hint,
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
+              const Spacer(),
+              StdButton(
+                text: S.of(context).skip_to_quick_chat,
+                onPressed: _skipToQuickChat,
+              ),
             ],
           ),
           Expanded(
             child: AgentSetPage(
-              onSaveReturn: () {
+              onSaveReturn: () async {
                 //ref.read(ragEditState.notifier).newState();
+                try {
+                  var agent = await DatabaseService.instance
+                      .getAllAgents()
+                      .then((v) => v.firstWhere((e) => e.id != "@instant"));
+                  await DatabaseService.instance.setDefaultAgent(agent.id);
+                } catch (e) {
+                  // ignore
+                }
                 nextPage();
               },
             ),
@@ -503,11 +542,20 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            onPressed: () {
-              prevPage();
-            },
-            icon: Icon(Icons.arrow_back_ios_sharp),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  prevPage();
+                },
+                icon: Icon(Icons.arrow_back_ios_sharp),
+              ),
+              const Spacer(),
+              StdButton(
+                text: S.of(context).skip_to_quick_chat,
+                onPressed: _skipToQuickChat,
+              ),
+            ],
           ),
           Expanded(
             child: (PlatForm().isMobile)
@@ -543,6 +591,11 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
               Text(
                 S.of(context).setup_persona,
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              StdButton(
+                text: S.of(context).skip_to_quick_chat,
+                onPressed: _skipToQuickChat,
               ),
             ],
           ),

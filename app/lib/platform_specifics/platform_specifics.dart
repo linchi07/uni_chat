@@ -1,10 +1,13 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:macos_window_utils/macos/ns_window_toolbar_style.dart';
 import 'package:macos_window_utils/window_manipulator.dart';
+import 'package:path/path.dart' as p;
 
 class MacOSSpecificsSetting {
   static Future<void> setWindowStyle() async {
@@ -21,9 +24,34 @@ class MacOSSpecificsSetting {
 }
 
 class WindowsSpecificsSetting {
+  static bool customFontLoaded = false;
+  static const String CUSTOM_FONT_FAMILY = "Noto Sans SC";
+
   static Future<void> setWindowStyle() async {
     appWindow.minSize = const Size(640, 480);
     appWindow.title = "UniChat";
+  }
+
+  static Future<void> loadCustomFont() async {
+    if (!Platform.isWindows) return;
+
+    try {
+      final exeDir = File(Platform.resolvedExecutable).parent.path;
+      final fontPath = p.join(exeDir, 'fonts', 'NotoSansSC-VF.ttf');
+
+      if (await File(fontPath).exists()) {
+        final fontData = await File(fontPath).readAsBytes();
+        final fontLoader = FontLoader(CUSTOM_FONT_FAMILY);
+        fontLoader.addFont(Future.value(fontData.buffer.asByteData()));
+        await fontLoader.load();
+        customFontLoaded = true;
+        debugPrint('Custom font loaded: $CUSTOM_FONT_FAMILY');
+      } else {
+        debugPrint('Custom font not found: $fontPath , skipped');
+      }
+    } catch (e) {
+      debugPrint('Failed to load custom font: $e');
+    }
   }
 }
 

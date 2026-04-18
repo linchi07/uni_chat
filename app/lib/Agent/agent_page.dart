@@ -147,19 +147,43 @@ class AgentSelector extends ConsumerWidget {
                     children: [
                       Text(agent.name, style: TextStyle(fontSize: 20)),
                       const SizedBox(width: 10),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.thirdGradeColor,
-                          borderRadius: BorderRadius.all(Radius.circular(5)),
-                        ),
-                        child: Text(
-                          agent.name,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.black, fontSize: 12),
+                      InkWell(
+                        onTap: () async {
+                          if (agent.isDefault) {
+                            await DatabaseService.instance.clearDefaultAgent();
+                          } else {
+                            await DatabaseService.instance.setDefaultAgent(agent.id);
+                          }
+                          setState(() {});
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: agent.isDefault
+                                ? theme.primaryColor
+                                : Colors.transparent,
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(5)),
+                            border: Border.all(
+                              color: theme.primaryColor,
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            agent.isDefault
+                                ? S.of(context).DEFAULT
+                                : S.of(context).set_as_default,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: agent.isDefault
+                                  ? theme.getTextColor(theme.primaryColor)
+                                  : theme.primaryColor,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
                       ),
                     ],
