@@ -190,16 +190,6 @@
     "helper_url": "{\"official\": \"https://x.ai/\", \"docs\": \"https://docs.x.ai/\", \"models\": \"https://docs.x.ai/docs/models\"}"
   },
   {
-    "id": "perplexity",
-    "i18n_name": "{\"zh\": \"Perplexity\", \"en\": \"Perplexity\"}",
-    "type": "singleInstance",
-    "endpoint": "https://api.perplexity.ai/",
-    "api_type": "openai_chat_completions",
-    "models": "[]",
-    "order": 27,
-    "helper_url": "{\"official\": \"https://perplexity.ai/\", \"apiKey\": \"https://www.perplexity.ai/settings/api\", \"docs\": \"https://docs.perplexity.ai/home\", \"models\": \"https://docs.perplexity.ai/guides/model-cards\"}"
-  },
-  {
     "id": "SophNet",
     "i18n_name": "{\"zh\": \"SophNet\", \"en\": \"SophNet\"}",
     "type": "singleInstance",

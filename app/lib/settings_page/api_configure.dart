@@ -613,20 +613,33 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                       constraints: BoxConstraints.loose(const Size(250, 250)),
                       child: AspectRatio(
                         aspectRatio: 1,
-                        child: Container(
-                          clipBehavior: Clip.hardEdge,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(60),
-                                blurRadius: 2,
-                                spreadRadius: 1,
-                                offset: const Offset(1, 2),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              clipBehavior: Clip.hardEdge,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withAlpha(60),
+                                    blurRadius: 2,
+                                    spreadRadius: 1,
+                                    offset: const Offset(1, 2),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: Image.asset(fit: BoxFit.fitWidth, img),
+                              child: Image.asset(fit: BoxFit.fitWidth, img),
+                            ),
+                            if(ac.providerPreset != null && ac.providerPreset!.helperUrl != null)Positioned(bottom: 5,right: 5,child: StdButton(
+                              onPressed:() => _showHelpDialog(
+                                context,
+                                ac.providerPreset!.helperUrl!,
+                              ) ,
+                              text:S.of(context).get_help,
+                            ))
+                          ],
                         ),
                       ),
                     ),
@@ -649,31 +662,6 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                       color: Colors.transparent,
                       child: ListView(
                         children: [
-                          if (ac.type ==
-                                  ProviderPresetType.typeSetMultiInstance &&
-                              ac.providerPreset != null)
-                            Center(
-                              child: Container(
-                                margin: const EdgeInsets.only(top: 8),
-                                decoration: BoxDecoration(
-                                  color: theme.primaryColor,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                child: Text(
-                                  ac.providerPreset!.getName(lanC),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: theme.brightTextColor,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 2),
                           Text(
                             (acName) ? ac.name! : S.of(context).name_not_set,
                             textAlign: TextAlign.center,
@@ -713,37 +701,6 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                                   : theme.errorColor,
                             ),
                           ),
-                          if (ac.providerPreset?.helperUrl != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 12),
-                              child: Center(
-                                child: StdButton(
-                                  onPressed:
-                                      () => _showHelpDialog(
-                                        context,
-                                        ac.providerPreset!.helperUrl!,
-                                      ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.help_outline,
-                                        size: 18,
-                                        color: Colors.white,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        S.of(context).get_help,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
                           const SizedBox(height: 16),
                           if (showBasic)
                             StdListTile(
@@ -2070,7 +2027,7 @@ class _ModelAddPageHeaderState extends ConsumerState<ModelAddPageHeader> {
                         text: S.of(context).auto_fetch_models,
                         onPressed: () async {
                           if (!ac.noKeyNeeded &&
-                              !ac.keys.any((k) => k.enabled)) {
+                              !ac.keys.any((k) => k.enabled)||ac.apiType == null||(ac.endpoint?.isEmpty ?? false)) {
                             OverlayPortalService.showDialog(
                               context,
                               child: Text(
@@ -2097,9 +2054,9 @@ class _ModelAddPageHeaderState extends ConsumerState<ModelAddPageHeader> {
                               overlayContent: ModelDiscoveryWidget(
                                 theme: theme,
                                 service: protocolService,
-                                endpoint: ac.endpoint!,
+                                endpoint: ac.endpoint! + ((ac.showVerFlags)?ac.apiType!.vFlag: ""),
                                 apiKey: ac.noKeyNeeded
-                                    ? ac.keys.first
+                                    ? ApiKey("1", "test", "Greetings from UNIChat")
                                     : ac.keys.firstWhere((k) => k.enabled),
                                 onSave: (confirmedResults) {
                                   final currentModels =
@@ -2145,6 +2102,7 @@ class _ModelAddPageHeaderState extends ConsumerState<ModelAddPageHeader> {
                               ),
                             );
                           } catch (e) {
+                            //其实，我也不知道为啥Ai要加一个catch在这里
                             OverlayPortalService.showDialog(
                               context,
                               child: Text(
