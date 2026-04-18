@@ -84,7 +84,7 @@ jobs:
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri "https://github.com/google/fonts/raw/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf" -OutFile "app/build_resources/NotoSansSC-VF.ttf"
+          Invoke-WebRequest -Uri "https://github.com/google/fonts/blob/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf" -OutFile "app/build_resources/NotoSansSC-VF.ttf"
 
       - name: Download VCRuntime (Windows only)
         if: matrix.platform == 'windows'

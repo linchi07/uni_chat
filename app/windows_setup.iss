@@ -48,7 +48,7 @@ Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignorever
 ; 3. 拷贝 C++ 运行库到临时目录 (安装完会自动删除)
 Source: "VC_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
 ; 4. Noto Sans SC 字体 (仅在安装时选择了中文语言才安装)
-Source: "build_resources\NotoSansSC-VF.ttf"; DestDir: "{app}\fonts"; Check: IsChinese; Flags: ignoreversion
+Source: "build_resources\NotoSansSC[wght].ttf"; DestDir: "{app}\fonts"; Check: IsChinese; Flags: ignoreversion
 
 [Icons]
 ; 创建开始菜单和桌面快捷方式
