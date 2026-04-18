@@ -57,6 +57,16 @@ jobs:
       # --- Platform Specific Build Steps ---
 
       # Android Build
+      - name: Setup Android Signing
+        if: matrix.platform == 'android'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          echo "storeFile=upload-keystore.jks" > android/key.properties
+          echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+        working-directory: app
+
       - name: Build Android APK
         if: matrix.platform == 'android'
         run: |
@@ -69,6 +79,12 @@ jobs:
         if: matrix.platform == 'windows'
         run: flutter build windows --release
         working-directory: app
+
+      - name: Download Noto Sans SC Font (Windows only)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/google/fonts/raw/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf" -OutFile "app/build_resources/NotoSansSC-VF.ttf"
 
       - name: Download VCRuntime (Windows only)
         if: matrix.platform == 'windows'
@@ -86,8 +102,8 @@ jobs:
       # macOS Build
       - name: Disable macOS signing (CI)
         if: matrix.platform == 'macos'
+        working-directory: app/macos
         run: |
-          cd macos
           xcodebuild -project Runner.xcodeproj \
             -target Runner \
             -configuration Release \

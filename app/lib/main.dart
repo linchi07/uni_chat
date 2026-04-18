@@ -63,6 +63,7 @@ Future<void> main() async {
       } else if (io.Platform.isWindows) {
         PlatForm().platform = RunningPlatform.windows;
         await WindowsSpecificsSetting.setWindowStyle();
+        await WindowsSpecificsSetting.loadCustomFont();
         var di = await DeviceInfoPlugin().windowsInfo;
         var bn = di.buildNumber;
         String sys = "Windows";
@@ -269,10 +270,15 @@ class _UNIChatState extends State<UNIChat> {
             ? const ScrollBehavior().copyWith(physics: const IOSScrollPhysics())
             : null,
         theme: ThemeData(
-          fontFamily: (PlatForm().isWindows) ? "Segoe UI" : null,
+          fontFamily: (PlatForm().isWindows)
+              ? (WindowsSpecificsSetting.customFontLoaded
+                  ? WindowsSpecificsSetting.CUSTOM_FONT_FAMILY
+                  : "Segoe UI")
+              : null,
           fontFamilyFallback: (PlatForm().isWindows)
               ? [
-                  "Microsoft YaHei",
+                  if (!WindowsSpecificsSetting.customFontLoaded)
+                    "Microsoft YaHei",
                   "Yu Gothic UI",
                   "Malgun Gothic",
                   "Segoe UI Emoji",
