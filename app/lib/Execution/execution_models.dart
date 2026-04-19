@@ -24,6 +24,24 @@ abstract class ContentChunk {
   ContentChunk({required this.id, required this.isFinished});
 }
 
+abstract class BaseTool {
+  String get name;
+  String get description;
+  Map<String, dynamic> get parameters;
+  Future<String> execute(Map<String, dynamic> args);
+
+  Map<String, dynamic> toDefinition() {
+    return {
+      "type": "function",
+      "function": {
+        "name": name,
+        "description": description,
+        "parameters": parameters,
+      }
+    };
+  }
+}
+
 class TextChunk extends ContentChunk {
   final String text;
 

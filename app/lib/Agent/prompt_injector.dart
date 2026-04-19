@@ -9,6 +9,7 @@ import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/main.dart'; // 添加主文件引用以使用 PlatForm 类
 import 'package:uni_chat/utils/time_utils.dart';
+import 'package:uni_chat/Execution/tools_provider.dart';
 
 /// PromptInjector 负责将各种上下文信息（Agent 配置、人格、历史、系统元数据）
 /// 转换为模型可以直接使用的格式。
@@ -48,6 +49,7 @@ class PromptInjector {
       usrMessage: [],
       modelConfigure: agentData.modelConfigure,
       ragMessages: [],
+      tools: ref.read(toolsManagerProvider).getToolDefinitions(),
       stopSignal: stopSignal,
     );
 

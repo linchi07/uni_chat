@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
+import 'package:uni_chat/Execution/execution_loop.dart';
+import 'package:uni_chat/Execution/execution_models.dart';
+import 'package:uni_chat/Execution/tools_provider.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
 import 'package:uni_chat/database/database_service.dart';
@@ -428,6 +432,30 @@ class AgentProvider extends StateNotifier<Agent?> {
     } else {
       throw AgentException(AgentExceptionType.agentNotLoaded);
     }
+  }
+
+  Future<List<ContentChunk>> execute({
+    required List<ChatMessage> history,
+    required ChatMessage lastMessage,
+    required ValueNotifier<List<ContentChunk>> responseNotifier,
+    StopSignal? stopSignal,
+  }) async {
+    if (state == null) throw AgentException(AgentExceptionType.agentNotLoaded);
+
+    final loop = ExecutionLoop(
+      PromptInjector(
+        ref: ref,
+        agentData: state!.toAgentData(),
+        history: history,
+        lastMessage: lastMessage,
+        stopSignal: stopSignal,
+      ),
+      state!.client,
+      responseNotifier,
+      tools: ref.read(toolsManagerProvider),
+    );
+
+    return await loop.execute();
   }
 }
 

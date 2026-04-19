@@ -16,6 +16,7 @@ import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
+import 'package:uni_chat/Execution/execution_models.dart';
 import '../theme_manager.dart';
 import 'chat_models.dart';
 
@@ -298,7 +299,10 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
       case MessageChunkType.reasoning:
         return _ReasonBlock(content: block.content, isComplete: true);
       case MessageChunkType.toolCall:
-        throw UnimplementedError();
+        return _ToolCallBlock(
+          theme: widget.theme,
+          toolData: block.toolData,
+        );
       case MessageChunkType.error:
         return _ErrorBlock(theme: widget.theme, content: block.content);
     }
@@ -319,7 +323,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
             w.add(_TextBlock(content: s, color: theme.darkTextColor));
           }
           w.add(typeMatch(i));
-          pt = i.anchor;
+          pt = (i.anchor == -1) ? pt : i.anchor;
         }
         if (pt < wm.content.length) {
           w.add(
@@ -803,7 +807,7 @@ class ChatMessageDynamicStream extends StatefulWidget {
     required this.responses,
     required this.theme,
   });
-  final ValueListenable<List<ChatResponse>?> responses;
+  final ValueListenable<List<ContentChunk>> responses;
   final ThemeConfig theme;
   @override
   State<ChatMessageDynamicStream> createState() =>
@@ -818,30 +822,44 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
     super.initState();
   }
 
+  int charDisplayed = 0;
+  int currentAnimatingId = -1;
+
+  void updateAnimationState(List<ContentChunk> chunks) {
+    if (chunks.isEmpty) return;
+
+    // 如果当前没有正在动画的 ID，或者之前的已经动画完了
+    if (currentAnimatingId == -1) {
+      currentAnimatingId = chunks.first.id;
+      charDisplayed = 0;
+    }
+
+    // 检查当前动画的块是否已经完成并需要切换到下一个
+    var currentIdx = chunks.indexWhere((c) => c.id == currentAnimatingId);
+    if (currentIdx != -1) {
+      var currentChunk = chunks[currentIdx];
+      String content = "";
+      if (currentChunk is TextChunk) content = currentChunk.text;
+      if (currentChunk is ReasoningChunk) content = currentChunk.text;
+      
+      // 如果是非文本/推理块，或者已经播完且块已结束，跳到下一个
+      // 关键优化：如果后面已经有了新的块，强制结束当前块的动画并跳转
+      bool isAnimatable = currentChunk is TextChunk || currentChunk is ReasoningChunk;
+      bool hasNextChunk = currentIdx + 1 < chunks.length;
+
+      if (!isAnimatable || (charDisplayed >= content.length && currentChunk.isFinished) || hasNextChunk) {
+        if (hasNextChunk) {
+          currentAnimatingId = chunks[currentIdx + 1].id;
+          charDisplayed = 0;
+        }
+      }
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel(); // 清理定时器
     super.dispose();
-  }
-
-  int displayedLength = 0;
-  int currentlyAnimating = 0;
-  int charDisplayed = 0;
-
-  void updateDisplayed(List<ChatResponse> r) {
-    MessageChunkType? lastType;
-    for (var i = r.length - 1; i > currentlyAnimating; i--) {
-      if (lastType != r[i].type ||
-          !(r[i].type == MessageChunkType.text ||
-              r[i].type == MessageChunkType.reasoning)) {
-        if (i + 1 < r.length) {
-          displayedLength = i + 1;
-          currentlyAnimating = i + 1;
-          charDisplayed = 0;
-        }
-        break;
-      }
-    }
   }
 
   @override
@@ -856,29 +874,28 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
         child: ValueListenableBuilder(
           valueListenable: widget.responses,
           builder: (context, value, child) {
-            if (value == null || value.isEmpty) {
+            if (value.isEmpty) {
               return _Loading(color: widget.theme.primaryColor);
             }
-            updateDisplayed(value);
-            var l = value.sublist(0, displayedLength);
-            List<Widget> blocksDisplayed = [];
-            for (int i = 0; i < l.length; i++) {
-              blocksDisplayed.add(typeMatch(l[i], i));
+            updateAnimationState(value);
+            
+            // 渲染已经播完的块
+            var currentIdx = value.indexWhere((c) => c.id == currentAnimatingId);
+            List<Widget> animatedBlocks = [];
+            for (int i = 0; i < currentIdx; i++) {
+              animatedBlocks.add(typeMatch(value[i]));
             }
+
             return StatefulBuilder(
               builder: (context, setState) {
-                if (!_isAnimating &&
-                    (value.length >= currentlyAnimating ||
-                        value[currentlyAnimating].content.length >
-                            charDisplayed)) {
-                  //此处的set state只会激活 StatefulBuilder中的setState
+                if (!_isAnimating && currentIdx != -1) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     enableAnimation(setState);
                   });
                 }
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [...blocksDisplayed, ...blocksToDisplay],
+                  children: [...animatedBlocks, ...blocksToDisplay],
                 );
               },
             );
@@ -888,92 +905,111 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
     );
   }
 
-  Widget typeMatch(ChatResponse response, int order) {
-    switch (response.type) {
-      case MessageChunkType.text:
-        return _TextBlock(
-          key: ValueKey(order),
-          color: widget.theme.darkTextColor,
-          content: response.content,
-        );
-      case MessageChunkType.image:
-        throw UnimplementedError();
-      case MessageChunkType.reasoning:
-        return _ReasonBlock(
-          key: ValueKey(order),
-          content: response.content,
-          isComplete: true,
-        );
-      case MessageChunkType.toolCall:
-        throw UnimplementedError();
-      case MessageChunkType.error:
-        return _ErrorBlock(
-          key: ValueKey(order),
-          theme: widget.theme,
-          content: response.content,
-        );
+  Widget typeMatch(ContentChunk chunk) {
+    if (chunk is TextChunk) {
+      return _TextBlock(
+        key: ValueKey(chunk.id),
+        color: widget.theme.darkTextColor,
+        content: chunk.text,
+      );
+    } else if (chunk is ReasoningChunk) {
+      return _ReasonBlock(
+        key: ValueKey(chunk.id),
+        content: chunk.text,
+        isComplete: chunk.isFinished,
+      );
+    } else if (chunk is ToolCallChunk) {
+      return _ToolCallBlock(
+        key: ValueKey(chunk.id),
+        chunk: chunk,
+        theme: widget.theme,
+      );
     }
+    return const SizedBox.shrink();
   }
 
   List<Widget> blocksDisplayed = [];
   List<Widget> blocksToDisplay = [];
 
   void enableAnimation(dynamic setState) {
-    const charactersPerSecond = 80; // 每秒字符数
+    const charactersPerSecond = 80;
     _isAnimating = true;
-    // 每秒刷新 charactersPerSecond 次，每次只添加一个字符
     const interval = Duration(milliseconds: 1000 ~/ charactersPerSecond);
     _timer = Timer.periodic(interval, (timer) {
       blocksToDisplay.clear();
       setState(() {
-        var rv = widget.responses.value!;
-        if (currentlyAnimating >= rv.length) {
-          // 显示完成，停止定时器
+        var rv = widget.responses.value;
+        var currentIdx = rv.indexWhere((c) => c.id == currentAnimatingId);
+        
+        if (currentIdx == -1) {
           _timer?.cancel();
           _isAnimating = false;
           return;
         }
-        var cr = rv[currentlyAnimating];
-        if (charDisplayed < cr.content.length) {
-          if (cr.type == MessageChunkType.text) {
+
+        var cr = rv[currentIdx];
+        
+        // 如果后面有了新的块，直接快进到下一个 ID
+        if (currentIdx + 1 < rv.length) {
+          currentAnimatingId = rv[currentIdx + 1].id;
+          charDisplayed = 0;
+          return;
+        }
+
+        String content = "";
+        if (cr is TextChunk) content = cr.text;
+        else if (cr is ReasoningChunk) content = cr.text;
+        else {
+          // 非播报类型，直接跳到下一个
+          if (currentIdx + 1 < rv.length) {
+            currentAnimatingId = rv[currentIdx + 1].id;
+            charDisplayed = 0;
+          } else if (cr.isFinished) {
+             _timer?.cancel();
+             _isAnimating = false;
+          }
+          return;
+        }
+
+        if (charDisplayed < content.length) {
+          if (cr is TextChunk) {
             blocksToDisplay.add(
               _TextBlock(
-                key: ValueKey(currentlyAnimating),
+                key: ValueKey(cr.id),
                 color: widget.theme.darkTextColor,
-                content: "${cr.content.substring(0, charDisplayed)}▍",
+                content: "${content.substring(0, charDisplayed)}▍",
               ),
             );
-          } else if (cr.type == MessageChunkType.reasoning) {
+          } else if (cr is ReasoningChunk) {
             blocksToDisplay.add(
               _ReasonBlock(
-                key: ValueKey(currentlyAnimating),
-                content: "${cr.content.substring(0, charDisplayed)}▍",
+                key: ValueKey(cr.id),
+                content: "${content.substring(0, charDisplayed)}▍",
                 isComplete: false,
               ),
             );
           }
           charDisplayed++;
-        } else if (currentlyAnimating == rv.length - 1) {
-          if (cr.type == MessageChunkType.text) {
-            blocksToDisplay.add(
-              _TextBlock(
-                color: widget.theme.darkTextColor,
-                content: "${cr.content.substring(0, charDisplayed)}▍",
-              ),
-            );
-          } else if (cr.type == MessageChunkType.reasoning) {
-            blocksToDisplay.add(
-              _ReasonBlock(
-                key: ValueKey(currentlyAnimating),
-                content: "${cr.content.substring(0, charDisplayed)}▍",
-                isComplete: false,
-              ),
-            );
+        } else {
+          // 当前块播完了
+          if (cr.isFinished) {
+            if (currentIdx + 1 < rv.length) {
+              currentAnimatingId = rv[currentIdx + 1].id;
+              charDisplayed = 0;
+            } else {
+              _timer?.cancel();
+              _isAnimating = false;
+              // 最后的收尾，显示完整块（无光标）
+              blocksToDisplay.add(typeMatch(cr));
+            }
+          } else {
+             // 还没播完，显示当前内容并带光标
+             if (cr is TextChunk) {
+                blocksToDisplay.add(_TextBlock(key: ValueKey(cr.id), color: widget.theme.darkTextColor, content: "$content▍"));
+             } else if (cr is ReasoningChunk) {
+                blocksToDisplay.add(_ReasonBlock(key: ValueKey(cr.id), content: "$content▍", isComplete: false));
+             }
           }
-        } else if (currentlyAnimating < rv.length - 1) {
-          displayedLength++;
-          charDisplayed = 0;
-          currentlyAnimating++;
         }
       });
     });
@@ -1392,6 +1428,109 @@ class _RagBlockState extends State<_RagBlock>
       child: GptMarkdown(
         source ?? '',
         style: const TextStyle(color: Colors.black, fontSize: 14),
+      ),
+    );
+  }
+}
+
+class _ToolCallBlock extends StatelessWidget {
+  const _ToolCallBlock({
+    super.key,
+    this.chunk,
+    this.toolData,
+    required this.theme,
+  });
+  final ToolCallChunk? chunk;
+  final Map<String, dynamic>? toolData;
+  final ThemeConfig theme;
+
+  @override
+  Widget build(BuildContext context) {
+    var data = toolData ?? chunk?.toStructuredData();
+    if (data == null) return const SizedBox.shrink();
+
+    List<dynamic> calls = data["calls"] ?? [];
+    List<dynamic> results = data["results"] ?? [];
+    bool isFinished = chunk?.isFinished ?? true;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.zeroGradeColor,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(40),
+            spreadRadius: 1,
+            offset: const Offset(0, 1),
+            blurRadius: 3,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.bolt_rounded,
+                color: isFinished ? theme.okColor : theme.primaryColor,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                isFinished ? "执行了工具" : "正在调用工具",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: theme.darkTextColor,
+                ),
+              ),
+              const Spacer(),
+              if (!isFinished)
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          if (calls.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ...List.generate(calls.length, (idx) {
+              var call = calls[idx];
+              var result = (results.length > idx) ? results[idx]["result"] : null;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "调用: ${call["name"]}(${call["arguments"]})",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: theme.darkTextColor.withAlpha(200),
+                        fontFamily: "monospace",
+                      ),
+                    ),
+                    if (result != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, left: 8),
+                        child: Text(
+                          "结果: $result",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.primaryColor.withAlpha(180),
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ],
       ),
     );
   }

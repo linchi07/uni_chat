@@ -339,6 +339,7 @@ class ModelRequestContent {
   List<FormattedChatMessage> chatHistory;
   List<FormattedChatMessage> usrMessage;
   List<FormattedChatMessage> ragMessages;
+  List<Map<String, dynamic>>? tools;
   ModelConfigure modelConfigure;
   StopSignal? stopSignal;
   ModelRequestContent({
@@ -349,6 +350,7 @@ class ModelRequestContent {
     required this.usrMessage,
     required this.modelConfigure,
     required this.ragMessages,
+    this.tools,
     this.stopSignal,
   });
 }
@@ -401,22 +403,30 @@ class MessageBlock {
   final String content;
   final int anchor;
   final MessageChunkType chunkType;
+  final Map<String, dynamic>? toolData;
 
   const MessageBlock({
     required this.content,
     required this.anchor,
     required this.chunkType,
+    this.toolData,
   });
 
   Map<String, dynamic> toMap() {
-    return {'content': content, 'anchor': anchor, 'chunkType': chunkType.name};
+    return {
+      'content': content,
+      'anchor': anchor,
+      'chunkType': chunkType.name,
+      if (toolData != null) 'toolData': toolData,
+    };
   }
 
   factory MessageBlock.fromMap(Map<String, dynamic> map) {
     return MessageBlock(
-      content: map['content'],
-      anchor: map['anchor'],
+      content: map['content'] ?? "",
+      anchor: map['anchor'] ?? -1,
       chunkType: XMessageChunkType.fromString(map['chunkType']),
+      toolData: map['toolData'],
     );
   }
 

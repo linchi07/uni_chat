@@ -415,7 +415,9 @@ class OpenAiApiService extends BaseApiService {
 
     // Inject custom parameters
     modelRequestContent.modelConfigure.customParameters.forEach((param, value) {
-      requestBody[param.apiName] = value;
+      if (value != null) {
+        requestBody[param.apiName] = value;
+      }
     });
 
     request.body = jsonEncode(requestBody);
@@ -432,8 +434,10 @@ class OpenAiApiService extends BaseApiService {
 
     try {
       final response = await httpClient.send(request);
-      TokenUsage? usg;
       if (response.statusCode == 200) {
+        TokenUsage? usg;
+        final Map<int, Map<String, dynamic>> toolCallsBuffer = {};
+
         yield* response.stream
             .transform(utf8.decoder)
             .transform(const LineSplitter())
@@ -441,54 +445,140 @@ class OpenAiApiService extends BaseApiService {
             .map((line) => line.substring(6))
             .where((data) => data != '[DONE]')
             .map((data) => jsonDecode(data))
-            .where(
-              (json) => json['output'] != null && json['output'].isNotEmpty,
-            )
             .expand((json) {
               final List<_ApiResponse> responses = [];
               try {
-                final outputItems = json['output'] as List;
+                final type = json['type'] as String?;
 
-                for (final item in outputItems) {
-                  if (item['type'] == 'message' &&
-                      item['content'] != null &&
-                      item['content'] is List) {
-                    final contentItems = item['content'] as List;
-                    for (final contentItem in contentItems) {
-                      if (contentItem['type'] == 'output_text' &&
-                          contentItem['text'] != null) {
-                        responses.add(
-                          _ApiResponse(
-                            response: ChatResponse(
-                              type: MessageChunkType.text,
-                              content: contentItem['text'] as String,
-                            ),
-                          ),
-                        );
-                      }
+                // 1. 处理文本和工具调用的增加 (Responses API 风格)
+                if (type == 'response.output_item.added') {
+                  final item = json['item'] as Map<String, dynamic>?;
+                  if (item != null) {
+                    final index = json['output_index'] as int? ?? 0;
+                    if (item['type'] == 'function_call') {
+                      toolCallsBuffer[index] = {
+                        'id': item['call_id'] ?? item['id'],
+                        'name': item['name'],
+                        'arguments': StringBuffer(item['arguments'] ?? ""),
+                      };
                     }
                   }
                 }
+
+                // 2. 处理文本增量 (Delta)
+                if (type == 'response.text.delta' ||
+                    type == 'response.output_item.text.delta') {
+                  final delta = json['delta'] as String?;
+                  if (delta != null) {
+                    responses.add(
+                      _ApiResponse(
+                        response: ChatResponse(
+                          type: MessageChunkType.text,
+                          content: delta,
+                        ),
+                      ),
+                    );
+                  }
+                }
+
+                // 3. 处理工具参数增量 (Function Call Arguments Delta)
+                if (type == 'response.function_call_arguments.delta') {
+                  final index = json['output_index'] as int? ?? 0;
+                  final delta = json['delta'] as String?;
+                  if (delta != null && toolCallsBuffer.containsKey(index)) {
+                    (toolCallsBuffer[index]!['arguments'] as StringBuffer)
+                        .write(delta);
+                  }
+                }
+
+                // 4. 处理内容完成 (Item Done / Arguments Done)
+                if (type == 'response.function_call_arguments.done' ||
+                    type == 'response.output_item.done') {
+                  final index = json['output_index'] as int? ?? 0;
+                  if (toolCallsBuffer.containsKey(index)) {
+                    final callData = toolCallsBuffer[index]!;
+                    final isDone = type == 'response.output_item.done';
+
+                    // 如果是 output_item.done 且类型是 function_call，发射结果
+                    final item = json['item'] as Map<String, dynamic>?;
+                    if (isDone &&
+                        (item != null && item['type'] == 'function_call')) {
+                      responses.add(
+                        _ApiResponse(
+                          response: ChatResponse(
+                            type: MessageChunkType.toolCall,
+                            content: jsonEncode({
+                              "name": callData['name'],
+                              "arguments": jsonDecode(
+                                callData['arguments'].toString(),
+                              ),
+                              "callId": callData['id'],
+                            }),
+                          ),
+                        ),
+                      );
+                      toolCallsBuffer.remove(index);
+                    }
+                  }
+                }
+
+                // 5. 处理旧版/通用文本输出 (Fallback)
+                if (json['output'] != null) {
+                  final outputItems = json['output'] as List;
+                  for (final contentItem in outputItems) {
+                    if (contentItem['type'] == 'output_text' &&
+                        contentItem['text'] != null) {
+                      responses.add(
+                        _ApiResponse(
+                          response: ChatResponse(
+                            type: MessageChunkType.text,
+                            content: contentItem['text'] as String,
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                }
+
+                // 6. 解析使用量
                 final usage = json['usage'] as Map<String, dynamic>?;
                 if (usage != null) {
                   usg = TokenUsage(
-                    promptTokens: usage['input_tokens'] as int? ?? 0,
+                    promptTokens: usage['prompt_tokens'] as int? ?? 0,
+                    completionTokens: usage['completion_tokens'] as int? ?? 0,
                     cachedTokens:
-                        usage['input_tokens_details']['cached_tokens']
-                            as int? ??
+                        (usage['prompt_tokens_details']?['cached_tokens']
+                            as int?) ??
                         0,
-                    completionTokens: usage['output_tokens'] as int? ?? 0,
                     cotTokens:
-                        usage['output_tokens_details']['reasoning_tokens']
-                            as int? ??
+                        (usage['completion_tokens_details']?['reasoning_tokens']
+                            as int?) ??
                         0,
                   );
                 }
               } catch (e) {
-                print(e);
+                print("OpenAiApiService Stream Error: $e");
               }
               return responses;
             });
+
+        // 兜底处理工具调用
+        if (toolCallsBuffer.isNotEmpty) {
+          for (final callData in toolCallsBuffer.values) {
+            yield _ApiResponse(
+              response: ChatResponse(
+                type: MessageChunkType.toolCall,
+                content: jsonEncode({
+                  "name": callData['name'],
+                  "arguments": jsonDecode(callData['arguments'].toString()),
+                  "callId": callData['id'],
+                }),
+              ),
+            );
+          }
+          toolCallsBuffer.clear();
+        }
+
         yield _ApiResponse(
           invokeResult: InvokeResult(
             statusCode: response.statusCode,
@@ -828,7 +918,7 @@ class OpenAiCompletionService extends OpenAiApiService {
     toContent(modelRequestContent.ragMessages, contents);
     toContent(modelRequestContent.usrMessage, contents);
 
-    final requestBody = {
+    final Map<String, dynamic> requestBody = {
       'model': client.providerConfig.callName,
       'messages': contents,
       'stream': true,
@@ -841,8 +931,15 @@ class OpenAiCompletionService extends OpenAiApiService {
 
     // Inject custom parameters
     modelRequestContent.modelConfigure.customParameters.forEach((param, value) {
-      requestBody[param.apiName] = value;
+      if (value != null) {
+        requestBody[param.apiName] = value;
+      }
     });
+
+    if (modelRequestContent.tools != null &&
+        modelRequestContent.tools!.isNotEmpty) {
+      requestBody['tools'] = modelRequestContent.tools;
+    }
 
     request.body = jsonEncode(requestBody);
 
@@ -860,6 +957,7 @@ class OpenAiCompletionService extends OpenAiApiService {
       final response = await httpClient.send(request);
       if (response.statusCode == 200) {
         TokenUsage? usg;
+        final Map<int, Map<String, dynamic>> toolCallsBuffer = {};
         yield* response.stream
             .transform(utf8.decoder)
             .transform(const LineSplitter())
@@ -867,62 +965,128 @@ class OpenAiCompletionService extends OpenAiApiService {
             .map((line) => line.substring(6))
             .where((data) => data != '[DONE]')
             .map((data) => jsonDecode(data))
-            .where(
-              (json) => json['choices'] != null && json['choices'].isNotEmpty,
-            )
             .expand((json) {
               final List<_ApiResponse> responses = [];
               try {
-                final outputItems = json['choices'] as List;
+                final outputItems = json['choices'] as List? ?? [];
 
                 for (final item in outputItems) {
-                  if (item['delta'] != null) {
-                    if (item['delta']['reasoning_content'] != null) {
-                      // 流式响应格式
+                  final delta = item['delta'] as Map<String, dynamic>?;
+                  if (delta != null) {
+                    // 1. 理性思考/推理内容 (Reasoning Content)
+                    if (delta['reasoning_content'] != null) {
                       responses.add(
                         _ApiResponse(
                           response: ChatResponse(
                             type: MessageChunkType.reasoning,
-                            content:
-                                item['delta']['reasoning_content'] as String,
+                            content: delta['reasoning_content'] as String,
                           ),
                         ),
                       );
-                      print(item['delta']['reasoning_content']);
                     }
-                    if (item['delta']['content'] != null) {
-                      // 流式响应格式
+                    // 2. 文本内容 (Text Content)
+                    if (delta['content'] != null) {
                       responses.add(
                         _ApiResponse(
                           response: ChatResponse(
                             type: MessageChunkType.text,
-                            content: item['delta']['content'] as String,
+                            content: delta['content'] as String,
                           ),
                         ),
                       );
                     }
+                    // 3. 原生工具调用 (Native Tool Calls)
+                    if (delta['tool_calls'] != null) {
+                      final tcs = delta['tool_calls'] as List;
+                      for (final tc in tcs) {
+                        final index = tc['index'] as int;
+                        final call = toolCallsBuffer.putIfAbsent(
+                          index,
+                          () => {
+                            'id': null,
+                            'name': null,
+                            'arguments': StringBuffer(),
+                          },
+                        );
+
+                        if (tc['id'] != null) call['id'] = tc['id'];
+                        if (tc['function'] != null) {
+                          if (tc['function']['name'] != null) {
+                            call['name'] = tc['function']['name'];
+                          }
+                          if (tc['function']['arguments'] != null) {
+                            (call['arguments'] as StringBuffer)
+                                .write(tc['function']['arguments']);
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  // 检查是否结束，并输出工具调用
+                  final finishReason = item['finish_reason'] as String?;
+                  if (finishReason == 'tool_calls' ||
+                      (finishReason != null && toolCallsBuffer.isNotEmpty)) {
+                    for (final entry in toolCallsBuffer.entries) {
+                      final callData = entry.value;
+                      responses.add(
+                        _ApiResponse(
+                          response: ChatResponse(
+                            type: MessageChunkType.toolCall,
+                            content: jsonEncode({
+                              "name": callData['name'],
+                              "arguments": jsonDecode(
+                                callData['arguments'].toString(),
+                              ),
+                              "callId": callData['id'],
+                            }),
+                          ),
+                        ),
+                      );
+                    }
+                    toolCallsBuffer.clear();
                   }
                 }
+
+                // 解析使用量
                 final usage = json['usage'] as Map<String, dynamic>?;
                 if (usage != null) {
+                  final promptDetails =
+                      usage['prompt_tokens_details'] as Map<String, dynamic>?;
+                  final completionDetails = usage['completion_tokens_details']
+                      as Map<String, dynamic>?;
+
                   usg = TokenUsage(
                     promptTokens: usage['prompt_tokens'] as int? ?? 0,
                     completionTokens: usage['completion_tokens'] as int? ?? 0,
-                    cachedTokens:
-                        (usage['prompt_tokens_details']['cached_tokens']
-                            as int?) ??
-                        0,
+                    cachedTokens: (promptDetails?['cached_tokens'] as int?) ?? 0,
                     cotTokens:
-                        usage['completion_tokens_details']['reasoning_tokens']
-                            as int? ??
-                        0,
+                        (completionDetails?['reasoning_tokens'] as int?) ?? 0,
                   );
                 }
               } catch (e) {
-                print(e);
+                print("OpenAI Stream Parsing Error: $e");
               }
               return responses;
             });
+
+        // 兜底处理：如果流结束了但 buffer 还有内容（某些 provider 可能不发 finish_reason）
+        if (toolCallsBuffer.isNotEmpty) {
+          for (final entry in toolCallsBuffer.entries) {
+            final callData = entry.value;
+            yield _ApiResponse(
+              response: ChatResponse(
+                type: MessageChunkType.toolCall,
+                content: jsonEncode({
+                  "name": callData['name'],
+                  "arguments": jsonDecode(callData['arguments'].toString()),
+                  "callId": callData['id'],
+                }),
+              ),
+            );
+          }
+          toolCallsBuffer.clear();
+        }
         yield _ApiResponse(
           invokeResult: InvokeResult(
             statusCode: response.statusCode,
@@ -1159,7 +1323,7 @@ class GeminiApiService extends BaseApiService {
       }
     }
 
-    final requestBody = {
+    final Map<String, dynamic> requestBody = {
       'contents': contents,
       //Gemini的系统指令是独立的，而且必须在开头，可恶的谷歌这样做就是不让我命中cache是吧。
       "systemInstruction": {'role': "system", 'parts': sysMsgParts},
@@ -1182,6 +1346,18 @@ class GeminiApiService extends BaseApiService {
         genConfig[param.geminiName] = value;
       }
     });
+
+    if (modelRequestContent.tools != null &&
+        modelRequestContent.tools!.isNotEmpty) {
+      requestBody['tools'] = [
+        {
+          'function_declarations':
+              modelRequestContent.tools!
+                  .map((t) => (t['function'] as Map<String, dynamic>))
+                  .toList(),
+        },
+      ];
+    }
 
     if (modelRequestContent.stopSignal?.isStopped ?? false) {
       httpClient.close();
