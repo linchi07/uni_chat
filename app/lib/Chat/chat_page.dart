@@ -860,6 +860,7 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                   if (chatState.isResponding &&
                                       index == itemCount - 1) {
                                     return ChatMessageDynamicStream(
+                                      key: const ValueKey('dynamic_stream'),
                                       theme: theme,
                                       responses: chatState.responses,
                                     );

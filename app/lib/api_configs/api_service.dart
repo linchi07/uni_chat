@@ -413,8 +413,41 @@ class OpenAiApiService extends BaseApiService {
           modelRequestContent.modelConfigure.maxGenerationTokens;
     }
 
-    // Inject custom parameters
-    modelRequestContent.modelConfigure.customParameters.forEach((param, value) {
+    // Map 'thinking' parameter if present
+    final Map<ModelParamName, dynamic> customParams = Map.from(modelRequestContent.modelConfigure.customParameters);
+    if (customParams.containsKey(ModelParamName.thinking)) {
+      final value = customParams[ModelParamName.thinking];
+      if (value != null) {
+        final mode = ThinkingMode.values.firstWhere(
+          (e) => e.name == value,
+          orElse: () => ThinkingMode.disabled,
+        );
+        customParams.remove(ModelParamName.thinking);
+
+        if (mode != ThinkingMode.disabled) {
+          final modelParams = client.model.parameters ?? [];
+          if (modelParams.contains(ModelParamName.reasoningEffort)) {
+            String effort = 'medium';
+            if (mode == ThinkingMode.enabled || mode == ThinkingMode.low) {
+              effort = 'low';
+            } else if (mode == ThinkingMode.medium) {
+              effort = 'medium';
+            } else if (mode == ThinkingMode.high) {
+              effort = 'high';
+            }
+            requestBody['reasoning_effort'] = effort;
+          } else if (modelParams.contains(ModelParamName.reasoning)) {
+            requestBody['reasoning'] = true;
+            if (modelParams.contains(ModelParamName.includeReasoning)) {
+              requestBody['include_reasoning'] = true;
+            }
+          }
+        }
+      }
+    }
+
+    // Inject remaining custom parameters
+    customParams.forEach((param, value) {
       if (value != null) {
         requestBody[param.apiName] = value;
       }
@@ -929,8 +962,41 @@ class OpenAiCompletionService extends OpenAiApiService {
           modelRequestContent.modelConfigure.maxGenerationTokens;
     }
 
-    // Inject custom parameters
-    modelRequestContent.modelConfigure.customParameters.forEach((param, value) {
+    // Map 'thinking' parameter if present
+    final Map<ModelParamName, dynamic> customParams = Map.from(modelRequestContent.modelConfigure.customParameters);
+    if (customParams.containsKey(ModelParamName.thinking)) {
+      final value = customParams[ModelParamName.thinking];
+      if (value != null) {
+        final mode = ThinkingMode.values.firstWhere(
+          (e) => e.name == value,
+          orElse: () => ThinkingMode.disabled,
+        );
+        customParams.remove(ModelParamName.thinking);
+
+        if (mode != ThinkingMode.disabled) {
+          final modelParams = client.model.parameters ?? [];
+          if (modelParams.contains(ModelParamName.reasoningEffort)) {
+            String effort = 'medium';
+            if (mode == ThinkingMode.enabled || mode == ThinkingMode.low) {
+              effort = 'low';
+            } else if (mode == ThinkingMode.medium) {
+              effort = 'medium';
+            } else if (mode == ThinkingMode.high) {
+              effort = 'high';
+            }
+            requestBody['reasoning_effort'] = effort;
+          } else if (modelParams.contains(ModelParamName.reasoning)) {
+            requestBody['reasoning'] = true;
+            if (modelParams.contains(ModelParamName.includeReasoning)) {
+              requestBody['include_reasoning'] = true;
+            }
+          }
+        }
+      }
+    }
+
+    // Inject remaining custom parameters
+    customParams.forEach((param, value) {
       if (value != null) {
         requestBody[param.apiName] = value;
       }

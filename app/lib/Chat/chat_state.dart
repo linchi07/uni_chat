@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
+import 'package:uni_chat/Execution/execution_models.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/error_handling.dart';
@@ -15,7 +16,6 @@ import 'package:uuid/uuid.dart';
 
 import '../api_configs/api_models.dart';
 import 'chat_models.dart';
-import 'package:uni_chat/Execution/execution_models.dart';
 
 const _uuid = Uuid();
 
@@ -186,7 +186,6 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   }
 
   void resetGenerationState() {
-    state.stopSignal?.dispose();
     state.responses.value = [];
     state = ChatState(
       isReady: state.isReady,
@@ -346,7 +345,10 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         //TODO: 最好让这里的逻辑都放到agent_provider里面
         await _ref
             .read(agentProvider.notifier)
-            .loadAgentById(session.agentId, overrideJson: session.agentOverride);
+            .loadAgentById(
+              session.agentId,
+              overrideJson: session.agentOverride,
+            );
         final msg = await _dbService.getMessagesForSession(sessionId);
         if (msg.root == null || msg.messages.isEmpty) {
           throw ChatException(ChatExceptionType.messageNotFound);
@@ -691,28 +693,39 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       }
 
       if (finalChunks.isNotEmpty) {
-        // 合并文本内容作为主内容
-        String mainContent = finalChunks
+        // 1. 确保顺序严格按照 ID
+        final sortedChunks = finalChunks.toList()
+          ..sort((a, b) => a.id.compareTo(b.id));
+
+        // 2. 合并文本内容作为主内容（按 ID 顺序）
+        String mainContent = sortedChunks
             .whereType<TextChunk>()
             .map((e) => e.text)
             .join();
 
-        // 提取其他块（思考过程、工具调用）
+        // 3. 提取其他块（思考过程、工具调用），计算准确偏移
         List<Map<String, dynamic>> blocks = [];
-        for (var chunk in finalChunks) {
-          if (chunk is ReasoningChunk) {
-            blocks.add(MessageBlock(
-              content: chunk.text,
-              anchor: -1,
-              chunkType: MessageChunkType.reasoning,
-            ).toMap());
+        int currentAnchor = 0;
+        for (var chunk in sortedChunks) {
+          if (chunk is TextChunk) {
+            currentAnchor += chunk.text.length;
+          } else if (chunk is ReasoningChunk) {
+            blocks.add(
+              MessageBlock(
+                content: chunk.text,
+                anchor: currentAnchor,
+                chunkType: MessageChunkType.reasoning,
+              ).toMap(),
+            );
           } else if (chunk is ToolCallChunk) {
-            blocks.add(MessageBlock(
-              content: chunk.content,
-              anchor: -1,
-              chunkType: MessageChunkType.toolCall,
-              toolData: chunk.toStructuredData(),
-            ).toMap());
+            blocks.add(
+              MessageBlock(
+                content: chunk.content,
+                anchor: currentAnchor,
+                chunkType: MessageChunkType.toolCall,
+                toolData: chunk.toStructuredData(),
+              ).toMap(),
+            );
           }
         }
 
@@ -729,11 +742,18 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           enabledChild: 0,
         );
 
+        // 更新消息树关联
         lastMessage.childIds.add(finalAiMessage.id);
         lastMessage.enabledChild = (lastMessage.childIds.length - 1);
         state.messages[finalAiMessage.id] = finalAiMessage;
-        state.messagesList.add(finalAiMessage);
-        
+
+        // 将消息添加和状态重置合并为一次原子更新
+        state = state.copyWith(
+          messagesList: [...state.messagesList, finalAiMessage],
+          isResponding: false,
+          isLoading: false,
+        );
+
         if (currentSessionId == null) {
           throw Exception('No session selected');
         }

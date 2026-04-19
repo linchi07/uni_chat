@@ -10,13 +10,13 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
+import 'package:uni_chat/Execution/execution_models.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
-import 'package:uni_chat/Execution/execution_models.dart';
 import '../theme_manager.dart';
 import 'chat_models.dart';
 
@@ -299,10 +299,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
       case MessageChunkType.reasoning:
         return _ReasonBlock(content: block.content, isComplete: true);
       case MessageChunkType.toolCall:
-        return _ToolCallBlock(
-          theme: widget.theme,
-          toolData: block.toolData,
-        );
+        return _ToolCallBlock(theme: widget.theme, toolData: block.toolData);
       case MessageChunkType.error:
         return _ErrorBlock(theme: widget.theme, content: block.content);
     }
@@ -841,13 +838,16 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
       String content = "";
       if (currentChunk is TextChunk) content = currentChunk.text;
       if (currentChunk is ReasoningChunk) content = currentChunk.text;
-      
+
       // 如果是非文本/推理块，或者已经播完且块已结束，跳到下一个
       // 关键优化：如果后面已经有了新的块，强制结束当前块的动画并跳转
-      bool isAnimatable = currentChunk is TextChunk || currentChunk is ReasoningChunk;
+      bool isAnimatable =
+          currentChunk is TextChunk || currentChunk is ReasoningChunk;
       bool hasNextChunk = currentIdx + 1 < chunks.length;
 
-      if (!isAnimatable || (charDisplayed >= content.length && currentChunk.isFinished) || hasNextChunk) {
+      if (!isAnimatable ||
+          (charDisplayed >= content.length && currentChunk.isFinished) ||
+          hasNextChunk) {
         if (hasNextChunk) {
           currentAnimatingId = chunks[currentIdx + 1].id;
           charDisplayed = 0;
@@ -878,9 +878,11 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
               return _Loading(color: widget.theme.primaryColor);
             }
             updateAnimationState(value);
-            
+
             // 渲染已经播完的块
-            var currentIdx = value.indexWhere((c) => c.id == currentAnimatingId);
+            var currentIdx = value.indexWhere(
+              (c) => c.id == currentAnimatingId,
+            );
             List<Widget> animatedBlocks = [];
             for (int i = 0; i < currentIdx; i++) {
               animatedBlocks.add(typeMatch(value[i]));
@@ -893,9 +895,22 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
                     enableAnimation(setState);
                   });
                 }
+
+                // 实时计算当前正在动画的块
+                Widget? activeBlock;
+                if (currentIdx != -1) {
+                  activeBlock = _buildActiveBlock(
+                    value[currentIdx],
+                    charDisplayed,
+                  );
+                }
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [...animatedBlocks, ...blocksToDisplay],
+                  children: [
+                    ...animatedBlocks,
+                    if (activeBlock != null) activeBlock,
+                  ],
                 );
               },
             );
@@ -903,6 +918,52 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
         ),
       ),
     );
+  }
+
+  Widget? _buildActiveBlock(ContentChunk cr, int chars) {
+    String content = "";
+    if (cr is TextChunk) {
+      content = cr.text;
+    } else if (cr is ReasoningChunk) {
+      content = cr.text;
+    } else {
+      return typeMatch(cr);
+    }
+
+    if (chars < content.length) {
+      if (cr is TextChunk) {
+        return _TextBlock(
+          key: ValueKey(cr.id),
+          color: widget.theme.darkTextColor,
+          content: "${content.substring(0, chars)}▍",
+        );
+      } else if (cr is ReasoningChunk) {
+        return _ReasonBlock(
+          key: ValueKey(cr.id),
+          content: "${content.substring(0, chars)}▍",
+          isComplete: false,
+        );
+      }
+    } else {
+      if (cr.isFinished) {
+        return typeMatch(cr);
+      } else {
+        if (cr is TextChunk) {
+          return _TextBlock(
+            key: ValueKey(cr.id),
+            color: widget.theme.darkTextColor,
+            content: "$content▍",
+          );
+        } else if (cr is ReasoningChunk) {
+          return _ReasonBlock(
+            key: ValueKey(cr.id),
+            content: "$content▍",
+            isComplete: false,
+          );
+        }
+      }
+    }
+    return null;
   }
 
   Widget typeMatch(ContentChunk chunk) {
@@ -928,19 +989,15 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
     return const SizedBox.shrink();
   }
 
-  List<Widget> blocksDisplayed = [];
-  List<Widget> blocksToDisplay = [];
-
   void enableAnimation(dynamic setState) {
     const charactersPerSecond = 80;
     _isAnimating = true;
     const interval = Duration(milliseconds: 1000 ~/ charactersPerSecond);
     _timer = Timer.periodic(interval, (timer) {
-      blocksToDisplay.clear();
       setState(() {
         var rv = widget.responses.value;
         var currentIdx = rv.indexWhere((c) => c.id == currentAnimatingId);
-        
+
         if (currentIdx == -1) {
           _timer?.cancel();
           _isAnimating = false;
@@ -948,7 +1005,7 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
         }
 
         var cr = rv[currentIdx];
-        
+
         // 如果后面有了新的块，直接快进到下一个 ID
         if (currentIdx + 1 < rv.length) {
           currentAnimatingId = rv[currentIdx + 1].id;
@@ -957,38 +1014,23 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
         }
 
         String content = "";
-        if (cr is TextChunk) content = cr.text;
-        else if (cr is ReasoningChunk) content = cr.text;
-        else {
+        if (cr is TextChunk) {
+          content = cr.text;
+        } else if (cr is ReasoningChunk) {
+          content = cr.text;
+        } else {
           // 非播报类型，直接跳到下一个
           if (currentIdx + 1 < rv.length) {
             currentAnimatingId = rv[currentIdx + 1].id;
             charDisplayed = 0;
           } else if (cr.isFinished) {
-             _timer?.cancel();
-             _isAnimating = false;
+            _timer?.cancel();
+            _isAnimating = false;
           }
           return;
         }
 
         if (charDisplayed < content.length) {
-          if (cr is TextChunk) {
-            blocksToDisplay.add(
-              _TextBlock(
-                key: ValueKey(cr.id),
-                color: widget.theme.darkTextColor,
-                content: "${content.substring(0, charDisplayed)}▍",
-              ),
-            );
-          } else if (cr is ReasoningChunk) {
-            blocksToDisplay.add(
-              _ReasonBlock(
-                key: ValueKey(cr.id),
-                content: "${content.substring(0, charDisplayed)}▍",
-                isComplete: false,
-              ),
-            );
-          }
           charDisplayed++;
         } else {
           // 当前块播完了
@@ -999,16 +1041,7 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
             } else {
               _timer?.cancel();
               _isAnimating = false;
-              // 最后的收尾，显示完整块（无光标）
-              blocksToDisplay.add(typeMatch(cr));
             }
-          } else {
-             // 还没播完，显示当前内容并带光标
-             if (cr is TextChunk) {
-                blocksToDisplay.add(_TextBlock(key: ValueKey(cr.id), color: widget.theme.darkTextColor, content: "$content▍"));
-             } else if (cr is ReasoningChunk) {
-                blocksToDisplay.add(_ReasonBlock(key: ValueKey(cr.id), content: "$content▍", isComplete: false));
-             }
           }
         }
       });
@@ -1149,13 +1182,15 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
     if (!widget.isComplete &&
         widget.content != null &&
         widget.content != oldWidget.content) {
+      // 只有在用户没有手动向上滚动时才自动到底
+      // 这里使用较短的频率限制，并配合 jumpTo 保证流畅度
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-          );
+          final position = _scrollController.position;
+          // 如果当前位置接近底部，则自动滚动
+          if (position.maxScrollExtent - position.pixels < 40) {
+            _scrollController.jumpTo(position.maxScrollExtent);
+          }
         }
       });
     }
@@ -1172,20 +1207,20 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
       },
       //吓哭了，Gemini3 flash写的效果太强了，感觉我可以辞职了。说白了，连pro都不用上
       child: Container(
-        margin: const EdgeInsets.only(top: 10, bottom: 20),
+        margin: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(60),
-              spreadRadius: 2,
-              offset: const Offset(0, 2),
-              blurRadius: 4,
+              color: Colors.black.withAlpha(40),
+              spreadRadius: 1,
+              offset: const Offset(0, 1),
+              blurRadius: 3,
             ),
           ],
           color: theme.zeroGradeColor,
           borderRadius: BorderRadius.circular(8),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1242,8 +1277,8 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
               ],
             ),
             AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.fastOutSlowIn,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
               alignment: Alignment.topCenter,
               child:
                   ((!widget.isComplete || isShowing) &&
@@ -1433,7 +1468,7 @@ class _RagBlockState extends State<_RagBlock>
   }
 }
 
-class _ToolCallBlock extends StatelessWidget {
+class _ToolCallBlock extends StatefulWidget {
   const _ToolCallBlock({
     super.key,
     this.chunk,
@@ -1445,92 +1480,141 @@ class _ToolCallBlock extends StatelessWidget {
   final ThemeConfig theme;
 
   @override
+  State<_ToolCallBlock> createState() => _ToolCallBlockState();
+}
+
+class _ToolCallBlockState extends State<_ToolCallBlock> {
+  bool isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    var data = toolData ?? chunk?.toStructuredData();
+    var data = widget.toolData ?? widget.chunk?.toStructuredData();
     if (data == null) return const SizedBox.shrink();
 
     List<dynamic> calls = data["calls"] ?? [];
     List<dynamic> results = data["results"] ?? [];
-    bool isFinished = chunk?.isFinished ?? true;
+    bool isFinished = widget.chunk?.isFinished ?? true;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.zeroGradeColor,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(40),
-            spreadRadius: 1,
-            offset: const Offset(0, 1),
-            blurRadius: 3,
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.bolt_rounded,
-                color: isFinished ? theme.okColor : theme.primaryColor,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                isFinished ? "执行了工具" : "正在调用工具",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: theme.darkTextColor,
-                ),
-              ),
-              const Spacer(),
-              if (!isFinished)
-                const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-            ],
-          ),
-          if (calls.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            ...List.generate(calls.length, (idx) {
-              var call = calls[idx];
-              var result = (results.length > idx) ? results[idx]["result"] : null;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "调用: ${call["name"]}(${call["arguments"]})",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: theme.darkTextColor.withAlpha(200),
-                        fontFamily: "monospace",
-                      ),
-                    ),
-                    if (result != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4, left: 8),
-                        child: Text(
-                          "结果: $result",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.primaryColor.withAlpha(180),
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            }),
+    // 如果正在调用中，强制展开
+    bool effectiveExpanded = !isFinished || isExpanded;
+
+    return GestureDetector(
+      onTap: () {
+        if (isFinished) {
+          setState(() {
+            isExpanded = !isExpanded;
+          });
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: widget.theme.zeroGradeColor,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(40),
+              spreadRadius: 1,
+              offset: const Offset(0, 1),
+              blurRadius: 3,
+            ),
           ],
-        ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.bolt_rounded,
+                  color: isFinished
+                      ? widget.theme.okColor
+                      : widget.theme.primaryColor,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  isFinished ? "执行了工具" : "正在调用工具",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: widget.theme.darkTextColor,
+                  ),
+                ),
+                const Spacer(),
+                if (!isFinished)
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 300),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 20,
+                      color: widget.theme.darkTextColor.withAlpha(150),
+                    ),
+                  ),
+              ],
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.fastOutSlowIn,
+              alignment: Alignment.topCenter,
+              child: calls.isNotEmpty
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 10),
+                        ...List.generate(calls.length, (idx) {
+                          var call = calls[idx];
+                          var result = (results.length > idx)
+                              ? results[idx]["result"]
+                              : null;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "调用: ${call["name"]}${effectiveExpanded ? "(${call["arguments"]})" : ""}",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: widget.theme.darkTextColor.withAlpha(
+                                      200,
+                                    ),
+                                    fontFamily: "monospace",
+                                  ),
+                                ),
+                                if (effectiveExpanded && result != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 4,
+                                      left: 8,
+                                    ),
+                                    child: Text(
+                                      "结果: $result",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: widget.theme.primaryColor
+                                            .withAlpha(180),
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
       ),
     );
   }

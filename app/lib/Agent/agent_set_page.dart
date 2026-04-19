@@ -1172,6 +1172,45 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                         },
                       ),
                     );
+                  } else if (param.uiType == ParamUIType.stringList) {
+                    final List<String> options;
+                    if (param == ModelParamName.thinking) {
+                      options = ThinkingMode.values.map((e) => e.name).toList();
+                    } else if (param == ModelParamName.reasoningEffort) {
+                      options = ['low', 'medium', 'high'];
+                    } else {
+                      options = [value.toString()];
+                    }
+
+                    input = Expanded(
+                      child: Row(
+                        children: [
+                          Text("${param.friendlyName(context)}: "),
+                          const SizedBox(width: 8),
+                          StdDropDown(
+                            width: 150,
+                            initialIndex: options.indexOf(value.toString()),
+                            itemCount: options.length,
+                            itemBuilder: (context, index, onTap) {
+                              String label = options[index];
+                              if (param == ModelParamName.thinking) {
+                                label = ThinkingMode.values[index]
+                                    .friendlyName(context);
+                              }
+                              return StdListTile(
+                                title: Text(label),
+                                onTap: () => onTap(index),
+                              );
+                            },
+                            onChanged: (index) {
+                              modelConf.customParameters[param] =
+                                  options[index];
+                              _notifyListeners();
+                            },
+                          ),
+                        ],
+                      ),
+                    );
                   } else {
                     input = Expanded(
                       child: Text(

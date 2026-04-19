@@ -599,5 +599,13 @@
   "get_api_key": "Get API Key",
   "related_docs": "Documentation",
   "model_list": "Model List",
-  "skip_to_quick_chat": "Skip and quick chat"
+  "skip_to_quick_chat": "Skip and quick chat",
+  "model_param_thinking": "Thinking",
+  "thinking_mode_disabled": "Disabled",
+  "thinking_mode_enabled": "Enabled",
+  "thinking_mode_low": "Low",
+  "thinking_mode_medium": "Medium",
+  "thinking_mode_high": "High",
+  "toolCall": "Tool Calling",
+  "thinking": "Thinking"
 }

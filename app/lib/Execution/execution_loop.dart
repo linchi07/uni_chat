@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:uni_chat/Agent/prompt_injector.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/Execution/execution_models.dart';
-import 'package:uni_chat/Execution/toolcall_parser.dart';
 import 'package:uni_chat/Execution/tools_manager.dart';
 import 'package:uni_chat/Execution/xml_dynamic_parser.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
@@ -20,9 +19,8 @@ class ExecutionLoop {
   final ValueNotifier<List<ContentChunk>> output;
   List<ToolCallChunk> runningToolCalls = [];
   ExecutionLoop(this.injector, this.client, this.output, {required this.tools});
-
+  Id id = Id(); // 在一轮对话中生成唯一自增ID，而且整个while循环中不得有任何Id的重复
   Future<List<ContentChunk>> execute() async {
-    var id = Id();
     List<ContentChunk> accumulatedOutput = [];
 
     while (true) {
@@ -131,12 +129,14 @@ class ExecutionLoop {
         }
       }
       injector.appendIntermediateTurn(
-        AssistantTurn(text: textBuffer.toString(), toolCalls: allParsedCalls)
+        AssistantTurn(text: textBuffer.toString(), toolCalls: allParsedCalls),
       );
 
       // 注入本轮的结构化工具执行结果
       injector.appendIntermediateTurn(
-        ToolResultTurn(results: finalToolCalls.expand((c) => c.parsedCalls).toList())
+        ToolResultTurn(
+          results: finalToolCalls.expand((c) => c.parsedCalls).toList(),
+        ),
       );
     }
 

@@ -654,6 +654,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "model_param_temperature": MessageLookupByLibrary.simpleMessage(
       "Temperature",
     ),
+    "model_param_thinking": MessageLookupByLibrary.simpleMessage("Thinking"),
     "model_param_tool_choice": MessageLookupByLibrary.simpleMessage(
       "Tool Choice",
     ),
@@ -973,6 +974,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "system_internal_prompt": m23,
     "system_prompt_tokens": m24,
     "textGenerate": MessageLookupByLibrary.simpleMessage("Text Generation"),
+    "thinking": MessageLookupByLibrary.simpleMessage("Thinking"),
+    "thinking_mode_disabled": MessageLookupByLibrary.simpleMessage("Disabled"),
+    "thinking_mode_enabled": MessageLookupByLibrary.simpleMessage("Enabled"),
+    "thinking_mode_high": MessageLookupByLibrary.simpleMessage("High"),
+    "thinking_mode_low": MessageLookupByLibrary.simpleMessage("Low"),
+    "thinking_mode_medium": MessageLookupByLibrary.simpleMessage("Medium"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat"),
     "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
       "Toggle session selector",
@@ -982,6 +989,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Token limit per day",
     ),
     "token_usage": MessageLookupByLibrary.simpleMessage("Token Usage"),
+    "toolCall": MessageLookupByLibrary.simpleMessage("Tool Calling"),
     "total_context_lim": m26,
     "total_tokens": MessageLookupByLibrary.simpleMessage("Total Tokens"),
     "type_with_holder": m27,

@@ -598,5 +598,13 @@
   "get_api_key": "获取 API Key",
   "related_docs": "相关文档",
   "model_list": "支持模型列表",
-  "skip_to_quick_chat": "跳过并使用快速聊天"
+  "skip_to_quick_chat": "跳过并使用快速聊天",
+  "model_param_thinking": "思考行为 (Thinking)",
+  "thinking_mode_disabled": "已禁用",
+  "thinking_mode_enabled": "已启用",
+  "thinking_mode_low": "低",
+  "thinking_mode_medium": "中",
+  "thinking_mode_high": "高",
+  "toolCall": "工具调用",
+  "thinking": "推理思考"
 }

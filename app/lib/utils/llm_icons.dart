@@ -191,6 +191,10 @@ extension XModelAlibity on ModelAbility {
         return S.of(context).audio;
       case ModelAbility.video:
         return S.of(context).video;
+      case ModelAbility.toolCall:
+        return S.of(context).toolCall;
+      case ModelAbility.thinking:
+        return S.of(context).thinking;
     }
   }
 
@@ -216,6 +220,10 @@ extension XModelAlibity on ModelAbility {
         return Icons.audiotrack_outlined;
       case ModelAbility.video:
         return Icons.video_camera_back_outlined;
+      case ModelAbility.toolCall:
+        return Icons.build_outlined;
+      case ModelAbility.thinking:
+        return Icons.psychology_outlined;
     }
   }
 
@@ -237,6 +245,10 @@ extension XModelAlibity on ModelAbility {
         return 'audio';
       case ModelAbility.video:
         return 'video';
+      case ModelAbility.toolCall:
+        return 'toolCall';
+      case ModelAbility.thinking:
+        return 'thinking';
     }
   }
 
@@ -254,6 +266,8 @@ extension XModelAlibity on ModelAbility {
       'embedding': ModelAbility.embedding,
       'audio': ModelAbility.audio,
       'video': ModelAbility.video,
+      'toolCall': ModelAbility.toolCall,
+      'thinking': ModelAbility.thinking,
     };
     Set<ModelAbility> abilities = {};
     for (var ability in list) {

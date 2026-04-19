@@ -281,6 +281,8 @@ enum ModelAbility {
   embedding,
   audio,
   video,
+  toolCall,
+  thinking,
 }
 
 class ModelPricing {
@@ -540,6 +542,31 @@ class ProviderModelConfig implements Insertable<ProviderModelConfig> {
       parametersOverride.hashCode;
 }
 
+enum ThinkingMode {
+  disabled,
+  enabled,
+  low,
+  medium,
+  high,
+}
+
+extension XThinkingMode on ThinkingMode {
+  String friendlyName(BuildContext context) {
+    switch (this) {
+      case ThinkingMode.disabled:
+        return S.of(context).thinking_mode_disabled;
+      case ThinkingMode.enabled:
+        return S.of(context).thinking_mode_enabled;
+      case ThinkingMode.low:
+        return S.of(context).thinking_mode_low;
+      case ThinkingMode.medium:
+        return S.of(context).thinking_mode_medium;
+      case ThinkingMode.high:
+        return S.of(context).thinking_mode_high;
+    }
+  }
+}
+
 enum ParamUIType {
   doubleSlider,
   intSlider,
@@ -568,6 +595,8 @@ enum ModelParamName {
   structuredOutputs,
   toolChoice,
   tools,
+  thinking,
+  reasoningEffort,
 }
 
 extension XModelParamName on ModelParamName {
@@ -593,11 +622,15 @@ extension XModelParamName on ModelParamName {
       case ModelParamName.reasoning:
       case ModelParamName.structuredOutputs:
         return ParamUIType.boolean;
+      case ModelParamName.thinking:
+        return ParamUIType.stringList;
       case ModelParamName.logitBias:
       case ModelParamName.responseFormat:
       case ModelParamName.toolChoice:
       case ModelParamName.tools:
         return ParamUIType.none;
+      case ModelParamName.reasoningEffort:
+        return ParamUIType.stringList;
     }
   }
 
@@ -639,6 +672,10 @@ extension XModelParamName on ModelParamName {
         return 'tool_choice';
       case ModelParamName.tools:
         return 'tools';
+      case ModelParamName.thinking:
+        return 'thinking';
+      case ModelParamName.reasoningEffort:
+        return 'reasoning_effort';
     }
   }
 
@@ -668,6 +705,8 @@ extension XModelParamName on ModelParamName {
       case ModelParamName.structuredOutputs:
       case ModelParamName.toolChoice:
       case ModelParamName.tools:
+      case ModelParamName.thinking:
+      case ModelParamName.reasoningEffort:
         return apiName;
     }
   }
@@ -710,6 +749,10 @@ extension XModelParamName on ModelParamName {
         return S.of(context).model_param_tool_choice;
       case ModelParamName.tools:
         return S.of(context).model_param_tools;
+      case ModelParamName.thinking:
+        return S.of(context).model_param_thinking;
+      case ModelParamName.reasoningEffort:
+        return S.of(context).model_param_thinking; // Same label for now
     }
   }
 
@@ -751,6 +794,10 @@ extension XModelParamName on ModelParamName {
         return 'Controls which tool is used by the model';
       case ModelParamName.tools:
         return 'List of tools available to the model';
+      case ModelParamName.thinking:
+        return 'Controls advanced thinking/reasoning effort and behavior';
+      case ModelParamName.reasoningEffort:
+        return 'Controls advanced thinking/reasoning effort levels';
     }
   }
 
@@ -770,6 +817,9 @@ extension XModelParamName on ModelParamName {
         return 1.0;
       case ModelParamName.maxTokens:
         return 1.0;
+      case ModelParamName.thinking:
+      case ModelParamName.reasoningEffort:
+        return 0.0;
       default:
         return 0.0;
     }
@@ -792,6 +842,9 @@ extension XModelParamName on ModelParamName {
         return 100.0;
       case ModelParamName.maxTokens:
         return 4096.0;
+      case ModelParamName.thinking:
+      case ModelParamName.reasoningEffort:
+        return 1.0;
       default:
         return 1.0;
     }
@@ -830,6 +883,10 @@ extension XModelParamName on ModelParamName {
         return null;
       case ModelParamName.tools:
         return <dynamic>[];
+      case ModelParamName.thinking:
+        return ThinkingMode.disabled.name;
+      case ModelParamName.reasoningEffort:
+        return 'medium';
     }
   }
 }

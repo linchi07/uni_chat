@@ -4144,6 +4144,66 @@ class S {
       args: [],
     );
   }
+
+  /// `Thinking`
+  String get model_param_thinking {
+    return Intl.message(
+      'Thinking',
+      name: 'model_param_thinking',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Disabled`
+  String get thinking_mode_disabled {
+    return Intl.message(
+      'Disabled',
+      name: 'thinking_mode_disabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enabled`
+  String get thinking_mode_enabled {
+    return Intl.message(
+      'Enabled',
+      name: 'thinking_mode_enabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Low`
+  String get thinking_mode_low {
+    return Intl.message('Low', name: 'thinking_mode_low', desc: '', args: []);
+  }
+
+  /// `Medium`
+  String get thinking_mode_medium {
+    return Intl.message(
+      'Medium',
+      name: 'thinking_mode_medium',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `High`
+  String get thinking_mode_high {
+    return Intl.message('High', name: 'thinking_mode_high', desc: '', args: []);
+  }
+
+  /// `Tool Calling`
+  String get toolCall {
+    return Intl.message('Tool Calling', name: 'toolCall', desc: '', args: []);
+  }
+
+  /// `Thinking`
+  String get thinking {
+    return Intl.message('Thinking', name: 'thinking', desc: '', args: []);
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
