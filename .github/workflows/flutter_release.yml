@@ -50,6 +50,7 @@ jobs:
 
       - name: Extract version from pubspec.yaml
         id: extract_version
+        shell: bash
         run: |
           VERSION=$(grep '^version:' app/pubspec.yaml | sed 's/version: //')
           VERSION_RAW=$(echo $VERSION | cut -d'+' -f1)
@@ -75,7 +76,7 @@ jobs:
         if: matrix.platform == 'android'
         run: |
           flutter build apk --release
-          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/UNIChat_v${{ env.VERSION_RAW }}_android.apk
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/UNIChat_v${{ steps.extract_version.outputs.version_raw }}_android.apk
         working-directory: app
 
       # Windows Build
@@ -88,7 +89,8 @@ jobs:
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri "https://github.com/google/fonts/blob/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf" -OutFile "app/build_resources/NotoSansSC-VF.ttf"
+          # Use raw URL to download the actual ttf file
+          Invoke-WebRequest -Uri "https://github.com/google/fonts/raw/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf" -OutFile "app/build_resources/NotoSansSC-VF.ttf"
 
       - name: Download VCRuntime (Windows only)
         if: matrix.platform == 'windows'
@@ -100,31 +102,21 @@ jobs:
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
-          (Get-Content app/windows_setup.iss) -replace '\{\{APP_VERSION_RAW\}\}', "$env:VERSION_RAW" | Set-Content app/windows_setup.iss
+          (Get-Content app/windows_setup.iss) -replace '\{\{APP_VERSION_RAW\}\}', "${{ steps.extract_version.outputs.version_raw }}" | Set-Content app/windows_setup.iss
           & "C:\Program Files (x86)\Inno Setup 6\iscc.exe" app/windows_setup.iss
           # Use wildcards to rename the generated setup file if needed
           # But since OutputBaseFilename is now correct, we just confirm it exists
           Get-ChildItem -Path app/Installer/*.exe
 
       # macOS Build
-      - name: Disable macOS signing (CI)
-        if: matrix.platform == 'macos'
-        working-directory: app/macos
-        run: |
-          xcodebuild -project Runner.xcodeproj \
-            -target Runner \
-            -configuration Release \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
-      
       - name: Build macOS App
         if: matrix.platform == 'macos'
         run: |
+          # Add --no-codesign here. No need for manual xcodebuild call.
           flutter build macos --release --no-codesign
           # Simple zip of the .app for basic distribution if no DMG tool is setup
           cd build/macos/Build/Products/Release
-          zip -r ../../../../UNIChat_v${{ env.VERSION_RAW }}_macos.zip UNIChat.app
+          zip -r ../../../../UNIChat_v${{ steps.extract_version.outputs.version_raw }}_macos.zip UNIChat.app
         working-directory: app
 
       # --- Upload Artifacts ---
@@ -134,7 +126,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: app/build/app/outputs/flutter-apk/UNIChat_v${{ env.VERSION_RAW }}_android.apk
+          path: app/build/app/outputs/flutter-apk/UNIChat_v${{ steps.extract_version.outputs.version_raw }}_android.apk
 
       - name: Upload Windows Artifact
         if: matrix.platform == 'windows'
@@ -148,7 +140,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: app/UNIChat_v${{ env.VERSION_RAW }}_macos.zip
+          path: app/UNIChat_v${{ steps.extract_version.outputs.version_raw }}_macos.zip
 
   release:
     name: Create GitHub Release
@@ -157,6 +149,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Extract version from pubspec.yaml
+        id: extract_version
+        shell: bash
+        run: |
+          VERSION=$(grep '^version:' app/pubspec.yaml | sed 's/version: //')
+          VERSION_RAW=$(echo $VERSION | cut -d'+' -f1)
+          echo "VERSION_RAW=$VERSION_RAW" >> $GITHUB_ENV
+          echo "version_raw=$VERSION_RAW" >> $GITHUB_OUTPUT
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -179,14 +180,15 @@ jobs:
           fi
 
       - name: Push new release
+        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/android-apk/*.apk
             artifacts/windows-setup/*.exe
             artifacts/macos-app/*.zip
-          name: "UNIChat V${{ env.VERSION_RAW }} Stable"
-          tag_name: "v${{ env.VERSION_RAW }}"
+          name: "UNIChat V${{ steps.extract_version.outputs.version_raw }} Stable"
+          tag_name: "v${{ steps.extract_version.outputs.version_raw }}"
           prerelease: true
           generate_release_notes: true
           token: ${{ secrets.GITHUB_TOKEN }}
