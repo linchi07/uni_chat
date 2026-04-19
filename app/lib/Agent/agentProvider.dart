@@ -13,8 +13,8 @@ import 'package:uni_chat/main.dart';
 import '../Chat/chat_models.dart';
 import '../api_configs/api_models.dart';
 import '../utils/file_utils.dart';
-import '../utils/time_utils.dart';
 import 'agent_models.dart';
+import 'prompt_injector.dart';
 
 class ModelSpecifics {
   String? modelName;
@@ -414,17 +414,13 @@ class AgentProvider extends StateNotifier<Agent?> {
     StopSignal? stopSignal,
   }) async* {
     if (state != null) {
-      var fm = await formatMessage(history, usrMessage, stopSignal: stopSignal);
-      /*
-      if (state!.memoryBaseIds.isNotEmpty) {
-        var rgp = ref.read(ragProvider);
-        if (rgp.loadedAgentId != state!.id) {
-          await rgp.loadKnowledgeBases(state!.memoryBaseIds, session);
-        }
-        if (usrMessage != null) {
-          fm.ragMessages = await rgp.onUserNewMessageCall(usrMessage);
-        }
-      }*/
+      var fm = await PromptInjector(
+        ref: ref,
+        agentData: state!.toAgentData(),
+        history: history,
+        lastMessage: usrMessage,
+        stopSignal: stopSignal,
+      ).inject();
       yield* state!.client.getStreamingResponse(
         modelRequestContent: fm,
         agentId: state!.id,
@@ -432,222 +428,6 @@ class AgentProvider extends StateNotifier<Agent?> {
     } else {
       throw AgentException(AgentExceptionType.agentNotLoaded);
     }
-  }
-
-  int stripTokens(
-    List<FormattedChatMessage> messages,
-    int target,
-    int present,
-  ) {
-    while (present > target && messages.isNotEmpty) {
-      var toStrip = messages.removeAt(0); // Remove the oldest message
-      present -= toStrip.tokens;
-    }
-    return present;
-  }
-
-  Future<ModelRequestContent> formatMessage(
-    List<ChatMessage> history,
-    ChatMessage? lastMessage, {
-    StopSignal? stopSignal,
-  }) async {
-    if (state == null) {
-      throw AgentException(AgentExceptionType.agentNotLoaded);
-    }
-    ModelRequestContent rc = ModelRequestContent(
-      staticSystemMessages: [],
-      dynamicSystemMessages: [],
-      uiMessages: [],
-      chatHistory: [],
-      usrMessage: [],
-      modelConfigure: state!.modelConfigure,
-      ragMessages: [],
-      stopSignal: stopSignal,
-    );
-
-    // 1. 构建静态系统指令 (Static Prefix)
-    StringBuffer staticPrompt = StringBuffer();
-    if (state!.name.isNotEmpty) {
-      staticPrompt.writeln("你的名字是${state!.name}");
-    }
-    if (state!.systemPrompt != null) {
-      staticPrompt.writeln(state!.systemPrompt!);
-    }
-
-    // 注入人格信息
-    var personaMsg = ref.read(personaProvider).getPersonaMessage();
-    if (personaMsg != null) {
-      for (var part in personaMsg.parts) {
-        if (part.type == MessagePartType.text) {
-          staticPrompt.writeln(part.content);
-        }
-      }
-      if (state?.personaConfigure?.personaAdditionalInfo != null) {
-        staticPrompt.writeln(state!.personaConfigure!.personaAdditionalInfo!);
-      }
-    }
-
-    // 注入用户语言和系统信息 (静态，因为极少变动)
-    if (state!.modelConfigure.enableUsrLanguage) {
-      staticPrompt.writeln("使用${PlatForm().languageCode}和用户交流");
-    }
-    if (state!.modelConfigure.enableUsrSystemInformation) {
-      staticPrompt.writeln("用户使用${PlatForm().platformInfo}系统");
-    }
-
-    // 注入 XML 标签说明
-    staticPrompt.writeln("\n[重要指令]");
-    staticPrompt.writeln(
-      "你将收到包含 <system_metadata> 标签的消息。该标签内包含的是系统注入的当前客观环境事实（如当前时间），请将其作为推断上下文的基准信息，而非用户对话内容。",
-    );
-
-    rc.staticSystemMessages.add(
-      FormattedChatMessage(
-        id: "system_static",
-        sender: MessageSender.system,
-        parts: [
-          MessagePart(
-            type: MessagePartType.text,
-            content: staticPrompt.toString(),
-          ),
-        ],
-      ),
-    );
-
-    // 2. 处理对话历史
-    var t1 = await processChatMessage(history, rc.chatHistory);
-
-    // 3. 注入动态元数据 (Dynamic Metadata - User Role)
-    // 放在历史记录之后，当前提问之前
-    if (state!.modelConfigure.enableTimeTelling) {
-      final now = DateTime.now();
-      final lastMsgTime = history.isNotEmpty ? history.last.timestamp : null;
-
-      final timeStr = TimeUtils.formatTimeForCache(now);
-      final gapDesc = TimeUtils.getTimeGapDescription(now, lastMsgTime);
-
-      StringBuffer metadataBuffer = StringBuffer();
-      metadataBuffer.writeln("<system_metadata>");
-      metadataBuffer.writeln("<current_time>$timeStr</current_time>");
-      if (gapDesc != null) {
-        metadataBuffer.writeln("<time_gap>$gapDesc</time_gap>");
-      }
-      metadataBuffer.write("</system_metadata>");
-
-      rc.dynamicSystemMessages.add(
-        FormattedChatMessage(
-          id: "usr_time",
-          sender: MessageSender.user, // 重写为 User 角色以符合静动分离策略
-          parts: [
-            MessagePart(
-              type: MessagePartType.text,
-              content: metadataBuffer.toString(),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // 4. 处理用户当前提问
-    int t2 = 0;
-    if (lastMessage != null) {
-      t2 = await processChatMessage([lastMessage], rc.usrMessage);
-    }
-
-    rc.modelConfigure = state!.modelConfigure;
-    var t3 = rc.uiMessages.fold(0, (sum, i) => sum + i.tokens);
-    var t4 = rc.staticSystemMessages.fold(0, (sum, i) => sum + i.tokens);
-    var t5 = rc.dynamicSystemMessages.fold(0, (sum, i) => sum + i.tokens);
-
-    // 使用 maxContextTokens 判定
-    if (t1 + t2 + t3 + t4 + t5 > state!.modelConfigure.maxContextTokens) {
-      var delta =
-          t1 + t2 + t3 + t4 + t5 - state!.modelConfigure.maxContextTokens;
-      stripTokens(rc.chatHistory, delta, t1);
-    }
-    return rc;
-  }
-
-  Future<int> processChatMessage(
-    List<ChatMessage> messages,
-    List<FormattedChatMessage> output,
-  ) async {
-    if (state == null) {
-      throw AgentException(AgentExceptionType.agentNotLoaded);
-    }
-    int totalTokens = 0;
-    for (var i in messages) {
-      if (i.sender == MessageSender.internal) continue;
-
-      List<MessagePart> parts = [];
-
-      // 1. 处理多个附件文件
-      if (i.attachedFiles != null && i.attachedFiles!.isNotEmpty) {
-        for (var attachedFile in i.attachedFiles!) {
-          switch (attachedFile.type) {
-            case FileTypeDefine.text:
-              var fileContent = await attachedFile.getFile();
-              parts.add(
-                MessagePart(
-                  type: MessagePartType.text,
-                  content:
-                      "Uploaded File: Name: ${attachedFile.originalName}, Content: ${await fileContent.readAsString(encoding: utf8)}",
-                ),
-              );
-              break;
-            case FileTypeDefine.image:
-              if (!state!.client.model.abilities.contains(ModelAbility.visual))
-                continue;
-
-              if (await (await attachedFile.getFile()).exists()) {
-                var base64 = base64Encode(
-                  await (await attachedFile.getFile()).readAsBytes(),
-                );
-                parts.add(
-                  MessagePart(
-                    type: MessagePartType.base64Image,
-                    mimeType: attachedFile.mimeType,
-                    content: base64,
-                  ),
-                );
-              }
-              break;
-            case FileTypeDefine.pdf:
-              if (await (await attachedFile.getFile()).exists()) {
-                var base64 = base64Encode(
-                  await (await attachedFile.getFile()).readAsBytes(),
-                );
-                parts.add(
-                  MessagePart(
-                    type: MessagePartType.base64pdf,
-                    mimeType: attachedFile.mimeType,
-                    content: base64,
-                  ),
-                );
-              }
-              break;
-            default:
-              break;
-          }
-        }
-      }
-
-      // 2. 处理文本内容
-      if (i.content.isNotEmpty) {
-        parts.add(MessagePart(type: MessagePartType.text, content: i.content));
-      }
-
-      if (parts.isNotEmpty) {
-        var formatted = FormattedChatMessage(
-          id: i.id,
-          sender: i.sender,
-          parts: parts,
-        );
-        output.add(formatted);
-        totalTokens += formatted.tokens;
-      }
-    }
-    return totalTokens;
   }
 }
 

@@ -676,6 +676,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "show_source_code": MessageLookupByLibrary.simpleMessage("显示源码"),
     "skip": MessageLookupByLibrary.simpleMessage("跳过"),
+    "skip_to_quick_chat": MessageLookupByLibrary.simpleMessage("跳过并使用快速聊天"),
     "slogan": MessageLookupByLibrary.simpleMessage("开源的AI Agent聊天软件"),
     "star_github": MessageLookupByLibrary.simpleMessage(
       "能给我们的GitHub项目点个Star吗？ 求你了(≧∇≦)",

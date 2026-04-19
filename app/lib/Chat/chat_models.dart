@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart' show ChangeNotifier, immutable;
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agent_models.dart';
 import 'package:uni_chat/database/database_service.dart';
-import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 
@@ -228,7 +227,7 @@ class ChatMessage {
   }
 }
 
-enum MessagePartType { text, image, pdf, base64Image, base64pdf }
+enum MessagePartType { text, image, pdf, base64Image, base64pdf, toolCall, toolResult }
 
 class MessagePart {
   final MessagePartType type;
@@ -246,6 +245,9 @@ class MessagePart {
       case MessagePartType.base64Image:
       case MessagePartType.base64pdf:
         return 200;
+      case MessagePartType.toolCall:
+      case MessagePartType.toolResult:
+        return 50; // Estimated tokens for structured tool call/result
     }
   }
 
@@ -299,8 +301,12 @@ class FormattedChatMessage {
       parts: [
         MessagePart(
           type: MessagePartType.text,
-          content: messages.expand((m) => m.parts).where((p) => p.type == MessagePartType.text).map((p) => p.content).join('\n'),
-        )
+          content: messages
+              .expand((m) => m.parts)
+              .where((p) => p.type == MessagePartType.text)
+              .map((p) => p.content)
+              .join('\n'),
+        ),
       ],
     );
   }
@@ -347,7 +353,7 @@ class ModelRequestContent {
   });
 }
 
-enum MessageChunkType { text, image, reasoning, functionCalling, error }
+enum MessageChunkType { text, image, reasoning, error, toolCall }
 
 extension XMessageChunkType on MessageChunkType {
   String get name {
@@ -358,10 +364,10 @@ extension XMessageChunkType on MessageChunkType {
         return 'image';
       case MessageChunkType.reasoning:
         return 'reasoning';
-      case MessageChunkType.functionCalling:
-        return 'functionCalling';
       case MessageChunkType.error:
         return 'error';
+      case MessageChunkType.toolCall:
+        return 'toolCall';
     }
   }
 
@@ -373,8 +379,8 @@ extension XMessageChunkType on MessageChunkType {
         return MessageChunkType.image;
       case 'reasoning':
         return MessageChunkType.reasoning;
-      case 'functionCalling':
-        return MessageChunkType.functionCalling;
+      case 'toolCall':
+        return MessageChunkType.toolCall;
       case 'error':
         return MessageChunkType.error;
       default:
@@ -386,9 +392,8 @@ extension XMessageChunkType on MessageChunkType {
 class ChatResponse {
   final MessageChunkType type;
   final String content;
-  final AppException? error;
 
-  ChatResponse({required this.type, required this.content, this.error});
+  ChatResponse({required this.type, required this.content});
 }
 
 @immutable

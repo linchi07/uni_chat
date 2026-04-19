@@ -598,5 +598,5 @@
   "get_api_key": "获取 API Key",
   "related_docs": "相关文档",
   "model_list": "支持模型列表",
-  "skip_to_quick_chat": "跳过并开始快速聊天"
+  "skip_to_quick_chat": "跳过并使用快速聊天"
 }

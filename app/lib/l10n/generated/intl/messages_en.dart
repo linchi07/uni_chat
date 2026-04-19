@@ -945,6 +945,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Show source code",
     ),
     "skip": MessageLookupByLibrary.simpleMessage("Skip"),
+    "skip_to_quick_chat": MessageLookupByLibrary.simpleMessage(
+      "Skip and quick chat",
+    ),
     "slogan": MessageLookupByLibrary.simpleMessage(
       "A powerful AI agent integrated ChatApp",
     ),

@@ -366,6 +366,11 @@ class OpenAiApiService extends BaseApiService {
               'file_url': "data:${part.mimeType};base64,${part.content}",
             });
             break;
+          case MessagePartType.toolCall:
+          case MessagePartType.toolResult:
+            // This legacy API might not support native tool calls, 
+            // but we must handle the cases for completeness.
+            break;
         }
       }
     }
@@ -727,15 +732,15 @@ class OpenAiCompletionService extends OpenAiApiService {
   ) {
     for (final message in i) {
       List<Map<String, dynamic>> messageParts = [];
+      List<Map<String, dynamic>> toolCalls = [];
+      List<Map<String, dynamic>> toolResults = [];
+
       for (final part in message.parts) {
         switch (part.type) {
           case MessagePartType.text:
             messageParts.add({'type': 'text', 'text': part.content});
             break;
           case MessagePartType.image:
-            // Standard OpenAI doesn't use file_id for images in Chat Completions usually,
-            // but we keep consistent with what was there or what's expected.
-            break;
           case MessagePartType.pdf:
             break;
           case MessagePartType.base64Image:
@@ -748,18 +753,52 @@ class OpenAiCompletionService extends OpenAiApiService {
             break;
           case MessagePartType.base64pdf:
             break;
+          case MessagePartType.toolCall:
+            var data = jsonDecode(part.content);
+            toolCalls.add({
+              'id': data['callId'],
+              'type': 'function',
+              'function': {
+                'name': data['name'],
+                'arguments': data['arguments'] is String ? data['arguments'] : jsonEncode(data['arguments']),
+              }
+            });
+            break;
+          case MessagePartType.toolResult:
+            var data = jsonDecode(part.content);
+            toolResults.add({
+              'role': 'tool',
+              'tool_call_id': data['callId'],
+              'content': data['result']?.toString() ?? '',
+            });
+            break;
         }
       }
 
-      if (messageParts.isNotEmpty) {
-        contents.add({
-          'role': getSender(message.sender),
-          'content':
-              messageParts.length == 1 && messageParts[0]['type'] == 'text'
-              ? messageParts[0]['text']
-              : messageParts,
-        });
+      // 如果有 toolResults，它们在 OpenAI 中是独立的消息
+      if (toolResults.isNotEmpty) {
+        contents.addAll(toolResults);
+        continue;
       }
+
+      Map<String, dynamic> msg = {
+        'role': getSender(message.sender),
+      };
+
+      if (messageParts.isNotEmpty) {
+        msg['content'] =
+            messageParts.length == 1 && messageParts[0]['type'] == 'text'
+            ? messageParts[0]['text']
+            : messageParts;
+      } else {
+        msg['content'] = ''; // Assistant message with tool_calls can have empty content
+      }
+
+      if (toolCalls.isNotEmpty) {
+        msg['tool_calls'] = toolCalls;
+      }
+
+      contents.add(msg);
     }
   }
 
@@ -1036,6 +1075,26 @@ class GeminiApiService extends BaseApiService {
                 'mime_type': part.mimeType!,
                 "data": part.content,
               },
+            });
+            break;
+          case MessagePartType.toolCall:
+            var data = jsonDecode(part.content);
+            parts.add({
+              'functionCall': {
+                'name': data['name'],
+                'args': data['arguments'],
+              }
+            });
+            break;
+          case MessagePartType.toolResult:
+            var data = jsonDecode(part.content);
+            parts.add({
+              'functionResponse': {
+                'name': data['name'],
+                'response': {
+                  'result': data['result'],
+                },
+              }
             });
             break;
         }

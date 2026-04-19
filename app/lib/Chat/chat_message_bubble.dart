@@ -297,7 +297,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
         throw UnimplementedError();
       case MessageChunkType.reasoning:
         return _ReasonBlock(content: block.content, isComplete: true);
-      case MessageChunkType.functionCalling:
+      case MessageChunkType.toolCall:
         throw UnimplementedError();
       case MessageChunkType.error:
         return _ErrorBlock(theme: widget.theme, content: block.content);
@@ -904,7 +904,7 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
           content: response.content,
           isComplete: true,
         );
-      case MessageChunkType.functionCalling:
+      case MessageChunkType.toolCall:
         throw UnimplementedError();
       case MessageChunkType.error:
         return _ErrorBlock(

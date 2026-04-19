@@ -4135,10 +4135,10 @@ class S {
     return Intl.message('Model List', name: 'model_list', desc: '', args: []);
   }
 
-  /// `Skip to Quick Chat`
+  /// `Skip and quick chat`
   String get skip_to_quick_chat {
     return Intl.message(
-      'Skip to Quick Chat',
+      'Skip and quick chat',
       name: 'skip_to_quick_chat',
       desc: '',
       args: [],

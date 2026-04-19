@@ -9,8 +9,10 @@
 # packages, and plugins designed to encourage good coding practices.
 analyzer:
   exclude:
-    - lib/generated/**
+    - lib/l10n/generated/**
     - lib/utils/web_view/**
+    - lib/utils/code/**
+    - lib/utils/paged_scroll/**
   errors:
     constant_identifier_names: ignore
 include: package:flutter_lints/flutter.yaml

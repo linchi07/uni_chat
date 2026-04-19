@@ -50,6 +50,7 @@ jobs:
 
       - name: Extract version from pubspec.yaml
         id: extract_version
+        shell: bash
         run: |
           VERSION=$(grep '^version:' app/pubspec.yaml | sed 's/version: //')
           VERSION_RAW=$(echo $VERSION | cut -d'+' -f1)
@@ -107,17 +108,11 @@ jobs:
           Get-ChildItem -Path app/Installer/*.exe
 
       # macOS Build
-      - name: Disable macOS signing (CI)
+      - name: Prepare macOS dependencies
         if: matrix.platform == 'macos'
-        working-directory: app/macos
-        run: |
-          xcodebuild -project Runner.xcodeproj \
-            -target Runner \
-            -configuration Release \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
-      
+        run: flutter precache --macos
+        working-directory: app
+
       - name: Build macOS App
         if: matrix.platform == 'macos'
         run: |
