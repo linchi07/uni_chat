@@ -227,7 +227,7 @@ class ChatMessage {
   }
 }
 
-enum MessagePartType { text, image, pdf, base64Image, base64pdf, toolCall, toolResult }
+enum MessagePartType { text, image, pdf, base64Image, base64pdf, toolCall, toolResult, reasoning }
 
 class MessagePart {
   final MessagePartType type;
@@ -248,6 +248,8 @@ class MessagePart {
       case MessagePartType.toolCall:
       case MessagePartType.toolResult:
         return 50; // Estimated tokens for structured tool call/result
+      case MessagePartType.reasoning:
+        return LLMTokenEstimator.estimateTokens(content);
     }
   }
 

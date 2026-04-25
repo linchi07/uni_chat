@@ -11,8 +11,11 @@ import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Execution/execution_models.dart';
+import 'package:uni_chat/api_configs/api_database.dart';
+import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
+import 'package:uni_chat/utils/llm_icons.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
@@ -314,21 +317,48 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
             .map<MessageBlock>((e) => MessageBlock.fromMap(e))
             .toList());
         int pt = 0;
+        List<Widget> currentGroup = [];
+
+        void flushGroup() {
+          if (currentGroup.isNotEmpty) {
+            w.add(
+              _NonTextGroupWidget(
+                children: List.from(currentGroup),
+                theme: theme,
+              ),
+            );
+            currentGroup.clear();
+          }
+        }
+
         for (var i in d) {
           var s = wm.content.substring(pt, i.anchor);
           if (s.isNotEmpty) {
+            flushGroup();
             w.add(_TextBlock(content: s, color: theme.darkTextColor));
           }
-          w.add(typeMatch(i));
+
+          var blockWidget = typeMatch(i);
+          if (i.chunkType == MessageChunkType.text) {
+            flushGroup();
+            w.add(blockWidget);
+          } else {
+            currentGroup.add(blockWidget);
+          }
+
           pt = (i.anchor == -1) ? pt : i.anchor;
         }
+
         if (pt < wm.content.length) {
+          flushGroup();
           w.add(
             _TextBlock(
               content: wm.content.substring(pt),
               color: theme.darkTextColor,
             ),
           );
+        } else {
+          flushGroup();
         }
       } on Exception catch (e) {
         w.add(
@@ -442,6 +472,69 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                 ),
               ),
             if (prevMessage!.childIds.length > 1) ...variantSelector(),
+            if (message.sender == MessageSender.ai &&
+                message.senderId.isNotEmpty) ...[
+              FutureBuilder<Model?>(
+                future: _ModelCache.getModel(message.senderId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done &&
+                      snapshot.hasData &&
+                      snapshot.data != null) {
+                    final model = snapshot.data!;
+                    final path =
+                        LLMImageIndexer.tryGetImagePath(model.family) ??
+                        LLMImageIndexer.getImagePath(model.family);
+
+                    Widget avatar;
+                    if (path.contains('unknown') || path.isEmpty) {
+                      avatar = Icon(
+                        Icons.smart_toy_outlined,
+                        size: 16,
+                        color: theme.primaryColor,
+                      );
+                    } else {
+                      avatar = ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.asset(
+                          path,
+                          width: 16,
+                          height: 16,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.smart_toy_outlined,
+                              size: 16,
+                              color: theme.primaryColor,
+                            );
+                          },
+                        ),
+                      );
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          avatar,
+                          const SizedBox(width: 6),
+                          Text(
+                            model.friendlyName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: theme.darkTextColor.withAlpha(150),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
           ],
         ),
       ),
@@ -879,14 +972,9 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
             }
             updateAnimationState(value);
 
-            // 渲染已经播完的块
             var currentIdx = value.indexWhere(
               (c) => c.id == currentAnimatingId,
             );
-            List<Widget> animatedBlocks = [];
-            for (int i = 0; i < currentIdx; i++) {
-              animatedBlocks.add(typeMatch(value[i]));
-            }
 
             return StatefulBuilder(
               builder: (context, setState) {
@@ -896,21 +984,49 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
                   });
                 }
 
-                // 实时计算当前正在动画的块
-                Widget? activeBlock;
-                if (currentIdx != -1) {
-                  activeBlock = _buildActiveBlock(
-                    value[currentIdx],
-                    charDisplayed,
-                  );
+                List<Widget> streamBody = [];
+                List<Widget> currentGroup = [];
+
+                void flushGroup() {
+                  if (currentGroup.isNotEmpty) {
+                    streamBody.add(
+                      _NonTextGroupWidget(
+                        children: List.from(currentGroup),
+                        theme: widget.theme,
+                      ),
+                    );
+                    currentGroup.clear();
+                  }
                 }
+
+                for (int i = 0; i < value.length; i++) {
+                  if (i > currentIdx) break;
+
+                  Widget blockWidget;
+                  bool isText = false;
+
+                  if (i == currentIdx) {
+                    var active = _buildActiveBlock(value[i], charDisplayed);
+                    if (active == null) continue;
+                    blockWidget = active;
+                    isText = value[i] is TextChunk;
+                  } else {
+                    blockWidget = typeMatch(value[i]);
+                    isText = value[i] is TextChunk;
+                  }
+
+                  if (isText) {
+                    flushGroup();
+                    streamBody.add(blockWidget);
+                  } else {
+                    currentGroup.add(blockWidget);
+                  }
+                }
+                flushGroup();
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ...animatedBlocks,
-                    if (activeBlock != null) activeBlock,
-                  ],
+                  children: streamBody,
                 );
               },
             );
@@ -1084,14 +1200,8 @@ class _ErrorBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        color: theme.errorColor.withAlpha(80),
-        borderRadius: BorderRadius.circular(12),
-      ),
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(16),
+      color: Colors.transparent,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1205,22 +1315,8 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
           isShowing = !isShowing;
         });
       },
-      //吓哭了，Gemini3 flash写的效果太强了，感觉我可以辞职了。说白了，连pro都不用上
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(40),
-              spreadRadius: 1,
-              offset: const Offset(0, 1),
-              blurRadius: 3,
-            ),
-          ],
-          color: theme.zeroGradeColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: Colors.transparent,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1380,11 +1476,7 @@ class _RagBlockState extends State<_RagBlock>
   @override
   Widget build(BuildContext context) {
     final card = Container(
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-      ),
+      color: Colors.transparent,
       child: Shimmer(
         enabled: !widget.isComplete,
         duration: const Duration(seconds: 3),
@@ -1392,8 +1484,7 @@ class _RagBlockState extends State<_RagBlock>
         colorOpacity: 0.8,
         child: Container(
           width: double.infinity,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          padding: const EdgeInsets.all(16),
+          color: Colors.transparent,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1507,20 +1598,7 @@ class _ToolCallBlockState extends State<_ToolCallBlock> {
         }
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: widget.theme.zeroGradeColor,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(40),
-              spreadRadius: 1,
-              offset: const Offset(0, 1),
-              blurRadius: 3,
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: Colors.transparent,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1617,5 +1695,67 @@ class _ToolCallBlockState extends State<_ToolCallBlock> {
         ),
       ),
     );
+  }
+}
+
+class _NonTextGroupWidget extends StatelessWidget {
+  const _NonTextGroupWidget({
+    super.key,
+    required this.children,
+    required this.theme,
+  });
+  final List<Widget> children;
+  final ThemeConfig theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.darkTextColor.withAlpha(30), width: 1),
+        borderRadius: BorderRadius.circular(12),
+        color: theme.zeroGradeColor.withAlpha(50),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: List.generate(children.length, (index) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (index > 0)
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: theme.darkTextColor.withAlpha(20),
+                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                child: children[index],
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _ModelCache {
+  static final Map<String, Model> _cache = {};
+
+  static Future<Model?> getModel(String modelId) async {
+    if (_cache.containsKey(modelId)) {
+      return _cache[modelId];
+    }
+    final model = await ApiDatabase.instance.getModelById(modelId);
+    if (model != null) {
+      _cache[modelId] = model;
+    }
+    return model;
   }
 }

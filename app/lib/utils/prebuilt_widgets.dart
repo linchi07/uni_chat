@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 
-import 'package:uni_chat/l10n/generated/l10n.dart';
 import '../theme_manager.dart';
 import 'color.dart';
 
@@ -1384,7 +1384,7 @@ class _StdSegmentedControlState extends ConsumerState<StdSegmentedControl>
       margin: widget.margin ?? const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: (widget.enableBackground) ? theme.secondGradeColor : null,
+        color: (widget.enableBackground) ? theme.zeroGradeColor : null,
         borderRadius: BorderRadius.circular(12),
       ),
       child: LayoutBuilder(

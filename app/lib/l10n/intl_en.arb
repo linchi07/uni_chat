@@ -607,5 +607,21 @@
   "thinking_mode_medium": "Medium",
   "thinking_mode_high": "High",
   "toolCall": "Tool Calling",
-  "thinking": "Thinking"
+  "thinking": "Thinking",
+  "sidebar_chat": "Chat",
+  "sidebar_agent": "Agents",
+  "sidebar_show_title": "Show Sidebar Text Titles",
+  "dashboard_prompt_tokens": "Total Prompt",
+  "dashboard_completion_tokens": "Total Completion",
+  "dashboard_total_tokens": "Total Usage",
+  "dashboard_cache_saved": "Cache Saved",
+  "dashboard_est_cost": "Est. Cost ({currency})",
+  "dashboard_model_dist": "Model Usage Breakdown",
+  "dashboard_key_dist": "API Key Distribution",
+  "dashboard_usage_trend": "Call Trend",
+  "dashboard_hour_record": "Today's Hourly Logs",
+  "dashboard_history_record": "Recent Call Logs",
+  "dashboard_no_record": "No Call Records",
+  "dashboard_call_times": "Called {count} times",
+  "dashboard_selected_period": "Selected Period Details"
 }

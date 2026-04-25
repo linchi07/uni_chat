@@ -7,8 +7,9 @@ abstract class IntermediateTurn {}
 
 class AssistantTurn extends IntermediateTurn {
   final String text;
+  final String? reasoning;
   final List<ParsedToolCall> toolCalls;
-  AssistantTurn({required this.text, required this.toolCalls});
+  AssistantTurn({required this.text, this.reasoning, required this.toolCalls});
 }
 
 class ToolResultTurn extends IntermediateTurn {

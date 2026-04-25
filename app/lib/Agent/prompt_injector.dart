@@ -116,6 +116,7 @@ class PromptInjector {
              id: "turn_intermediate_${rc.chatHistory.length}",
              sender: MessageSender.ai,
              parts: [
+               if (turn.reasoning != null) MessagePart(type: MessagePartType.reasoning, content: turn.reasoning!),
                if (turn.text.isNotEmpty) MessagePart(type: MessagePartType.text, content: turn.text),
                ...turn.toolCalls.map((c) => MessagePart(
                  type: MessagePartType.toolCall, 
@@ -317,12 +318,15 @@ class PromptInjector {
            }
          }
       } else if (i.data != null && i.data!.containsKey('msg_blocks')) {
-        // 回退逻辑：处理旧格式
+        // 回退逻辑：处理旧格式 以及 处理持久化的 Reasoning
         List<dynamic> blocks = i.data!['msg_blocks'];
         for (var b in blocks) {
           MessageBlock block = MessageBlock.fromMap(b);
           if (block.chunkType == MessageChunkType.toolCall) {
-            parts.add(MessagePart(type: MessagePartType.text, content: block.content));
+            // 注意：这里如果是旧格式，通常是作为 text 处理的（如果不使用 Native的话）
+            // 但是在 inject 中，如果有 structured_tool_calls 则不会进这里
+          } else if (block.chunkType == MessageChunkType.reasoning) {
+            parts.add(MessagePart(type: MessagePartType.reasoning, content: block.content));
           }
         }
       }

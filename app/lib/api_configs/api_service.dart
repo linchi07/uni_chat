@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:collection/collection.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -368,7 +369,8 @@ class OpenAiApiService extends BaseApiService {
             break;
           case MessagePartType.toolCall:
           case MessagePartType.toolResult:
-            // This legacy API might not support native tool calls, 
+          case MessagePartType.reasoning:
+            // This legacy API might not support native tool calls or reasoning fields, 
             // but we must handle the cases for completeness.
             break;
         }
@@ -895,6 +897,10 @@ class OpenAiCompletionService extends OpenAiApiService {
               'content': data['result']?.toString() ?? '',
             });
             break;
+          case MessagePartType.reasoning:
+            // 直接将推理内容存入消息顶层的 reasoning_content
+            // 注意：这部分内容在下面逻辑中会被提取
+            break;
         }
       }
 
@@ -907,6 +913,12 @@ class OpenAiCompletionService extends OpenAiApiService {
       Map<String, dynamic> msg = {
         'role': getSender(message.sender),
       };
+
+      // 提取推理内容并填入 reasoning_content
+      final reasoningPart = message.parts.firstWhereOrNull((p) => p.type == MessagePartType.reasoning);
+      if (reasoningPart != null) {
+        msg['reasoning_content'] = reasoningPart.content;
+      }
 
       if (messageParts.isNotEmpty) {
         msg['content'] =
@@ -1326,6 +1338,10 @@ class GeminiApiService extends BaseApiService {
                 },
               }
             });
+            break;
+          case MessagePartType.reasoning:
+            // Currently Gemini doesn't use reasoning_content in history re-submission
+            // like DeepSeek, but we must handle the case for completeness.
             break;
         }
       }

@@ -32,7 +32,7 @@ class ExecutionLoop {
       var buffer = ChunkedStringBuffer();
       var parser = InputParser(buffer, id);
       var reasoningBuffer = ChunkedStringBuffer();
-      var reasoningParser = InputParser(reasoningBuffer, id);
+      var reasoningParser = InputParser(reasoningBuffer, id, defaultChunkType: MessageChunkType.reasoning);
       List<ToolCallChunk> nativeToolCalls = [];
 
       void formatOutput() {
@@ -120,16 +120,25 @@ class ExecutionLoop {
 
       // 注入本轮的结构化辅助响应
       var textBuffer = StringBuffer();
+      var reasoningBufferResult = StringBuffer();
       List<ParsedToolCall> allParsedCalls = [];
       for (var chunk in currentTurnAllChunks) {
         if (chunk is TextChunk) {
           textBuffer.write(chunk.text);
+        } else if (chunk is ReasoningChunk) {
+          reasoningBufferResult.write(chunk.text);
         } else if (chunk is ToolCallChunk) {
           allParsedCalls.addAll(chunk.parsedCalls);
         }
       }
       injector.appendIntermediateTurn(
-        AssistantTurn(text: textBuffer.toString(), toolCalls: allParsedCalls),
+        AssistantTurn(
+          text: textBuffer.toString(),
+          reasoning: reasoningBufferResult.isNotEmpty
+              ? reasoningBufferResult.toString()
+              : null,
+          toolCalls: allParsedCalls,
+        ),
       );
 
       // 注入本轮的结构化工具执行结果

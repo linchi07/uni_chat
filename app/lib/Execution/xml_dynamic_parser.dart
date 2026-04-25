@@ -2,6 +2,7 @@ import 'package:uni_chat/Execution/execution_loop.dart';
 import 'package:uni_chat/Execution/execution_models.dart';
 
 import '../utils/chunked_string_buffer.dart';
+import '../Chat/chat_models.dart';
 
 class InputParser {
   static Map<String, ContentChunk Function(bool, String, int)> targetXMLs = {
@@ -17,10 +18,11 @@ class InputParser {
   String tagName = '';
   String endTagName = '';
   var blockStartPointer = 0;
-  ChunkedStringBuffer parseBuffer;
+  final ChunkedStringBuffer parseBuffer;
   final Id _id;
   int? _currentId;
-  InputParser(this.parseBuffer, this._id);
+  final MessageChunkType defaultChunkType;
+  InputParser(this.parseBuffer, this._id, {this.defaultChunkType = MessageChunkType.text});
   //这里的话，实际上是保证能给block一个固定的id
   //直接get的话，就是现有的id，通过将current设置为null，就代表创建一个新id
   //由于解析器永远是串行运行的，所以，直接获取未完成的ID，就是上次那个未完成的块的ID。
@@ -73,11 +75,7 @@ class InputParser {
             //当没有找到<，则将缓冲区中的所有内容作为文本块添加到结果中
             if (tmpBuffer.length > 0) {
               unfinishedBlocks.add(
-                TextChunk(
-                  id: currentId,
-                  isFinished: false,
-                  text: tmpBuffer.toString(),
-                ),
+                _createDefaultChunk(tmpBuffer.toString(), false)
               );
               tmpBuffer.pop(tmpBuffer.length);
               break;
@@ -108,13 +106,9 @@ class InputParser {
               //这里可以直接忽略固化的东西，也就是将buffer被添加到文本块中的内容给pop掉
               if (targetXMLs.containsKey(tagName)) {
                 blocksCached.add(
-                  TextChunk(
-                    id: currentId,
-                    isFinished: true,
-                    text: tmpBuffer.substring(
-                      0,
-                      tmpBuffer.fromMasterIndex(pointer),
-                    ),
+                  _createDefaultChunk(
+                    tmpBuffer.substring(0, tmpBuffer.fromMasterIndex(pointer)),
+                    true,
                   ),
                 );
                 _currentId = null;
@@ -139,11 +133,7 @@ class InputParser {
             //当没有找到>，则将缓冲区中的所有内容作为文本块添加到结果中
             if (tmpBuffer.length > 0) {
               unfinishedBlocks.add(
-                TextChunk(
-                  id: currentId,
-                  isFinished: false,
-                  text: tmpBuffer.toString(),
-                ),
+                _createDefaultChunk(tmpBuffer.toString(), false)
               );
               tmpBuffer.pop(tmpBuffer.length);
               break;
@@ -240,6 +230,13 @@ class InputParser {
         //此时会跳回start，由那边把缓冲区中的剩余内容给添加到文本块中（或者开始新一轮匹配）
       }
     }
+  }
+
+  ContentChunk _createDefaultChunk(String content, bool isFinished) {
+    if (defaultChunkType == MessageChunkType.reasoning) {
+      return ReasoningChunk(id: currentId, isFinished: isFinished, text: content);
+    }
+    return TextChunk(id: currentId, isFinished: isFinished, text: content);
   }
 }
 

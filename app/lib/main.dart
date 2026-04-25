@@ -483,6 +483,20 @@ class MainCont extends ConsumerStatefulWidget {
   ConsumerState<MainCont> createState() => MainContState();
 }
 
+class SidebarItemData {
+  final Pages page;
+  final IconData icon;
+  final String keyName;
+  final String Function(BuildContext) titleBuilder;
+
+  SidebarItemData({
+    required this.page,
+    required this.icon,
+    required this.keyName,
+    required this.titleBuilder,
+  });
+}
+
 enum Pages { chat, agent, Rag }
 
 class MainContState extends ConsumerState<MainCont> {
@@ -530,55 +544,145 @@ class MainContState extends ConsumerState<MainCont> {
     });
   }
 
-  List<Widget> _buildMenuItems() {
-    return [
-      IconButton(
+  List<Widget> _buildMenuItems({List<String>? order}) {
+    final allItems = <String, Widget>{
+      'chat': IconButton(
         onPressed: () {
-          if (page == Pages.chat) {
-            return;
-          }
+          if (page == Pages.chat) return;
           setState(() {
             page = Pages.chat;
           });
         },
         icon: Icon(Icons.chat_bubble_outline),
       ),
-      IconButton(
+      'agent': IconButton(
         onPressed: () {
-          if (page == Pages.agent) {
-            return;
-          }
+          if (page == Pages.agent) return;
           setState(() {
             page = Pages.agent;
           });
         },
         icon: Icon(Icons.groups_outlined),
       ),
-      /*
-                      IconButton(
-                        onPressed: () {
-                          if (page == Pages.Rag) {
-                            return;
-                          }
-                          setState(() {
-                            page = Pages.Rag;
-                          });
-                        },
-                        icon: Icon(Icons.book_outlined),
+    };
+
+    if (order != null && order.isNotEmpty) {
+      var list = <Widget>[];
+      for (var key in order) {
+        if (allItems.containsKey(key)) {
+          list.add(allItems[key]!);
+        }
+      }
+      for (var key in allItems.keys) {
+        if (!order.contains(key)) {
+          list.add(allItems[key]!);
+        }
+      }
+      return list;
+    }
+
+    return allItems.values.toList();
+  }
+
+  Widget _buildSidebarTab(
+    BuildContext context,
+    SidebarItemData item,
+    bool showTitle,
+    ThemeConfig theme,
+  ) {
+    final isSelected = page == item.page;
+    final color = isSelected
+        ? theme.primaryColor
+        : theme.textColor.withAlpha(180);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(showTitle ? 12 : 24),
+          onTap: () {
+            if (page == item.page) return;
+            setState(() {
+              page = item.page;
+            });
+          },
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: showTitle ? 8 : 10),
+            child: showTitle
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(item.icon, color: color, size: 24),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.titleBuilder(context),
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: Icon(Icons.mode_edit_outline_outlined),
-                      ),
-                       */
-    ];
+                    ],
+                  )
+                : Center(child: Icon(item.icon, color: color, size: 24)),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final sidebarSettings = ref.watch(sidebarSettingsProvider);
+    final showTitle = sidebarSettings.showTitle;
+    final order = sidebarSettings.order;
+
+    final allItems = [
+      SidebarItemData(
+        page: Pages.chat,
+        icon: Icons.chat_bubble_outline,
+        keyName: 'chat',
+        titleBuilder: (c) => S.of(c).sidebar_chat,
+      ),
+      SidebarItemData(
+        page: Pages.agent,
+        icon: Icons.groups_outlined,
+        keyName: 'agent',
+        titleBuilder: (c) => S.of(c).sidebar_agent,
+      ),
+    ];
+
+    var sidebarItems = <SidebarItemData>[];
+    for (var key in order) {
+      var item = allItems.firstWhere(
+        (element) => element.keyName == key,
+        orElse: () => SidebarItemData(
+          page: Pages.chat,
+          icon: Icons.chat_bubble_outline,
+          keyName: '',
+          titleBuilder: (c) => "",
+        ),
+      );
+      if (item.keyName.isNotEmpty) {
+        sidebarItems.add(item);
+      }
+    }
+    for (var item in allItems) {
+      if (!sidebarItems.any((e) => e.keyName == item.keyName)) {
+        sidebarItems.add(item);
+      }
+    }
+
     var s = MediaQuery.of(context).size;
     var theme = ref.watch(themeProvider);
     var bnw = _bannerWidget();
+
     return Scaffold(
       backgroundColor: theme.zeroGradeColor,
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
@@ -598,7 +702,7 @@ class MainContState extends ConsumerState<MainCont> {
           : Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ..._buildMenuItems(),
+                ..._buildMenuItems(order: order),
                 IconButton(
                   onPressed: () {
                     OverlayWrapper.showOverlay(
@@ -619,11 +723,51 @@ class MainContState extends ConsumerState<MainCont> {
               children: [
                 if (s.width >= 500)
                   Container(
-                    width: 50,
+                    width: showTitle ? 60 : 50,
                     decoration: BoxDecoration(color: theme.zeroGradeColor),
                     child: Column(
                       children: [
-                        ..._buildMenuItems(),
+                        Expanded(
+                          child: ReorderableListView(
+                            buildDefaultDragHandles: false,
+                            proxyDecorator: (child, index, animation) {
+                              return AnimatedBuilder(
+                                animation: animation,
+                                builder: (context, _) {
+                                  return Material(
+                                    color: Colors.transparent,
+                                    elevation: 0,
+                                    child: child,
+                                  );
+                                },
+                              );
+                            },
+                            onReorder: (oldIndex, newIndex) {
+                              if (newIndex > oldIndex) newIndex -= 1;
+                              final item = sidebarItems.removeAt(oldIndex);
+                              sidebarItems.insert(newIndex, item);
+                              final newOrder = sidebarItems
+                                  .map((e) => e.keyName)
+                                  .toList();
+                              ref
+                                  .read(sidebarSettingsProvider.notifier)
+                                  .setOrder(newOrder);
+                            },
+                            children: [
+                              for (int i = 0; i < sidebarItems.length; i++)
+                                ReorderableDragStartListener(
+                                  key: ValueKey(sidebarItems[i].keyName),
+                                  index: i,
+                                  child: _buildSidebarTab(
+                                    context,
+                                    sidebarItems[i],
+                                    showTitle,
+                                    theme,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                         const Spacer(),
                         PersonaIndicator(),
                         IconButton(
@@ -637,7 +781,6 @@ class MainContState extends ConsumerState<MainCont> {
                           },
                           icon: Icon(Icons.settings_outlined),
                         ),
-                        // to avoid the menu button being cut off
                         if (PlatForm().platform == RunningPlatform.ipadOS)
                           const SizedBox(height: 10),
                       ],
@@ -664,3 +807,45 @@ class MainContState extends ConsumerState<MainCont> {
     );
   }
 }
+
+class SidebarSettings {
+  final bool showTitle;
+  final List<String> order;
+  SidebarSettings({required this.showTitle, required this.order});
+  SidebarSettings copyWith({bool? showTitle, List<String>? order}) {
+    return SidebarSettings(
+      showTitle: showTitle ?? this.showTitle,
+      order: order ?? this.order,
+    );
+  }
+}
+
+class SidebarSettingsNotifier extends StateNotifier<SidebarSettings> {
+  SidebarSettingsNotifier()
+      : super(SidebarSettings(showTitle: true, order: ['chat', 'agent'])) {
+    _load();
+  }
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final show = prefs.getBool('showSidebarTitle') ?? true;
+    final ord = prefs.getStringList('sidebarOrder') ?? ['chat', 'agent'];
+    state = SidebarSettings(showTitle: show, order: ord);
+  }
+
+  Future<void> setShowTitle(bool val) async {
+    state = state.copyWith(showTitle: val);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('showSidebarTitle', val);
+  }
+
+  Future<void> setOrder(List<String> val) async {
+    state = state.copyWith(order: val);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('sidebarOrder', val);
+  }
+}
+
+final sidebarSettingsProvider =
+    StateNotifierProvider<SidebarSettingsNotifier, SidebarSettings>((ref) {
+  return SidebarSettingsNotifier();
+});

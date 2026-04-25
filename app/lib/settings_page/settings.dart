@@ -12,6 +12,36 @@ import '../utils/prebuilt_widgets.dart';
 import 'api_configure.dart' show ApiSettings;
 import 'log_settings_page.dart';
 
+class SidebarTitleSwitcher extends ConsumerWidget {
+  const SidebarTitleSwitcher({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sidebarSettings = ref.watch(sidebarSettingsProvider);
+    final theme = ref.watch(themeProvider);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            S.of(context).sidebar_show_title,
+            style: TextStyle(color: theme.textColor, fontSize: 16),
+          ),
+          StdSegmentedControl(
+            width: 140,
+            labels: [S.of(context).disable, S.of(context).enable],
+            currentIndex: sidebarSettings.showTitle ? 1 : 0,
+            onIndexChanged: (index) {
+              ref.read(sidebarSettingsProvider.notifier).setShowTitle(index == 1);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// “账户”设置页面的占位符
 class _GeneralSettings extends ConsumerWidget {
   @override
@@ -29,6 +59,8 @@ class _GeneralSettings extends ConsumerWidget {
         Text(S.of(context).language_settings, style: TextStyle(fontSize: 18)),
         const SizedBox(height: 20),
         LanguageSwitcher(),
+        const SizedBox(height: 20),
+        const SidebarTitleSwitcher(),
         const SizedBox(height: 20),
         StdDropDown(
           height: 55,

@@ -4204,6 +4204,156 @@ class S {
   String get thinking {
     return Intl.message('Thinking', name: 'thinking', desc: '', args: []);
   }
+
+  /// `Chat`
+  String get sidebar_chat {
+    return Intl.message('Chat', name: 'sidebar_chat', desc: '', args: []);
+  }
+
+  /// `Agents`
+  String get sidebar_agent {
+    return Intl.message('Agents', name: 'sidebar_agent', desc: '', args: []);
+  }
+
+  /// `Show Sidebar Text Titles`
+  String get sidebar_show_title {
+    return Intl.message(
+      'Show Sidebar Text Titles',
+      name: 'sidebar_show_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Total Prompt`
+  String get dashboard_prompt_tokens {
+    return Intl.message(
+      'Total Prompt',
+      name: 'dashboard_prompt_tokens',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Total Completion`
+  String get dashboard_completion_tokens {
+    return Intl.message(
+      'Total Completion',
+      name: 'dashboard_completion_tokens',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Total Usage`
+  String get dashboard_total_tokens {
+    return Intl.message(
+      'Total Usage',
+      name: 'dashboard_total_tokens',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cache Saved`
+  String get dashboard_cache_saved {
+    return Intl.message(
+      'Cache Saved',
+      name: 'dashboard_cache_saved',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Est. Cost ({currency})`
+  String dashboard_est_cost(Object currency) {
+    return Intl.message(
+      'Est. Cost ($currency)',
+      name: 'dashboard_est_cost',
+      desc: '',
+      args: [currency],
+    );
+  }
+
+  /// `Model Usage Breakdown`
+  String get dashboard_model_dist {
+    return Intl.message(
+      'Model Usage Breakdown',
+      name: 'dashboard_model_dist',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `API Key Distribution`
+  String get dashboard_key_dist {
+    return Intl.message(
+      'API Key Distribution',
+      name: 'dashboard_key_dist',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Call Trend`
+  String get dashboard_usage_trend {
+    return Intl.message(
+      'Call Trend',
+      name: 'dashboard_usage_trend',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Today's Hourly Logs`
+  String get dashboard_hour_record {
+    return Intl.message(
+      'Today\'s Hourly Logs',
+      name: 'dashboard_hour_record',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Recent Call Logs`
+  String get dashboard_history_record {
+    return Intl.message(
+      'Recent Call Logs',
+      name: 'dashboard_history_record',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No Call Records`
+  String get dashboard_no_record {
+    return Intl.message(
+      'No Call Records',
+      name: 'dashboard_no_record',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Called {count} times`
+  String dashboard_call_times(Object count) {
+    return Intl.message(
+      'Called $count times',
+      name: 'dashboard_call_times',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Selected Period Details`
+  String get dashboard_selected_period {
+    return Intl.message(
+      'Selected Period Details',
+      name: 'dashboard_selected_period',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

@@ -825,7 +825,9 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       );
       sb.clear();
       await for (final chunk in stream) {
-        sb.write(chunk.content);
+        if (chunk.type == MessageChunkType.text) {
+          sb.write(chunk.content);
+        } // 否则的话，容易把DeepSeek的思维链也给写进去，导致标题无法正常解析
       }
       String? title;
       try {

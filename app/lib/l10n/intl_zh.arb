@@ -606,5 +606,21 @@
   "thinking_mode_medium": "中",
   "thinking_mode_high": "高",
   "toolCall": "工具调用",
-  "thinking": "推理思考"
+  "thinking": "推理思考",
+  "sidebar_chat": "聊天",
+  "sidebar_agent": "智能体",
+  "sidebar_show_title": "显示侧栏文字标题",
+  "dashboard_prompt_tokens": "总 Prompt",
+  "dashboard_completion_tokens": "总 Completion",
+  "dashboard_total_tokens": "总消耗",
+  "dashboard_cache_saved": "缓存节省",
+  "dashboard_est_cost": "预估费用 ({currency})",
+  "dashboard_model_dist": "模型消耗分布",
+  "dashboard_key_dist": "API Key 使用分布",
+  "dashboard_usage_trend": "调用趋势",
+  "dashboard_hour_record": "今日小时记录",
+  "dashboard_history_record": "最近调用记录",
+  "dashboard_no_record": "无调用记录",
+  "dashboard_call_times": "调用 {count} 次",
+  "dashboard_selected_period": "选中时段详情"
 }
