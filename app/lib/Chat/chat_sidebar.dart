@@ -8,7 +8,7 @@ import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/main.dart';
 
-import '../theme_manager.dart';
+import '../utils/uni_theme.dart';
 
 const double GAP = 10; // gap between lines
 const double LENGTH = 10; // line length
@@ -209,7 +209,7 @@ class _ChatSidebarState extends ConsumerState<ChatSidebar>
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     ref.listen(chatStateProvider, (prev, next) {
       if (next.messagesList.length != targetLineLength.length) {
         targetLineLength = List.generate(
@@ -354,7 +354,7 @@ class BarChatMessagePreview extends StatefulWidget {
     required this.theme,
   });
   final ValueNotifier<({ChatMessage? message, Offset? pointerLoc})> messageInfo;
-  final ThemeConfig theme;
+  final UniThemeData theme;
 
   @override
   State<BarChatMessagePreview> createState() => _BarChatMessagePreviewState();

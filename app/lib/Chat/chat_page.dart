@@ -23,7 +23,7 @@ import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/main.dart';
-import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
@@ -106,7 +106,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     var agent = ref.watch(agentProvider);
     if (agent?.id != selectedIndex?.$1 && agent != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -331,7 +331,7 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     var persona = ref.watch(personaProvider);
     if (persona.id != selectedIndex?.$1) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -515,7 +515,7 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     var agent = ref.watch(agentProvider);
     var slogan =
         agent?.openingConfigure?.slogan ?? S.of(context).front_page_titleSlogan;
@@ -693,7 +693,7 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
       });
       session = chatState.session;
     }
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     var itemCount = chatState.isResponding
         ? chatState.messagesList.length + 1
         : chatState.messagesList.length;
@@ -1001,7 +1001,7 @@ enum UploadStatus { notUploaded, uploading, uploaded, failed }
 
 class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   bool isDroppingFiles = false;
-  late ThemeConfig theme;
+  late UniThemeData theme;
   @override
   initState() {
     super.initState();
@@ -1203,13 +1203,13 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   @override
   Widget build(BuildContext context) {
     chatState = ref.watch(chatStateProvider);
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     agent = ref.watch(agentProvider);
     late Widget childPanel;
     if (isDroppingFiles) {
       childPanel = Container(
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-        color: Colors.white.withAlpha(180),
+        color: theme.zeroGradeColor.withAlpha(180),
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -1707,7 +1707,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: Colors.grey[300],
+                              color: theme.thirdGradeColor,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Center(
@@ -1762,7 +1762,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                   height: 50,
                   width: 50,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: theme.thirdGradeColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.insert_drive_file, size: 24),
@@ -1779,13 +1779,13 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 color: Colors.black.withAlpha(153),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Center(
+              child: Center(
                 child: SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
-                    color: Colors.white,
+                    color: theme.brightTextColor,
                   ),
                 ),
               ),

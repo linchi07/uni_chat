@@ -13,7 +13,8 @@ import 'package:uni_chat/main.dart';
 import 'package:uni_chat/settings_page/model_discovery_widget.dart';
 import 'package:uni_chat/settings_page/settings.dart' show settingsMenuKey;
 import 'package:uni_chat/settings_page/token_usage_dashboard.dart';
-import 'package:uni_chat/theme_manager.dart';
+
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paged_scroll/paged_scroll.dart';
@@ -50,10 +51,10 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
     );
   }
 
-  late ThemeConfig theme;
+  late UniThemeData theme;
   @override
   Widget build(BuildContext context) {
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -95,11 +96,11 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                 },
                 child: Row(
                   children: [
-                    Icon(Icons.add, color: Colors.white),
+                    Icon(Icons.add, color: theme.brightTextColor),
                     const SizedBox(width: 8.0),
                     Text(
                       S.of(context).add_provider,
-                      style: TextStyle(fontSize: 16.0, color: Colors.white),
+                      style: TextStyle(fontSize: 16.0, color: theme.brightTextColor),
                     ),
                   ],
                 ),
@@ -525,7 +526,7 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
   @override
   initState() {
     super.initState();
-    theme = ref.read(themeProvider);
+    theme = UniTheme.of(context);
     ac = ref.read(apiConfigureProvider);
     showBasic = ac.type != ProviderPresetType.singleInstance;
     if (showBasic) {
@@ -1043,11 +1044,11 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
 
   List<Widget> children = [];
 
-  late ThemeConfig theme;
+  late UniThemeData theme;
   late ApiConfigure ac;
   @override
   Widget build(BuildContext context) {
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     // the paged scroll widget has its own limits:
     // it requires the children to directly be a scrollable
     // any consumer widget will break this chain
@@ -1199,13 +1200,13 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
 
 class _BaseInfo extends ConsumerStatefulWidget {
   const _BaseInfo({required this.theme});
-  final ThemeConfig theme;
+  final UniThemeData theme;
   @override
   ConsumerState<_BaseInfo> createState() => __BaseInfoState();
 }
 
 class __BaseInfoState extends ConsumerState<_BaseInfo> {
-  ThemeConfig get theme => widget.theme;
+  UniThemeData get theme => widget.theme;
 
   late TextStyle tStyle;
   ApiType? get selected => ac.apiType;
@@ -1389,7 +1390,7 @@ class __BaseInfoState extends ConsumerState<_BaseInfo> {
 
 class ApiKeyHeader extends ConsumerStatefulWidget {
   const ApiKeyHeader({super.key, required this.theme});
-  final ThemeConfig theme;
+  final UniThemeData theme;
 
   @override
   ConsumerState<ApiKeyHeader> createState() => _ApiKeyState();
@@ -1523,7 +1524,7 @@ class _ApiKeyState extends ConsumerState<ApiKeyHeader> {
 
 class ApiKeyInfo extends ConsumerStatefulWidget {
   const ApiKeyInfo({super.key, required this.theme, required this.apiKey});
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final ApiKey apiKey;
 
   @override
@@ -1758,7 +1759,7 @@ class _ApiKeyInfoState extends ConsumerState<ApiKeyInfo> {
     );
   }
 
-  void editMenu(BuildContext context, ThemeConfig theme) {}
+  void editMenu(BuildContext context, UniThemeData theme) {}
 }
 
 class ApiKeyEditMenu extends StatefulWidget {
@@ -1769,7 +1770,7 @@ class ApiKeyEditMenu extends StatefulWidget {
     required this.onSave,
     required this.onCancel,
   });
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final ApiKey apiKey;
   final void Function(ApiKey) onSave;
   final void Function() onCancel;
@@ -1779,7 +1780,7 @@ class ApiKeyEditMenu extends StatefulWidget {
 }
 
 class _ApiKeyEditMenuState extends State<ApiKeyEditMenu> {
-  ThemeConfig get theme => widget.theme;
+  UniThemeData get theme => widget.theme;
   late TextStyle ts;
   @override
   void initState() {
@@ -1990,7 +1991,7 @@ class _ApiKeyEditMenuState extends State<ApiKeyEditMenu> {
 
 class ModelAddPageHeader extends ConsumerStatefulWidget {
   const ModelAddPageHeader({super.key, required this.theme});
-  final ThemeConfig theme;
+  final UniThemeData theme;
   @override
   ConsumerState<ModelAddPageHeader> createState() => _ModelAddPageHeaderState();
 }
@@ -2018,7 +2019,7 @@ class _ModelAddPageHeaderState extends ConsumerState<ModelAddPageHeader> {
               Expanded(child: const SizedBox(width: 10)),
               Consumer(
                 builder: (context, ref, child) {
-                  var theme = ref.watch(themeProvider);
+                  var theme = UniTheme.of(context);
                   var ac = ref.watch(apiConfigureProvider);
                   return Row(
                     mainAxisSize: MainAxisSize.min,
@@ -2174,7 +2175,7 @@ class ModelInfo extends ConsumerStatefulWidget {
     required this.model,
     required this.modelConfig,
   });
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final Model model;
   final ProviderModelConfig modelConfig;
 
@@ -2454,7 +2455,7 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
 }
 
 class ModelAddWidget extends StatefulWidget {
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final ProviderModelConfig modelConfig;
   final Model? initialModel;
   final bool startWithAdding;
@@ -2644,7 +2645,7 @@ class AddNewModel extends StatefulWidget {
   });
   final ProviderModelConfig modelConfig;
   final Model? initialModel;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final void Function(({Model model, ProviderModelConfig config})) onSave;
   final void Function() onCancel;
 
@@ -2822,7 +2823,7 @@ class ModelConfigureWidget extends StatefulWidget {
     required this.onSave,
     required this.onCancel,
   });
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final Model model;
   final ProviderModelConfig providerConfig;
   final void Function(ProviderModelConfig) onSave;
@@ -2835,7 +2836,7 @@ class ModelConfigureWidget extends StatefulWidget {
 class _ModelConfigureWidgetState extends State<ModelConfigureWidget> {
   late TextStyle tStyle;
   ProviderModelConfig get pConfig => widget.providerConfig;
-  ThemeConfig get theme => widget.theme;
+  UniThemeData get theme => widget.theme;
   @override
   void initState() {
     super.initState();
@@ -2994,7 +2995,7 @@ class ModelPricingWidget extends StatefulWidget {
     required this.onSave,
     required this.onCancel,
   });
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final ModelPricing? pricing;
   final void Function(ModelPricing?) onSave;
   final void Function() onCancel;

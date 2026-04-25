@@ -22,11 +22,11 @@ import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/platform_specifics/platform_specifics.dart';
 import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/setup_agent.dart';
-import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/top_banner.dart';
 import 'package:uni_chat/utils/auto_update_service.dart';
 import 'package:uni_chat/utils/log_manager.dart';
 import 'package:uni_chat/utils/overlays.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 
 import 'Agent/agent_page.dart';
 
@@ -225,129 +225,151 @@ class UNIChat extends StatefulWidget {
 class _UNIChatState extends State<UNIChat> {
   late bool isSetUp;
   bool _isUpdateChecked = false;
+  late UniThemeNotifier uniThemeNotifier;
+
   @override
   void initState() {
     super.initState();
     isSetUp = widget.isSetUp;
+
+    UniThemeData initialThemeData;
+    if (widget.themeName == 'dark') {
+      initialThemeData = ThemePresets.DARK;
+    } else if (widget.themeName == 'solarized') {
+      initialThemeData = ThemePresets.SOLARIZED;
+    } else {
+      initialThemeData = ThemePresets.LIGHT;
+    }
+    uniThemeNotifier = UniThemeNotifier(
+      initialTheme: initialThemeData,
+      initialName: widget.themeName ?? 'light',
+    );
   }
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    Widget mainContent = MainCont(key: masterNavigatorKey);
-    List<Override> ovr;
-    late ThemeConfig theme;
-    if (widget.themeName != null) {
-      theme = ThemeManager.themes
-          .firstWhere(
-            (element) => element.name == widget.themeName,
-            orElse: () => (name: 'light', theme: ThemeManager.light),
-          )
-          .theme;
-    } else {
-      theme = ThemeManager.light;
-    }
-    ovr = [
-      themeProvider.overrideWith((ref) {
-        return ThemeManager(theme);
-      }),
-    ];
     return ProviderScope(
-      overrides: ovr,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        localizationsDelegates: [
-          S.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-          AppFlowyEditorLocalizations.delegate,
-        ],
-        supportedLocales: S.delegate.supportedLocales,
-        navigatorKey: navigatorKey,
-        title: '',
-        scrollBehavior:
-            (PlatForm().platform == RunningPlatform.ios ||
-                PlatForm().platform == RunningPlatform.ipadOS)
-            ? const ScrollBehavior().copyWith(physics: const IOSScrollPhysics())
-            : null,
-        theme: ThemeData(
-          fontFamily: (PlatForm().isWindows)
-              ? (WindowsSpecificsSetting.customFontLoaded
-                    ? WindowsSpecificsSetting.CUSTOM_FONT_FAMILY
-                    : "Segoe UI")
-              : null,
-          // fix the font glitches in windows when displaying SC
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        ),
-        home: OverlayWrapper(
-          child: OverlayPortalScope(
-            child: Builder(
-              builder: (context) {
-                if (!_isUpdateChecked) {
-                  // 否则拿不到 overlay 的context引用
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    AutoUpdateService.checkUpdates(
-                      context,
-                      backgroundColor: theme.zeroGradeColor,
-                    );
-                  });
-                  _isUpdateChecked = true;
-                }
-                if (widget.locale != null) {
-                  S.load(widget.locale!);
-                  PlatForm().languageCode = widget.locale!.languageCode;
-                } else {
-                  PlatForm().languageCode = Localizations.localeOf(
-                    context,
-                  ).languageCode;
-                }
-                if (PlatForm().platform == RunningPlatform.macos) {
-                  mainContent = MacOSMenuBar(mainContent: mainContent);
-                }
-                if (PlatForm().isMobilePlatform) {
-                  mainContent = Scaffold(
-                    backgroundColor: theme.zeroGradeColor,
-                    body: SafeArea(
-                      bottom: PlatForm().platform != RunningPlatform.ipadOS,
-                      child: mainContent,
-                    ),
-                  );
-                }
-                if (!widget.isSetUp) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    OverlayWrapper.showOverlay(
-                      context,
-                      overlayContent: Padding(
-                        padding: (PlatForm().isMobile)
-                            ? const EdgeInsets.all(10.0)
-                            : const EdgeInsets.all(50.0),
-                        child: SetupAgent(),
-                      ),
-                      barrierDismissible: false,
-                    );
-                  });
-                  isSetUp =
-                      true; // or the setup menu will re-popout when you resize the window
-                }
-                mainContent = AppBarTheme(
-                  scrolledUnderElevation: 0,
-                  child: mainContent,
-                );
-                if (PlatForm().isWindows) {
-                  // windows will force the window to get too small when showing desktop even when window size is set
-                  // so we need to avoid the negative constrained error
-                  var mdof = MediaQuery.of(context);
-                  var s = mdof.size;
-                  mainContent = ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: 480, minWidth: 640),
-                    child: mainContent,
-                  );
-                }
-                return mainContent;
-              },
-            ),
-          ),
+      overrides: const [],
+      child: UniTheme(
+        notifier: uniThemeNotifier,
+        child: ListenableBuilder(
+          listenable: uniThemeNotifier,
+          builder: (context, child) {
+            final currentThemeData = uniThemeNotifier.data;
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              localizationsDelegates: [
+                S.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+                AppFlowyEditorLocalizations.delegate,
+              ],
+              supportedLocales: S.delegate.supportedLocales,
+              navigatorKey: navigatorKey,
+              title: '',
+              scrollBehavior:
+                  (PlatForm().platform == RunningPlatform.ios ||
+                      PlatForm().platform == RunningPlatform.ipadOS)
+                  ? const ScrollBehavior().copyWith(
+                      physics: const IOSScrollPhysics(),
+                    )
+                  : null,
+              theme: ThemeData(
+                brightness: currentThemeData.isDark
+                    ? Brightness.dark
+                    : Brightness.light,
+                scaffoldBackgroundColor: currentThemeData.zeroGradeColor,
+                fontFamily: (PlatForm().isWindows)
+                    ? (WindowsSpecificsSetting.customFontLoaded
+                          ? WindowsSpecificsSetting.CUSTOM_FONT_FAMILY
+                          : "Segoe UI")
+                    : null,
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: Colors.blue, // 维持这个颜色，自动按照pri来取色，容易出现诡异的问题。
+                  brightness: currentThemeData.isDark
+                      ? Brightness.dark
+                      : Brightness.light,
+                ),
+              ),
+              home: OverlayWrapper(
+                child: OverlayPortalScope(
+                  child: Builder(
+                    builder: (context) {
+                      final theme = UniTheme.of(context);
+                      Widget mainContent = MainCont(key: masterNavigatorKey);
+                      if (!_isUpdateChecked) {
+                        // 否则拿不到 overlay 的context引用
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          AutoUpdateService.checkUpdates(
+                            context,
+                            backgroundColor: theme.zeroGradeColor,
+                          );
+                        });
+                        _isUpdateChecked = true;
+                      }
+                      if (widget.locale != null) {
+                        S.load(widget.locale!);
+                        PlatForm().languageCode = widget.locale!.languageCode;
+                      } else {
+                        PlatForm().languageCode = Localizations.localeOf(
+                          context,
+                        ).languageCode;
+                      }
+                      if (PlatForm().platform == RunningPlatform.macos) {
+                        mainContent = MacOSMenuBar(mainContent: mainContent);
+                      }
+                      if (PlatForm().isMobilePlatform) {
+                        mainContent = Scaffold(
+                          backgroundColor: theme.zeroGradeColor,
+                          body: SafeArea(
+                            bottom:
+                                PlatForm().platform != RunningPlatform.ipadOS,
+                            child: mainContent,
+                          ),
+                        );
+                      }
+                      if (!widget.isSetUp) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          OverlayWrapper.showOverlay(
+                            context,
+                            overlayContent: Padding(
+                              padding: (PlatForm().isMobile)
+                                  ? const EdgeInsets.all(10.0)
+                                  : const EdgeInsets.all(50.0),
+                              child: SetupAgent(),
+                            ),
+                            barrierDismissible: false,
+                          );
+                        });
+                        isSetUp =
+                            true; // or the setup menu will re-popout when you resize the window
+                      }
+                      mainContent = AppBarTheme(
+                        scrolledUnderElevation: 0,
+                        child: mainContent,
+                      );
+                      if (PlatForm().isWindows) {
+                        // windows will force the window to get too small when showing desktop even when window size is set
+                        // so we need to avoid the negative constrained error
+                        var mdof = MediaQuery.of(context);
+                        var s = mdof.size;
+                        mainContent = ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: 480,
+                            minWidth: 640,
+                          ),
+                          child: mainContent,
+                        );
+                      }
+                      return mainContent;
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -588,7 +610,7 @@ class MainContState extends ConsumerState<MainCont> {
     BuildContext context,
     SidebarItemData item,
     bool showTitle,
-    ThemeConfig theme,
+    UniThemeData theme,
   ) {
     final isSelected = page == item.page;
     final color = isSelected
@@ -680,7 +702,7 @@ class MainContState extends ConsumerState<MainCont> {
     }
 
     var s = MediaQuery.of(context).size;
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     var bnw = _bannerWidget();
 
     return Scaffold(
@@ -770,6 +792,7 @@ class MainContState extends ConsumerState<MainCont> {
                         ),
                         const Spacer(),
                         PersonaIndicator(),
+                        const SizedBox(height: 10),
                         IconButton(
                           onPressed: () {
                             OverlayWrapper.showOverlay(
@@ -781,8 +804,7 @@ class MainContState extends ConsumerState<MainCont> {
                           },
                           icon: Icon(Icons.settings_outlined),
                         ),
-                        if (PlatForm().platform == RunningPlatform.ipadOS)
-                          const SizedBox(height: 10),
+                        const SizedBox(height: 10),
                       ],
                     ),
                   ),
@@ -822,7 +844,7 @@ class SidebarSettings {
 
 class SidebarSettingsNotifier extends StateNotifier<SidebarSettings> {
   SidebarSettingsNotifier()
-      : super(SidebarSettings(showTitle: true, order: ['chat', 'agent'])) {
+    : super(SidebarSettings(showTitle: true, order: ['chat', 'agent'])) {
     _load();
   }
   Future<void> _load() async {
@@ -847,5 +869,5 @@ class SidebarSettingsNotifier extends StateNotifier<SidebarSettings> {
 
 final sidebarSettingsProvider =
     StateNotifierProvider<SidebarSettingsNotifier, SidebarSettings>((ref) {
-  return SidebarSettingsNotifier();
-});
+      return SidebarSettingsNotifier();
+    });

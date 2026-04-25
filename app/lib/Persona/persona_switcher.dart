@@ -12,7 +12,7 @@ import 'package:uni_chat/utils/tokenizer.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:uni_chat/l10n/generated/l10n.dart';
-import '../theme_manager.dart';
+import '../utils/uni_theme.dart';
 import '../utils/color.dart' show ColorParser;
 import '../utils/overlays.dart';
 
@@ -225,14 +225,14 @@ class _PersonaSwitcherContainerState extends State<PersonaSwitcherContainer>
     _controller.forward();
   }
 
-  late ThemeConfig theme;
+  late UniThemeData theme;
   @override
   Widget build(BuildContext context) {
     var s = MediaQuery.of(context).size;
     var initBottom = s.height - widget.initPos.dy - widget.initialSize;
     return Consumer(
       builder: (context, ref, child) {
-        theme = ref.watch(themeProvider);
+        theme = UniTheme.of(context);
         return child!;
       },
       child: AnimatedBuilder(
@@ -352,7 +352,7 @@ class _PersonaSwitcherContainerForFloatingActionState
     _controller.forward();
   }
 
-  late ThemeConfig theme;
+  late UniThemeData theme;
   @override
   Widget build(BuildContext context) {
     var s = MediaQuery.of(context).size;
@@ -360,7 +360,7 @@ class _PersonaSwitcherContainerForFloatingActionState
     var initBottom = s.height - widget.initPos.dy - widget.initialSize;
     return Consumer(
       builder: (context, ref, child) {
-        theme = ref.watch(themeProvider);
+        theme = UniTheme.of(context);
         return child!;
       },
       child: AnimatedBuilder(
@@ -426,7 +426,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
     );
   }
 
-  late ThemeConfig theme;
+  late UniThemeData theme;
   Widget _popupMenu(Persona persona, BuildContext context) {
     return Material(
       elevation: 4.0,
@@ -586,7 +586,7 @@ class _PersonaSwitcherState extends ConsumerState<PersonaSwitcher> {
 
   @override
   Widget build(BuildContext context) {
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     var persona = ref.watch(personaProvider);
     if (cachedPersona != persona || cachedFuture == null) {
       cachedFuture = _getPersonasAndAvatars(persona.id);
@@ -838,7 +838,7 @@ class _PersonaEditorAnimationState extends State<PersonaEditorAnimation>
     });
   }
 
-  late ThemeConfig theme;
+  late UniThemeData theme;
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -847,7 +847,7 @@ class _PersonaEditorAnimationState extends State<PersonaEditorAnimation>
     // FadeTransition 和 ScaleTransition 组合实现进入和退出动画
     return Consumer(
       builder: (context, ref, child) {
-        theme = ref.watch(themeProvider);
+        theme = UniTheme.of(context);
         return FadeTransition(
           opacity: _fadeAnimation,
           child: ScaleTransition(
@@ -1084,7 +1084,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
   }
 
   List<PersonaDataEntry> personaData = [];
-  late ThemeConfig theme;
+  late UniThemeData theme;
   final _formKey = GlobalKey<FormState>();
 
   late SplitViewController spc;
@@ -1150,7 +1150,7 @@ class _PersonaEditorContentState extends ConsumerState<PersonaEditorContent> {
 
   @override
   Widget build(BuildContext context) {
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       calculateToken();
     });

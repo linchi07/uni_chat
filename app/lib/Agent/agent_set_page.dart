@@ -10,7 +10,7 @@ import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
-import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
@@ -85,7 +85,7 @@ class _AgentSetPageState extends ConsumerState<AgentSetPage> {
   }
 
   late AgentEditState agentState;
-  late ThemeConfig theme;
+  late UniThemeData theme;
   @override
   void initState() {
     super.initState();
@@ -97,7 +97,7 @@ class _AgentSetPageState extends ConsumerState<AgentSetPage> {
       },
     );
     agentState = ref.read(agentEditState);
-    theme = ref.read(themeProvider);
+    // theme = ref.read(themeProvider);
     if (agentState.name != null) {
       nameController.text = agentState.name!;
     }
@@ -191,7 +191,7 @@ class _AgentSetPageState extends ConsumerState<AgentSetPage> {
 
   @override
   Widget build(BuildContext context) {
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     agentState = ref.watch(agentEditState);
     spc.defaultRight = _SysPromptEdit();
     return KeyboardDismisser(
@@ -730,12 +730,12 @@ class TokenStats extends ConsumerStatefulWidget {
 }
 
 class _TokenStatsState extends ConsumerState<TokenStats> {
-  late ThemeConfig theme;
+  late UniThemeData theme;
 
   @override
   void initState() {
     super.initState();
-    theme = ref.read(themeProvider);
+    // theme = ref.read(themeProvider);
   }
 
   late List<(double, int)> percentages;
@@ -784,7 +784,7 @@ class _TokenStatsState extends ConsumerState<TokenStats> {
 
   @override
   Widget build(BuildContext context) {
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     var state = ref.watch(agentEditState);
     calcPercentage(state, ref);
     return Padding(
@@ -897,7 +897,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
       ),
     );
     var modelConf = edit.settings;
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1276,7 +1276,7 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: Column(
@@ -1571,15 +1571,15 @@ class _OpeningState extends ConsumerState<Opening> {
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: ref.read(themeProvider).primaryColor,
+                  color: UniTheme.of(context).primaryColor,
                   width: 1.5,
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
               padding: const EdgeInsets.all(8),
               child: MDEditor(
-                backgroundColor: ref.read(themeProvider).zeroGradeColor,
-                frontGroundColor: ref.read(themeProvider).primaryColor,
+                backgroundColor: UniTheme.of(context).zeroGradeColor,
+                frontGroundColor: UniTheme.of(context).primaryColor,
                 controller: firstMessageController,
                 hintText:
                     S.of(context).plz_enter + S.of(context).opening_message_label,
@@ -1627,7 +1627,7 @@ class _UserIdentityState extends ConsumerState<UserIdentity> {
   @override
   Widget build(BuildContext context) {
     var uiden = ref.watch(agentEditState.select((s) => s.userIdentity));
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     return Padding(
       padding: const EdgeInsets.only(right: 8, bottom: 8),
       child: Column(

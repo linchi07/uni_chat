@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
 import 'package:uni_chat/Agent/agent_override_dialog.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
@@ -18,9 +19,8 @@ import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import '../Agent/agentProvider.dart';
 import '../Agent/agent_models.dart';
 import '../database/database_service.dart';
-import 'package:uni_chat/l10n/generated/l10n.dart';
-import '../theme_manager.dart';
 import '../utils/color.dart' show ColorParser;
+import '../utils/uni_theme.dart';
 import 'chat_message_bubble.dart';
 import 'chat_state.dart';
 
@@ -75,7 +75,7 @@ class ChatBannerWidgetState extends ConsumerState<ChatBannerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     var state = ref.watch(chatStateProvider);
     var agent = ref.watch(agentProvider);
     return LayoutBuilder(
@@ -391,7 +391,7 @@ class _SessionSelectorOverlayState
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
@@ -444,7 +444,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   late final ScrollController _agentScrollController;
   Timer? _hoverTimer;
   List<ChatMessage>? _previewedSession;
-  late ThemeConfig theme;
+  late UniThemeData theme;
   double lastScrollOffset = 0;
 
   late final FocusNode
@@ -453,7 +453,6 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   void initState() {
     super.initState();
     selectedAgentId = ref.read(agentProvider)?.id;
-    theme = ref.read(themeProvider);
     _inputBoxFocusNode = FocusNode(
       onKeyEvent: (node, event) {
         if (event.logicalKey == LogicalKeyboardKey.escape) {
@@ -478,6 +477,12 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
         });
       },
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant SessionSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    theme = UniTheme.of(context);
   }
 
   @override
@@ -786,7 +791,7 @@ class _SessionSelectorState extends ConsumerState<SessionSelector> {
   @override
   Widget build(BuildContext context) {
     session = ref.watch(chatStateProvider).session;
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     spc.defaultRight = buildAgentSession();
     return Column(
       children: [
@@ -1033,7 +1038,7 @@ class _SessionTile extends StatefulWidget {
   final VoidCallback onClose;
   final ChatSession session;
   final bool isSelected;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final dynamic startHoverTimer;
   final dynamic cancelHoverTimer;
   final dynamic setPreview;
@@ -1046,7 +1051,7 @@ class _SessionTileState extends State<_SessionTile> {
   bool displayOptions = false;
   bool displayOverlay = false;
 
-  ThemeConfig get theme => widget.theme;
+  UniThemeData get theme => widget.theme;
 
   @override
   void initState() {
@@ -1130,13 +1135,13 @@ class _SessionTileState extends State<_SessionTile> {
             },
             content: Container(
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: theme.primaryColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
                 child: Text(
                   S.of(context).preview_session,
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: theme.brightTextColor),
                 ),
               ),
             ),

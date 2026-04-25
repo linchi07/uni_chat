@@ -10,7 +10,7 @@ import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/settings_page/api_configure.dart';
-import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -34,17 +34,17 @@ class SetupAgent extends ConsumerStatefulWidget {
 class _SetupAgentState extends ConsumerState<SetupAgent> {
   final PageController _pageController = PageController();
 
-  late ThemeConfig theme;
+  late UniThemeData theme;
 
   @override
   void initState() {
     super.initState();
-    theme = ref.read(themeProvider);
+    // theme = ref.read(themeProvider);
   }
 
   @override
   Widget build(BuildContext context) {
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     return Material(
       color: theme.secondGradeColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/log_manager.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
@@ -52,7 +52,7 @@ class _LogSettingsPageState extends ConsumerState<LogSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     bool isCopied = false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

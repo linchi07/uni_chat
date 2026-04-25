@@ -9,7 +9,7 @@ import 'package:uni_chat/Agent/model_select.dart';
 import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
-import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
@@ -59,7 +59,7 @@ class _AgentOverrideDialogState extends ConsumerState<AgentOverrideDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }

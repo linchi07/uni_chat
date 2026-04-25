@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
-import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/llm_icons.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
 
@@ -219,7 +219,7 @@ class _TokenUsageDashboardState extends ConsumerState<TokenUsageDashboard> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
 
     return Stack(
       children: [
@@ -387,7 +387,7 @@ class _TokenUsageDashboardState extends ConsumerState<TokenUsageDashboard> {
   }
 
   Widget _buildHeader() {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     final ranges = ['24h', '7d', '30d'];
     final labels = ['24h', '7d', '30d'];
     
@@ -578,7 +578,7 @@ class _TokenUsageDashboardState extends ConsumerState<TokenUsageDashboard> {
   }
 
   Widget _buildDetailedLogList() {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     return _DashboardCard(
       title: _selectedBarIndex != -1 
           ? S.of(context).dashboard_selected_period 
@@ -664,7 +664,7 @@ class _SummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -728,7 +728,7 @@ class _DashboardCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -766,7 +766,7 @@ class _DashboardCard extends ConsumerWidget {
   }
 }
 
-List<Color> _getChartPalette(ThemeConfig theme) {
+List<Color> _getChartPalette(UniThemeData theme) {
   final isDark = theme.zeroGradeColor.computeLuminance() < 0.5;
   if (isDark) {
     return [
@@ -802,7 +802,7 @@ class _ModelDistributionPieChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     if (buckets.isEmpty) return Center(child: Text(S.of(context).dashboard_no_record));
 
     final total = buckets.fold(0, (sum, item) => sum + item.total);
@@ -940,7 +940,7 @@ class _KeyDistributionPieChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     if (buckets.isEmpty) return Center(child: Text(S.of(context).dashboard_no_record));
 
     final total = buckets.fold(0, (sum, item) => sum + item.total);
@@ -1087,7 +1087,7 @@ class _TrendBarChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     if (buckets.isEmpty) return Center(child: Text(S.of(context).dashboard_no_record));
 
     final maxVal =

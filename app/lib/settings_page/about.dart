@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/auto_update_service.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../theme_manager.dart';
-
-class UNIChatAbout extends ConsumerWidget {
+class UNIChatAbout extends StatelessWidget {
   const UNIChatAbout({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     return SingleChildScrollView(
       child: Column(
         children: [

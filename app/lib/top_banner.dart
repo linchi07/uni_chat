@@ -4,7 +4,7 @@ import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_window_utils/widgets/macos_toolbar_passthrough.dart';
-import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/back_ground_task_manager.dart';
 
 import 'package:uni_chat/l10n/generated/l10n.dart';
@@ -16,7 +16,7 @@ class MainBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     var scWidth = MediaQuery.of(context).size.width;
     Widget stack;
     if (PlatForm().platform == RunningPlatform.macos) {
@@ -214,7 +214,7 @@ class ActivityMonitor extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activity = ref.watch(activityProvider);
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     if (activity.activities.isNotEmpty) {
       bool hasError = false;
       for (var activity in activity.activities.values) {

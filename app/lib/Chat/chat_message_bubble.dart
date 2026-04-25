@@ -20,7 +20,7 @@ import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
-import '../theme_manager.dart';
+import '../utils/uni_theme.dart';
 import 'chat_models.dart';
 
 /// A widget that displays a chat message.
@@ -38,7 +38,7 @@ class PersistChatMessage extends ConsumerStatefulWidget {
   final int index; //the index in the message list
   final ChatMessage? prevMessage; //the previous message ,used to show variants
   final ChatMessage message;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final ({String title, String sessionId})? fromBranchData;
   final List<({String title, String sessionId})>? toBranchData;
 
@@ -50,7 +50,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
   ChatMessage get message => widget.message;
   ChatMessage? get prevMessage => widget.prevMessage;
   int get index => widget.index;
-  ThemeConfig get theme => widget.theme;
+  UniThemeData get theme => widget.theme;
 
   bool isEditMode = false;
   bool get isUserMessage => message.sender == MessageSender.user;
@@ -644,7 +644,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
   Widget _buildAttachmentView(
     BuildContext context,
     ChatFile file,
-    ThemeConfig theme,
+    UniThemeData theme,
   ) {
     final isImage = file.type == FileTypeDefine.image;
 
@@ -721,7 +721,7 @@ class _InputExpandAnimation extends StatefulWidget {
     required this.originContentText,
   });
   final dynamic registeredFunctions;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final Widget originContent;
   final String originContentText;
 
@@ -898,7 +898,7 @@ class ChatMessageDynamicStream extends StatefulWidget {
     required this.theme,
   });
   final ValueListenable<List<ContentChunk>> responses;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   @override
   State<ChatMessageDynamicStream> createState() =>
       _ChatMessageDynamicStreamState();
@@ -1196,7 +1196,7 @@ class _TextBlock extends StatelessWidget {
 class _ErrorBlock extends StatelessWidget {
   const _ErrorBlock({super.key, required this.content, required this.theme});
   final String content;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -1308,7 +1308,7 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -1568,7 +1568,7 @@ class _ToolCallBlock extends StatefulWidget {
   });
   final ToolCallChunk? chunk;
   final Map<String, dynamic>? toolData;
-  final ThemeConfig theme;
+  final UniThemeData theme;
 
   @override
   State<_ToolCallBlock> createState() => _ToolCallBlockState();
@@ -1705,7 +1705,7 @@ class _NonTextGroupWidget extends StatelessWidget {
     required this.theme,
   });
   final List<Widget> children;
-  final ThemeConfig theme;
+  final UniThemeData theme;
 
   @override
   Widget build(BuildContext context) {
