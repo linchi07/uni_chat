@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
-import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 
 import '../utils/llm_icons.dart';
 
@@ -65,58 +65,91 @@ class ModelSelect extends StatefulWidget {
 class _ModelSelectState extends State<ModelSelect> {
   Widget buildSearchResult(Model model) {
     var imgP = LLMImageIndexer.tryGetImagePath(model.family);
-    return StdListTile(
-      onTap: () {
-        if (_selectedModel != model) {
-          setState(() {
-            _selectedModel = model;
-          });
-        }
-      },
-      leading: (imgP != null)
-          ? StdAvatar(length: 50, assetImage: AssetImage(imgP))
-          : null,
-      title: Text.rich(
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        TextSpan(
-          text: model.friendlyName,
-          children: [
-            TextSpan(
-              text: "  ${model.family}",
-              style: TextStyle(
-                color: widget.theme.darkTextColor.withAlpha(150),
-                fontSize: 14,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          if (_selectedModel != model) {
+            setState(() {
+              _selectedModel = model;
+            });
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: widget.theme.thirdGradeColor.withAlpha(60),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: widget.theme.primaryColor.withAlpha(20)),
+          ),
+          child: Row(
+            children: [
+              StdAvatar(
+                length: 36,
+                assetImage: imgP != null ? AssetImage(imgP) : null,
+                whenNull: Icon(
+                  Icons.smart_toy_outlined,
+                  color: widget.theme.primaryColor,
+                  size: 22,
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-      subtitle: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: model.abilities.map((e) => getInfoTags(e)).toList(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text.rich(
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      TextSpan(
+                        text: model.friendlyName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: widget.theme.textColor,
+                          fontSize: 15,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: "  ${model.family}",
+                            style: TextStyle(
+                              color: widget.theme.textColor.withAlpha(150),
+                              fontSize: 12,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: model.abilities
+                            .map(
+                              (e) => Padding(
+                                padding: const EdgeInsets.only(
+                                  right: 4,
+                                  top: 2,
+                                ),
+                                child: getInfoTags(e),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget getInfoTags(ModelAbility ability) {
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      height: 25,
-      decoration: BoxDecoration(
-        color: widget.theme.primaryColor,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Center(
-        child: Text(
-          ability.name(context),
-          style: TextStyle(color: widget.theme.brightTextColor, fontSize: 12),
-        ),
-      ),
-    );
+    return ability.abilityTagWidget(context, widget.theme.primaryColor);
   }
 
   Model? _selectedModel;
@@ -155,20 +188,49 @@ class _ModelSelectState extends State<ModelSelect> {
 
   Widget buildProvider(ApiProvider provider) {
     var imgP = LLMImageIndexer.tryGetImagePath(provider.preset);
-    return StdListTile(
-      onTap: () {
-        if (_selectedModel != null) {
-          widget.onSelect(provider, _selectedModel!);
-        }
-      },
-      leading: (imgP != null)
-          ? StdAvatar(length: 40, assetImage: AssetImage(imgP))
-          : null,
-      title: Text(
-        provider.name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: widget.theme.bodyTextStyle,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          if (_selectedModel != null) {
+            widget.onSelect(provider, _selectedModel!);
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: widget.theme.thirdGradeColor.withAlpha(60),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: widget.theme.primaryColor.withAlpha(20)),
+          ),
+          child: Row(
+            children: [
+              StdAvatar(
+                length: 32,
+                assetImage: imgP != null ? AssetImage(imgP) : null,
+                whenNull: Icon(
+                  Icons.precision_manufacturing_outlined,
+                  color: widget.theme.primaryColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  provider.name,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: widget.theme.textColor,
+                    fontSize: 15,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

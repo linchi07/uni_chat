@@ -1,24 +1,25 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uni_chat/Agent/agentProvider.dart';
+import 'package:uni_chat/Agent/agent_models.dart';
 import 'package:uni_chat/Agent/agent_set_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/Persona/persona_switcher.dart';
+import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/settings_page/api_configure.dart';
-import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
-
-import 'dart:convert';
-import 'package:uni_chat/Agent/agent_models.dart';
-import 'package:uni_chat/api_configs/api_database.dart';
 
 import 'utils/web_view/webview_all.dart';
 
@@ -80,6 +81,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
   }
 
   void _skipToQuickChat() {
+    ref.read(agentProvider.notifier).loadDefaultAgent();
     _pageController.animateToPage(
       7,
       duration: const Duration(milliseconds: 400),

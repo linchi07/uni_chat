@@ -276,14 +276,29 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
 
   void onSelect(Widget page) {
     spc.push(
-      page,
-      topBar: AppBar(
-        backgroundColor: theme.secondGradeColor,
-        automaticallyImplyLeading: false,
-        leading: StdIconButton(
-          icon: Icons.arrow_back_ios_sharp,
-          onPressed: spc.pop,
-        ),
+      Builder(
+        builder: (context) {
+          theme = UniTheme.of(context);
+          // 保证他能够在theme变化的时候响应
+          // 同时，这里的material是为了保证在手机窄屏幕下也能够正常运作。
+          return Material(color: theme.secondGradeColor, child: page);
+        },
+      ),
+      topBar: Builder(
+        builder: (context) {
+          return Container(
+            color: UniTheme.of(context).secondGradeColor,
+            height: 40,
+            padding: EdgeInsets.only(left: 20),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: StdIconButton(
+                icon: Icons.arrow_back_ios_sharp,
+                onPressed: spc.pop,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
