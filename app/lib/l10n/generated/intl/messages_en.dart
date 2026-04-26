@@ -33,55 +33,59 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m5(branch) => "Branches ${branch}";
 
-  static String m6(dbName, from, to) =>
+  static String m6(count) => "Called ${count} times";
+
+  static String m7(currency) => "Est. Cost (${currency})";
+
+  static String m8(dbName, from, to) =>
       "Downgrade occurred in ${dbName}: Attempting to open newer database (${from}) with an older app version (${to})";
 
-  static String m7(provider) => "Edit provider:${provider}";
+  static String m9(provider) => "Edit provider:${provider}";
 
-  static String m8(email) => "Email: ${email}";
+  static String m10(email) => "Email: ${email}";
 
-  static String m9(endPoint) => "EndPoint";
+  static String m11(endPoint) => "EndPoint";
 
-  static String m10(endPoint) => "EndPoint:${endPoint}";
+  static String m12(endPoint) => "EndPoint:${endPoint}";
 
-  static String m11(error) => "Error:${error}";
+  static String m13(error) => "Error:${error}";
 
-  static String m12(condition) => "while ${condition}";
+  static String m14(condition) => "while ${condition}";
 
-  static String m13(token) => "Knowledge base(${token}Tokens)";
+  static String m15(token) => "Knowledge base(${token}Tokens)";
 
-  static String m14(errorContent) => "Loading error:${errorContent}";
+  static String m16(errorContent) => "Loading error:${errorContent}";
 
-  static String m15(error) => "Failed to read logs: ${error}";
+  static String m17(error) => "Failed to read logs: ${error}";
 
-  static String m16(token) => "Longest opening(${token}Tokens)";
+  static String m18(token) => "Longest opening(${token}Tokens)";
 
-  static String m17(percent) => "${percent}% Related";
+  static String m19(percent) => "${percent}% Related";
 
-  static String m18(num) => "Added ${num} models";
+  static String m20(num) => "Added ${num} models";
 
-  static String m19(charCount, maxCount) =>
+  static String m21(charCount, maxCount) =>
       "You have exceeded the maximum context length of ${charCount}/${maxCount} characters.";
 
-  static String m20(provider) =>
+  static String m22(provider) =>
       " Are you sure to delete ${provider}?\\n All the records and key will be deleted as well.";
 
-  static String m21(agent) =>
+  static String m23(agent) =>
       "Set the selected model as the default model of \'${agent}\' ?";
 
-  static String m22(num) => "${num} selected";
+  static String m24(num) => "${num} selected";
 
-  static String m23(token) => "System internal prompt(${token}Tokens)";
+  static String m25(token) => "System internal prompt(${token}Tokens)";
 
-  static String m24(token) => "System prompt(${token}Tokens)";
+  static String m26(token) => "System prompt(${token}Tokens)";
 
-  static String m25(token) => "${token} Tokens available for chat";
+  static String m27(token) => "${token} Tokens available for chat";
 
-  static String m26(lim) => "${lim} Tokens available for total context";
+  static String m28(lim) => "${lim} Tokens available for total context";
 
-  static String m27(type) => "Type : ${type}";
+  static String m29(type) => "Type : ${type}";
 
-  static String m28(token) => "UI interactions(${token}Tokens)";
+  static String m30(token) => "UI interactions(${token}Tokens)";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -316,10 +320,43 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "create_variant": MessageLookupByLibrary.simpleMessage("Create Variant"),
     "currency": MessageLookupByLibrary.simpleMessage("Currency"),
+    "dashboard_cache_saved": MessageLookupByLibrary.simpleMessage(
+      "Cache Saved",
+    ),
+    "dashboard_call_times": m6,
+    "dashboard_completion_tokens": MessageLookupByLibrary.simpleMessage(
+      "Total Completion",
+    ),
+    "dashboard_est_cost": m7,
+    "dashboard_history_record": MessageLookupByLibrary.simpleMessage(
+      "Recent Call Logs",
+    ),
+    "dashboard_hour_record": MessageLookupByLibrary.simpleMessage(
+      "Today\'s Hourly Logs",
+    ),
+    "dashboard_key_dist": MessageLookupByLibrary.simpleMessage(
+      "API Key Distribution",
+    ),
+    "dashboard_model_dist": MessageLookupByLibrary.simpleMessage(
+      "Model Usage Breakdown",
+    ),
+    "dashboard_no_record": MessageLookupByLibrary.simpleMessage(
+      "No Call Records",
+    ),
+    "dashboard_prompt_tokens": MessageLookupByLibrary.simpleMessage(
+      "Total Prompt",
+    ),
+    "dashboard_selected_period": MessageLookupByLibrary.simpleMessage(
+      "Selected Period Details",
+    ),
+    "dashboard_total_tokens": MessageLookupByLibrary.simpleMessage(
+      "Total Usage",
+    ),
+    "dashboard_usage_trend": MessageLookupByLibrary.simpleMessage("Call Trend"),
     "db_downgrade_content": MessageLookupByLibrary.simpleMessage(
       "If you see this error, it means you have opened data created by a newer version of the software with an older version. This may cause the application to crash or completely corrupt the data.\nTo protect your data, this startup has been blocked. Please update the software to a newer version first.",
     ),
-    "db_downgrade_error": m6,
+    "db_downgrade_error": m8,
     "db_downgrade_title": MessageLookupByLibrary.simpleMessage(
       "Database Version Incompatible",
     ),
@@ -336,6 +373,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "delete_long_press": MessageLookupByLibrary.simpleMessage(
       "Delete (LongPress)",
     ),
+    "delete_variant_confirm": MessageLookupByLibrary.simpleMessage(
+      "Are you sure you want to delete this model variant? This action cannot be undone.",
+    ),
     "disable": MessageLookupByLibrary.simpleMessage("Disable"),
     "disable_persona": MessageLookupByLibrary.simpleMessage("Disable Persona"),
     "discard_changes": MessageLookupByLibrary.simpleMessage("Discard Changes"),
@@ -347,10 +387,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "edit_knowledge_base": MessageLookupByLibrary.simpleMessage(
       "Edit knowledge base",
     ),
+    "edit_model_variant": MessageLookupByLibrary.simpleMessage(
+      "Edit Model Variant",
+    ),
     "edit_more": MessageLookupByLibrary.simpleMessage("Edit more"),
     "edit_persona": MessageLookupByLibrary.simpleMessage("Edit persona"),
-    "edit_provider": m7,
-    "email_with_holder": m8,
+    "edit_provider": m9,
+    "email_with_holder": m10,
     "embedding": MessageLookupByLibrary.simpleMessage("Embedding"),
     "embedding_dimension": MessageLookupByLibrary.simpleMessage(
       "Embedding dimension",
@@ -369,7 +412,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "endPoint_not_set": MessageLookupByLibrary.simpleMessage(
       "API end point not set",
     ),
-    "end_point": m9,
+    "end_point": m11,
     "end_point_preview": MessageLookupByLibrary.simpleMessage(
       "API end point preview",
     ),
@@ -378,7 +421,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "end_point_type_set": MessageLookupByLibrary.simpleMessage(
       "EndPoint type set",
     ),
-    "end_point_with_holder": m10,
+    "end_point_with_holder": m12,
     "enlarge_context_or_simplify_prompt": MessageLookupByLibrary.simpleMessage(
       "Enlarge context or simplify prompt",
     ),
@@ -419,9 +462,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "error_details": MessageLookupByLibrary.simpleMessage("Error Details"),
     "error_message": MessageLookupByLibrary.simpleMessage("Error Message"),
     "error_occurred": MessageLookupByLibrary.simpleMessage("Error"),
-    "error_occurred_with_error": m11,
+    "error_occurred_with_error": m13,
     "ex_and": MessageLookupByLibrary.simpleMessage(" and "),
-    "ex_while": m12,
+    "ex_while": m14,
     "fetch_failed": MessageLookupByLibrary.simpleMessage("Fetch Failed"),
     "fetching_models": MessageLookupByLibrary.simpleMessage(
       "Fetching models...",
@@ -506,7 +549,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "knowledge_base_and_contexts": MessageLookupByLibrary.simpleMessage(
       "Knowledge base & contexts",
     ),
-    "knowledge_base_tokens": m13,
+    "knowledge_base_tokens": m15,
     "language_select": MessageLookupByLibrary.simpleMessage(
       "Select a language",
     ),
@@ -519,7 +562,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "limit_model_generate_length": MessageLookupByLibrary.simpleMessage(
       "Limit model maximum generate length",
     ),
-    "loading_error": m14,
+    "loading_error": m16,
     "log_clear": MessageLookupByLibrary.simpleMessage("Clear logs"),
     "log_copied_to_clipboard": MessageLookupByLibrary.simpleMessage(
       "Logs copied to clipboard",
@@ -536,17 +579,17 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "log_loading": MessageLookupByLibrary.simpleMessage("Loading logs..."),
     "log_none": MessageLookupByLibrary.simpleMessage("No logs"),
-    "log_read_fail": m15,
+    "log_read_fail": m17,
     "log_refresh": MessageLookupByLibrary.simpleMessage("Refresh logs"),
     "log_settings": MessageLookupByLibrary.simpleMessage("Log capture"),
     "long_press": MessageLookupByLibrary.simpleMessage("Long press"),
-    "longest_opening": m16,
+    "longest_opening": m18,
     "match_confirmed": MessageLookupByLibrary.simpleMessage("Confirmed"),
     "match_conflict": MessageLookupByLibrary.simpleMessage("Match Conflict"),
     "match_review_title": MessageLookupByLibrary.simpleMessage(
       "Review Model Matches",
     ),
-    "match_similarity": m17,
+    "match_similarity": m19,
     "match_suggested": MessageLookupByLibrary.simpleMessage("Suggested"),
     "match_unsupported": MessageLookupByLibrary.simpleMessage("Unmatched"),
     "matching_models": MessageLookupByLibrary.simpleMessage(
@@ -584,7 +627,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "model_configure_not_set": MessageLookupByLibrary.simpleMessage(
       "Model not set",
     ),
-    "model_configured": m18,
+    "model_configured": m20,
     "model_context_not_enough": MessageLookupByLibrary.simpleMessage(
       "Reach prompt limit",
     ),
@@ -609,7 +652,10 @@ class MessageLookup extends MessageLookupByLibrary {
       "Pass the local info",
     ),
     "model_management": MessageLookupByLibrary.simpleMessage(
-      "Model management",
+      "Model Management",
+    ),
+    "model_management_official_hint": MessageLookupByLibrary.simpleMessage(
+      "Tip: Official models are automatically kept up-to-date to ensure the best experience and do not support manual editing.",
     ),
     "model_maximum_context_length": MessageLookupByLibrary.simpleMessage(
       "Model maximum context length",
@@ -654,6 +700,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "model_param_temperature": MessageLookupByLibrary.simpleMessage(
       "Temperature",
     ),
+    "model_param_thinking": MessageLookupByLibrary.simpleMessage("Thinking"),
     "model_param_tool_choice": MessageLookupByLibrary.simpleMessage(
       "Tool Choice",
     ),
@@ -764,7 +811,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "or_expand_window": MessageLookupByLibrary.simpleMessage(
       "or please make the window bigger",
     ),
-    "over_maximum_context_length_hint": m19,
+    "over_maximum_context_length_hint": m21,
     "personaEX_personaNotFound": MessageLookupByLibrary.simpleMessage(
       "persona not found",
     ),
@@ -826,7 +873,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "prompt_price_per_1k": MessageLookupByLibrary.simpleMessage(
       "Prompt Price (per 1M tokens)",
     ),
-    "provider_delete_warning": m20,
+    "provider_delete_warning": m22,
     "provider_select": MessageLookupByLibrary.simpleMessage(
       "Select the provider",
     ),
@@ -855,7 +902,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "retry": MessageLookupByLibrary.simpleMessage("Retry"),
     "save": MessageLookupByLibrary.simpleMessage("Save"),
     "save_and_exit": MessageLookupByLibrary.simpleMessage("Save and Exit"),
-    "save_to_agent_settings": m21,
+    "save_to_agent_settings": m23,
     "search_any_chat_message": MessageLookupByLibrary.simpleMessage(
       "Search any chat message...",
     ),
@@ -888,7 +935,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Select parameter to add",
     ),
     "select_provider": MessageLookupByLibrary.simpleMessage("Select provider"),
-    "selected_agent": m22,
+    "selected_agent": m24,
     "send_a_message_hint": MessageLookupByLibrary.simpleMessage(
       "Send a message (MD  supported), enter \"/\" for more options",
     ),
@@ -944,7 +991,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "show_source_code": MessageLookupByLibrary.simpleMessage(
       "Show source code",
     ),
+    "sidebar_agent": MessageLookupByLibrary.simpleMessage("Agents"),
+    "sidebar_chat": MessageLookupByLibrary.simpleMessage("Chat"),
+    "sidebar_show_title": MessageLookupByLibrary.simpleMessage(
+      "Show Sidebar Text Titles",
+    ),
     "skip": MessageLookupByLibrary.simpleMessage("Skip"),
+    "skip_to_quick_chat": MessageLookupByLibrary.simpleMessage(
+      "Skip and quick chat",
+    ),
     "slogan": MessageLookupByLibrary.simpleMessage(
       "A powerful AI agent integrated ChatApp",
     ),
@@ -967,28 +1022,36 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "switch_persona": MessageLookupByLibrary.simpleMessage("Switch persona"),
     "sys_prompt": MessageLookupByLibrary.simpleMessage("System prompt"),
-    "system_internal_prompt": m23,
-    "system_prompt_tokens": m24,
+    "system_internal_prompt": m25,
+    "system_prompt_tokens": m26,
     "textGenerate": MessageLookupByLibrary.simpleMessage("Text Generation"),
+    "thinking": MessageLookupByLibrary.simpleMessage("Thinking"),
+    "thinking_mode_disabled": MessageLookupByLibrary.simpleMessage("Disabled"),
+    "thinking_mode_enabled": MessageLookupByLibrary.simpleMessage("Enabled"),
+    "thinking_mode_high": MessageLookupByLibrary.simpleMessage("High"),
+    "thinking_mode_low": MessageLookupByLibrary.simpleMessage("Low"),
+    "thinking_mode_medium": MessageLookupByLibrary.simpleMessage("Medium"),
+    "thinking_mode_xhigh": MessageLookupByLibrary.simpleMessage("XHigh"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat"),
     "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
       "Toggle session selector",
     ),
-    "token_available_for_chat": m25,
+    "token_available_for_chat": m27,
     "token_daily_limit": MessageLookupByLibrary.simpleMessage(
       "Token limit per day",
     ),
     "token_usage": MessageLookupByLibrary.simpleMessage("Token Usage"),
-    "total_context_lim": m26,
+    "toolCall": MessageLookupByLibrary.simpleMessage("Tool Calling"),
+    "total_context_lim": m28,
     "total_tokens": MessageLookupByLibrary.simpleMessage("Total Tokens"),
-    "type_with_holder": m27,
+    "type_with_holder": m29,
     "ui_edited": MessageLookupByLibrary.simpleMessage("Edited UI"),
     "ui_editing": MessageLookupByLibrary.simpleMessage("Editing UI"),
     "ui_interaction_set": MessageLookupByLibrary.simpleMessage(
       "UI interaction (BETA) settings",
     ),
     "ui_interactions": MessageLookupByLibrary.simpleMessage("UI interactions"),
-    "ui_interactions_tokens": m28,
+    "ui_interactions_tokens": m30,
     "unknown": MessageLookupByLibrary.simpleMessage("unknown"),
     "unsaved_changes_message": MessageLookupByLibrary.simpleMessage(
       "Detected unsaved changes. Do you want to save before exiting?",

@@ -348,8 +348,18 @@ class _ApiDb extends _$_ApiDb {
   Future<List<Model>> getAllModels() =>
       (select(models)..orderBy([(t) => OrderingTerm(expression: t.order, nulls: NullsOrder.last)])).get();
 
+  Future<List<Model>> getCustomModels() => (select(models)
+        ..where((t) => t.id.like('@official%').not())
+        ..orderBy([(t) => OrderingTerm(expression: t.order, nulls: NullsOrder.last)]))
+      .get();
+
   Future<Model?> getModelById(String id) =>
       (select(models)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  Future<void> deleteModel(String modelId) {
+    return (delete(models)..where((t) => t.id.equals(modelId))).go();
+  }
+
 
   Future<bool> updateModel(Model model) {
     return update(models).replace(model);
@@ -822,7 +832,12 @@ class ApiDatabase {
 
   Future<List<Model>> getAllModels() => _adb.getAllModels();
 
+  Future<List<Model>> getCustomModels() => _adb.getCustomModels();
+
   Future<Model?> getModelById(String id) => _adb.getModelById(id);
+
+  Future<void> deleteModel(String modelId) => _adb.deleteModel(modelId);
+
 
   Future<List<ApiProvider>> getAllProviders() => _adb.getAllApiProviders();
 
@@ -863,7 +878,9 @@ class ApiDatabase {
 
   Future<void> processProvidersUpdateMapList(List<dynamic> dataList) =>
       _adb.processProvidersUpdateMapList(dataList);
+
   Future<ProviderModelConfig?> getProviderModelConfig(
+
     String providerId,
     String modelId,
   ) => _adb.getProviderModelConfig(providerId, modelId);

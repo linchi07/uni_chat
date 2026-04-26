@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart' show ChangeNotifier, immutable;
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agent_models.dart';
 import 'package:uni_chat/database/database_service.dart';
-import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
 
@@ -228,7 +227,7 @@ class ChatMessage {
   }
 }
 
-enum MessagePartType { text, image, pdf, base64Image, base64pdf }
+enum MessagePartType { text, image, pdf, base64Image, base64pdf, toolCall, toolResult, reasoning }
 
 class MessagePart {
   final MessagePartType type;
@@ -246,6 +245,11 @@ class MessagePart {
       case MessagePartType.base64Image:
       case MessagePartType.base64pdf:
         return 200;
+      case MessagePartType.toolCall:
+      case MessagePartType.toolResult:
+        return 50; // Estimated tokens for structured tool call/result
+      case MessagePartType.reasoning:
+        return LLMTokenEstimator.estimateTokens(content);
     }
   }
 
@@ -267,11 +271,13 @@ class FormattedChatMessage {
   final String id;
   final MessageSender sender;
   final List<MessagePart> parts;
+  final String? thoughtSignature;
 
   FormattedChatMessage({
     required this.id,
     required this.sender,
     required this.parts,
+    this.thoughtSignature,
   });
 
   int get tokens {
@@ -282,11 +288,13 @@ class FormattedChatMessage {
     String? id,
     MessageSender? sender,
     List<MessagePart>? parts,
+    String? thoughtSignature,
   }) {
     return FormattedChatMessage(
       id: id ?? this.id,
       sender: sender ?? this.sender,
       parts: parts ?? this.parts,
+      thoughtSignature: thoughtSignature ?? this.thoughtSignature,
     );
   }
 
@@ -299,8 +307,12 @@ class FormattedChatMessage {
       parts: [
         MessagePart(
           type: MessagePartType.text,
-          content: messages.expand((m) => m.parts).where((p) => p.type == MessagePartType.text).map((p) => p.content).join('\n'),
-        )
+          content: messages
+              .expand((m) => m.parts)
+              .where((p) => p.type == MessagePartType.text)
+              .map((p) => p.content)
+              .join('\n'),
+        ),
       ],
     );
   }
@@ -333,6 +345,7 @@ class ModelRequestContent {
   List<FormattedChatMessage> chatHistory;
   List<FormattedChatMessage> usrMessage;
   List<FormattedChatMessage> ragMessages;
+  List<Map<String, dynamic>>? tools;
   ModelConfigure modelConfigure;
   StopSignal? stopSignal;
   ModelRequestContent({
@@ -343,11 +356,12 @@ class ModelRequestContent {
     required this.usrMessage,
     required this.modelConfigure,
     required this.ragMessages,
+    this.tools,
     this.stopSignal,
   });
 }
 
-enum MessageChunkType { text, image, reasoning, functionCalling, error }
+enum MessageChunkType { text, image, reasoning, error, toolCall }
 
 extension XMessageChunkType on MessageChunkType {
   String get name {
@@ -358,10 +372,10 @@ extension XMessageChunkType on MessageChunkType {
         return 'image';
       case MessageChunkType.reasoning:
         return 'reasoning';
-      case MessageChunkType.functionCalling:
-        return 'functionCalling';
       case MessageChunkType.error:
         return 'error';
+      case MessageChunkType.toolCall:
+        return 'toolCall';
     }
   }
 
@@ -373,8 +387,8 @@ extension XMessageChunkType on MessageChunkType {
         return MessageChunkType.image;
       case 'reasoning':
         return MessageChunkType.reasoning;
-      case 'functionCalling':
-        return MessageChunkType.functionCalling;
+      case 'toolCall':
+        return MessageChunkType.toolCall;
       case 'error':
         return MessageChunkType.error;
       default:
@@ -386,9 +400,9 @@ extension XMessageChunkType on MessageChunkType {
 class ChatResponse {
   final MessageChunkType type;
   final String content;
-  final AppException? error;
+  final String? thoughtSignature;
 
-  ChatResponse({required this.type, required this.content, this.error});
+  ChatResponse({required this.type, required this.content, this.thoughtSignature});
 }
 
 @immutable
@@ -396,22 +410,30 @@ class MessageBlock {
   final String content;
   final int anchor;
   final MessageChunkType chunkType;
+  final Map<String, dynamic>? toolData;
 
   const MessageBlock({
     required this.content,
     required this.anchor,
     required this.chunkType,
+    this.toolData,
   });
 
   Map<String, dynamic> toMap() {
-    return {'content': content, 'anchor': anchor, 'chunkType': chunkType.name};
+    return {
+      'content': content,
+      'anchor': anchor,
+      'chunkType': chunkType.name,
+      if (toolData != null) 'toolData': toolData,
+    };
   }
 
   factory MessageBlock.fromMap(Map<String, dynamic> map) {
     return MessageBlock(
-      content: map['content'],
-      anchor: map['anchor'],
+      content: map['content'] ?? "",
+      anchor: map['anchor'] ?? -1,
       chunkType: XMessageChunkType.fromString(map['chunkType']),
+      toolData: map['toolData'],
     );
   }
 

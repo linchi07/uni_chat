@@ -8,7 +8,7 @@ import 'package:uni_chat/api_configs/api_service.dart';
 import 'package:uni_chat/api_configs/model_discovery_service.dart';
 import 'package:uni_chat/api_configs/model_matcher.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
-import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
@@ -21,7 +21,7 @@ class ModelDiscoveryWidget extends StatefulWidget {
   final BaseApiService service;
   final ApiKey apiKey;
   final String endpoint;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final Function(List<ModelMatchResult>) onSave;
 
   const ModelDiscoveryWidget({
@@ -334,7 +334,7 @@ class _ModelDiscoveryWidgetState extends State<ModelDiscoveryWidget>
 class ModelMatchReviewDialog extends StatefulWidget {
   final List<ModelMatchResult> results;
   final List<Model> allModels;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final Function(List<ModelMatchResult>) onConfirm;
 
   const ModelMatchReviewDialog({

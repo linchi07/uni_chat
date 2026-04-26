@@ -3,13 +3,13 @@ import 'package:uni_chat/Agent/agent_models.dart';
 import 'package:uni_chat/Agent/model_select.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
-import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
 class ModelMissingDialog extends StatefulWidget {
   final AgentData agentData;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final Function(ApiProvider provider, Model model, bool saveToSettings)
   onConfirm;
 

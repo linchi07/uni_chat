@@ -4,16 +4,15 @@ import 'dart:math';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 
-import 'package:uni_chat/l10n/generated/l10n.dart';
-import '../theme_manager.dart';
 import 'color.dart';
+import 'uni_theme.dart';
 
-class StdButton extends ConsumerWidget {
+class StdButton extends StatelessWidget {
   const StdButton({
     super.key,
     this.color,
@@ -30,8 +29,8 @@ class StdButton extends ConsumerWidget {
   final VoidCallback? onPressed;
   final String? text;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     var c = color ?? theme.primaryColor;
     return Material(
       color: c,
@@ -53,7 +52,7 @@ class StdButton extends ConsumerWidget {
   }
 }
 
-class StdButtonOutlined extends ConsumerWidget {
+class StdButtonOutlined extends StatelessWidget {
   const StdButtonOutlined({
     super.key,
     this.color,
@@ -70,11 +69,11 @@ class StdButtonOutlined extends ConsumerWidget {
   final EdgeInsets? padding;
   final VoidCallback? onPressed;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     var c = color ?? theme.primaryColor;
     return Material(
-      color: (enabled) ? c : c.withAlpha(20),
+      color: (enabled) ? c.withAlpha(150) : c.withAlpha(20),
       shape: RoundedRectangleBorder(
         side: BorderSide(color: c, width: 1.5),
         borderRadius: BorderRadius.circular(8),
@@ -101,7 +100,7 @@ class StdButtonOutlined extends ConsumerWidget {
   }
 }
 
-class StdListTile extends ConsumerWidget {
+class StdListTile extends StatelessWidget {
   const StdListTile({
     super.key,
     required this.title,
@@ -122,8 +121,8 @@ class StdListTile extends ConsumerWidget {
   final Color? highlightColor;
   final bool isSelected;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     var priColor = backgroundColor ?? theme.primaryColor;
     return ListTile(
       title: title,
@@ -145,7 +144,7 @@ class StdListTile extends ConsumerWidget {
   }
 }
 
-class StdCheckbox extends ConsumerWidget {
+class StdCheckbox extends StatelessWidget {
   const StdCheckbox({
     super.key,
     required this.value,
@@ -160,8 +159,8 @@ class StdCheckbox extends ConsumerWidget {
   final Widget? textWidget;
   final Color? mainColor;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     return GestureDetector(
       onTap: () {
         onChanged(!value);
@@ -188,7 +187,7 @@ class StdCheckbox extends ConsumerWidget {
   }
 }
 
-class StdTextFormField extends ConsumerWidget {
+class StdTextFormField extends StatelessWidget {
   StdTextFormField({
     super.key,
     TextEditingController? controller,
@@ -213,8 +212,8 @@ class StdTextFormField extends ConsumerWidget {
   final ValueChanged<String>? onSubmitted;
   final bool? isExpanded;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -259,7 +258,7 @@ class StdTextFormField extends ConsumerWidget {
   }
 }
 
-class StdTextFormFieldOutlined extends ConsumerWidget {
+class StdTextFormFieldOutlined extends StatelessWidget {
   StdTextFormFieldOutlined({
     super.key,
     TextEditingController? controller,
@@ -288,8 +287,8 @@ class StdTextFormFieldOutlined extends ConsumerWidget {
   final ValueChanged<String>? onSubmitted;
   final bool? isExpanded;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     return TextFormField(
       maxLines: maxLines,
       minLines: minLines,
@@ -329,7 +328,7 @@ class StdTextFormFieldOutlined extends ConsumerWidget {
   }
 }
 
-class StdTextField extends ConsumerWidget {
+class StdTextField extends StatelessWidget {
   StdTextField({
     super.key,
     TextEditingController? controller,
@@ -350,8 +349,8 @@ class StdTextField extends ConsumerWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -384,7 +383,7 @@ class StdTextField extends ConsumerWidget {
   }
 }
 
-class StdTextFieldOutlined extends ConsumerWidget {
+class StdTextFieldOutlined extends StatelessWidget {
   StdTextFieldOutlined({
     super.key,
     TextEditingController? controller,
@@ -407,8 +406,8 @@ class StdTextFieldOutlined extends ConsumerWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     return TextField(
       controller: controller,
       maxLines: (isExpanded ?? false) ? null : maxLines ?? 1,
@@ -545,7 +544,7 @@ class _AnimatedSidebarState extends State<AnimatedSidebar>
   }
 }
 
-class StdSlider extends ConsumerWidget {
+class StdSlider extends StatelessWidget {
   final String? label;
   final double value;
   final double min;
@@ -567,8 +566,8 @@ class StdSlider extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     var controller = TextEditingController();
     if (toInt) {
       controller.text = value.toInt().toString();
@@ -630,7 +629,7 @@ class StdSlider extends ConsumerWidget {
   }
 }
 
-class StdDropDown extends ConsumerStatefulWidget {
+class StdDropDown extends StatefulWidget {
   const StdDropDown({
     super.key,
     this.initialIndex,
@@ -660,10 +659,10 @@ class StdDropDown extends ConsumerStatefulWidget {
   itemBuilder;
   final ValueChanged<int>? onChanged;
   @override
-  ConsumerState<StdDropDown> createState() => _StdDropDownState();
+  State<StdDropDown> createState() => _StdDropDownState();
 }
 
-class _StdDropDownState extends ConsumerState<StdDropDown>
+class _StdDropDownState extends State<StdDropDown>
     with SingleTickerProviderStateMixin {
   int? selectedIndex;
   List<Widget> buildItems(BuildContext context) {
@@ -709,7 +708,7 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
     super.dispose();
   }
 
-  late ThemeConfig theme;
+  late UniThemeData theme;
   void onShow() {
     Widget child = Column(
       children: [
@@ -761,7 +760,7 @@ class _StdDropDownState extends ConsumerState<StdDropDown>
 
   @override
   Widget build(BuildContext context) {
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     return SizedBox(
       height: widget.height,
       width: widget.width,
@@ -1218,9 +1217,10 @@ class StdIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     return IconButton(
       tooltip: tooltip,
-      color: color,
+      color: color ?? theme.darkTextColor,
       padding: padding ?? EdgeInsets.all(4),
       constraints: const BoxConstraints(),
       onPressed: onPressed,
@@ -1230,7 +1230,7 @@ class StdIconButton extends StatelessWidget {
   }
 }
 
-class InputBoxHint extends ConsumerWidget {
+class InputBoxHint extends StatelessWidget {
   const InputBoxHint({
     super.key,
     required this.message,
@@ -1258,8 +1258,8 @@ class InputBoxHint extends ConsumerWidget {
   final List<Widget> actions;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+  Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     var bg = backgroundColor ?? theme.primaryColor.withAlpha(50);
     var fg = foregroundColor ?? theme.primaryColor;
 
@@ -1315,13 +1315,14 @@ class InputBoxHint extends ConsumerWidget {
   }
 }
 
-class StdSegmentedControl extends ConsumerStatefulWidget {
+class StdSegmentedControl extends StatefulWidget {
   final List<String> labels;
   final int currentIndex;
   final ValueChanged<int> onIndexChanged;
   final double? width;
   final EdgeInsets? margin;
   final bool enableBackground;
+  final Color? backgroundColor;
 
   const StdSegmentedControl({
     super.key,
@@ -1331,14 +1332,14 @@ class StdSegmentedControl extends ConsumerStatefulWidget {
     this.width,
     this.margin,
     this.enableBackground = true,
+    this.backgroundColor,
   });
 
   @override
-  ConsumerState<StdSegmentedControl> createState() =>
-      _StdSegmentedControlState();
+  State<StdSegmentedControl> createState() => _StdSegmentedControlState();
 }
 
-class _StdSegmentedControlState extends ConsumerState<StdSegmentedControl>
+class _StdSegmentedControlState extends State<StdSegmentedControl>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
@@ -1349,7 +1350,10 @@ class _StdSegmentedControlState extends ConsumerState<StdSegmentedControl>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _updateAnimation();
+    double targetValue = widget.labels.length > 1
+        ? widget.currentIndex / (widget.labels.length - 1)
+        : 0.0;
+    _controller.value = targetValue;
   }
 
   @override
@@ -1376,7 +1380,7 @@ class _StdSegmentedControlState extends ConsumerState<StdSegmentedControl>
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeProvider);
+    final theme = UniTheme.of(context);
     final total = widget.labels.length;
 
     return Container(
@@ -1384,7 +1388,9 @@ class _StdSegmentedControlState extends ConsumerState<StdSegmentedControl>
       margin: widget.margin ?? const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: (widget.enableBackground) ? theme.secondGradeColor : null,
+        color: (widget.enableBackground)
+            ? widget.backgroundColor ?? theme.zeroGradeColor
+            : null,
         borderRadius: BorderRadius.circular(12),
       ),
       child: LayoutBuilder(
@@ -1445,7 +1451,7 @@ class _StdSegmentedControlState extends ConsumerState<StdSegmentedControl>
   }
 }
 
-class StdSegmentedPageView extends ConsumerStatefulWidget {
+class StdSegmentedPageView extends StatefulWidget {
   final List<String> labels;
   final List<Widget> children;
   final int initialIndex;
@@ -1460,11 +1466,10 @@ class StdSegmentedPageView extends ConsumerStatefulWidget {
   }) : assert(labels.length == children.length);
 
   @override
-  ConsumerState<StdSegmentedPageView> createState() =>
-      _StdSegmentedPageViewState();
+  State<StdSegmentedPageView> createState() => _StdSegmentedPageViewState();
 }
 
-class _StdSegmentedPageViewState extends ConsumerState<StdSegmentedPageView> {
+class _StdSegmentedPageViewState extends State<StdSegmentedPageView> {
   late PageController _pageController;
   late int _currentIndex;
   bool _ignoreUpdate = false;

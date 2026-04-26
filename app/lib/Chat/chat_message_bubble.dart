@@ -10,13 +10,17 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
+import 'package:uni_chat/Execution/execution_models.dart';
+import 'package:uni_chat/api_configs/api_database.dart';
+import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
+import 'package:uni_chat/utils/llm_icons.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
-import '../theme_manager.dart';
+import '../utils/uni_theme.dart';
 import 'chat_models.dart';
 
 /// A widget that displays a chat message.
@@ -34,7 +38,7 @@ class PersistChatMessage extends ConsumerStatefulWidget {
   final int index; //the index in the message list
   final ChatMessage? prevMessage; //the previous message ,used to show variants
   final ChatMessage message;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final ({String title, String sessionId})? fromBranchData;
   final List<({String title, String sessionId})>? toBranchData;
 
@@ -46,7 +50,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
   ChatMessage get message => widget.message;
   ChatMessage? get prevMessage => widget.prevMessage;
   int get index => widget.index;
-  ThemeConfig get theme => widget.theme;
+  UniThemeData get theme => widget.theme;
 
   bool isEditMode = false;
   bool get isUserMessage => message.sender == MessageSender.user;
@@ -297,8 +301,8 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
         throw UnimplementedError();
       case MessageChunkType.reasoning:
         return _ReasonBlock(content: block.content, isComplete: true);
-      case MessageChunkType.functionCalling:
-        throw UnimplementedError();
+      case MessageChunkType.toolCall:
+        return _ToolCallBlock(theme: widget.theme, toolData: block.toolData);
       case MessageChunkType.error:
         return _ErrorBlock(theme: widget.theme, content: block.content);
     }
@@ -313,21 +317,48 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
             .map<MessageBlock>((e) => MessageBlock.fromMap(e))
             .toList());
         int pt = 0;
+        List<Widget> currentGroup = [];
+
+        void flushGroup() {
+          if (currentGroup.isNotEmpty) {
+            w.add(
+              _NonTextGroupWidget(
+                children: List.from(currentGroup),
+                theme: theme,
+              ),
+            );
+            currentGroup.clear();
+          }
+        }
+
         for (var i in d) {
           var s = wm.content.substring(pt, i.anchor);
           if (s.isNotEmpty) {
+            flushGroup();
             w.add(_TextBlock(content: s, color: theme.darkTextColor));
           }
-          w.add(typeMatch(i));
-          pt = i.anchor;
+
+          var blockWidget = typeMatch(i);
+          if (i.chunkType == MessageChunkType.text) {
+            flushGroup();
+            w.add(blockWidget);
+          } else {
+            currentGroup.add(blockWidget);
+          }
+
+          pt = (i.anchor == -1) ? pt : i.anchor;
         }
+
         if (pt < wm.content.length) {
+          flushGroup();
           w.add(
             _TextBlock(
               content: wm.content.substring(pt),
               color: theme.darkTextColor,
             ),
           );
+        } else {
+          flushGroup();
         }
       } on Exception catch (e) {
         w.add(
@@ -441,6 +472,69 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
                 ),
               ),
             if (prevMessage!.childIds.length > 1) ...variantSelector(),
+            if (message.sender == MessageSender.ai &&
+                message.senderId.isNotEmpty) ...[
+              FutureBuilder<Model?>(
+                future: _ModelCache.getModel(message.senderId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done &&
+                      snapshot.hasData &&
+                      snapshot.data != null) {
+                    final model = snapshot.data!;
+                    final path =
+                        LLMImageIndexer.tryGetImagePath(model.family) ??
+                        LLMImageIndexer.getImagePath(model.family);
+
+                    Widget avatar;
+                    if (path.contains('unknown') || path.isEmpty) {
+                      avatar = Icon(
+                        Icons.smart_toy_outlined,
+                        size: 16,
+                        color: theme.primaryColor,
+                      );
+                    } else {
+                      avatar = ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.asset(
+                          path,
+                          width: 16,
+                          height: 16,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.smart_toy_outlined,
+                              size: 16,
+                              color: theme.primaryColor,
+                            );
+                          },
+                        ),
+                      );
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          avatar,
+                          const SizedBox(width: 6),
+                          Text(
+                            model.friendlyName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: theme.darkTextColor.withAlpha(150),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
           ],
         ),
       ),
@@ -550,7 +644,7 @@ class _PersistChatMessageState extends ConsumerState<PersistChatMessage> {
   Widget _buildAttachmentView(
     BuildContext context,
     ChatFile file,
-    ThemeConfig theme,
+    UniThemeData theme,
   ) {
     final isImage = file.type == FileTypeDefine.image;
 
@@ -627,7 +721,7 @@ class _InputExpandAnimation extends StatefulWidget {
     required this.originContentText,
   });
   final dynamic registeredFunctions;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final Widget originContent;
   final String originContentText;
 
@@ -803,8 +897,8 @@ class ChatMessageDynamicStream extends StatefulWidget {
     required this.responses,
     required this.theme,
   });
-  final ValueListenable<List<ChatResponse>?> responses;
-  final ThemeConfig theme;
+  final ValueListenable<List<ContentChunk>> responses;
+  final UniThemeData theme;
   @override
   State<ChatMessageDynamicStream> createState() =>
       _ChatMessageDynamicStreamState();
@@ -818,30 +912,47 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
     super.initState();
   }
 
+  int charDisplayed = 0;
+  int currentAnimatingId = -1;
+
+  void updateAnimationState(List<ContentChunk> chunks) {
+    if (chunks.isEmpty) return;
+
+    // 如果当前没有正在动画的 ID，或者之前的已经动画完了
+    if (currentAnimatingId == -1) {
+      currentAnimatingId = chunks.first.id;
+      charDisplayed = 0;
+    }
+
+    // 检查当前动画的块是否已经完成并需要切换到下一个
+    var currentIdx = chunks.indexWhere((c) => c.id == currentAnimatingId);
+    if (currentIdx != -1) {
+      var currentChunk = chunks[currentIdx];
+      String content = "";
+      if (currentChunk is TextChunk) content = currentChunk.text;
+      if (currentChunk is ReasoningChunk) content = currentChunk.text;
+
+      // 如果是非文本/推理块，或者已经播完且块已结束，跳到下一个
+      // 关键优化：如果后面已经有了新的块，强制结束当前块的动画并跳转
+      bool isAnimatable =
+          currentChunk is TextChunk || currentChunk is ReasoningChunk;
+      bool hasNextChunk = currentIdx + 1 < chunks.length;
+
+      if (!isAnimatable ||
+          (charDisplayed >= content.length && currentChunk.isFinished) ||
+          hasNextChunk) {
+        if (hasNextChunk) {
+          currentAnimatingId = chunks[currentIdx + 1].id;
+          charDisplayed = 0;
+        }
+      }
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel(); // 清理定时器
     super.dispose();
-  }
-
-  int displayedLength = 0;
-  int currentlyAnimating = 0;
-  int charDisplayed = 0;
-
-  void updateDisplayed(List<ChatResponse> r) {
-    MessageChunkType? lastType;
-    for (var i = r.length - 1; i > currentlyAnimating; i--) {
-      if (lastType != r[i].type ||
-          !(r[i].type == MessageChunkType.text ||
-              r[i].type == MessageChunkType.reasoning)) {
-        if (i + 1 < r.length) {
-          displayedLength = i + 1;
-          currentlyAnimating = i + 1;
-          charDisplayed = 0;
-        }
-        break;
-      }
-    }
   }
 
   @override
@@ -856,29 +967,66 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
         child: ValueListenableBuilder(
           valueListenable: widget.responses,
           builder: (context, value, child) {
-            if (value == null || value.isEmpty) {
+            if (value.isEmpty) {
               return _Loading(color: widget.theme.primaryColor);
             }
-            updateDisplayed(value);
-            var l = value.sublist(0, displayedLength);
-            List<Widget> blocksDisplayed = [];
-            for (int i = 0; i < l.length; i++) {
-              blocksDisplayed.add(typeMatch(l[i], i));
-            }
+            updateAnimationState(value);
+
+            var currentIdx = value.indexWhere(
+              (c) => c.id == currentAnimatingId,
+            );
+
             return StatefulBuilder(
               builder: (context, setState) {
-                if (!_isAnimating &&
-                    (value.length >= currentlyAnimating ||
-                        value[currentlyAnimating].content.length >
-                            charDisplayed)) {
-                  //此处的set state只会激活 StatefulBuilder中的setState
+                if (!_isAnimating && currentIdx != -1) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     enableAnimation(setState);
                   });
                 }
+
+                List<Widget> streamBody = [];
+                List<Widget> currentGroup = [];
+
+                void flushGroup() {
+                  if (currentGroup.isNotEmpty) {
+                    streamBody.add(
+                      _NonTextGroupWidget(
+                        children: List.from(currentGroup),
+                        theme: widget.theme,
+                      ),
+                    );
+                    currentGroup.clear();
+                  }
+                }
+
+                for (int i = 0; i < value.length; i++) {
+                  if (i > currentIdx) break;
+
+                  Widget blockWidget;
+                  bool isText = false;
+
+                  if (i == currentIdx) {
+                    var active = _buildActiveBlock(value[i], charDisplayed);
+                    if (active == null) continue;
+                    blockWidget = active;
+                    isText = value[i] is TextChunk;
+                  } else {
+                    blockWidget = typeMatch(value[i]);
+                    isText = value[i] is TextChunk;
+                  }
+
+                  if (isText) {
+                    flushGroup();
+                    streamBody.add(blockWidget);
+                  } else {
+                    currentGroup.add(blockWidget);
+                  }
+                }
+                flushGroup();
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [...blocksDisplayed, ...blocksToDisplay],
+                  children: streamBody,
                 );
               },
             );
@@ -888,92 +1036,129 @@ class _ChatMessageDynamicStreamState extends State<ChatMessageDynamicStream> {
     );
   }
 
-  Widget typeMatch(ChatResponse response, int order) {
-    switch (response.type) {
-      case MessageChunkType.text:
-        return _TextBlock(
-          key: ValueKey(order),
-          color: widget.theme.darkTextColor,
-          content: response.content,
-        );
-      case MessageChunkType.image:
-        throw UnimplementedError();
-      case MessageChunkType.reasoning:
-        return _ReasonBlock(
-          key: ValueKey(order),
-          content: response.content,
-          isComplete: true,
-        );
-      case MessageChunkType.functionCalling:
-        throw UnimplementedError();
-      case MessageChunkType.error:
-        return _ErrorBlock(
-          key: ValueKey(order),
-          theme: widget.theme,
-          content: response.content,
-        );
+  Widget? _buildActiveBlock(ContentChunk cr, int chars) {
+    String content = "";
+    if (cr is TextChunk) {
+      content = cr.text;
+    } else if (cr is ReasoningChunk) {
+      content = cr.text;
+    } else {
+      return typeMatch(cr);
     }
+
+    if (chars < content.length) {
+      if (cr is TextChunk) {
+        return _TextBlock(
+          key: ValueKey(cr.id),
+          color: widget.theme.darkTextColor,
+          content: "${content.substring(0, chars)}▍",
+        );
+      } else if (cr is ReasoningChunk) {
+        return _ReasonBlock(
+          key: ValueKey(cr.id),
+          content: "${content.substring(0, chars)}▍",
+          isComplete: false,
+        );
+      }
+    } else {
+      if (cr.isFinished) {
+        return typeMatch(cr);
+      } else {
+        if (cr is TextChunk) {
+          return _TextBlock(
+            key: ValueKey(cr.id),
+            color: widget.theme.darkTextColor,
+            content: "$content▍",
+          );
+        } else if (cr is ReasoningChunk) {
+          return _ReasonBlock(
+            key: ValueKey(cr.id),
+            content: "$content▍",
+            isComplete: false,
+          );
+        }
+      }
+    }
+    return null;
   }
 
-  List<Widget> blocksDisplayed = [];
-  List<Widget> blocksToDisplay = [];
+  Widget typeMatch(ContentChunk chunk) {
+    if (chunk is TextChunk) {
+      return _TextBlock(
+        key: ValueKey(chunk.id),
+        color: widget.theme.darkTextColor,
+        content: chunk.text,
+      );
+    } else if (chunk is ReasoningChunk) {
+      return _ReasonBlock(
+        key: ValueKey(chunk.id),
+        content: chunk.text,
+        isComplete: chunk.isFinished,
+      );
+    } else if (chunk is ToolCallChunk) {
+      return _ToolCallBlock(
+        key: ValueKey(chunk.id),
+        chunk: chunk,
+        theme: widget.theme,
+      );
+    }
+    return const SizedBox.shrink();
+  }
 
   void enableAnimation(dynamic setState) {
-    const charactersPerSecond = 80; // 每秒字符数
+    const charactersPerSecond = 80;
     _isAnimating = true;
-    // 每秒刷新 charactersPerSecond 次，每次只添加一个字符
     const interval = Duration(milliseconds: 1000 ~/ charactersPerSecond);
     _timer = Timer.periodic(interval, (timer) {
-      blocksToDisplay.clear();
       setState(() {
-        var rv = widget.responses.value!;
-        if (currentlyAnimating >= rv.length) {
-          // 显示完成，停止定时器
+        var rv = widget.responses.value;
+        var currentIdx = rv.indexWhere((c) => c.id == currentAnimatingId);
+
+        if (currentIdx == -1) {
           _timer?.cancel();
           _isAnimating = false;
           return;
         }
-        var cr = rv[currentlyAnimating];
-        if (charDisplayed < cr.content.length) {
-          if (cr.type == MessageChunkType.text) {
-            blocksToDisplay.add(
-              _TextBlock(
-                key: ValueKey(currentlyAnimating),
-                color: widget.theme.darkTextColor,
-                content: "${cr.content.substring(0, charDisplayed)}▍",
-              ),
-            );
-          } else if (cr.type == MessageChunkType.reasoning) {
-            blocksToDisplay.add(
-              _ReasonBlock(
-                key: ValueKey(currentlyAnimating),
-                content: "${cr.content.substring(0, charDisplayed)}▍",
-                isComplete: false,
-              ),
-            );
-          }
-          charDisplayed++;
-        } else if (currentlyAnimating == rv.length - 1) {
-          if (cr.type == MessageChunkType.text) {
-            blocksToDisplay.add(
-              _TextBlock(
-                color: widget.theme.darkTextColor,
-                content: "${cr.content.substring(0, charDisplayed)}▍",
-              ),
-            );
-          } else if (cr.type == MessageChunkType.reasoning) {
-            blocksToDisplay.add(
-              _ReasonBlock(
-                key: ValueKey(currentlyAnimating),
-                content: "${cr.content.substring(0, charDisplayed)}▍",
-                isComplete: false,
-              ),
-            );
-          }
-        } else if (currentlyAnimating < rv.length - 1) {
-          displayedLength++;
+
+        var cr = rv[currentIdx];
+
+        // 如果后面有了新的块，直接快进到下一个 ID
+        if (currentIdx + 1 < rv.length) {
+          currentAnimatingId = rv[currentIdx + 1].id;
           charDisplayed = 0;
-          currentlyAnimating++;
+          return;
+        }
+
+        String content = "";
+        if (cr is TextChunk) {
+          content = cr.text;
+        } else if (cr is ReasoningChunk) {
+          content = cr.text;
+        } else {
+          // 非播报类型，直接跳到下一个
+          if (currentIdx + 1 < rv.length) {
+            currentAnimatingId = rv[currentIdx + 1].id;
+            charDisplayed = 0;
+          } else if (cr.isFinished) {
+            _timer?.cancel();
+            _isAnimating = false;
+          }
+          return;
+        }
+
+        if (charDisplayed < content.length) {
+          charDisplayed++;
+        } else {
+          // 当前块播完了
+          if (cr.isFinished) {
+            if (currentIdx + 1 < rv.length) {
+              currentAnimatingId = rv[currentIdx + 1].id;
+              charDisplayed = 0;
+            } else {
+              _timer?.cancel();
+              _isAnimating = false;
+            }
+          }
         }
       });
     });
@@ -1011,18 +1196,12 @@ class _TextBlock extends StatelessWidget {
 class _ErrorBlock extends StatelessWidget {
   const _ErrorBlock({super.key, required this.content, required this.theme});
   final String content;
-  final ThemeConfig theme;
+  final UniThemeData theme;
   @override
   Widget build(BuildContext context) {
     return Container(
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        color: theme.errorColor.withAlpha(80),
-        borderRadius: BorderRadius.circular(12),
-      ),
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(16),
+      color: Colors.transparent,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1113,13 +1292,15 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
     if (!widget.isComplete &&
         widget.content != null &&
         widget.content != oldWidget.content) {
+      // 只有在用户没有手动向上滚动时才自动到底
+      // 这里使用较短的频率限制，并配合 jumpTo 保证流畅度
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-          );
+          final position = _scrollController.position;
+          // 如果当前位置接近底部，则自动滚动
+          if (position.maxScrollExtent - position.pixels < 40) {
+            _scrollController.jumpTo(position.maxScrollExtent);
+          }
         }
       });
     }
@@ -1127,29 +1308,15 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     return GestureDetector(
       onTap: () {
         setState(() {
           isShowing = !isShowing;
         });
       },
-      //吓哭了，Gemini3 flash写的效果太强了，感觉我可以辞职了。说白了，连pro都不用上
       child: Container(
-        margin: const EdgeInsets.only(top: 10, bottom: 20),
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(60),
-              spreadRadius: 2,
-              offset: const Offset(0, 2),
-              blurRadius: 4,
-            ),
-          ],
-          color: theme.zeroGradeColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        color: Colors.transparent,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1206,8 +1373,8 @@ class _ReasonBlockState extends ConsumerState<_ReasonBlock>
               ],
             ),
             AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.fastOutSlowIn,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
               alignment: Alignment.topCenter,
               child:
                   ((!widget.isComplete || isShowing) &&
@@ -1309,11 +1476,7 @@ class _RagBlockState extends State<_RagBlock>
   @override
   Widget build(BuildContext context) {
     final card = Container(
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-      ),
+      color: Colors.transparent,
       child: Shimmer(
         enabled: !widget.isComplete,
         duration: const Duration(seconds: 3),
@@ -1321,8 +1484,7 @@ class _RagBlockState extends State<_RagBlock>
         colorOpacity: 0.8,
         child: Container(
           width: double.infinity,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          padding: const EdgeInsets.all(16),
+          color: Colors.transparent,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1394,5 +1556,206 @@ class _RagBlockState extends State<_RagBlock>
         style: const TextStyle(color: Colors.black, fontSize: 14),
       ),
     );
+  }
+}
+
+class _ToolCallBlock extends StatefulWidget {
+  const _ToolCallBlock({
+    super.key,
+    this.chunk,
+    this.toolData,
+    required this.theme,
+  });
+  final ToolCallChunk? chunk;
+  final Map<String, dynamic>? toolData;
+  final UniThemeData theme;
+
+  @override
+  State<_ToolCallBlock> createState() => _ToolCallBlockState();
+}
+
+class _ToolCallBlockState extends State<_ToolCallBlock> {
+  bool isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    var data = widget.toolData ?? widget.chunk?.toStructuredData();
+    if (data == null) return const SizedBox.shrink();
+
+    List<dynamic> calls = data["calls"] ?? [];
+    List<dynamic> results = data["results"] ?? [];
+    bool isFinished = widget.chunk?.isFinished ?? true;
+
+    // 如果正在调用中，强制展开
+    bool effectiveExpanded = !isFinished || isExpanded;
+
+    return GestureDetector(
+      onTap: () {
+        if (isFinished) {
+          setState(() {
+            isExpanded = !isExpanded;
+          });
+        }
+      },
+      child: Container(
+        color: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.bolt_rounded,
+                  color: isFinished
+                      ? widget.theme.okColor
+                      : widget.theme.primaryColor,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  isFinished ? "执行了工具" : "正在调用工具",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: widget.theme.darkTextColor,
+                  ),
+                ),
+                const Spacer(),
+                if (!isFinished)
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 300),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 20,
+                      color: widget.theme.darkTextColor.withAlpha(150),
+                    ),
+                  ),
+              ],
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.fastOutSlowIn,
+              alignment: Alignment.topCenter,
+              child: calls.isNotEmpty
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 10),
+                        ...List.generate(calls.length, (idx) {
+                          var call = calls[idx];
+                          var result = (results.length > idx)
+                              ? results[idx]["result"]
+                              : null;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "调用: ${call["name"]}${effectiveExpanded ? "(${call["arguments"]})" : ""}",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: widget.theme.darkTextColor.withAlpha(
+                                      200,
+                                    ),
+                                    fontFamily: "monospace",
+                                  ),
+                                ),
+                                if (effectiveExpanded && result != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 4,
+                                      left: 8,
+                                    ),
+                                    child: Text(
+                                      "结果: $result",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: widget.theme.primaryColor
+                                            .withAlpha(180),
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NonTextGroupWidget extends StatelessWidget {
+  const _NonTextGroupWidget({
+    super.key,
+    required this.children,
+    required this.theme,
+  });
+  final List<Widget> children;
+  final UniThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.darkTextColor.withAlpha(30), width: 1),
+        borderRadius: BorderRadius.circular(12),
+        color: theme.zeroGradeColor.withAlpha(50),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: List.generate(children.length, (index) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (index > 0)
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: theme.darkTextColor.withAlpha(20),
+                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                child: children[index],
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _ModelCache {
+  static final Map<String, Model> _cache = {};
+
+  static Future<Model?> getModel(String modelId) async {
+    if (_cache.containsKey(modelId)) {
+      return _cache[modelId];
+    }
+    final model = await ApiDatabase.instance.getModelById(modelId);
+    if (model != null) {
+      _cache[modelId] = model;
+    }
+    return model;
   }
 }

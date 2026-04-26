@@ -18,16 +18,17 @@ import 'package:uni_chat/Chat/chat_models.dart';
 import 'package:uni_chat/Chat/chat_sidebar.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
+import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
 import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/main.dart';
-import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paste_and_drop/paste_and_drop.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uuid/uuid.dart';
 
 class _AgentDropDown extends ConsumerStatefulWidget {
@@ -106,7 +107,7 @@ class _AgentDropDownState extends ConsumerState<_AgentDropDown>
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     var agent = ref.watch(agentProvider);
     if (agent?.id != selectedIndex?.$1 && agent != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -331,7 +332,7 @@ class _PersonaDropDownState extends ConsumerState<_PersonaDropDown>
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     var persona = ref.watch(personaProvider);
     if (persona.id != selectedIndex?.$1) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -515,7 +516,7 @@ class ChatPanelWhenNoSession extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     var agent = ref.watch(agentProvider);
     var slogan =
         agent?.openingConfigure?.slogan ?? S.of(context).front_page_titleSlogan;
@@ -693,7 +694,7 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
       });
       session = chatState.session;
     }
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     var itemCount = chatState.isResponding
         ? chatState.messagesList.length + 1
         : chatState.messagesList.length;
@@ -860,6 +861,7 @@ class ChatPanelState extends ConsumerState<ChatPanel> {
                                   if (chatState.isResponding &&
                                       index == itemCount - 1) {
                                     return ChatMessageDynamicStream(
+                                      key: const ValueKey('dynamic_stream'),
                                       theme: theme,
                                       responses: chatState.responses,
                                     );
@@ -999,8 +1001,11 @@ class ChatPanelInputBox extends ConsumerStatefulWidget {
 enum UploadStatus { notUploaded, uploading, uploaded, failed }
 
 class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
+  final OverlayPortalController _thinkingMenuController =
+      OverlayPortalController();
+  final GlobalKey _thinkingMenuAnchorKey = GlobalKey();
   bool isDroppingFiles = false;
-  late ThemeConfig theme;
+  late UniThemeData theme;
   @override
   initState() {
     super.initState();
@@ -1202,13 +1207,13 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
   @override
   Widget build(BuildContext context) {
     chatState = ref.watch(chatStateProvider);
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     agent = ref.watch(agentProvider);
     late Widget childPanel;
     if (isDroppingFiles) {
       childPanel = Container(
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-        color: Colors.white.withAlpha(180),
+        color: theme.zeroGradeColor.withAlpha(180),
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -1495,10 +1500,178 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                     ),
                   ),
                    */
-              if (agent != null)
+              if (agent != null &&
+                  agent!.client.model.abilities.contains(ModelAbility.thinking))
                 Positioned(
                   left: 42,
-                  right: (widget.cancelCallback != null) ? 84 : 42,
+                  child: SizedBox(
+                    height: 35,
+                    child: Builder(
+                      builder: (context) {
+                        final mode = agent!.modelConfigure.thinkingMode;
+
+                        IconData getThinkingIcon(ThinkingMode m) {
+                          if (m == ThinkingMode.off) {
+                            return Icons.lightbulb_outline;
+                          }
+                          return Icons.lightbulb;
+                        }
+
+                        final text = mode.friendlyName(context);
+
+                        return OverlayPortal(
+                          controller: _thinkingMenuController,
+                          overlayChildBuilder: (context) {
+                            final RenderBox? rb =
+                                _thinkingMenuAnchorKey.currentContext
+                                        ?.findRenderObject()
+                                    as RenderBox?;
+                            if (rb == null) return const SizedBox.shrink();
+                            final position = rb.localToGlobal(Offset.zero);
+
+                            return Stack(
+                              children: [
+                                GestureDetector(
+                                  onTap: () => _thinkingMenuController.hide(),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: const SizedBox.expand(),
+                                ),
+                                Positioned(
+                                  top: position.dy - 255,
+                                  left: position.dx - 40,
+                                  child: TweenAnimationBuilder<double>(
+                                    tween: Tween(begin: 0.8, end: 1.0),
+                                    duration: const Duration(milliseconds: 150),
+                                    curve: Curves.easeIn,
+                                    builder: (context, value, child) {
+                                      return Transform.scale(
+                                        scale: value,
+                                        alignment: Alignment.bottomCenter,
+                                        child: Opacity(
+                                          opacity: ((value - 0.8) / 0.2).clamp(
+                                            0.0,
+                                            1.0,
+                                          ),
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: SizedBox(
+                                      width: 160,
+                                      height: 250,
+                                      child: Material(
+                                        elevation: 12,
+                                        color: theme.zeroGradeColor,
+                                        borderRadius: BorderRadius.circular(12),
+                                        shadowColor: Colors.black.withAlpha(40),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(6.0),
+                                          child: SingleChildScrollView(
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: ThinkingMode.values.map((
+                                                m,
+                                              ) {
+                                                final isSelected = mode == m;
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 2.0,
+                                                      ),
+                                                  child: StdListTile(
+                                                    title: Text(
+                                                      m.friendlyName(context),
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight: isSelected
+                                                            ? FontWeight.bold
+                                                            : FontWeight.normal,
+                                                      ),
+                                                    ),
+                                                    isSelected: isSelected,
+                                                    onTap: () async {
+                                                      final localAgent = agent;
+                                                      if (localAgent != null) {
+                                                        ref
+                                                            .read(
+                                                              agentProvider
+                                                                  .notifier,
+                                                            )
+                                                            .setAgent(
+                                                              localAgent.copyWith(
+                                                                modelConfigure: localAgent
+                                                                    .modelConfigure
+                                                                    .copyWith(
+                                                                      thinkingMode:
+                                                                          m,
+                                                                    ),
+                                                              ),
+                                                            );
+                                                      }
+                                                      _thinkingMenuController
+                                                          .hide();
+                                                    },
+                                                  ),
+                                                );
+                                              }).toList(),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                          child: StdButtonOutlined(
+                            key: _thinkingMenuAnchorKey,
+                            enabled:
+                                !(agent!.modelConfigure.thinkingMode ==
+                                        ThinkingMode.off ||
+                                    agent!.modelConfigure.thinkingMode ==
+                                        ThinkingMode.defaultMode),
+                            color: theme.warningColor,
+                            onPressed: () {
+                              _thinkingMenuController.toggle();
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4.0,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(getThinkingIcon(mode), size: 18),
+                                  if (!(agent!.modelConfigure.thinkingMode ==
+                                          ThinkingMode.off ||
+                                      agent!.modelConfigure.thinkingMode ==
+                                          ThinkingMode.defaultMode)) ...[
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      text,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.getTextColor(
+                                          theme.warningColor,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              if (agent != null)
+                Positioned(
+                  left: 120,
+                  right: (widget.cancelCallback != null) ? 126 : 42,
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: ModelSelect.buildPreview(
@@ -1706,7 +1879,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: Colors.grey[300],
+                              color: theme.thirdGradeColor,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Center(
@@ -1761,7 +1934,7 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                   height: 50,
                   width: 50,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: theme.thirdGradeColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.insert_drive_file, size: 24),
@@ -1778,13 +1951,13 @@ class _ChatPanelInputBoxState extends ConsumerState<ChatPanelInputBox> {
                 color: Colors.black.withAlpha(153),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Center(
+              child: Center(
                 child: SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
-                    color: Colors.white,
+                    color: theme.brightTextColor,
                   ),
                 ),
               ),

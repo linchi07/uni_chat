@@ -1,52 +1,93 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/settings_page/about.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 
-import 'package:uni_chat/l10n/generated/l10n.dart';
 import '../main.dart';
-import '../theme_manager.dart';
 import '../utils/prebuilt_widgets.dart';
+import '../utils/uni_theme.dart';
 import 'api_configure.dart' show ApiSettings;
 import 'log_settings_page.dart';
+import 'model_management_page.dart';
 
-/// “账户”设置页面的占位符
-class _GeneralSettings extends ConsumerWidget {
+class SidebarTitleSwitcher extends ConsumerWidget {
+  const SidebarTitleSwitcher({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
-    var idx = ThemeManager.themes.indexWhere((e) => e.theme == theme);
+    final sidebarSettings = ref.watch(sidebarSettingsProvider);
+    final theme = UniTheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            S.of(context).sidebar_show_title,
+            style: TextStyle(color: theme.textColor, fontSize: 16),
+          ),
+          StdSegmentedControl(
+            width: 140,
+            labels: [S.of(context).disable, S.of(context).enable],
+            currentIndex: sidebarSettings.showTitle ? 1 : 0,
+            onIndexChanged: (index) {
+              ref
+                  .read(sidebarSettingsProvider.notifier)
+                  .setShowTitle(index == 1);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GeneralSettings extends ConsumerWidget {
+  static const List<({String name, String title})> themesList = [
+    (name: 'light', title: 'Light Mode'),
+    //(name: 'dark', title: 'Dark Mode'), 黑夜模式依然无法完全适配，这就是屎山代码的魅力
+    (name: 'solarized', title: 'Solarized Mode'),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var theme = UniTheme.of(context);
+    var themeName = UniTheme.getController(context).themeName;
+    var idx = themesList.indexWhere((e) => e.name == themeName);
     return ListView(
       padding: const EdgeInsets.all(24.0),
       children: [
         Text(
           S.of(context).general_settings,
-          style: Theme.of(context).textTheme.headlineSmall,
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 20),
         Text(S.of(context).language_settings, style: TextStyle(fontSize: 18)),
         const SizedBox(height: 20),
         LanguageSwitcher(),
         const SizedBox(height: 20),
+        const SidebarTitleSwitcher(),
+        const SizedBox(height: 20),
         StdDropDown(
           height: 55,
           initialIndex: (idx == -1) ? null : idx,
           itemBuilder: (c, index, onTap) {
             return StdListTile(
-              title: Text(ThemeManager.themes[index].name),
+              title: Text(themesList[index].title),
               onTap: () async {
                 var p = await SharedPreferences.getInstance();
-                await p.setString("theme", ThemeManager.themes[index].name);
-                ref
-                    .read(themeProvider.notifier)
-                    .updateTheme(theme: ThemeManager.themes[index].theme);
+                await p.setString("theme", themesList[index].name);
+                UniTheme.getController(
+                  context,
+                ).updateTheme(themesList[index].name);
                 onTap(index);
               },
             );
           },
-          itemCount: ThemeManager.themes.length,
+          itemCount: themesList.length,
         ),
         const SizedBox(height: 20),
         Text(
@@ -97,7 +138,7 @@ class LanguageSwitcher extends StatelessWidget {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setString('language', languageCount[index]);
                 //由于大量组件都是接入theme的所以这样相当于让界面重新构建了
-                ref.read(themeProvider.notifier).updateTheme();
+                UniTheme.getController(context).refresh();
               },
               itemBuilder: (context, index, onTap) {
                 return StdListTile(
@@ -235,7 +276,7 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
 
   void onSelect(Widget page) {
     spc.push(
-      Material(color: theme.secondGradeColor, child: page),
+      page,
       topBar: AppBar(
         backgroundColor: theme.secondGradeColor,
         automaticallyImplyLeading: false,
@@ -249,7 +290,7 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
 
   int selectedIndex = 0;
 
-  late ThemeConfig theme;
+  late UniThemeData theme;
   Size lastScreenSize = Size.zero;
   late SplitViewController spc;
 
@@ -261,27 +302,26 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
         title: S.of(context).api_settings,
         contentWidget: ApiSettings(),
       ),
-      /*
       _SettingItem(
         icon: Icons.model_training,
         title: S.of(context).model_management,
-        contentWidget: ModelSettings(),
+        contentWidget: const ModelManagementPage(),
       ),
-       */
+
       _SettingItem(
         icon: Icons.settings_outlined,
         title: S.of(context).general_settings,
         contentWidget: _GeneralSettings(),
       ),
       _SettingItem(
-        icon: Icons.info_outline,
-        title: S.of(context).about,
-        contentWidget: UNIChatAbout(),
-      ),
-      _SettingItem(
         icon: Icons.receipt_long,
         title: S.of(context).log_settings,
         contentWidget: LogSettingsPage(),
+      ),
+      _SettingItem(
+        icon: Icons.info_outline,
+        title: S.of(context).about,
+        contentWidget: UNIChatAbout(),
       ),
     ];
     final screenSize = MediaQuery.of(context).size;
@@ -298,7 +338,7 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
     } else {
       _forceMaximize = false;
     }
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     // 根据是否最大化，计算菜单的目标尺寸
     final double targetWidth = isMaximized
         ? screenSize.width - ((PlatForm().isMobile) ? 20 : 60)

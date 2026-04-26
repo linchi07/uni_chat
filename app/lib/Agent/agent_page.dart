@@ -7,7 +7,7 @@ import 'package:uni_chat/utils/overlays.dart';
 
 import '../database/database_service.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
-import '../theme_manager.dart';
+import '../utils/uni_theme.dart';
 import '../utils/prebuilt_widgets.dart';
 import 'agent_models.dart';
 import 'agent_set_page.dart';
@@ -98,7 +98,7 @@ class AgentSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     return StatefulBuilder(
       builder: (context, setState) {
         return FutureBuilder(

@@ -27,6 +27,8 @@ class ModelConfigure {
   //parameters (such as temperature)
   final Map<ModelParamName, dynamic> customParameters;
 
+  final ThinkingMode thinkingMode;
+
   // basic info pass
   final bool enableTimeTelling;
   final bool enableUsrLanguage;
@@ -38,6 +40,7 @@ class ModelConfigure {
     this.maxGenerationTokens = 2560,
     this.maxContextTokens = 1000000000,
     this.customParameters = const {},
+    this.thinkingMode = ThinkingMode.defaultMode,
     this.enableTimeTelling = true,
     this.enableUsrLanguage = true,
     this.enableUsrSystemInformation = true,
@@ -49,6 +52,7 @@ class ModelConfigure {
     int? maxGenerationTokens,
     int? maxContextTokens,
     Map<ModelParamName, dynamic>? customParameters,
+    ThinkingMode? thinkingMode,
     bool? enableTimeTelling,
     bool? enableUsrLanguage,
     bool? enableUsrSystemInformation,
@@ -59,6 +63,7 @@ class ModelConfigure {
       maxGenerationTokens: maxGenerationTokens ?? this.maxGenerationTokens,
       maxContextTokens: maxContextTokens ?? this.maxContextTokens,
       customParameters: customParameters ?? this.customParameters,
+      thinkingMode: thinkingMode ?? this.thinkingMode,
       enableTimeTelling: enableTimeTelling ?? this.enableTimeTelling,
       enableUsrLanguage: enableUsrLanguage ?? this.enableUsrLanguage,
       enableUsrSystemInformation:
@@ -76,6 +81,7 @@ class ModelConfigure {
       'custom_parameters': customParameters.map(
         (key, value) => MapEntry(key.name, value),
       ),
+      'thinking_mode': thinkingMode.name,
       'enable_time_telling': enableTimeTelling,
       'enable_usr_language': enableUsrLanguage,
       'enable_usr_system_information': enableUsrSystemInformation,
@@ -102,13 +108,23 @@ class ModelConfigure {
       });
     }
 
+    ThinkingMode tMode = ThinkingMode.defaultMode;
+    if (map.containsKey('thinking_mode')) {
+      try {
+        tMode = ThinkingMode.values.byName(map['thinking_mode'] as String);
+      } catch (_) {}
+    }
+
     return ModelConfigure(
       modelId: map['model_id'] as String,
       providerId: map['provider_id'] as String,
       maxGenerationTokens: map['max_generation_tokens'] as int,
       maxContextTokens: map['max_context_tokens'] as int,
       customParameters: params,
-      enableTimeTelling: map['enable_time_telling'] as bool,
+      thinkingMode: tMode,
+      enableTimeTelling: map['enable_time_telling'] as bool? ?? true,
+      enableUsrLanguage: map['enable_usr_language'] as bool? ?? true,
+      enableUsrSystemInformation: map['enable_usr_system_information'] as bool? ?? true,
     );
   }
 }

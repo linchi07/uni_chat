@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
-import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 
 import '../utils/llm_icons.dart';
 
 class ModelSelect extends StatefulWidget {
   const ModelSelect({super.key, required this.theme, required this.onSelect});
-  final ThemeConfig theme;
+  final UniThemeData theme;
   final void Function(ApiProvider provider, Model model) onSelect;
 
   static Widget buildPreview(
@@ -19,7 +19,7 @@ class ModelSelect extends StatefulWidget {
     ApiProvider provider,
     Model model,
     VoidCallback? onTap,
-    ThemeConfig theme,
+    UniThemeData theme,
   ) {
     var imgP = LLMImageIndexer.tryGetImagePath(model.family);
     return LayoutBuilder(

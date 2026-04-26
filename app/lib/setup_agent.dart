@@ -10,11 +10,15 @@ import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/settings_page/api_configure.dart';
-import 'package:uni_chat/theme_manager.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
+
+import 'dart:convert';
+import 'package:uni_chat/Agent/agent_models.dart';
+import 'package:uni_chat/api_configs/api_database.dart';
 
 import 'utils/web_view/webview_all.dart';
 
@@ -30,17 +34,17 @@ class SetupAgent extends ConsumerStatefulWidget {
 class _SetupAgentState extends ConsumerState<SetupAgent> {
   final PageController _pageController = PageController();
 
-  late ThemeConfig theme;
+  late UniThemeData theme;
 
   @override
   void initState() {
     super.initState();
-    theme = ref.read(themeProvider);
+    // theme = ref.read(themeProvider);
   }
 
   @override
   Widget build(BuildContext context) {
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     return Material(
       color: theme.secondGradeColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -309,7 +313,7 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
           ),
           Expanded(
             child: ApiConfigurePage(
-              onExit: (f) {
+              onExit: (f) async {
                 if (!f) {
                   prevPage();
                 } else {
@@ -683,6 +687,34 @@ class _SetupAgentState extends ConsumerState<SetupAgent> {
                     ),
                     onPressed: () async {
                       var i = await SharedPreferences.getInstance();
+                      //set the default model for instant chat
+                      try {
+                        final providers = await ApiDatabase.instance
+                            .getAllProviders();
+                        if (providers.isNotEmpty) {
+                          final firstProvider = providers.first;
+                          final configs = await ApiDatabase.instance
+                              .getProviderModelConfigs(firstProvider.id);
+                          if (configs.isNotEmpty) {
+                            final firstConfig = configs.first;
+                            final modelConfig = ModelConfigure(
+                              modelId: firstConfig.modelId,
+                              providerId: firstProvider.id,
+                              maxGenerationTokens: -1,
+                              maxContextTokens: 1000000000,
+                              enableTimeTelling: false,
+                              enableUsrLanguage: false,
+                              enableUsrSystemInformation: false,
+                            );
+                            await i.setString(
+                              "instant_agent_configure",
+                              jsonEncode(modelConfig.toMap()),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        // Ignore or log
+                      }
                       await i.setBool("isSetUp", true);
                       ref.read(chatStateProvider.notifier).clearSession();
                       // or there will be an agent not found error

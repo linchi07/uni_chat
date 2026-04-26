@@ -10,12 +10,12 @@ import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/l10n/generated/l10n.dart';
-import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/utils/file_utils.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:uni_chat/utils/tokenizer.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uuid/uuid.dart';
 
 import 'agentProvider.dart';
@@ -85,7 +85,7 @@ class _AgentSetPageState extends ConsumerState<AgentSetPage> {
   }
 
   late AgentEditState agentState;
-  late ThemeConfig theme;
+  late UniThemeData theme;
   @override
   void initState() {
     super.initState();
@@ -97,7 +97,7 @@ class _AgentSetPageState extends ConsumerState<AgentSetPage> {
       },
     );
     agentState = ref.read(agentEditState);
-    theme = ref.read(themeProvider);
+    // theme = ref.read(themeProvider);
     if (agentState.name != null) {
       nameController.text = agentState.name!;
     }
@@ -191,7 +191,7 @@ class _AgentSetPageState extends ConsumerState<AgentSetPage> {
 
   @override
   Widget build(BuildContext context) {
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     agentState = ref.watch(agentEditState);
     spc.defaultRight = _SysPromptEdit();
     return KeyboardDismisser(
@@ -669,6 +669,7 @@ class AgentEditState {
       maxContextTokens: modelSettings.maxContextTokens,
       maxGenerationTokens: modelSettings.maxGenerationTokens,
       customParameters: modelSettings.customParameters,
+      thinkingMode: modelSettings.thinkingMode,
       enableTimeTelling: modelSettings.enableTimeTelling,
       enableUsrLanguage: modelSettings.enableUsrLanguage,
       enableUsrSystemInformation: modelSettings.enableUsrSystemInformation,
@@ -706,6 +707,7 @@ class AgentEditState {
         maxContextTokens: agentData.modelConfigure.maxContextTokens,
         maxGenerationTokens: agentData.modelConfigure.maxGenerationTokens,
         customParameters: agentData.modelConfigure.customParameters,
+        thinkingMode: agentData.modelConfigure.thinkingMode,
         enableTimeTelling: agentData.modelConfigure.enableTimeTelling,
         enableUsrLanguage: agentData.modelConfigure.enableUsrLanguage,
         enableUsrSystemInformation:
@@ -730,12 +732,12 @@ class TokenStats extends ConsumerStatefulWidget {
 }
 
 class _TokenStatsState extends ConsumerState<TokenStats> {
-  late ThemeConfig theme;
+  late UniThemeData theme;
 
   @override
   void initState() {
     super.initState();
-    theme = ref.read(themeProvider);
+    // theme = ref.read(themeProvider);
   }
 
   late List<(double, int)> percentages;
@@ -784,7 +786,7 @@ class _TokenStatsState extends ConsumerState<TokenStats> {
 
   @override
   Widget build(BuildContext context) {
-    theme = ref.watch(themeProvider);
+    theme = UniTheme.of(context);
     var state = ref.watch(agentEditState);
     calcPercentage(state, ref);
     return Padding(
@@ -897,7 +899,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
       ),
     );
     var modelConf = edit.settings;
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -971,7 +973,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                                 ms.maxContextTokens =
                                     m.contextLength ?? 1000000000;
                                 ms.maxGenerationTokens =
-                                    m.maxCompletionTokens ?? 1024;
+                                    m.maxCompletionTokens ?? -1;
                                 n.state = n.state.copyWith(
                                   provider: p,
                                   model: m,
@@ -1003,7 +1005,7 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                   _notifyListeners();
                 },
                 min: 100,
-                max: (edit.model?.contextLength ?? 1145141919).toDouble(),
+                max: (edit.model?.contextLength ?? 1000000000).toDouble(),
               ),
               StdCheckbox(
                 text: S.of(context).limit_model_generate_length,
@@ -1032,10 +1034,47 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                     _notifyListeners();
                   },
                   min: 100,
-                  max:
-                      (edit.model?.maxCompletionTokens ?? 1145141919)
-                          .toDouble(),
+                  max: (edit.model?.maxCompletionTokens ?? 1145141919)
+                      .toDouble(),
                 ),
+              if (edit.model != null &&
+                  edit.model!.abilities.contains(ModelAbility.thinking)) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text(
+                      "${ModelParamName.thinking.friendlyName(context)}: ",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    StdDropDown(
+                      height: 50,
+                      width: 150,
+                      initialIndex: ThinkingMode.values.indexOf(
+                        modelConf.thinkingMode,
+                      ),
+                      itemCount: ThinkingMode.values.length,
+                      itemBuilder: (context, index, onTap) {
+                        String label = ThinkingMode.values[index].friendlyName(
+                          context,
+                        );
+                        return StdListTile(
+                          title: Text(label),
+                          onTap: () => onTap(index),
+                        );
+                      },
+                      onChanged: (index) {
+                        modelConf.thinkingMode = ThinkingMode.values[index];
+                        _notifyListeners();
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
               Text(
                 S.of(context).model_basic_info_pass_through_setting,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -1172,6 +1211,46 @@ class _AgentModelSettingsState extends ConsumerState<_AgentModelSettings> {
                         },
                       ),
                     );
+                  } else if (param.uiType == ParamUIType.stringList) {
+                    final List<String> options;
+                    if (param == ModelParamName.thinking) {
+                      options = ThinkingMode.values.map((e) => e.name).toList();
+                    } else if (param == ModelParamName.reasoningEffort) {
+                      options = ['low', 'medium', 'high'];
+                    } else {
+                      options = [value.toString()];
+                    }
+
+                    input = Expanded(
+                      child: Row(
+                        children: [
+                          Text("${param.friendlyName(context)}: "),
+                          const SizedBox(width: 8),
+                          StdDropDown(
+                            width: 150,
+                            initialIndex: options.indexOf(value.toString()),
+                            itemCount: options.length,
+                            itemBuilder: (context, index, onTap) {
+                              String label = options[index];
+                              if (param == ModelParamName.thinking) {
+                                label = ThinkingMode.values[index].friendlyName(
+                                  context,
+                                );
+                              }
+                              return StdListTile(
+                                title: Text(label),
+                                onTap: () => onTap(index),
+                              );
+                            },
+                            onChanged: (index) {
+                              modelConf.customParameters[param] =
+                                  options[index];
+                              _notifyListeners();
+                            },
+                          ),
+                        ],
+                      ),
+                    );
                   } else {
                     input = Expanded(
                       child: Text(
@@ -1227,17 +1306,21 @@ class _SysPromptEditState extends ConsumerState<_SysPromptEdit> {
     mdController = MDEditorController(
       initialText: currentState.systemPrompt,
       onInput: (text) {
-        ref.read(agentEditState.notifier).update((state) => state.copyWith(systemPrompt: text));
+        ref
+            .read(agentEditState.notifier)
+            .update((state) => state.copyWith(systemPrompt: text));
         charCount.value = LLMTokenEstimator.estimateTokens(text);
       },
     );
     // 初始化字数
-    charCount.value = LLMTokenEstimator.estimateTokens(currentState.systemPrompt ?? "");
+    charCount.value = LLMTokenEstimator.estimateTokens(
+      currentState.systemPrompt ?? "",
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: Column(
@@ -1532,18 +1615,19 @@ class _OpeningState extends ConsumerState<Opening> {
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: ref.read(themeProvider).primaryColor,
+                  color: UniTheme.of(context).primaryColor,
                   width: 1.5,
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
               padding: const EdgeInsets.all(8),
               child: MDEditor(
-                backgroundColor: ref.read(themeProvider).zeroGradeColor,
-                frontGroundColor: ref.read(themeProvider).primaryColor,
+                backgroundColor: UniTheme.of(context).zeroGradeColor,
+                frontGroundColor: UniTheme.of(context).primaryColor,
                 controller: firstMessageController,
                 hintText:
-                    S.of(context).plz_enter + S.of(context).opening_message_label,
+                    S.of(context).plz_enter +
+                    S.of(context).opening_message_label,
               ),
             ),
           ),
@@ -1588,7 +1672,7 @@ class _UserIdentityState extends ConsumerState<UserIdentity> {
   @override
   Widget build(BuildContext context) {
     var uiden = ref.watch(agentEditState.select((s) => s.userIdentity));
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     return Padding(
       padding: const EdgeInsets.only(right: 8, bottom: 8),
       child: Column(
@@ -1671,7 +1755,8 @@ class _UserIdentityState extends ConsumerState<UserIdentity> {
                 backgroundColor: theme.zeroGradeColor,
                 frontGroundColor: theme.primaryColor,
                 controller: additionalInfoController,
-                hintText: S.of(context).plz_enter +
+                hintText:
+                    S.of(context).plz_enter +
                     S.of(context).persona_additonal_information.toLowerCase(),
               ),
             ),

@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/Chat/chat_state.dart';
+import 'package:uni_chat/Execution/execution_loop.dart';
+import 'package:uni_chat/Execution/execution_models.dart';
+import 'package:uni_chat/Execution/tools_provider.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
 import 'package:uni_chat/database/database_service.dart';
@@ -13,22 +17,25 @@ import 'package:uni_chat/main.dart';
 import '../Chat/chat_models.dart';
 import '../api_configs/api_models.dart';
 import '../utils/file_utils.dart';
-import '../utils/time_utils.dart';
 import 'agent_models.dart';
+import 'prompt_injector.dart';
 
 class ModelSpecifics {
   String? modelName;
   Map<ModelParamName, dynamic> customParameters = {};
   int maxGenerationTokens = 1000000000;
   int maxContextTokens = 1000000000;
+  ThinkingMode thinkingMode = ThinkingMode.defaultMode;
   bool enableTimeTelling = true;
   bool enableUsrLanguage = true;
   bool enableUsrSystemInformation = true;
+
   ModelSpecifics({
     this.modelName,
     Map<ModelParamName, dynamic>? customParameters,
     this.maxGenerationTokens = 1000000000,
     this.maxContextTokens = 1000000000,
+    this.thinkingMode = ThinkingMode.defaultMode,
     this.enableTimeTelling = true,
     this.enableUsrLanguage = true,
     this.enableUsrSystemInformation = true,
@@ -39,15 +46,17 @@ class ModelSpecifics {
     Map<ModelParamName, dynamic>? customParameters,
     int? maxGenerationTokens,
     int? maxContextTokens,
+    ThinkingMode? thinkingMode,
     bool? enableTimeTelling,
     bool? enableUsrLanguage,
     bool? enableUsrSystemInformation,
   }) {
     return ModelSpecifics(
       modelName: modelName ?? this.modelName,
-      customParameters: customParameters ?? Map.from(this.customParameters),
+      customParameters: customParameters ?? this.customParameters,
       maxGenerationTokens: maxGenerationTokens ?? this.maxGenerationTokens,
       maxContextTokens: maxContextTokens ?? this.maxContextTokens,
+      thinkingMode: thinkingMode ?? this.thinkingMode,
       enableTimeTelling: enableTimeTelling ?? this.enableTimeTelling,
       enableUsrLanguage: enableUsrLanguage ?? this.enableUsrLanguage,
       enableUsrSystemInformation:
@@ -61,6 +70,7 @@ class ModelSpecifics {
       "customParameters": customParameters.map((k, v) => MapEntry(k.name, v)),
       "maxGenerationTokens": maxGenerationTokens,
       "maxContextTokens": maxContextTokens,
+      "thinkingMode": thinkingMode.name,
       "enableTimeTelling": enableTimeTelling,
       "enableUsrLanguage": enableUsrLanguage,
       "enableUsrSystemInformation": enableUsrSystemInformation,
@@ -89,11 +99,19 @@ class ModelSpecifics {
         params[ModelParamName.presencePenalty] = json["presencePenalty"];
     }
 
+    ThinkingMode tMode = ThinkingMode.defaultMode;
+    if (json.containsKey("thinkingMode")) {
+      try {
+        tMode = ThinkingMode.values.byName(json["thinkingMode"] as String);
+      } catch (_) {}
+    }
+
     return ModelSpecifics(
       modelName: json["modelName"] as String?,
       customParameters: params,
       maxGenerationTokens: json["maxGenerationTokens"] as int,
       maxContextTokens: json["maxContextTokens"] as int,
+      thinkingMode: tMode,
       enableTimeTelling: json["enableTimeTelling"] as bool,
       enableUsrLanguage: json["enableUsrLanguage"] as bool,
       enableUsrSystemInformation: json["enableUsrSystemInformation"] as bool,
@@ -412,19 +430,25 @@ class AgentProvider extends StateNotifier<Agent?> {
     List<ChatMessage> history,
     ChatMessage? usrMessage, {
     StopSignal? stopSignal,
+    ThinkingMode? overrideThinkingMode,
   }) async* {
     if (state != null) {
-      var fm = await formatMessage(history, usrMessage, stopSignal: stopSignal);
-      /*
-      if (state!.memoryBaseIds.isNotEmpty) {
-        var rgp = ref.read(ragProvider);
-        if (rgp.loadedAgentId != state!.id) {
-          await rgp.loadKnowledgeBases(state!.memoryBaseIds, session);
-        }
-        if (usrMessage != null) {
-          fm.ragMessages = await rgp.onUserNewMessageCall(usrMessage);
-        }
-      }*/
+      final baseAgentData = state!.toAgentData();
+      final modifiedAgentData = overrideThinkingMode != null
+          ? baseAgentData.copyWith(
+              modelConfigure: baseAgentData.modelConfigure.copyWith(
+                thinkingMode: overrideThinkingMode,
+              ),
+            )
+          : baseAgentData;
+
+      var fm = await PromptInjector(
+        ref: ref,
+        agentData: modifiedAgentData,
+        history: history,
+        lastMessage: usrMessage,
+        stopSignal: stopSignal,
+      ).inject();
       yield* state!.client.getStreamingResponse(
         modelRequestContent: fm,
         agentId: state!.id,
@@ -434,220 +458,28 @@ class AgentProvider extends StateNotifier<Agent?> {
     }
   }
 
-  int stripTokens(
-    List<FormattedChatMessage> messages,
-    int target,
-    int present,
-  ) {
-    while (present > target && messages.isNotEmpty) {
-      var toStrip = messages.removeAt(0); // Remove the oldest message
-      present -= toStrip.tokens;
-    }
-    return present;
-  }
-
-  Future<ModelRequestContent> formatMessage(
-    List<ChatMessage> history,
-    ChatMessage? lastMessage, {
+  Future<({List<ContentChunk> chunks, String? thoughtSignature})> execute({
+    required List<ChatMessage> history,
+    required ChatMessage lastMessage,
+    required ValueNotifier<List<ContentChunk>> responseNotifier,
     StopSignal? stopSignal,
   }) async {
-    if (state == null) {
-      throw AgentException(AgentExceptionType.agentNotLoaded);
-    }
-    ModelRequestContent rc = ModelRequestContent(
-      staticSystemMessages: [],
-      dynamicSystemMessages: [],
-      uiMessages: [],
-      chatHistory: [],
-      usrMessage: [],
-      modelConfigure: state!.modelConfigure,
-      ragMessages: [],
-      stopSignal: stopSignal,
-    );
+    if (state == null) throw AgentException(AgentExceptionType.agentNotLoaded);
 
-    // 1. 构建静态系统指令 (Static Prefix)
-    StringBuffer staticPrompt = StringBuffer();
-    if (state!.name.isNotEmpty) {
-      staticPrompt.writeln("你的名字是${state!.name}");
-    }
-    if (state!.systemPrompt != null) {
-      staticPrompt.writeln(state!.systemPrompt!);
-    }
-
-    // 注入人格信息
-    var personaMsg = ref.read(personaProvider).getPersonaMessage();
-    if (personaMsg != null) {
-      for (var part in personaMsg.parts) {
-        if (part.type == MessagePartType.text) {
-          staticPrompt.writeln(part.content);
-        }
-      }
-      if (state?.personaConfigure?.personaAdditionalInfo != null) {
-        staticPrompt.writeln(state!.personaConfigure!.personaAdditionalInfo!);
-      }
-    }
-
-    // 注入用户语言和系统信息 (静态，因为极少变动)
-    if (state!.modelConfigure.enableUsrLanguage) {
-      staticPrompt.writeln("使用${PlatForm().languageCode}和用户交流");
-    }
-    if (state!.modelConfigure.enableUsrSystemInformation) {
-      staticPrompt.writeln("用户使用${PlatForm().platformInfo}系统");
-    }
-
-    // 注入 XML 标签说明
-    staticPrompt.writeln("\n[重要指令]");
-    staticPrompt.writeln(
-      "你将收到包含 <system_metadata> 标签的消息。该标签内包含的是系统注入的当前客观环境事实（如当前时间），请将其作为推断上下文的基准信息，而非用户对话内容。",
-    );
-
-    rc.staticSystemMessages.add(
-      FormattedChatMessage(
-        id: "system_static",
-        sender: MessageSender.system,
-        parts: [
-          MessagePart(
-            type: MessagePartType.text,
-            content: staticPrompt.toString(),
-          ),
-        ],
+    final loop = ExecutionLoop(
+      PromptInjector(
+        ref: ref,
+        agentData: state!.toAgentData(),
+        history: history,
+        lastMessage: lastMessage,
+        stopSignal: stopSignal,
       ),
+      state!.client,
+      responseNotifier,
+      tools: ref.read(toolsManagerProvider),
     );
 
-    // 2. 处理对话历史
-    var t1 = await processChatMessage(history, rc.chatHistory);
-
-    // 3. 注入动态元数据 (Dynamic Metadata - User Role)
-    // 放在历史记录之后，当前提问之前
-    if (state!.modelConfigure.enableTimeTelling) {
-      final now = DateTime.now();
-      final lastMsgTime = history.isNotEmpty ? history.last.timestamp : null;
-
-      final timeStr = TimeUtils.formatTimeForCache(now);
-      final gapDesc = TimeUtils.getTimeGapDescription(now, lastMsgTime);
-
-      StringBuffer metadataBuffer = StringBuffer();
-      metadataBuffer.writeln("<system_metadata>");
-      metadataBuffer.writeln("<current_time>$timeStr</current_time>");
-      if (gapDesc != null) {
-        metadataBuffer.writeln("<time_gap>$gapDesc</time_gap>");
-      }
-      metadataBuffer.write("</system_metadata>");
-
-      rc.dynamicSystemMessages.add(
-        FormattedChatMessage(
-          id: "usr_time",
-          sender: MessageSender.user, // 重写为 User 角色以符合静动分离策略
-          parts: [
-            MessagePart(
-              type: MessagePartType.text,
-              content: metadataBuffer.toString(),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // 4. 处理用户当前提问
-    int t2 = 0;
-    if (lastMessage != null) {
-      t2 = await processChatMessage([lastMessage], rc.usrMessage);
-    }
-
-    rc.modelConfigure = state!.modelConfigure;
-    var t3 = rc.uiMessages.fold(0, (sum, i) => sum + i.tokens);
-    var t4 = rc.staticSystemMessages.fold(0, (sum, i) => sum + i.tokens);
-    var t5 = rc.dynamicSystemMessages.fold(0, (sum, i) => sum + i.tokens);
-
-    // 使用 maxContextTokens 判定
-    if (t1 + t2 + t3 + t4 + t5 > state!.modelConfigure.maxContextTokens) {
-      var delta =
-          t1 + t2 + t3 + t4 + t5 - state!.modelConfigure.maxContextTokens;
-      stripTokens(rc.chatHistory, delta, t1);
-    }
-    return rc;
-  }
-
-  Future<int> processChatMessage(
-    List<ChatMessage> messages,
-    List<FormattedChatMessage> output,
-  ) async {
-    if (state == null) {
-      throw AgentException(AgentExceptionType.agentNotLoaded);
-    }
-    int totalTokens = 0;
-    for (var i in messages) {
-      if (i.sender == MessageSender.internal) continue;
-
-      List<MessagePart> parts = [];
-
-      // 1. 处理多个附件文件
-      if (i.attachedFiles != null && i.attachedFiles!.isNotEmpty) {
-        for (var attachedFile in i.attachedFiles!) {
-          switch (attachedFile.type) {
-            case FileTypeDefine.text:
-              var fileContent = await attachedFile.getFile();
-              parts.add(
-                MessagePart(
-                  type: MessagePartType.text,
-                  content:
-                      "Uploaded File: Name: ${attachedFile.originalName}, Content: ${await fileContent.readAsString(encoding: utf8)}",
-                ),
-              );
-              break;
-            case FileTypeDefine.image:
-              if (!state!.client.model.abilities.contains(ModelAbility.visual))
-                continue;
-
-              if (await (await attachedFile.getFile()).exists()) {
-                var base64 = base64Encode(
-                  await (await attachedFile.getFile()).readAsBytes(),
-                );
-                parts.add(
-                  MessagePart(
-                    type: MessagePartType.base64Image,
-                    mimeType: attachedFile.mimeType,
-                    content: base64,
-                  ),
-                );
-              }
-              break;
-            case FileTypeDefine.pdf:
-              if (await (await attachedFile.getFile()).exists()) {
-                var base64 = base64Encode(
-                  await (await attachedFile.getFile()).readAsBytes(),
-                );
-                parts.add(
-                  MessagePart(
-                    type: MessagePartType.base64pdf,
-                    mimeType: attachedFile.mimeType,
-                    content: base64,
-                  ),
-                );
-              }
-              break;
-            default:
-              break;
-          }
-        }
-      }
-
-      // 2. 处理文本内容
-      if (i.content.isNotEmpty) {
-        parts.add(MessagePart(type: MessagePartType.text, content: i.content));
-      }
-
-      if (parts.isNotEmpty) {
-        var formatted = FormattedChatMessage(
-          id: i.id,
-          sender: i.sender,
-          parts: parts,
-        );
-        output.add(formatted);
-        totalTokens += formatted.tokens;
-      }
-    }
-    return totalTokens;
+    return await loop.execute();
   }
 }
 

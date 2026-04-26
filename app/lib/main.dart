@@ -22,11 +22,11 @@ import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/platform_specifics/platform_specifics.dart';
 import 'package:uni_chat/settings_page/settings.dart';
 import 'package:uni_chat/setup_agent.dart';
-import 'package:uni_chat/theme_manager.dart';
 import 'package:uni_chat/top_banner.dart';
 import 'package:uni_chat/utils/auto_update_service.dart';
 import 'package:uni_chat/utils/log_manager.dart';
 import 'package:uni_chat/utils/overlays.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 
 import 'Agent/agent_page.dart';
 
@@ -224,130 +224,155 @@ class UNIChat extends StatefulWidget {
 
 class _UNIChatState extends State<UNIChat> {
   late bool isSetUp;
+  bool _isLocalLoaded = false;
   bool _isUpdateChecked = false;
+  late UniThemeNotifier uniThemeNotifier;
+
   @override
   void initState() {
     super.initState();
     isSetUp = widget.isSetUp;
+
+    UniThemeData initialThemeData;
+    if (widget.themeName == 'dark') {
+      initialThemeData = ThemePresets.DARK;
+    } else if (widget.themeName == 'solarized') {
+      initialThemeData = ThemePresets.SOLARIZED;
+    } else {
+      initialThemeData = ThemePresets.LIGHT;
+    }
+    uniThemeNotifier = UniThemeNotifier(
+      initialTheme: initialThemeData,
+      initialName: widget.themeName ?? 'light',
+    );
   }
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    Widget mainContent = MainCont(key: masterNavigatorKey);
-    List<Override> ovr;
-    late ThemeConfig theme;
-    if (widget.themeName != null) {
-      theme = ThemeManager.themes
-          .firstWhere(
-            (element) => element.name == widget.themeName,
-            orElse: () => (name: 'light', theme: ThemeManager.light),
-          )
-          .theme;
-    } else {
-      theme = ThemeManager.light;
-    }
-    ovr = [
-      themeProvider.overrideWith((ref) {
-        return ThemeManager(theme);
-      }),
-    ];
     return ProviderScope(
-      overrides: ovr,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        localizationsDelegates: [
-          S.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-          AppFlowyEditorLocalizations.delegate,
-        ],
-        supportedLocales: S.delegate.supportedLocales,
-        navigatorKey: navigatorKey,
-        title: '',
-        scrollBehavior:
-            (PlatForm().platform == RunningPlatform.ios ||
-                PlatForm().platform == RunningPlatform.ipadOS)
-            ? const ScrollBehavior().copyWith(physics: const IOSScrollPhysics())
-            : null,
-        theme: ThemeData(
-          fontFamily: (PlatForm().isWindows)
-              ? (WindowsSpecificsSetting.customFontLoaded
-                    ? WindowsSpecificsSetting.CUSTOM_FONT_FAMILY
-                    : "Segoe UI")
-              : null,
-          // fix the font glitches in windows when displaying SC
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        ),
-        home: OverlayWrapper(
-          child: OverlayPortalScope(
-            child: Builder(
-              builder: (context) {
-                if (!_isUpdateChecked) {
-                  // 否则拿不到 overlay 的context引用
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    AutoUpdateService.checkUpdates(
-                      context,
-                      backgroundColor: theme.zeroGradeColor,
-                    );
-                  });
-                  _isUpdateChecked = true;
-                }
-                if (widget.locale != null) {
-                  S.load(widget.locale!);
-                  PlatForm().languageCode = widget.locale!.languageCode;
-                } else {
-                  PlatForm().languageCode = Localizations.localeOf(
-                    context,
-                  ).languageCode;
-                }
-                if (PlatForm().platform == RunningPlatform.macos) {
-                  mainContent = MacOSMenuBar(mainContent: mainContent);
-                }
-                if (PlatForm().isMobilePlatform) {
-                  mainContent = Scaffold(
-                    backgroundColor: theme.zeroGradeColor,
-                    body: SafeArea(
-                      bottom: PlatForm().platform != RunningPlatform.ipadOS,
-                      child: mainContent,
-                    ),
-                  );
-                }
-                if (!widget.isSetUp) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    OverlayWrapper.showOverlay(
-                      context,
-                      overlayContent: Padding(
-                        padding: (PlatForm().isMobile)
-                            ? const EdgeInsets.all(10.0)
-                            : const EdgeInsets.all(50.0),
-                        child: SetupAgent(),
-                      ),
-                      barrierDismissible: false,
-                    );
-                  });
-                  isSetUp =
-                      true; // or the setup menu will re-popout when you resize the window
-                }
-                mainContent = AppBarTheme(
-                  scrolledUnderElevation: 0,
-                  child: mainContent,
-                );
-                if (PlatForm().isWindows) {
-                  // windows will force the window to get too small when showing desktop even when window size is set
-                  // so we need to avoid the negative constrained error
-                  var mdof = MediaQuery.of(context);
-                  var s = mdof.size;
-                  mainContent = ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: 480, minWidth: 640),
-                    child: mainContent,
-                  );
-                }
-                return mainContent;
-              },
-            ),
-          ),
+      overrides: const [],
+      child: UniTheme(
+        notifier: uniThemeNotifier,
+        child: ListenableBuilder(
+          listenable: uniThemeNotifier,
+          builder: (context, child) {
+            final currentThemeData = uniThemeNotifier.data;
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              localizationsDelegates: [
+                S.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+                AppFlowyEditorLocalizations.delegate,
+              ],
+              supportedLocales: S.delegate.supportedLocales,
+              navigatorKey: navigatorKey,
+              title: '',
+              scrollBehavior:
+                  (PlatForm().platform == RunningPlatform.ios ||
+                      PlatForm().platform == RunningPlatform.ipadOS)
+                  ? const ScrollBehavior().copyWith(
+                      physics: const IOSScrollPhysics(),
+                    )
+                  : null,
+              theme: ThemeData(
+                brightness: currentThemeData.isDark
+                    ? Brightness.dark
+                    : Brightness.light,
+                scaffoldBackgroundColor: currentThemeData.zeroGradeColor,
+                fontFamily: (PlatForm().isWindows)
+                    ? (WindowsSpecificsSetting.customFontLoaded
+                          ? WindowsSpecificsSetting.CUSTOM_FONT_FAMILY
+                          : "Segoe UI")
+                    : null,
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: Colors.blue, // 维持这个颜色，自动按照pri来取色，容易出现诡异的问题。
+                  brightness: currentThemeData.isDark
+                      ? Brightness.dark
+                      : Brightness.light,
+                ),
+              ),
+              home: OverlayWrapper(
+                child: OverlayPortalScope(
+                  child: Builder(
+                    builder: (context) {
+                      final theme = UniTheme.of(context);
+                      Widget mainContent = MainCont(key: masterNavigatorKey);
+                      if (!_isUpdateChecked) {
+                        // 否则拿不到 overlay 的context引用
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          AutoUpdateService.checkUpdates(
+                            context,
+                            backgroundColor: theme.zeroGradeColor,
+                          );
+                        });
+                        _isUpdateChecked = true;
+                      }
+                      if (widget.locale != null && !_isLocalLoaded) {
+                        S.load(widget.locale!);
+                        PlatForm().languageCode = widget.locale!.languageCode;
+                        _isLocalLoaded =
+                            true; // or the set local wont take effect since widget.local is the old one read from startup
+                      } else {
+                        PlatForm().languageCode = Localizations.localeOf(
+                          context,
+                        ).languageCode;
+                      }
+                      if (PlatForm().platform == RunningPlatform.macos) {
+                        mainContent = MacOSMenuBar(mainContent: mainContent);
+                      }
+                      if (PlatForm().isMobilePlatform) {
+                        mainContent = Scaffold(
+                          backgroundColor: theme.zeroGradeColor,
+                          body: SafeArea(
+                            bottom:
+                                PlatForm().platform != RunningPlatform.ipadOS,
+                            child: mainContent,
+                          ),
+                        );
+                      }
+                      if (!widget.isSetUp) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          OverlayWrapper.showOverlay(
+                            context,
+                            overlayContent: Padding(
+                              padding: (PlatForm().isMobile)
+                                  ? const EdgeInsets.all(10.0)
+                                  : const EdgeInsets.all(50.0),
+                              child: SetupAgent(),
+                            ),
+                            barrierDismissible: false,
+                          );
+                        });
+                        isSetUp =
+                            true; // or the setup menu will re-popout when you resize the window
+                      }
+                      mainContent = AppBarTheme(
+                        scrolledUnderElevation: 0,
+                        child: mainContent,
+                      );
+                      if (PlatForm().isWindows) {
+                        // windows will force the window to get too small when showing desktop even when window size is set
+                        // so we need to avoid the negative constrained error
+                        var mdof = MediaQuery.of(context);
+                        var s = mdof.size;
+                        mainContent = ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: 480,
+                            minWidth: 640,
+                          ),
+                          child: mainContent,
+                        );
+                      }
+                      return mainContent;
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -483,6 +508,20 @@ class MainCont extends ConsumerStatefulWidget {
   ConsumerState<MainCont> createState() => MainContState();
 }
 
+class SidebarItemData {
+  final Pages page;
+  final IconData icon;
+  final String keyName;
+  final String Function(BuildContext) titleBuilder;
+
+  SidebarItemData({
+    required this.page,
+    required this.icon,
+    required this.keyName,
+    required this.titleBuilder,
+  });
+}
+
 enum Pages { chat, agent, Rag }
 
 class MainContState extends ConsumerState<MainCont> {
@@ -530,55 +569,145 @@ class MainContState extends ConsumerState<MainCont> {
     });
   }
 
-  List<Widget> _buildMenuItems() {
-    return [
-      IconButton(
+  List<Widget> _buildMenuItems({List<String>? order}) {
+    final allItems = <String, Widget>{
+      'chat': IconButton(
         onPressed: () {
-          if (page == Pages.chat) {
-            return;
-          }
+          if (page == Pages.chat) return;
           setState(() {
             page = Pages.chat;
           });
         },
         icon: Icon(Icons.chat_bubble_outline),
       ),
-      IconButton(
+      'agent': IconButton(
         onPressed: () {
-          if (page == Pages.agent) {
-            return;
-          }
+          if (page == Pages.agent) return;
           setState(() {
             page = Pages.agent;
           });
         },
         icon: Icon(Icons.groups_outlined),
       ),
-      /*
-                      IconButton(
-                        onPressed: () {
-                          if (page == Pages.Rag) {
-                            return;
-                          }
-                          setState(() {
-                            page = Pages.Rag;
-                          });
-                        },
-                        icon: Icon(Icons.book_outlined),
+    };
+
+    if (order != null && order.isNotEmpty) {
+      var list = <Widget>[];
+      for (var key in order) {
+        if (allItems.containsKey(key)) {
+          list.add(allItems[key]!);
+        }
+      }
+      for (var key in allItems.keys) {
+        if (!order.contains(key)) {
+          list.add(allItems[key]!);
+        }
+      }
+      return list;
+    }
+
+    return allItems.values.toList();
+  }
+
+  Widget _buildSidebarTab(
+    BuildContext context,
+    SidebarItemData item,
+    bool showTitle,
+    UniThemeData theme,
+  ) {
+    final isSelected = page == item.page;
+    final color = isSelected
+        ? theme.primaryColor
+        : theme.textColor.withAlpha(180);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(showTitle ? 12 : 24),
+          onTap: () {
+            if (page == item.page) return;
+            setState(() {
+              page = item.page;
+            });
+          },
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: showTitle ? 8 : 10),
+            child: showTitle
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(item.icon, color: color, size: 24),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.titleBuilder(context),
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: Icon(Icons.mode_edit_outline_outlined),
-                      ),
-                       */
-    ];
+                    ],
+                  )
+                : Center(child: Icon(item.icon, color: color, size: 24)),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final sidebarSettings = ref.watch(sidebarSettingsProvider);
+    final showTitle = sidebarSettings.showTitle;
+    final order = sidebarSettings.order;
+
+    final allItems = [
+      SidebarItemData(
+        page: Pages.chat,
+        icon: Icons.chat_bubble_outline,
+        keyName: 'chat',
+        titleBuilder: (c) => S.of(c).sidebar_chat,
+      ),
+      SidebarItemData(
+        page: Pages.agent,
+        icon: Icons.groups_outlined,
+        keyName: 'agent',
+        titleBuilder: (c) => S.of(c).sidebar_agent,
+      ),
+    ];
+
+    var sidebarItems = <SidebarItemData>[];
+    for (var key in order) {
+      var item = allItems.firstWhere(
+        (element) => element.keyName == key,
+        orElse: () => SidebarItemData(
+          page: Pages.chat,
+          icon: Icons.chat_bubble_outline,
+          keyName: '',
+          titleBuilder: (c) => "",
+        ),
+      );
+      if (item.keyName.isNotEmpty) {
+        sidebarItems.add(item);
+      }
+    }
+    for (var item in allItems) {
+      if (!sidebarItems.any((e) => e.keyName == item.keyName)) {
+        sidebarItems.add(item);
+      }
+    }
+
     var s = MediaQuery.of(context).size;
-    var theme = ref.watch(themeProvider);
+    var theme = UniTheme.of(context);
     var bnw = _bannerWidget();
+
     return Scaffold(
       backgroundColor: theme.zeroGradeColor,
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
@@ -598,7 +727,7 @@ class MainContState extends ConsumerState<MainCont> {
           : Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ..._buildMenuItems(),
+                ..._buildMenuItems(order: order),
                 IconButton(
                   onPressed: () {
                     OverlayWrapper.showOverlay(
@@ -619,13 +748,54 @@ class MainContState extends ConsumerState<MainCont> {
               children: [
                 if (s.width >= 500)
                   Container(
-                    width: 50,
+                    width: showTitle ? 60 : 50,
                     decoration: BoxDecoration(color: theme.zeroGradeColor),
                     child: Column(
                       children: [
-                        ..._buildMenuItems(),
+                        Expanded(
+                          child: ReorderableListView(
+                            buildDefaultDragHandles: false,
+                            proxyDecorator: (child, index, animation) {
+                              return AnimatedBuilder(
+                                animation: animation,
+                                builder: (context, _) {
+                                  return Material(
+                                    color: Colors.transparent,
+                                    elevation: 0,
+                                    child: child,
+                                  );
+                                },
+                              );
+                            },
+                            onReorder: (oldIndex, newIndex) {
+                              if (newIndex > oldIndex) newIndex -= 1;
+                              final item = sidebarItems.removeAt(oldIndex);
+                              sidebarItems.insert(newIndex, item);
+                              final newOrder = sidebarItems
+                                  .map((e) => e.keyName)
+                                  .toList();
+                              ref
+                                  .read(sidebarSettingsProvider.notifier)
+                                  .setOrder(newOrder);
+                            },
+                            children: [
+                              for (int i = 0; i < sidebarItems.length; i++)
+                                ReorderableDragStartListener(
+                                  key: ValueKey(sidebarItems[i].keyName),
+                                  index: i,
+                                  child: _buildSidebarTab(
+                                    context,
+                                    sidebarItems[i],
+                                    showTitle,
+                                    theme,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                         const Spacer(),
                         PersonaIndicator(),
+                        const SizedBox(height: 10),
                         IconButton(
                           onPressed: () {
                             OverlayWrapper.showOverlay(
@@ -637,9 +807,7 @@ class MainContState extends ConsumerState<MainCont> {
                           },
                           icon: Icon(Icons.settings_outlined),
                         ),
-                        // to avoid the menu button being cut off
-                        if (PlatForm().platform == RunningPlatform.ipadOS)
-                          const SizedBox(height: 10),
+                        const SizedBox(height: 10),
                       ],
                     ),
                   ),
@@ -664,3 +832,45 @@ class MainContState extends ConsumerState<MainCont> {
     );
   }
 }
+
+class SidebarSettings {
+  final bool showTitle;
+  final List<String> order;
+  SidebarSettings({required this.showTitle, required this.order});
+  SidebarSettings copyWith({bool? showTitle, List<String>? order}) {
+    return SidebarSettings(
+      showTitle: showTitle ?? this.showTitle,
+      order: order ?? this.order,
+    );
+  }
+}
+
+class SidebarSettingsNotifier extends StateNotifier<SidebarSettings> {
+  SidebarSettingsNotifier()
+    : super(SidebarSettings(showTitle: true, order: ['chat', 'agent'])) {
+    _load();
+  }
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final show = prefs.getBool('showSidebarTitle') ?? true;
+    final ord = prefs.getStringList('sidebarOrder') ?? ['chat', 'agent'];
+    state = SidebarSettings(showTitle: show, order: ord);
+  }
+
+  Future<void> setShowTitle(bool val) async {
+    state = state.copyWith(showTitle: val);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('showSidebarTitle', val);
+  }
+
+  Future<void> setOrder(List<String> val) async {
+    state = state.copyWith(order: val);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('sidebarOrder', val);
+  }
+}
+
+final sidebarSettingsProvider =
+    StateNotifierProvider<SidebarSettingsNotifier, SidebarSettings>((ref) {
+      return SidebarSettingsNotifier();
+    });

@@ -7,16 +7,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/Chat/chat_page.dart';
+import 'package:uni_chat/Execution/execution_models.dart';
 import 'package:uni_chat/Persona/persona_provider.dart';
 import 'package:uni_chat/database/database_service.dart';
 import 'package:uni_chat/error_handling.dart';
 import 'package:uni_chat/promps.dart';
-import 'package:uni_chat/utils/chunked_string_buffer.dart';
 import 'package:uuid/uuid.dart';
 
 import '../api_configs/api_models.dart';
 import 'chat_models.dart';
-import 'input_parser.dart' show InputParser;
 
 const _uuid = Uuid();
 
@@ -36,7 +35,7 @@ class ChatState {
   final bool isGeneratingTitle;
   final StopSignal? stopSignal;
   final StopSignal? titleStopSignal;
-  late final ValueNotifier<List<ChatResponse>?> responses;
+  late final ValueNotifier<List<ContentChunk>> responses;
 
   ChatState({
     this.isReady = false,
@@ -45,7 +44,7 @@ class ChatState {
     this.messagesList = const [],
     this.branchNames = const {},
     Map<String, ({UploadStatus status, ChatFile file})>? uploadedFilesStash,
-    ValueNotifier<List<ChatResponse>?>? responses,
+    ValueNotifier<List<ContentChunk>>? responses,
     this.isLoading = false,
     this.isResponding = false,
     this.isStreamingStarted = false,
@@ -54,7 +53,7 @@ class ChatState {
     this.titleStopSignal,
     this.error,
   }) {
-    this.responses = responses ?? ValueNotifier(null);
+    this.responses = responses ?? ValueNotifier([]);
     this.uploadedFilesStash = uploadedFilesStash ?? {};
     if (session != null) {
       this.session = session;
@@ -75,7 +74,7 @@ class ChatState {
     StopSignal? stopSignal,
     StopSignal? titleStopSignal,
     AppException? error,
-    ValueNotifier<List<ChatResponse>?>? responses,
+    ValueNotifier<List<ContentChunk>>? responses,
   }) {
     return ChatState(
       responses: responses ?? this.responses,
@@ -106,7 +105,7 @@ class ChatState {
       isLoading: false,
       isGeneratingTitle: false,
       error: null,
-      responses: ValueNotifier(null),
+      responses: ValueNotifier([]),
     );
   }
 }
@@ -187,8 +186,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
   }
 
   void resetGenerationState() {
-    state.stopSignal?.dispose();
-    state.responses.value = null;
+    state.responses.value = [];
     state = ChatState(
       isReady: state.isReady,
       session: state.session,
@@ -347,7 +345,10 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         //TODO: 最好让这里的逻辑都放到agent_provider里面
         await _ref
             .read(agentProvider.notifier)
-            .loadAgentById(session.agentId, overrideJson: session.agentOverride);
+            .loadAgentById(
+              session.agentId,
+              overrideJson: session.agentOverride,
+            );
         final msg = await _dbService.getMessagesForSession(sessionId);
         if (msg.root == null || msg.messages.isEmpty) {
           throw ChatException(ChatExceptionType.messageNotFound);
@@ -673,80 +674,97 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
       final stopSignal = StopSignal();
       state = state.copyWith(stopSignal: stopSignal, isResponding: true);
 
-      final stream = agentNotifier.getStreamingResponse(
-        state.session!,
-        history,
-        lastMessage,
-        stopSignal: stopSignal,
-      );
-      ChatMessage? finalAiMessage;
-      var buffer = ChunkedStringBuffer();
-      var parser = InputParser(buffer);
-      state.responses.value = null;
+      state.responses.value = [];
+      List<ContentChunk> finalChunks = [];
+      String? thoughtSignature;
+
       try {
-        await for (final chunk in stream) {
-          if (stopSignal.isStopped) break;
-          if (!state.isStreamingStarted) {
-            stateCopyWith(isStreamingStarted: true);
-          }
-          List<ChatResponse>? newBlock;
-          if (chunk.content.isNotEmpty) {
-            if (chunk.type == MessageChunkType.text) {
-              buffer.write(chunk.content);
-              newBlock = parser.parseDynamicBlock();
-            } else if (chunk.type == parser.blocksCached.lastOrNull?.type) {
-              parser.blocksCached.last = ChatResponse(
-                type: chunk.type,
-                content: parser.blocksCached.last.content + chunk.content,
-              );
-            } else {
-              parser.blocksCached.add(chunk);
-            }
-            state.responses.value = [...parser.blocksCached, ...?newBlock];
-          }
-        }
+        var result = await agentNotifier.execute(
+          history: history,
+          lastMessage: lastMessage,
+          responseNotifier: state.responses,
+          stopSignal: stopSignal,
+        );
+        finalChunks = result.chunks;
+        thoughtSignature = result.thoughtSignature;
       } on Exception catch (e) {
         if (state.stopSignal?.isStopped != true) {
           state = state.copyWith(
             error: (e is AppException) ? e : ChatException.fromException(e),
           );
-          // yes we should have a better way to handle this
-          // however it's super annoying to store this in the database (the AppException is a nested class and we need the buildContext to get the error string)
-          // so just leave it be for a while
-          // and for now just use the error handling in the state object
-          //TODO: handle this
         }
-        /*
-        state.responses.value = [
-          ...parser.blocksCached,
-          ChatResponse(
-            type: MessageChunkType.error,
-            content: "",
-            error: ((e is! AppException) ? ChatException.fromException(e) : e),
-          ),
-        ];
-         */
       }
-      if (state.responses.value != null) {
-        var c = MessageBlock.fromChatResponse(state.responses.value!);
-        finalAiMessage = ChatMessage(
+
+      if (finalChunks.isNotEmpty) {
+        // 1. 确保顺序严格按照 ID
+        final sortedChunks = finalChunks.toList()
+          ..sort((a, b) => a.id.compareTo(b.id));
+
+        // 2. 合并文本内容作为主内容（按 ID 顺序）
+        String mainContent = sortedChunks
+            .whereType<TextChunk>()
+            .map((e) => e.text)
+            .join();
+
+        // 3. 提取其他块（思考过程、工具调用），计算准确偏移
+        List<Map<String, dynamic>> blocks = [];
+        int currentAnchor = 0;
+        for (var chunk in sortedChunks) {
+          if (chunk is TextChunk) {
+            currentAnchor += chunk.text.length;
+          } else if (chunk is ReasoningChunk) {
+            blocks.add(
+              MessageBlock(
+                content: chunk.text,
+                anchor: currentAnchor,
+                chunkType: MessageChunkType.reasoning,
+              ).toMap(),
+            );
+          } else if (chunk is ToolCallChunk) {
+            blocks.add(
+              MessageBlock(
+                content: chunk.content,
+                anchor: currentAnchor,
+                chunkType: MessageChunkType.toolCall,
+                toolData: chunk.toStructuredData(),
+              ).toMap(),
+            );
+          }
+        }
+
+        final finalAiMessage = ChatMessage(
           id: _uuid.v7(),
           messageId: _uuid.v7(),
           sender: MessageSender.ai,
           senderId: agent!.client.model.id,
-          content: c.mainContent,
-          data: (c.blocks != null && c.blocks!.isNotEmpty)
-              ? {"msg_blocks": c.blocks!.map((e) => e.toMap()).toList()}
+          content: mainContent,
+          data: blocks.isNotEmpty || thoughtSignature != null
+              ? {
+                  if (blocks.isNotEmpty) "msg_blocks": blocks,
+                  if (thoughtSignature != null)
+                    "thought_signature": {
+                      agent!.client.provider.id: thoughtSignature,
+                    },
+                }
               : null,
           timestamp: DateTime.now(),
           parent: lastMessage.id,
           childIds: [],
           enabledChild: 0,
         );
+
+        // 更新消息树关联
         lastMessage.childIds.add(finalAiMessage.id);
         lastMessage.enabledChild = (lastMessage.childIds.length - 1);
         state.messages[finalAiMessage.id] = finalAiMessage;
-        state.messagesList.add(finalAiMessage);
+
+        // 将消息添加和状态重置合并为一次原子更新
+        state = state.copyWith(
+          messagesList: [...state.messagesList, finalAiMessage],
+          isResponding: false,
+          isLoading: false,
+        );
+
         if (currentSessionId == null) {
           throw Exception('No session selected');
         }
@@ -815,10 +833,13 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         [],
         cm,
         stopSignal: stopSignal,
+        overrideThinkingMode: ThinkingMode.off,
       );
       sb.clear();
       await for (final chunk in stream) {
-        sb.write(chunk.content);
+        if (chunk.type == MessageChunkType.text) {
+          sb.write(chunk.content);
+        } // 否则的话，容易把DeepSeek的思维链也给写进去，导致标题无法正常解析
       }
       String? title;
       try {

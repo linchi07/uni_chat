@@ -5,13 +5,12 @@ import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:xxh3/xxh3.dart';
-
-import 'package:uni_chat/l10n/generated/l10n.dart';
 
 class AutoUpdateService {
   static const String _updateUrl =
