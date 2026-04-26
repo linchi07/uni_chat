@@ -542,27 +542,23 @@ class ProviderModelConfig implements Insertable<ProviderModelConfig> {
       parametersOverride.hashCode;
 }
 
-enum ThinkingMode {
-  disabled,
-  enabled,
-  low,
-  medium,
-  high,
-}
+enum ThinkingMode { defaultMode, off, low, mid, high, xhigh }
 
 extension XThinkingMode on ThinkingMode {
   String friendlyName(BuildContext context) {
     switch (this) {
-      case ThinkingMode.disabled:
+      case ThinkingMode.defaultMode:
+        return S.of(context).DEFAULT;
+      case ThinkingMode.off:
         return S.of(context).thinking_mode_disabled;
-      case ThinkingMode.enabled:
-        return S.of(context).thinking_mode_enabled;
       case ThinkingMode.low:
         return S.of(context).thinking_mode_low;
-      case ThinkingMode.medium:
+      case ThinkingMode.mid:
         return S.of(context).thinking_mode_medium;
       case ThinkingMode.high:
         return S.of(context).thinking_mode_high;
+      case ThinkingMode.xhigh:
+        return S.of(context).thinking_mode_xhigh;
     }
   }
 }
@@ -884,7 +880,7 @@ extension XModelParamName on ModelParamName {
       case ModelParamName.tools:
         return <dynamic>[];
       case ModelParamName.thinking:
-        return ThinkingMode.disabled.name;
+        return ThinkingMode.defaultMode.name;
       case ModelParamName.reasoningEffort:
         return 'medium';
     }
@@ -1032,18 +1028,20 @@ class ProviderPreset implements Insertable<ProviderPresetsTableData> {
   factory ProviderPreset.fromMap(Map<String, dynamic> map) {
     return ProviderPreset(
       id: map['id'],
-      i18nName: (jsonDecode(map['i18n_name'] as String) as Map).cast<String, String>(),
+      i18nName: (jsonDecode(map['i18n_name'] as String) as Map)
+          .cast<String, String>(),
       type: ProviderPresetType.values.firstWhere((e) => e.name == map['type']),
       endpoint: map['endpoint'],
       apiType: XApiType.fromName(map['api_type'] as String),
       models: map['models'] != null
           ? (jsonDecode(map['models'] as String) as List)
-              .map((e) => ProviderModelConfig.fromMap(e))
-              .toList()
+                .map((e) => ProviderModelConfig.fromMap(e))
+                .toList()
           : null,
       order: map['order'],
       helperUrl: map['helper_url'] != null
-          ? (jsonDecode(map['helper_url'] as String) as Map).cast<String, String>()
+          ? (jsonDecode(map['helper_url'] as String) as Map)
+                .cast<String, String>()
           : null,
     );
   }

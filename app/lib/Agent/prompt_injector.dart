@@ -332,10 +332,19 @@ class PromptInjector {
       }
 
       if (parts.isNotEmpty) {
+        var sigData = i.data?['thought_signature'];
+        String? sigStr;
+        if (sigData is Map) {
+          sigStr = sigData[agentData.modelConfigure.providerId] as String?;
+        } else if (sigData is String) {
+          sigStr = sigData;
+        }
+
         var formatted = FormattedChatMessage(
           id: i.id,
           sender: i.sender,
           parts: parts,
+          thoughtSignature: sigStr,
         );
         output.add(formatted);
         totalTokens += formatted.tokens;

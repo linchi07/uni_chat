@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/error_handling.dart';
+import 'api_thinking_adapter.dart';
 
 import '../Chat/chat_models.dart';
 import '../utils/tokenizer.dart';
@@ -318,13 +319,14 @@ class OpenAiApiService extends BaseApiService {
       );
 
       if (response.statusCode == 200) {
-        try{
-        final jsonResponse = jsonDecode(response.body);
-        final List<dynamic> data = jsonResponse['data'] as List<dynamic>;
-        return data.map((e) => e['id'] as String).toList();}catch(e){
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          final List<dynamic> data = jsonResponse['data'] as List<dynamic>;
+          return data.map((e) => e['id'] as String).toList();
+        } catch (e) {
           throw Exception(
-          'Failed to fetch models: ${response.statusCode} - ${response.body}',
-        );
+            'Failed to fetch models: ${response.statusCode} - ${response.body}',
+          );
         }
       } else {
         throw Exception(
@@ -370,7 +372,7 @@ class OpenAiApiService extends BaseApiService {
           case MessagePartType.toolCall:
           case MessagePartType.toolResult:
           case MessagePartType.reasoning:
-            // This legacy API might not support native tool calls or reasoning fields, 
+            // This legacy API might not support native tool calls or reasoning fields,
             // but we must handle the cases for completeness.
             break;
         }
@@ -416,37 +418,18 @@ class OpenAiApiService extends BaseApiService {
     }
 
     // Map 'thinking' parameter if present
-    final Map<ModelParamName, dynamic> customParams = Map.from(modelRequestContent.modelConfigure.customParameters);
-    if (customParams.containsKey(ModelParamName.thinking)) {
-      final value = customParams[ModelParamName.thinking];
-      if (value != null) {
-        final mode = ThinkingMode.values.firstWhere(
-          (e) => e.name == value,
-          orElse: () => ThinkingMode.disabled,
-        );
-        customParams.remove(ModelParamName.thinking);
+    final Map<ModelParamName, dynamic> customParams = Map.from(
+      modelRequestContent.modelConfigure.customParameters,
+    );
+    final thinkingParams = ApiThinkingAdapter.getThinkingParams(
+      family: client.model.family,
+      mode: modelRequestContent.modelConfigure.thinkingMode,
+      apiType: client.provider.type,
+    );
+    requestBody.addAll(thinkingParams.cast<String, Object>());
 
-        if (mode != ThinkingMode.disabled) {
-          final modelParams = client.model.parameters ?? [];
-          if (modelParams.contains(ModelParamName.reasoningEffort)) {
-            String effort = 'medium';
-            if (mode == ThinkingMode.enabled || mode == ThinkingMode.low) {
-              effort = 'low';
-            } else if (mode == ThinkingMode.medium) {
-              effort = 'medium';
-            } else if (mode == ThinkingMode.high) {
-              effort = 'high';
-            }
-            requestBody['reasoning_effort'] = effort;
-          } else if (modelParams.contains(ModelParamName.reasoning)) {
-            requestBody['reasoning'] = true;
-            if (modelParams.contains(ModelParamName.includeReasoning)) {
-              requestBody['include_reasoning'] = true;
-            }
-          }
-        }
-      }
-    }
+    customParams.remove(ModelParamName.thinking);
+    customParams.remove(ModelParamName.reasoningEffort);
 
     // Inject remaining custom parameters
     customParams.forEach((param, value) {
@@ -885,8 +868,10 @@ class OpenAiCompletionService extends OpenAiApiService {
               'type': 'function',
               'function': {
                 'name': data['name'],
-                'arguments': data['arguments'] is String ? data['arguments'] : jsonEncode(data['arguments']),
-              }
+                'arguments': data['arguments'] is String
+                    ? data['arguments']
+                    : jsonEncode(data['arguments']),
+              },
             });
             break;
           case MessagePartType.toolResult:
@@ -910,12 +895,12 @@ class OpenAiCompletionService extends OpenAiApiService {
         continue;
       }
 
-      Map<String, dynamic> msg = {
-        'role': getSender(message.sender),
-      };
+      Map<String, dynamic> msg = {'role': getSender(message.sender)};
 
       // 提取推理内容并填入 reasoning_content
-      final reasoningPart = message.parts.firstWhereOrNull((p) => p.type == MessagePartType.reasoning);
+      final reasoningPart = message.parts.firstWhereOrNull(
+        (p) => p.type == MessagePartType.reasoning,
+      );
       if (reasoningPart != null) {
         msg['reasoning_content'] = reasoningPart.content;
       }
@@ -926,7 +911,8 @@ class OpenAiCompletionService extends OpenAiApiService {
             ? messageParts[0]['text']
             : messageParts;
       } else {
-        msg['content'] = ''; // Assistant message with tool_calls can have empty content
+        msg['content'] =
+            ''; // Assistant message with tool_calls can have empty content
       }
 
       if (toolCalls.isNotEmpty) {
@@ -975,37 +961,18 @@ class OpenAiCompletionService extends OpenAiApiService {
     }
 
     // Map 'thinking' parameter if present
-    final Map<ModelParamName, dynamic> customParams = Map.from(modelRequestContent.modelConfigure.customParameters);
-    if (customParams.containsKey(ModelParamName.thinking)) {
-      final value = customParams[ModelParamName.thinking];
-      if (value != null) {
-        final mode = ThinkingMode.values.firstWhere(
-          (e) => e.name == value,
-          orElse: () => ThinkingMode.disabled,
-        );
-        customParams.remove(ModelParamName.thinking);
+    final Map<ModelParamName, dynamic> customParams = Map.from(
+      modelRequestContent.modelConfigure.customParameters,
+    );
+    final thinkingParams = ApiThinkingAdapter.getThinkingParams(
+      family: client.model.family,
+      mode: modelRequestContent.modelConfigure.thinkingMode,
+      apiType: client.provider.type,
+    );
+    requestBody.addAll(thinkingParams.cast<String, Object>());
 
-        if (mode != ThinkingMode.disabled) {
-          final modelParams = client.model.parameters ?? [];
-          if (modelParams.contains(ModelParamName.reasoningEffort)) {
-            String effort = 'medium';
-            if (mode == ThinkingMode.enabled || mode == ThinkingMode.low) {
-              effort = 'low';
-            } else if (mode == ThinkingMode.medium) {
-              effort = 'medium';
-            } else if (mode == ThinkingMode.high) {
-              effort = 'high';
-            }
-            requestBody['reasoning_effort'] = effort;
-          } else if (modelParams.contains(ModelParamName.reasoning)) {
-            requestBody['reasoning'] = true;
-            if (modelParams.contains(ModelParamName.includeReasoning)) {
-              requestBody['include_reasoning'] = true;
-            }
-          }
-        }
-      }
-    }
+    customParams.remove(ModelParamName.thinking);
+    customParams.remove(ModelParamName.reasoningEffort);
 
     // Inject remaining custom parameters
     customParams.forEach((param, value) {
@@ -1093,8 +1060,9 @@ class OpenAiCompletionService extends OpenAiApiService {
                             call['name'] = tc['function']['name'];
                           }
                           if (tc['function']['arguments'] != null) {
-                            (call['arguments'] as StringBuffer)
-                                .write(tc['function']['arguments']);
+                            (call['arguments'] as StringBuffer).write(
+                              tc['function']['arguments'],
+                            );
                           }
                         }
                       }
@@ -1131,13 +1099,15 @@ class OpenAiCompletionService extends OpenAiApiService {
                 if (usage != null) {
                   final promptDetails =
                       usage['prompt_tokens_details'] as Map<String, dynamic>?;
-                  final completionDetails = usage['completion_tokens_details']
-                      as Map<String, dynamic>?;
+                  final completionDetails =
+                      usage['completion_tokens_details']
+                          as Map<String, dynamic>?;
 
                   usg = TokenUsage(
                     promptTokens: usage['prompt_tokens'] as int? ?? 0,
                     completionTokens: usage['completion_tokens'] as int? ?? 0,
-                    cachedTokens: (promptDetails?['cached_tokens'] as int?) ?? 0,
+                    cachedTokens:
+                        (promptDetails?['cached_tokens'] as int?) ?? 0,
                     cotTokens:
                         (completionDetails?['reasoning_tokens'] as int?) ?? 0,
                   );
@@ -1289,8 +1259,9 @@ class GeminiApiService extends BaseApiService {
 
   void buildRequestBody(
     List<FormattedChatMessage> prompt,
-    List<Map<String, dynamic>> contents,
-  ) {
+    List<Map<String, dynamic>> contents, {
+    bool isGemini3 = false,
+  }) {
     for (final message in prompt) {
       List<Map<String, dynamic>> parts = [];
       for (final part in message.parts) {
@@ -1301,15 +1272,6 @@ class GeminiApiService extends BaseApiService {
           case MessagePartType.image:
           case MessagePartType.pdf:
             throw UnimplementedError('Files api has not been implemented yet');
-            /*
-            parts.add({
-              'file_data': {
-                'mime_type': part.mimeType!,
-                "file_uri": part.content,
-              },
-            });
-            */
-            break;
           case MessagePartType.base64Image:
           case MessagePartType.base64pdf:
             parts.add({
@@ -1322,10 +1284,7 @@ class GeminiApiService extends BaseApiService {
           case MessagePartType.toolCall:
             var data = jsonDecode(part.content);
             parts.add({
-              'functionCall': {
-                'name': data['name'],
-                'args': data['arguments'],
-              }
+              'functionCall': {'name': data['name'], 'args': data['arguments']},
             });
             break;
           case MessagePartType.toolResult:
@@ -1333,10 +1292,8 @@ class GeminiApiService extends BaseApiService {
             parts.add({
               'functionResponse': {
                 'name': data['name'],
-                'response': {
-                  'result': data['result'],
-                },
-              }
+                'response': {'result': data['result']},
+              },
             });
             break;
           case MessagePartType.reasoning:
@@ -1346,6 +1303,15 @@ class GeminiApiService extends BaseApiService {
         }
       }
       if (parts.isNotEmpty) {
+        String? sig = message.thoughtSignature;
+        if (sig == null && isGemini3 && message.sender == MessageSender.ai) {
+          sig = "context_engineering_is_the_way to_go";
+        }
+
+        if (sig != null) {
+          parts[0]['thoughtSignature'] = sig;
+        }
+
         contents.add({'role': getRole(message.sender), 'parts': parts});
       }
     }
@@ -1413,9 +1379,9 @@ class GeminiApiService extends BaseApiService {
     };
 
     if (modelRequestContent.modelConfigure.maxGenerationTokens != -1) {
-      (requestBody['generationConfig'] as Map<String, dynamic>)[
-        "maxOutputTokens"
-      ] = modelRequestContent.modelConfigure.maxGenerationTokens;
+      (requestBody['generationConfig']
+              as Map<String, dynamic>)["maxOutputTokens"] =
+          modelRequestContent.modelConfigure.maxGenerationTokens;
     }
     //"frequencyPenalty": modelRequestContent.modelSpecifics.frequencyPenalty,
     //google的逆天操作，2.5系列是不支持的，但是tm的Api文档上是有这个设置选择的，劳资难道给你正则匹配到2.5就禁用吗？
@@ -1433,10 +1399,9 @@ class GeminiApiService extends BaseApiService {
         modelRequestContent.tools!.isNotEmpty) {
       requestBody['tools'] = [
         {
-          'function_declarations':
-              modelRequestContent.tools!
-                  .map((t) => (t['function'] as Map<String, dynamic>))
-                  .toList(),
+          'function_declarations': modelRequestContent.tools!
+              .map((t) => (t['function'] as Map<String, dynamic>))
+              .toList(),
         },
       ];
     }
@@ -1469,15 +1434,27 @@ class GeminiApiService extends BaseApiService {
             .expand((json) {
               var r = <_ApiResponse>[];
               try {
-                final text =
-                    json['candidates'][0]['content']['parts'][0]['text']
-                        as String?;
-                if (text != null) {
+                final parts =
+                    json['candidates'][0]['content']['parts'] as List?;
+                String? text;
+                String? thoughtSignature;
+                if (parts != null) {
+                  for (var part in parts) {
+                    if (part['text'] != null) {
+                      text = (text ?? '') + (part['text'] as String);
+                    }
+                    if (part['thoughtSignature'] != null) {
+                      thoughtSignature = part['thoughtSignature'] as String;
+                    }
+                  }
+                }
+                if (text != null || thoughtSignature != null) {
                   r.add(
                     _ApiResponse(
                       response: ChatResponse(
                         type: MessageChunkType.text,
-                        content: text,
+                        content: text ?? '',
+                        thoughtSignature: thoughtSignature,
                       ),
                     ),
                   );

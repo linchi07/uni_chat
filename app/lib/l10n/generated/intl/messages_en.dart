@@ -373,6 +373,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "delete_long_press": MessageLookupByLibrary.simpleMessage(
       "Delete (LongPress)",
     ),
+    "delete_variant_confirm": MessageLookupByLibrary.simpleMessage(
+      "Are you sure you want to delete this model variant? This action cannot be undone.",
+    ),
     "disable": MessageLookupByLibrary.simpleMessage("Disable"),
     "disable_persona": MessageLookupByLibrary.simpleMessage("Disable Persona"),
     "discard_changes": MessageLookupByLibrary.simpleMessage("Discard Changes"),
@@ -383,6 +386,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "edit_entries": MessageLookupByLibrary.simpleMessage("Edit entries"),
     "edit_knowledge_base": MessageLookupByLibrary.simpleMessage(
       "Edit knowledge base",
+    ),
+    "edit_model_variant": MessageLookupByLibrary.simpleMessage(
+      "Edit Model Variant",
     ),
     "edit_more": MessageLookupByLibrary.simpleMessage("Edit more"),
     "edit_persona": MessageLookupByLibrary.simpleMessage("Edit persona"),
@@ -646,7 +652,10 @@ class MessageLookup extends MessageLookupByLibrary {
       "Pass the local info",
     ),
     "model_management": MessageLookupByLibrary.simpleMessage(
-      "Model management",
+      "Model Management",
+    ),
+    "model_management_official_hint": MessageLookupByLibrary.simpleMessage(
+      "Tip: Official models are automatically kept up-to-date to ensure the best experience and do not support manual editing.",
     ),
     "model_maximum_context_length": MessageLookupByLibrary.simpleMessage(
       "Model maximum context length",
@@ -1022,6 +1031,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "thinking_mode_high": MessageLookupByLibrary.simpleMessage("High"),
     "thinking_mode_low": MessageLookupByLibrary.simpleMessage("Low"),
     "thinking_mode_medium": MessageLookupByLibrary.simpleMessage("Medium"),
+    "thinking_mode_xhigh": MessageLookupByLibrary.simpleMessage("XHigh"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat"),
     "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
       "Toggle session selector",

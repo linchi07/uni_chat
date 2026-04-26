@@ -135,6 +135,11 @@ class UniThemeNotifier extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// 由于根部存在监听器，并且大量的组件都依赖主题notifier 所以通过这个方法能够强制刷新app
+  void refresh() {
+    notifyListeners();
+  }
 }
 
 /// 跨组件访问机制，采用原生的 InheritedNotifier

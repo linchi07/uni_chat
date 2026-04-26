@@ -20,8 +20,9 @@ class ExecutionLoop {
   List<ToolCallChunk> runningToolCalls = [];
   ExecutionLoop(this.injector, this.client, this.output, {required this.tools});
   Id id = Id(); // 在一轮对话中生成唯一自增ID，而且整个while循环中不得有任何Id的重复
-  Future<List<ContentChunk>> execute() async {
+  Future<({List<ContentChunk> chunks, String? thoughtSignature})> execute() async {
     List<ContentChunk> accumulatedOutput = [];
+    String? thoughtSignature;
 
     while (true) {
       // 1. 获取或更新提示词
@@ -54,6 +55,9 @@ class ExecutionLoop {
       }
 
       await for (var chunk in stream) {
+        if (chunk.thoughtSignature != null) {
+          thoughtSignature = chunk.thoughtSignature;
+        }
         //将api处已经分类解析完成的chunk放到应该去的列表
         switch (chunk.type) {
           case MessageChunkType.text:
@@ -149,6 +153,6 @@ class ExecutionLoop {
       );
     }
 
-    return accumulatedOutput;
+    return (chunks: accumulatedOutput, thoughtSignature: thoughtSignature);
   }
 }

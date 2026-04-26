@@ -275,6 +275,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "勾选此项将删除所有现有的 API 密钥。是否继续？",
     ),
     "delete_long_press": MessageLookupByLibrary.simpleMessage("删除（长按）"),
+    "delete_variant_confirm": MessageLookupByLibrary.simpleMessage(
+      "确定删除该模型变体吗？此操作无法撤销。",
+    ),
     "disable": MessageLookupByLibrary.simpleMessage("禁用"),
     "disable_persona": MessageLookupByLibrary.simpleMessage("关闭人格系统"),
     "discard_changes": MessageLookupByLibrary.simpleMessage("丢弃更改"),
@@ -284,6 +287,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "edit": MessageLookupByLibrary.simpleMessage("编辑"),
     "edit_entries": MessageLookupByLibrary.simpleMessage("编辑条目"),
     "edit_knowledge_base": MessageLookupByLibrary.simpleMessage("编辑知识库"),
+    "edit_model_variant": MessageLookupByLibrary.simpleMessage("编辑模型变体"),
     "edit_more": MessageLookupByLibrary.simpleMessage("编辑更多"),
     "edit_persona": MessageLookupByLibrary.simpleMessage("编辑人格"),
     "edit_provider": m9,
@@ -469,6 +473,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "告知模型当前用户地区和语言",
     ),
     "model_management": MessageLookupByLibrary.simpleMessage("模型管理"),
+    "model_management_official_hint": MessageLookupByLibrary.simpleMessage(
+      "温馨提示：官方维护模型会自动保持在最新版本以确保最佳体验，因此暂不支持手动编辑。",
+    ),
     "model_maximum_context_length": MessageLookupByLibrary.simpleMessage(
       "模型最大上下文长度",
     ),
@@ -727,6 +734,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "thinking_mode_high": MessageLookupByLibrary.simpleMessage("高"),
     "thinking_mode_low": MessageLookupByLibrary.simpleMessage("低"),
     "thinking_mode_medium": MessageLookupByLibrary.simpleMessage("中"),
+    "thinking_mode_xhigh": MessageLookupByLibrary.simpleMessage("极高"),
     "title": MessageLookupByLibrary.simpleMessage("UNIChat 通聊"),
     "toggle_session_selector": MessageLookupByLibrary.simpleMessage(
       "打开会话选择器菜单",

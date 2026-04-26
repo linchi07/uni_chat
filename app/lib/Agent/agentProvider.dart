@@ -25,14 +25,17 @@ class ModelSpecifics {
   Map<ModelParamName, dynamic> customParameters = {};
   int maxGenerationTokens = 1000000000;
   int maxContextTokens = 1000000000;
+  ThinkingMode thinkingMode = ThinkingMode.defaultMode;
   bool enableTimeTelling = true;
   bool enableUsrLanguage = true;
   bool enableUsrSystemInformation = true;
+
   ModelSpecifics({
     this.modelName,
     Map<ModelParamName, dynamic>? customParameters,
     this.maxGenerationTokens = 1000000000,
     this.maxContextTokens = 1000000000,
+    this.thinkingMode = ThinkingMode.defaultMode,
     this.enableTimeTelling = true,
     this.enableUsrLanguage = true,
     this.enableUsrSystemInformation = true,
@@ -43,15 +46,17 @@ class ModelSpecifics {
     Map<ModelParamName, dynamic>? customParameters,
     int? maxGenerationTokens,
     int? maxContextTokens,
+    ThinkingMode? thinkingMode,
     bool? enableTimeTelling,
     bool? enableUsrLanguage,
     bool? enableUsrSystemInformation,
   }) {
     return ModelSpecifics(
       modelName: modelName ?? this.modelName,
-      customParameters: customParameters ?? Map.from(this.customParameters),
+      customParameters: customParameters ?? this.customParameters,
       maxGenerationTokens: maxGenerationTokens ?? this.maxGenerationTokens,
       maxContextTokens: maxContextTokens ?? this.maxContextTokens,
+      thinkingMode: thinkingMode ?? this.thinkingMode,
       enableTimeTelling: enableTimeTelling ?? this.enableTimeTelling,
       enableUsrLanguage: enableUsrLanguage ?? this.enableUsrLanguage,
       enableUsrSystemInformation:
@@ -65,6 +70,7 @@ class ModelSpecifics {
       "customParameters": customParameters.map((k, v) => MapEntry(k.name, v)),
       "maxGenerationTokens": maxGenerationTokens,
       "maxContextTokens": maxContextTokens,
+      "thinkingMode": thinkingMode.name,
       "enableTimeTelling": enableTimeTelling,
       "enableUsrLanguage": enableUsrLanguage,
       "enableUsrSystemInformation": enableUsrSystemInformation,
@@ -93,11 +99,19 @@ class ModelSpecifics {
         params[ModelParamName.presencePenalty] = json["presencePenalty"];
     }
 
+    ThinkingMode tMode = ThinkingMode.defaultMode;
+    if (json.containsKey("thinkingMode")) {
+      try {
+        tMode = ThinkingMode.values.byName(json["thinkingMode"] as String);
+      } catch (_) {}
+    }
+
     return ModelSpecifics(
       modelName: json["modelName"] as String?,
       customParameters: params,
       maxGenerationTokens: json["maxGenerationTokens"] as int,
       maxContextTokens: json["maxContextTokens"] as int,
+      thinkingMode: tMode,
       enableTimeTelling: json["enableTimeTelling"] as bool,
       enableUsrLanguage: json["enableUsrLanguage"] as bool,
       enableUsrSystemInformation: json["enableUsrSystemInformation"] as bool,
@@ -416,11 +430,21 @@ class AgentProvider extends StateNotifier<Agent?> {
     List<ChatMessage> history,
     ChatMessage? usrMessage, {
     StopSignal? stopSignal,
+    ThinkingMode? overrideThinkingMode,
   }) async* {
     if (state != null) {
+      final baseAgentData = state!.toAgentData();
+      final modifiedAgentData = overrideThinkingMode != null
+          ? baseAgentData.copyWith(
+              modelConfigure: baseAgentData.modelConfigure.copyWith(
+                thinkingMode: overrideThinkingMode,
+              ),
+            )
+          : baseAgentData;
+
       var fm = await PromptInjector(
         ref: ref,
-        agentData: state!.toAgentData(),
+        agentData: modifiedAgentData,
         history: history,
         lastMessage: usrMessage,
         stopSignal: stopSignal,
@@ -434,7 +458,7 @@ class AgentProvider extends StateNotifier<Agent?> {
     }
   }
 
-  Future<List<ContentChunk>> execute({
+  Future<({List<ContentChunk> chunks, String? thoughtSignature})> execute({
     required List<ChatMessage> history,
     required ChatMessage lastMessage,
     required ValueNotifier<List<ContentChunk>> responseNotifier,

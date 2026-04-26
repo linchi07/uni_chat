@@ -198,7 +198,26 @@ extension XModelAlibity on ModelAbility {
     }
   }
 
+  Widget abilityTagWidget(BuildContext context, Color primaryColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: primaryColor.withAlpha(20),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        name(context),
+        style: TextStyle(
+          fontSize: 10,
+          color: primaryColor.withAlpha(220),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
   Widget abilityIconWidget(IconData iconData, Color color) {
+
     return Icon(iconData, color: color);
   }
 

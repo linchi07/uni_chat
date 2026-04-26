@@ -224,6 +224,7 @@ class UNIChat extends StatefulWidget {
 
 class _UNIChatState extends State<UNIChat> {
   late bool isSetUp;
+  bool _isLocalLoaded = false;
   bool _isUpdateChecked = false;
   late UniThemeNotifier uniThemeNotifier;
 
@@ -309,9 +310,11 @@ class _UNIChatState extends State<UNIChat> {
                         });
                         _isUpdateChecked = true;
                       }
-                      if (widget.locale != null) {
+                      if (widget.locale != null && !_isLocalLoaded) {
                         S.load(widget.locale!);
                         PlatForm().languageCode = widget.locale!.languageCode;
+                        _isLocalLoaded =
+                            true; // or the set local wont take effect since widget.local is the old one read from startup
                       } else {
                         PlatForm().languageCode = Localizations.localeOf(
                           context,

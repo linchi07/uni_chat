@@ -271,11 +271,13 @@ class FormattedChatMessage {
   final String id;
   final MessageSender sender;
   final List<MessagePart> parts;
+  final String? thoughtSignature;
 
   FormattedChatMessage({
     required this.id,
     required this.sender,
     required this.parts,
+    this.thoughtSignature,
   });
 
   int get tokens {
@@ -286,11 +288,13 @@ class FormattedChatMessage {
     String? id,
     MessageSender? sender,
     List<MessagePart>? parts,
+    String? thoughtSignature,
   }) {
     return FormattedChatMessage(
       id: id ?? this.id,
       sender: sender ?? this.sender,
       parts: parts ?? this.parts,
+      thoughtSignature: thoughtSignature ?? this.thoughtSignature,
     );
   }
 
@@ -396,8 +400,9 @@ extension XMessageChunkType on MessageChunkType {
 class ChatResponse {
   final MessageChunkType type;
   final String content;
+  final String? thoughtSignature;
 
-  ChatResponse({required this.type, required this.content});
+  ChatResponse({required this.type, required this.content, this.thoughtSignature});
 }
 
 @immutable

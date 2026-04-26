@@ -113,7 +113,8 @@ void main() {
       ];
 
       final loop = ExecutionLoop(injector, client, output, tools: tools);
-      final finalOutput = await loop.execute();
+      final result = await loop.execute();
+      final finalOutput = result.chunks;
 
       expect(finalOutput.length, 1);
       expect(finalOutput[0], isA<TextChunk>());
@@ -136,7 +137,8 @@ void main() {
       tools.results = {'get_val': 42};
 
       final loop = ExecutionLoop(injector, client, output, tools: tools);
-      final finalOutput = await loop.execute();
+      final result = await loop.execute();
+      final finalOutput = result.chunks;
 
       // Verify Turn 1 intermediate turns
       expect(injector.capturedTurns.length, 2);

@@ -1924,10 +1924,10 @@ class S {
     );
   }
 
-  /// `Model management`
+  /// `Model Management`
   String get model_management {
     return Intl.message(
-      'Model management',
+      'Model Management',
       name: 'model_management',
       desc: '',
       args: [],
@@ -4195,6 +4195,16 @@ class S {
     return Intl.message('High', name: 'thinking_mode_high', desc: '', args: []);
   }
 
+  /// `XHigh`
+  String get thinking_mode_xhigh {
+    return Intl.message(
+      'XHigh',
+      name: 'thinking_mode_xhigh',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Tool Calling`
   String get toolCall {
     return Intl.message('Tool Calling', name: 'toolCall', desc: '', args: []);
@@ -4350,6 +4360,36 @@ class S {
     return Intl.message(
       'Selected Period Details',
       name: 'dashboard_selected_period',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tip: Official models are automatically kept up-to-date to ensure the best experience and do not support manual editing.`
+  String get model_management_official_hint {
+    return Intl.message(
+      'Tip: Official models are automatically kept up-to-date to ensure the best experience and do not support manual editing.',
+      name: 'model_management_official_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to delete this model variant? This action cannot be undone.`
+  String get delete_variant_confirm {
+    return Intl.message(
+      'Are you sure you want to delete this model variant? This action cannot be undone.',
+      name: 'delete_variant_confirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit Model Variant`
+  String get edit_model_variant {
+    return Intl.message(
+      'Edit Model Variant',
+      name: 'edit_model_variant',
       desc: '',
       args: [],
     );

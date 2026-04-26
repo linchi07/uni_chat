@@ -676,14 +676,17 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
 
       state.responses.value = [];
       List<ContentChunk> finalChunks = [];
+      String? thoughtSignature;
 
       try {
-        finalChunks = await agentNotifier.execute(
+        var result = await agentNotifier.execute(
           history: history,
           lastMessage: lastMessage,
           responseNotifier: state.responses,
           stopSignal: stopSignal,
         );
+        finalChunks = result.chunks;
+        thoughtSignature = result.thoughtSignature;
       } on Exception catch (e) {
         if (state.stopSignal?.isStopped != true) {
           state = state.copyWith(
@@ -735,7 +738,15 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
           sender: MessageSender.ai,
           senderId: agent!.client.model.id,
           content: mainContent,
-          data: blocks.isNotEmpty ? {"msg_blocks": blocks} : null,
+          data: blocks.isNotEmpty || thoughtSignature != null
+              ? {
+                  if (blocks.isNotEmpty) "msg_blocks": blocks,
+                  if (thoughtSignature != null)
+                    "thought_signature": {
+                      agent!.client.provider.id: thoughtSignature,
+                    },
+                }
+              : null,
           timestamp: DateTime.now(),
           parent: lastMessage.id,
           childIds: [],
@@ -822,6 +833,7 @@ class ChatStateNotifier extends StateNotifier<ChatState> {
         [],
         cm,
         stopSignal: stopSignal,
+        overrideThinkingMode: ThinkingMode.off,
       );
       sb.clear();
       await for (final chunk in stream) {

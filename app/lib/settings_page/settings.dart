@@ -11,6 +11,7 @@ import '../utils/prebuilt_widgets.dart';
 import '../utils/uni_theme.dart';
 import 'api_configure.dart' show ApiSettings;
 import 'log_settings_page.dart';
+import 'model_management_page.dart';
 
 class SidebarTitleSwitcher extends ConsumerWidget {
   const SidebarTitleSwitcher({super.key});
@@ -61,7 +62,7 @@ class _GeneralSettings extends ConsumerWidget {
       children: [
         Text(
           S.of(context).general_settings,
-          style: Theme.of(context).textTheme.headlineSmall,
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 20),
         Text(S.of(context).language_settings, style: TextStyle(fontSize: 18)),
@@ -137,9 +138,7 @@ class LanguageSwitcher extends StatelessWidget {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setString('language', languageCount[index]);
                 //由于大量组件都是接入theme的所以这样相当于让界面重新构建了
-                UniTheme.getController(
-                  context,
-                ).updateTheme(UniTheme.getController(context).themeName);
+                UniTheme.getController(context).refresh();
               },
               itemBuilder: (context, index, onTap) {
                 return StdListTile(
@@ -277,7 +276,7 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
 
   void onSelect(Widget page) {
     spc.push(
-      Material(color: theme.secondGradeColor, child: page),
+      page,
       topBar: AppBar(
         backgroundColor: theme.secondGradeColor,
         automaticallyImplyLeading: false,
@@ -303,27 +302,26 @@ class SettingsMenuState extends ConsumerState<SettingsMenu>
         title: S.of(context).api_settings,
         contentWidget: ApiSettings(),
       ),
-      /*
       _SettingItem(
         icon: Icons.model_training,
         title: S.of(context).model_management,
-        contentWidget: ModelSettings(),
+        contentWidget: const ModelManagementPage(),
       ),
-       */
+
       _SettingItem(
         icon: Icons.settings_outlined,
         title: S.of(context).general_settings,
         contentWidget: _GeneralSettings(),
       ),
       _SettingItem(
-        icon: Icons.info_outline,
-        title: S.of(context).about,
-        contentWidget: UNIChatAbout(),
-      ),
-      _SettingItem(
         icon: Icons.receipt_long,
         title: S.of(context).log_settings,
         contentWidget: LogSettingsPage(),
+      ),
+      _SettingItem(
+        icon: Icons.info_outline,
+        title: S.of(context).about,
+        contentWidget: UNIChatAbout(),
       ),
     ];
     final screenSize = MediaQuery.of(context).size;

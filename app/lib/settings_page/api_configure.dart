@@ -9,20 +9,19 @@ import 'package:uni_chat/Agent/agentProvider.dart';
 import 'package:uni_chat/api_configs/api_database.dart';
 import 'package:uni_chat/api_configs/api_models.dart';
 import 'package:uni_chat/api_configs/api_service.dart';
+import 'package:uni_chat/l10n/generated/l10n.dart';
 import 'package:uni_chat/main.dart';
 import 'package:uni_chat/settings_page/model_discovery_widget.dart';
 import 'package:uni_chat/settings_page/settings.dart' show settingsMenuKey;
 import 'package:uni_chat/settings_page/token_usage_dashboard.dart';
-
-import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:uni_chat/utils/layout_widget.dart';
 import 'package:uni_chat/utils/overlays.dart';
 import 'package:uni_chat/utils/paged_scroll/paged_scroll.dart';
 import 'package:uni_chat/utils/prebuilt_widgets.dart';
+import 'package:uni_chat/utils/uni_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:uni_chat/l10n/generated/l10n.dart';
 import '../utils/llm_icons.dart';
 
 class ApiSettings extends ConsumerStatefulWidget {
@@ -35,17 +34,19 @@ class ApiSettings extends ConsumerStatefulWidget {
 class _ApiSettingsState extends ConsumerState<ApiSettings> {
   Widget getInfoTags(String category, String amount) {
     return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      height: 30,
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: theme.primaryColor,
-        borderRadius: BorderRadius.circular(6),
+        color: theme.primaryColor.withAlpha(20),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: theme.primaryColor.withAlpha(40)),
       ),
-      child: Center(
-        child: Text(
-          "$category  $amount",
-          style: TextStyle(color: theme.brightTextColor),
+      child: Text(
+        "$category: $amount",
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: theme.primaryColor.withAlpha(220),
         ),
       ),
     );
@@ -66,7 +67,7 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
               Text(
                 S.of(context).api_settings,
                 style: TextStyle(
-                  fontSize: 30.0,
+                  fontSize: 26.0,
                   fontWeight: FontWeight.bold,
                   color: theme.darkTextColor,
                 ),
@@ -94,16 +95,7 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
                     backGroundColor: theme.zeroGradeColor,
                   );
                 },
-                child: Row(
-                  children: [
-                    Icon(Icons.add, color: theme.brightTextColor),
-                    const SizedBox(width: 8.0),
-                    Text(
-                      S.of(context).add_provider,
-                      style: TextStyle(fontSize: 16.0, color: theme.brightTextColor),
-                    ),
-                  ],
-                ),
+                text: S.of(context).add_provider,
               ),
             ],
           ),
@@ -135,121 +127,175 @@ class _ApiSettingsState extends ConsumerState<ApiSettings> {
               final numberFormat = NumberFormat.compact();
 
               return ListView.builder(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.only(top: 16, right: 16),
                 itemCount: providers.length,
                 itemBuilder: (context, index) {
                   final provider = providers[index];
                   var img = LLMImageIndexer.tryGetImagePath(provider.preset);
                   return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ListTile(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
                       onTap: () {
                         settingsMenuKey.currentState?.insertPage(
                           TokenUsageDashboard(providerId: provider.id),
                         );
                       },
-                      tileColor: theme.zeroGradeColor,
-                      leading: (img != null)
-                          ? StdAvatar(length: 40, assetImage: AssetImage(img))
-                          : null,
-                      title: Text(provider.name),
-                      subtitle: Builder(
-                        builder: (context) {
-                          final stats = summaries[provider.id];
-                          if (stats == null || stats.callCount == 0) {
-                            return Text(
-                              "暂无近期使用记录",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: theme.textColor.withAlpha(100),
-                              ),
-                            );
-                          }
-
-                          // Format costs string
-                          String costStr = "";
-                          if (stats.costs.isNotEmpty) {
-                            costStr =
-                                " | 支出: ${stats.costs.entries.map((e) {
-                                  final fmt = NumberFormat.simpleCurrency(name: e.key, decimalDigits: 2);
-                                  return fmt.format(e.value);
-                                }).join(", ")}";
-                          }
-
-                          return Text(
-                            "7天消耗: ${numberFormat.format(stats.totalTokens)} tokens | 调用: ${stats.callCount} 次$costStr",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.textColor.withAlpha(150),
-                            ),
-                          );
-                        },
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          StdIconButton(
-                            icon: Icons.edit_outlined,
-                            onPressed: () async {
-                              var ac = await ApiConfigure.formDatabase(
-                                provider.id,
-                              );
-                              var cs = settingsMenuKey.currentState;
-                              if (ac != null && cs != null) {
-                                ref.read(apiConfigureProvider.notifier).state =
-                                    ac;
-                                cs.insertPage(
-                                  ApiConfigurePage(
-                                    onExit: (_) =>
-                                        settingsMenuKey.currentState?.popPage(),
-                                  ),
-                                );
-                              }
-                            },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.thirdGradeColor.withAlpha(60),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: theme.primaryColor.withAlpha(20),
                           ),
-                          StdIconButton(
-                            icon: Icons.delete_outline,
-                            onPressed: () {
-                              OverlayPortalService.showDialog(
-                                context,
-                                child: Text(
-                                  textAlign: TextAlign.center,
-                                  S
-                                      .of(context)
-                                      .provider_delete_warning(provider.name),
-                                  style: TextStyle(
-                                    fontSize: 18.0,
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.darkTextColor,
+                        ),
+                        child: Row(
+                          children: [
+                            StdAvatar(
+                              length: 36,
+                              assetImage: img != null ? AssetImage(img) : null,
+                              whenNull: Icon(
+                                Icons.precision_manufacturing_outlined,
+                                color: theme.primaryColor,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    provider.name,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.textColor,
+                                      fontSize: 15,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                backGroundColor: theme.zeroGradeColor,
-                                actions: [
-                                  StdButton(
-                                    text: S.of(context).cancel,
-                                    onPressed: () {
-                                      OverlayPortalService.hide(context);
-                                    },
-                                  ),
-                                  const SizedBox(width: 8.0),
-                                  StdButton(
-                                    color: theme.errorColor,
-                                    text: S.of(context).confirm_long_press,
-                                    onLongPress: () async {
-                                      OverlayPortalService.hide(context);
-                                      await ApiDatabase.instance
-                                          .deleteApiProvider(provider.id);
-                                      setState(() {});
+                                  const SizedBox(height: 4),
+                                  Builder(
+                                    builder: (context) {
+                                      final stats = summaries[provider.id];
+                                      if (stats == null ||
+                                          stats.callCount == 0) {
+                                        return Text(
+                                          "暂无近期使用记录",
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: theme.textColor.withAlpha(
+                                              100,
+                                            ),
+                                          ),
+                                        );
+                                      }
+
+                                      String costStr = "";
+                                      if (stats.costs.isNotEmpty) {
+                                        costStr =
+                                            " | 支出: ${stats.costs.entries.map((e) {
+                                              final fmt = NumberFormat.simpleCurrency(name: e.key, decimalDigits: 2);
+                                              return fmt.format(e.value);
+                                            }).join(", ")}";
+                                      }
+
+                                      return Text(
+                                        "7天消耗: ${numberFormat.format(stats.totalTokens)} tokens | 调用: ${stats.callCount} 次$costStr",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: theme.textColor.withAlpha(150),
+                                        ),
+                                      );
                                     },
                                   ),
                                 ],
-                              );
-                            },
-                          ),
-                        ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                StdIconButton(
+                                  icon: Icons.edit_outlined,
+                                  onPressed: () async {
+                                    var ac = await ApiConfigure.formDatabase(
+                                      provider.id,
+                                    );
+                                    var cs = settingsMenuKey.currentState;
+                                    if (ac != null && cs != null) {
+                                      ref
+                                              .read(
+                                                apiConfigureProvider.notifier,
+                                              )
+                                              .state =
+                                          ac;
+                                      cs.insertPage(
+                                        ApiConfigurePage(
+                                          onExit: (_) => settingsMenuKey
+                                              .currentState
+                                              ?.popPage(),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                                const SizedBox(width: 12),
+                                StdIconButton(
+                                  icon: Icons.delete_outline,
+                                  onPressed: () {
+                                    OverlayPortalService.showDialog(
+                                      context,
+                                      child: Text(
+                                        textAlign: TextAlign.center,
+                                        S
+                                            .of(context)
+                                            .provider_delete_warning(
+                                              provider.name,
+                                            ),
+                                        style: TextStyle(
+                                          fontSize: 18.0,
+                                          fontWeight: FontWeight.bold,
+                                          color: theme.darkTextColor,
+                                        ),
+                                      ),
+                                      backGroundColor: theme.zeroGradeColor,
+                                      actions: [
+                                        StdButton(
+                                          text: S.of(context).cancel,
+                                          onPressed: () {
+                                            OverlayPortalService.hide(context);
+                                          },
+                                        ),
+                                        const SizedBox(width: 8.0),
+                                        StdButton(
+                                          color: theme.errorColor,
+                                          text: S
+                                              .of(context)
+                                              .confirm_long_press,
+                                          onLongPress: () async {
+                                            OverlayPortalService.hide(context);
+                                            await ApiDatabase.instance
+                                                .deleteApiProvider(provider.id);
+                                            setState(() {});
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -269,6 +315,7 @@ class ApiPresetSelect extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    var theme = UniTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -289,8 +336,12 @@ class ApiPresetSelect extends ConsumerWidget {
                       f.data![index].id,
                     );
                     return Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: StdListTile(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
                         onTap: () async {
                           onClose();
                           ref
@@ -299,15 +350,44 @@ class ApiPresetSelect extends ConsumerWidget {
                             f.data![index],
                           );
                         },
-                        leading: (imgP != null)
-                            ? StdAvatar(
-                                length: 40,
-                                assetImage: AssetImage(imgP),
-                              )
-                            : null,
-                        title: Text(
-                          f.data![index].getName(langC),
-                          style: TextStyle(fontSize: 16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.thirdGradeColor.withAlpha(60),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: theme.primaryColor.withAlpha(20),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              StdAvatar(
+                                length: 32,
+                                assetImage: imgP != null
+                                    ? AssetImage(imgP)
+                                    : null,
+                                whenNull: Icon(
+                                  Icons.smart_toy_outlined,
+                                  color: theme.primaryColor,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  f.data![index].getName(langC),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.textColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -526,7 +606,6 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
   @override
   initState() {
     super.initState();
-    theme = UniTheme.of(context);
     ac = ref.read(apiConfigureProvider);
     showBasic = ac.type != ProviderPresetType.singleInstance;
     if (showBasic) {
@@ -544,6 +623,7 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    theme = UniTheme.of(context);
     children = [
       if (showBasic) SingleChildScrollView(child: _BaseInfo(theme: theme)),
       if (ac.noKeyNeeded)
@@ -633,13 +713,19 @@ class _ApiConfigureState extends ConsumerState<ApiConfigurePage> {
                               ),
                               child: Image.asset(fit: BoxFit.fitWidth, img),
                             ),
-                            if(ac.providerPreset != null && ac.providerPreset!.helperUrl != null)Positioned(bottom: 5,right: 5,child: StdButton(
-                              onPressed:() => _showHelpDialog(
-                                context,
-                                ac.providerPreset!.helperUrl!,
-                              ) ,
-                              text:S.of(context).get_help,
-                            ))
+                            if (ac.providerPreset != null &&
+                                ac.providerPreset!.helperUrl != null)
+                              Positioned(
+                                bottom: 5,
+                                right: 5,
+                                child: StdButton(
+                                  onPressed: () => _showHelpDialog(
+                                    context,
+                                    ac.providerPreset!.helperUrl!,
+                                  ),
+                                  text: S.of(context).get_help,
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -1549,143 +1635,133 @@ class _ApiKeyInfoState extends ConsumerState<ApiKeyInfo> {
   Widget build(BuildContext context) {
     var enableAdvance = apiKey.enableAdvanced();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: widget.theme.zeroGradeColor,
+        color: widget.theme.thirdGradeColor.withAlpha(60),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: widget.theme.primaryColor.withAlpha(20)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SelectionArea(
-            child: Row(
-              children: [
-                if (apiKey.remark != null)
-                  Text(
-                    apiKey.remark!,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 25,
-                      color: widget.theme.darkTextColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                const SizedBox(width: 5),
-                StdIconButton(
-                  icon: (hideKey) ? Icons.visibility : Icons.visibility_off,
-                  onPressed: () {
-                    setState(() {
-                      hideKey = !hideKey;
-                    });
-                  },
-                ),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    (!hideKey) ? apiKey.key : "•" * 20,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: widget.theme.darkTextColor.withAlpha(150),
-                    ),
+          Row(
+            children: [
+              if (apiKey.remark != null) ...[
+                Text(
+                  apiKey.remark!,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: widget.theme.textColor,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 5),
-                StdIconButton(
-                  icon: Icons.edit_outlined,
-                  onPressed: () {
-                    OverlayPortalService.showDialog(
-                      context,
-                      backGroundColor: widget.theme.zeroGradeColor,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 20,
-                      ),
-                      width: 450,
-                      child: ApiKeyEditMenu(
-                        theme: widget.theme,
-                        apiKey: apiKey,
-                        onSave: (k) {
-                          var n = ref.read(apiConfigureProvider.notifier);
-                          var l = <ApiKey>[];
-                          for (var key in n.state.keys) {
-                            if (identical(key, apiKey)) {
-                              l.add(k);
-                            } else {
-                              l.add(key);
-                            }
-                          }
-                          n.state = n.state.copyWith(keys: l);
-                          OverlayPortalService.hide(context);
-                        },
-                        onCancel: () {
-                          OverlayPortalService.hide(context);
-                        },
-                      ),
-                    );
-                    editMenu(context, widget.theme);
-                  },
-                ),
-                /*
-                const SizedBox(width: 5),
-                StdIconButton(
-                  icon: Icons.monitor_heart_outlined,
-                  onPressed: () {},
-                ),
-
-                 */
-                const SizedBox(width: 5),
-                StdIconButton(
-                  icon: Icons.delete_outline,
-                  onPressed: () {
-                    OverlayPortalService.showDialog(
-                      context,
-                      child: Text(
-                        S.of(context).delete_confirm,
-                        style: TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
-                          color: widget.theme.darkTextColor,
-                        ),
-                      ),
-                      actions: [
-                        StdButton(
-                          text: S.of(context).cancel,
-                          onPressed: () {
-                            OverlayPortalService.hide(context);
-                          },
-                        ),
-                        const SizedBox(width: 10),
-                        StdButton(
-                          text: S.of(context).confirm_long_press,
-                          onLongPress: () {
-                            var n = ref.read(apiConfigureProvider.notifier);
-                            n.state = n.state.copyWith(
-                              keys: n.state.keys
-                                  .where((element) => element != apiKey)
-                                  .toList(),
-                            );
-                            OverlayPortalService.hide(context);
-                          },
-                          color: widget.theme.errorColor,
-                        ),
-                      ],
-                      backGroundColor: widget.theme.zeroGradeColor,
-                    );
-                  },
-                ),
-                if (!enableAdvance)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: enableButton(),
-                  ),
+                const SizedBox(width: 8),
               ],
-            ),
+              StdIconButton(
+                icon: (hideKey) ? Icons.visibility : Icons.visibility_off,
+                onPressed: () {
+                  setState(() {
+                    hideKey = !hideKey;
+                  });
+                },
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  (!hideKey) ? apiKey.key : "•" * 20,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: widget.theme.textColor.withAlpha(150),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              StdIconButton(
+                icon: Icons.edit_outlined,
+                onPressed: () {
+                  OverlayPortalService.showDialog(
+                    context,
+                    backGroundColor: widget.theme.zeroGradeColor,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 20,
+                    ),
+                    width: 450,
+                    child: ApiKeyEditMenu(
+                      theme: widget.theme,
+                      apiKey: apiKey,
+                      onSave: (k) {
+                        var n = ref.read(apiConfigureProvider.notifier);
+                        var l = <ApiKey>[];
+                        for (var key in n.state.keys) {
+                          if (identical(key, apiKey)) {
+                            l.add(k);
+                          } else {
+                            l.add(key);
+                          }
+                        }
+                        n.state = n.state.copyWith(keys: l);
+                        OverlayPortalService.hide(context);
+                      },
+                      onCancel: () {
+                        OverlayPortalService.hide(context);
+                      },
+                    ),
+                  );
+                  editMenu(context, widget.theme);
+                },
+              ),
+              const SizedBox(width: 12),
+              StdIconButton(
+                icon: Icons.delete_outline,
+                onPressed: () {
+                  OverlayPortalService.showDialog(
+                    context,
+                    child: Text(
+                      S.of(context).delete_confirm,
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
+                        color: widget.theme.darkTextColor,
+                      ),
+                    ),
+                    actions: [
+                      StdButton(
+                        text: S.of(context).cancel,
+                        onPressed: () {
+                          OverlayPortalService.hide(context);
+                        },
+                      ),
+                      const SizedBox(width: 10),
+                      StdButton(
+                        text: S.of(context).confirm_long_press,
+                        onLongPress: () {
+                          var n = ref.read(apiConfigureProvider.notifier);
+                          n.state = n.state.copyWith(
+                            keys: n.state.keys
+                                .where((element) => element != apiKey)
+                                .toList(),
+                          );
+                          OverlayPortalService.hide(context);
+                        },
+                        color: widget.theme.errorColor,
+                      ),
+                    ],
+                    backGroundColor: widget.theme.zeroGradeColor,
+                  );
+                },
+              ),
+              if (!enableAdvance) ...[
+                const SizedBox(width: 12),
+                enableButton(),
+              ],
+            ],
           ),
-          const SizedBox(height: 5),
-          if (enableAdvance)
+          if (enableAdvance) ...[
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
@@ -1712,10 +1788,11 @@ class _ApiKeyInfoState extends ConsumerState<ApiKeyInfo> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 enableButton(),
               ],
             ),
+          ],
         ],
       ),
     );
@@ -1748,14 +1825,21 @@ class _ApiKeyInfoState extends ConsumerState<ApiKeyInfo> {
 
   Widget getInfoTags(String category, String amount) {
     return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      height: 30,
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: widget.theme.primaryColor,
-        borderRadius: BorderRadius.circular(6),
+        color: widget.theme.primaryColor.withAlpha(20),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: widget.theme.primaryColor.withAlpha(40)),
       ),
-      child: Center(child: Text("$category  $amount", style: tStyle)),
+      child: Text(
+        "$category: $amount",
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: widget.theme.primaryColor.withAlpha(220),
+        ),
+      ),
     );
   }
 
@@ -2028,7 +2112,9 @@ class _ModelAddPageHeaderState extends ConsumerState<ModelAddPageHeader> {
                         text: S.of(context).auto_fetch_models,
                         onPressed: () async {
                           if (!ac.noKeyNeeded &&
-                              !ac.keys.any((k) => k.enabled)||ac.apiType == null||(ac.endpoint?.isEmpty ?? false)) {
+                                  !ac.keys.any((k) => k.enabled) ||
+                              ac.apiType == null ||
+                              (ac.endpoint?.isEmpty ?? false)) {
                             OverlayPortalService.showDialog(
                               context,
                               child: Text(
@@ -2049,15 +2135,24 @@ class _ModelAddPageHeaderState extends ConsumerState<ModelAddPageHeader> {
                             final protocolService = BaseApiService.fromType(
                               ac.apiType!,
                             );
-
+                            // avoid adding version flag if it's already there
+                            var endPoint = ac.endpoint!;
+                            if (ac.showVerFlags &&
+                                !endPoint.endsWith(ac.apiType!.vFlag)) {
+                              endPoint += ac.apiType!.vFlag;
+                            }
                             OverlayWrapper.showOverlay(
                               context,
                               overlayContent: ModelDiscoveryWidget(
                                 theme: theme,
                                 service: protocolService,
-                                endpoint: ac.endpoint! + ((ac.showVerFlags)?ac.apiType!.vFlag: ""),
+                                endpoint: endPoint,
                                 apiKey: ac.noKeyNeeded
-                                    ? ApiKey("1", "test", "Greetings from UNIChat")
+                                    ? ApiKey(
+                                        "1",
+                                        "test",
+                                        "Greetings from UNIChat",
+                                      )
                                     : ac.keys.firstWhere((k) => k.enabled),
                                 onSave: (confirmedResults) {
                                   final currentModels =
@@ -2201,109 +2296,149 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
   Widget build(BuildContext context) {
     var imgP = LLMImageIndexer.tryGetImagePath(model.family);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: widget.theme.zeroGradeColor,
+        color: widget.theme.thirdGradeColor.withAlpha(60),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: widget.theme.primaryColor.withAlpha(20)),
       ),
       child: Row(
         children: [
-          if (imgP != null) StdAvatar(length: 50, assetImage: AssetImage(imgP)),
-          const SizedBox(width: 15),
+          StdAvatar(
+            length: 36,
+            assetImage: imgP != null ? AssetImage(imgP) : null,
+            whenNull: Icon(
+              Icons.smart_toy_outlined,
+              color: widget.theme.primaryColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: SelectionArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      model.friendlyName,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 25,
-                        color: widget.theme.darkTextColor,
-                        fontWeight: FontWeight.bold,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        model.friendlyName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: widget.theme.textColor,
+                          fontSize: 15,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  _buildPricingWidget(context, ref, model),
-                  StdIconButton(
-                    icon: Icons.edit_outlined,
-                    onPressed: () {
-                      OverlayPortalService.showDialog(
-                        context,
-                        width: 450,
-                        backGroundColor: widget.theme.zeroGradeColor,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 20,
-                        ),
-                        child: ModelConfigureWidget(
-                          providerConfig: widget.modelConfig,
-                          model: model,
-                          theme: widget.theme,
-                          onSave: (c) {
-                            var n = ref.read(apiConfigureProvider.notifier);
-                            var ac = n.state;
-                            for (int i = 0; i < ac.models.length; i++) {
-                              if (ac.models[i].model.id == model.id) {
-                                ac.models[i] = (model: model, config: c);
-                              }
-                            }
-                            n.state = ac.copyWith(models: [...ac.models]);
-                            OverlayPortalService.hide(context);
-                          },
-                          onCancel: () {
-                            OverlayPortalService.hide(context);
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                  StdIconButton(
-                    icon: Icons.delete_outline,
-                    onPressed: () {
-                      OverlayPortalService.showDialog(
-                        context,
-                        child: Text(
-                          S.of(context).delete_confirm,
-                          style: TextStyle(
-                            fontSize: 25,
-                            fontWeight: FontWeight.bold,
-                            color: widget.theme.darkTextColor,
-                          ),
-                        ),
-                        actions: [
-                          StdButton(
-                            text: S.of(context).cancel,
-                            onPressed: () {
-                              OverlayPortalService.hide(context);
-                            },
-                          ),
-                          const SizedBox(width: 10),
-                          StdButton(
-                            text: S.of(context).confirm_long_press,
-                            onLongPress: () {
-                              var n = ref.read(apiConfigureProvider.notifier);
-                              n.state = n.state.copyWith(
-                                models: [
-                                  ...n.state.models.where(
-                                    (element) => element.model.id != model.id,
-                                  ),
-                                ],
-                              );
-                              OverlayPortalService.hide(context);
-                            },
-                            color: widget.theme.errorColor,
-                          ),
-                        ],
-                        backGroundColor: widget.theme.zeroGradeColor,
-                      );
-                    },
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '(${model.family})',
+                      style: TextStyle(
+                        color: widget.theme.textColor.withAlpha(130),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: model.abilities.map((ability) {
+                    return ability.abilityTagWidget(
+                      context,
+                      widget.theme.primaryColor,
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
+          ),
+          const SizedBox(width: 8),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildPricingWidget(context, ref, model),
+              const SizedBox(width: 12),
+              StdIconButton(
+                icon: Icons.edit_outlined,
+                onPressed: () {
+                  OverlayPortalService.showDialog(
+                    context,
+                    width: 450,
+                    backGroundColor: widget.theme.zeroGradeColor,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 20,
+                    ),
+                    child: ModelConfigureWidget(
+                      providerConfig: widget.modelConfig,
+                      model: model,
+                      theme: widget.theme,
+                      onSave: (c) {
+                        var n = ref.read(apiConfigureProvider.notifier);
+                        var ac = n.state;
+                        for (int i = 0; i < ac.models.length; i++) {
+                          if (ac.models[i].model.id == model.id) {
+                            ac.models[i] = (model: model, config: c);
+                          }
+                        }
+                        n.state = ac.copyWith(models: [...ac.models]);
+                        OverlayPortalService.hide(context);
+                      },
+                      onCancel: () {
+                        OverlayPortalService.hide(context);
+                      },
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 12),
+              StdIconButton(
+                icon: Icons.delete_outline,
+                onPressed: () {
+                  OverlayPortalService.showDialog(
+                    context,
+                    child: Text(
+                      S.of(context).delete_confirm,
+                      style: TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
+                        color: widget.theme.darkTextColor,
+                      ),
+                    ),
+                    actions: [
+                      StdButton(
+                        text: S.of(context).cancel,
+                        onPressed: () {
+                          OverlayPortalService.hide(context);
+                        },
+                      ),
+                      const SizedBox(width: 10),
+                      StdButton(
+                        text: S.of(context).confirm_long_press,
+                        onLongPress: () {
+                          var n = ref.read(apiConfigureProvider.notifier);
+                          n.state = n.state.copyWith(
+                            models: [
+                              ...n.state.models.where(
+                                (element) => element.model.id != model.id,
+                              ),
+                            ],
+                          );
+                          OverlayPortalService.hide(context);
+                        },
+                        color: widget.theme.errorColor,
+                      ),
+                    ],
+                    backGroundColor: widget.theme.zeroGradeColor,
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),
@@ -2441,16 +2576,7 @@ class _ModelInfoState extends ConsumerState<ModelInfo> {
   }
 
   Widget getInfoTags(ModelAbility ability) {
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      height: 30,
-      decoration: BoxDecoration(
-        color: widget.theme.primaryColor,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Center(child: Text(ability.name(context), style: tStyle)),
-    );
+    return ability.abilityTagWidget(context, widget.theme.primaryColor);
   }
 }
 
@@ -2573,21 +2699,7 @@ class _ModelAddWidgetState extends State<ModelAddWidget> {
   }
 
   Widget getInfoTags(ModelAbility ability) {
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      height: 25,
-      decoration: BoxDecoration(
-        color: widget.theme.primaryColor,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Center(
-        child: Text(
-          ability.name(context),
-          style: TextStyle(color: widget.theme.brightTextColor, fontSize: 12),
-        ),
-      ),
-    );
+    return ability.abilityTagWidget(context, widget.theme.primaryColor);
   }
 
   List<Model> _models = [];
@@ -2881,21 +2993,7 @@ class _ModelConfigureWidgetState extends State<ModelConfigureWidget> {
   }
 
   Widget getInfoTags(ModelAbility ability) {
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      height: 25,
-      decoration: BoxDecoration(
-        color: widget.theme.primaryColor,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Center(
-        child: Text(
-          ability.name(context),
-          style: TextStyle(color: widget.theme.brightTextColor, fontSize: 14),
-        ),
-      ),
-    );
+    return ability.abilityTagWidget(context, widget.theme.primaryColor);
   }
 
   @override

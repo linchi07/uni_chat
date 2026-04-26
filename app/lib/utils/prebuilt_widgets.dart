@@ -73,7 +73,7 @@ class StdButtonOutlined extends StatelessWidget {
     var theme = UniTheme.of(context);
     var c = color ?? theme.primaryColor;
     return Material(
-      color: (enabled) ? c : c.withAlpha(20),
+      color: (enabled) ? c.withAlpha(150) : c.withAlpha(20),
       shape: RoundedRectangleBorder(
         side: BorderSide(color: c, width: 1.5),
         borderRadius: BorderRadius.circular(8),
@@ -1217,9 +1217,10 @@ class StdIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var theme = UniTheme.of(context);
     return IconButton(
       tooltip: tooltip,
-      color: color,
+      color: color ?? theme.darkTextColor,
       padding: padding ?? EdgeInsets.all(4),
       constraints: const BoxConstraints(),
       onPressed: onPressed,
@@ -1321,6 +1322,7 @@ class StdSegmentedControl extends StatefulWidget {
   final double? width;
   final EdgeInsets? margin;
   final bool enableBackground;
+  final Color? backgroundColor;
 
   const StdSegmentedControl({
     super.key,
@@ -1330,6 +1332,7 @@ class StdSegmentedControl extends StatefulWidget {
     this.width,
     this.margin,
     this.enableBackground = true,
+    this.backgroundColor,
   });
 
   @override
@@ -1385,7 +1388,9 @@ class _StdSegmentedControlState extends State<StdSegmentedControl>
       margin: widget.margin ?? const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: (widget.enableBackground) ? theme.zeroGradeColor : null,
+        color: (widget.enableBackground)
+            ? widget.backgroundColor ?? theme.zeroGradeColor
+            : null,
         borderRadius: BorderRadius.circular(12),
       ),
       child: LayoutBuilder(

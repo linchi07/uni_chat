@@ -605,6 +605,7 @@
   "thinking_mode_low": "低",
   "thinking_mode_medium": "中",
   "thinking_mode_high": "高",
+  "thinking_mode_xhigh": "极高",
   "toolCall": "工具调用",
   "thinking": "推理思考",
   "sidebar_chat": "聊天",
@@ -622,5 +623,9 @@
   "dashboard_history_record": "最近调用记录",
   "dashboard_no_record": "无调用记录",
   "dashboard_call_times": "调用 {count} 次",
-  "dashboard_selected_period": "选中时段详情"
+  "dashboard_selected_period": "选中时段详情",
+  "model_management": "模型管理",
+  "model_management_official_hint": "温馨提示：官方维护模型会自动保持在最新版本以确保最佳体验，因此暂不支持手动编辑。",
+  "delete_variant_confirm": "确定删除该模型变体吗？此操作无法撤销。",
+  "edit_model_variant": "编辑模型变体"
 }
