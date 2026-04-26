@@ -9,6 +9,9 @@ on:
 permissions:
   contents: write
 
+# we temporarily disable macOS build since I have no paid Apple Developer account.
+# I will build manually and upload to GitHub Releases manually.
+
 jobs:
   build:
     name: Build (${{ matrix.platform }})
@@ -23,9 +26,9 @@ jobs:
           - os: windows-latest
             platform: windows
             artifact_name: windows-setup
-          - os: macos-latest
-            platform: macos
-            artifact_name: macos-app
+          #- os: macos-latest
+          #  platform: macos
+          #  artifact_name: macos-app
 
     steps:
       - name: Checkout code
@@ -179,7 +182,7 @@ jobs:
           files: |
             artifacts/android-apk/*.apk
             artifacts/windows-setup/*.exe
-            artifacts/macos-app/*.zip
+          #  artifacts/macos-app/*.zip
           name: "UNIChat V${{ env.VERSION_RAW }} Stable"
           tag_name: "v${{ env.VERSION_RAW }}"
           prerelease: true
